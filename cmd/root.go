@@ -10,13 +10,6 @@ import (
 	"github.com/initia-labs/weave/tea/radio"
 )
 
-var choices = []string{
-	"Run a L1 Node",
-	"Launch a New Minitia",
-	"Run OPinit Bots",
-	"Run a Relayer",
-}
-
 func Execute() error {
 	rootCmd := &cobra.Command{
 		Version: "v1.0.0",
@@ -32,7 +25,7 @@ func Execute() error {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := tea.NewProgram(radio.NewRadioModel(choices)).Start(); err != nil {
+			if err := tea.NewProgram(radio.NewRadioModel()).Start(); err != nil {
 				return err
 			}
 			return nil
