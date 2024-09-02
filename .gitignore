@@ -1,0 +1,20 @@
+weave
+build/
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+
+# Dependency directories
+vendor/
+
+# Logs
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# GoLand specific files
+*.iml
