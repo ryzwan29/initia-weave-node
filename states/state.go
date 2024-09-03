@@ -4,6 +4,14 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+// Example Reset function for all states:
+func ResetStates() {
+	homePageInstance = nil
+	InitiaInitInstance = nil
+	runL1NodeInstance = nil
+	launchNewMinitiaInstance = nil
+}
+
 type State interface {
 	Init() tea.Cmd
 	Update(msg tea.Msg) (tea.Model, tea.Cmd)
@@ -35,8 +43,3 @@ func (bs *BaseState) CommonUpdate(msg tea.Msg, currentState State) (tea.Model, t
 	}
 	return currentState, nil
 }
-
-// func (bs *BaseState) GetName() string {
-// 	return "Base state"
-
-// }
