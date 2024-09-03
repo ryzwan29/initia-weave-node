@@ -15,21 +15,21 @@ type HomePage struct {
 	once sync.Once
 }
 
-// homePageInstance holds the singleton instance of HomePage
-var homePageInstance *HomePage
+// HomePageInstance holds the singleton instance of HomePage
+var HomePageInstance *HomePage
 
 // GetHomePage returns the singleton instance of the HomePage state
 func GetHomePage() *HomePage {
 	// Use sync.Once to ensure the HomePage is initialized only once
-	if homePageInstance == nil {
-		homePageInstance = &HomePage{}
-		homePageInstance.once.Do(func() {
-			homePageInstance.BaseState = BaseState{
+	if HomePageInstance == nil {
+		HomePageInstance = &HomePage{}
+		HomePageInstance.once.Do(func() {
+			HomePageInstance.BaseState = BaseState{
 				Transitions: []State{GetInitiaInit()}, // Ensure all transitions are properly initialized
 			}
 		})
 	}
-	return homePageInstance
+	return HomePageInstance
 }
 
 func (hp *HomePage) Init() tea.Cmd {

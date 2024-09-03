@@ -6,10 +6,10 @@ import (
 
 // Example Reset function for all states:
 func ResetStates() {
-	homePageInstance = nil
+	HomePageInstance = nil
 	InitiaInitInstance = nil
-	runL1NodeInstance = nil
-	launchNewMinitiaInstance = nil
+	RunL1NodeInstance = nil
+	LaunchNewMinitiaInstance = nil
 }
 
 type State interface {

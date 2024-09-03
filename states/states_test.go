@@ -9,6 +9,18 @@ import (
 	"github.com/initia-labs/weave/states"
 )
 
+func TestSingletonInitializations(t *testing.T) {
+	// Reset all singleton instances before testing to ensure a clean state
+	states.ResetStates()
+	states.GetHomePage()
+
+	// Assert that none of the singleton instances are nil
+	assert.NotNil(t, states.HomePageInstance, "HomePage instance should not be nil")
+	assert.NotNil(t, states.InitiaInitInstance, "InitiaInit instance should not be nil")
+	assert.NotNil(t, states.RunL1NodeInstance, "RunL1Node instance should not be nil")
+	assert.NotNil(t, states.LaunchNewMinitiaInstance, "LaunchNewMinitia instance should not be nil")
+}
+
 func TestInitiaInitNavigation(t *testing.T) {
 	states.ResetStates() // Optional: Reset at package initialization if needed for all tests
 	home := states.GetHomePage()

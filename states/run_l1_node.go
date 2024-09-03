@@ -14,20 +14,20 @@ type RunL1Node struct {
 	once sync.Once
 }
 
-// runL1NodeInstance holds the singleton instance of RunL1Node
-var runL1NodeInstance *RunL1Node
+// RunL1NodeInstance holds the singleton instance of RunL1Node
+var RunL1NodeInstance *RunL1Node
 
 // GetRunL1Node returns the singleton instance of the RunL1Node state
 func GetRunL1Node() *RunL1Node {
-	if runL1NodeInstance == nil {
-		runL1NodeInstance = &RunL1Node{}
-		runL1NodeInstance.once.Do(func() {
-			runL1NodeInstance.BaseState = BaseState{
+	if RunL1NodeInstance == nil {
+		RunL1NodeInstance = &RunL1Node{}
+		RunL1NodeInstance.once.Do(func() {
+			RunL1NodeInstance.BaseState = BaseState{
 				Transitions: []State{},
 			}
 		})
 	}
-	return runL1NodeInstance
+	return RunL1NodeInstance
 }
 
 func (rl1 *RunL1Node) Init() tea.Cmd {

@@ -14,20 +14,20 @@ type LaunchNewMinitia struct {
 	once sync.Once
 }
 
-// launchNewMinitiaInstance holds the singleton instance of LaunchNewMinitia
-var launchNewMinitiaInstance *LaunchNewMinitia
+// LaunchNewMinitiaInstance holds the singleton instance of LaunchNewMinitia
+var LaunchNewMinitiaInstance *LaunchNewMinitia
 
 // GetLaunchNewMinitia returns the singleton instance of the LaunchNewMinitia state
 func GetLaunchNewMinitia() *LaunchNewMinitia {
-	if launchNewMinitiaInstance == nil {
-		launchNewMinitiaInstance = &LaunchNewMinitia{}
-		launchNewMinitiaInstance.once.Do(func() {
-			launchNewMinitiaInstance.BaseState = BaseState{
+	if LaunchNewMinitiaInstance == nil {
+		LaunchNewMinitiaInstance = &LaunchNewMinitia{}
+		LaunchNewMinitiaInstance.once.Do(func() {
+			LaunchNewMinitiaInstance.BaseState = BaseState{
 				Transitions: []State{},
 			}
 		})
 	}
-	return launchNewMinitiaInstance
+	return LaunchNewMinitiaInstance
 }
 
 func (lnm *LaunchNewMinitia) Init() tea.Cmd {
