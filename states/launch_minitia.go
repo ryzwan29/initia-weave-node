@@ -1,21 +1,33 @@
 package states
 
-import tea "github.com/charmbracelet/bubbletea"
+import (
+	"sync"
+
+	tea "github.com/charmbracelet/bubbletea"
+)
 
 var _ State = &LaunchNewMinitia{}
 var _ tea.Model = &LaunchNewMinitia{}
 
 type LaunchNewMinitia struct {
 	BaseState
+	once sync.Once
 }
 
-func NewLaunchNewMinitia(transitions []State) *LaunchNewMinitia {
-	return &LaunchNewMinitia{
-		BaseState: BaseState{
-			Transitions: transitions,
-			Name:        "Launch New Minitia",
-		},
+// launchNewMinitiaInstance holds the singleton instance of LaunchNewMinitia
+var launchNewMinitiaInstance *LaunchNewMinitia
+
+// GetLaunchNewMinitia returns the singleton instance of the LaunchNewMinitia state
+func GetLaunchNewMinitia() *LaunchNewMinitia {
+	if launchNewMinitiaInstance == nil {
+		launchNewMinitiaInstance = &LaunchNewMinitia{}
+		launchNewMinitiaInstance.once.Do(func() {
+			launchNewMinitiaInstance.BaseState = BaseState{
+				Transitions: []State{},
+			}
+		})
 	}
+	return launchNewMinitiaInstance
 }
 
 func (lnm *LaunchNewMinitia) Init() tea.Cmd {
@@ -27,5 +39,9 @@ func (lnm *LaunchNewMinitia) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (lnm *LaunchNewMinitia) View() string {
-	return lnm.Name + " Page\n"
+	return lnm.GetName() + " Page\n"
+}
+
+func (lnm *LaunchNewMinitia) GetName() string {
+	return "Launch New Minitia"
 }

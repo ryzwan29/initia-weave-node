@@ -25,7 +25,7 @@ func Execute() error {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			_, err := tea.NewProgram(states.NewHomePage(states.DefaultStates())).Run()
+			_, err := tea.NewProgram(states.GetHomePage()).Run()
 			if err != nil {
 				return err
 			}

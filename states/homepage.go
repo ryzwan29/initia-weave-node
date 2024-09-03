@@ -1,23 +1,35 @@
 package states
 
 import (
+	"sync"
+
 	tea "github.com/charmbracelet/bubbletea"
 )
 
 var _ State = &HomePage{}
 var _ tea.Model = &HomePage{}
 
+// HomePage is the singleton instance of the home page state.
 type HomePage struct {
 	BaseState
+	once sync.Once
 }
 
-func NewHomePage(transitions []State) *HomePage {
-	return &HomePage{
-		BaseState: BaseState{
-			Transitions: transitions,
-			Name:        "home page",
-		},
+// homePageInstance holds the singleton instance of HomePage
+var homePageInstance *HomePage
+
+// GetHomePage returns the singleton instance of the HomePage state
+func GetHomePage() *HomePage {
+	// Use sync.Once to ensure the HomePage is initialized only once
+	if homePageInstance == nil {
+		homePageInstance = &HomePage{}
+		homePageInstance.once.Do(func() {
+			homePageInstance.BaseState = BaseState{
+				Transitions: []State{GetInitPage()}, // Ensure all transitions are properly initialized
+			}
+		})
 	}
+	return homePageInstance
 }
 
 func (hp *HomePage) Init() tea.Cmd {
@@ -38,4 +50,8 @@ func (hp *HomePage) View() string {
 		}
 	}
 	return view + "\nPress Enter to go to the selected page, or Q to quit."
+}
+
+func (hp *HomePage) GetName() string {
+	return "Home Page"
 }

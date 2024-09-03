@@ -14,7 +14,6 @@ type State interface {
 type BaseState struct {
 	Transitions []State
 	Cursor      int
-	Name        string
 }
 
 func (bs *BaseState) CommonUpdate(msg tea.Msg, currentState State) (tea.Model, tea.Cmd) {
@@ -37,16 +36,7 @@ func (bs *BaseState) CommonUpdate(msg tea.Msg, currentState State) (tea.Model, t
 	return currentState, nil
 }
 
-func (bs *BaseState) GetName() string {
-	return bs.Name
+// func (bs *BaseState) GetName() string {
+// 	return "Base state"
 
-}
-
-func DefaultStates() []State {
-	return []State{
-		NewInitPage([]State{
-			NewInitiaInit([]State{}),
-			NewLaunchNewMinitia([]State{}),
-		}),
-	}
-}
+// }
