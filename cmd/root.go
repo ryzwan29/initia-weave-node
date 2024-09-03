@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/initia-labs/weave/tea/radio"
+	"github.com/initia-labs/weave/states"
 )
 
 func Execute() error {
@@ -25,9 +25,16 @@ func Execute() error {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := tea.NewProgram(radio.NewRadioModel()).Start(); err != nil {
+			_, err := tea.NewProgram(states.NewHomePage([]states.State{
+				states.NewInitPage([]states.State{
+					states.NewRunL1Node([]states.State{}),
+					states.NewLaunchNewMinitia([]states.State{}),
+				}),
+			})).Run()
+			if err != nil {
 				return err
 			}
+
 			return nil
 		},
 	}

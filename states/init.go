@@ -4,32 +4,32 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-var _ State = &HomePage{}
-var _ tea.Model = &HomePage{}
+var _ State = &InitPage{}
+var _ tea.Model = &InitPage{}
 
-type HomePage struct {
+type InitPage struct {
 	BaseState
 }
 
-func NewHomePage(transitions []State) *HomePage {
-	return &HomePage{
+func NewInitPage(transitions []State) *InitPage {
+	return &InitPage{
 		BaseState: BaseState{
 			Transitions: transitions,
-			Name:        "home page",
+			Name:        "Weave Init",
 		},
 	}
 }
 
-func (hp *HomePage) Init() tea.Cmd {
+func (hp *InitPage) Init() tea.Cmd {
 	return nil
 }
 
-func (hp *HomePage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (hp *InitPage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return hp.CommonUpdate(msg, hp)
 }
 
-func (hp *HomePage) View() string {
-	view := "Which action would you like to do?\n"
+func (hp *InitPage) View() string {
+	view := "weave init\n\nWhat action would you like to perform?\n"
 	for i, transition := range hp.Transitions {
 		if i == hp.Cursor {
 			view += "(•) " + transition.GetName() + "\n"
