@@ -41,3 +41,12 @@ func (bs *BaseState) GetName() string {
 	return bs.Name
 
 }
+
+func DefaultStates() []State {
+	return []State{
+		NewInitPage([]State{
+			NewInitiaInit([]State{}),
+			NewLaunchNewMinitia([]State{}),
+		}),
+	}
+}

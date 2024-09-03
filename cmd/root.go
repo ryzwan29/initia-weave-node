@@ -25,12 +25,7 @@ func Execute() error {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			_, err := tea.NewProgram(states.NewHomePage([]states.State{
-				states.NewInitPage([]states.State{
-					states.NewRunL1Node([]states.State{}),
-					states.NewLaunchNewMinitia([]states.State{}),
-				}),
-			})).Run()
+			_, err := tea.NewProgram(states.NewHomePage(states.DefaultStates())).Run()
 			if err != nil {
 				return err
 			}
