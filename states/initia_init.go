@@ -25,6 +25,7 @@ func GetInitiaInit() *InitiaInit {
 		InitiaInitInstance.once.Do(func() {
 			InitiaInitInstance.BaseState = BaseState{
 				Transitions: []State{GetRunL1Node(), GetLaunchNewMinitia()}, // Initialize transitions if needed
+				Global:      GetGlobalState(),
 			}
 		})
 	}

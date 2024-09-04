@@ -25,7 +25,8 @@ func GetHomePage() *HomePage {
 		HomePageInstance = &HomePage{}
 		HomePageInstance.once.Do(func() {
 			HomePageInstance.BaseState = BaseState{
-				Transitions: []State{GetInitiaInit()}, // Ensure all transitions are properly initialized
+				Transitions: []State{GetInitiaInit()},
+				Global:      GetGlobalState(),
 			}
 		})
 	}

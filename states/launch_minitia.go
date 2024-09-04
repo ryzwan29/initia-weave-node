@@ -24,6 +24,7 @@ func GetLaunchNewMinitia() *LaunchNewMinitia {
 		LaunchNewMinitiaInstance.once.Do(func() {
 			LaunchNewMinitiaInstance.BaseState = BaseState{
 				Transitions: []State{},
+				Global:      GetGlobalState(),
 			}
 		})
 	}

@@ -1,6 +1,7 @@
 package states
 
 import (
+	"fmt"
 	"sync"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -23,7 +24,10 @@ func GetRunL1Node() *RunL1Node {
 		RunL1NodeInstance = &RunL1Node{}
 		RunL1NodeInstance.once.Do(func() {
 			RunL1NodeInstance.BaseState = BaseState{
-				Transitions: []State{},
+				Transitions: []State{
+					GetTextInput(),
+				},
+				Global: GetGlobalState(),
 			}
 		})
 	}
@@ -39,7 +43,7 @@ func (rl1 *RunL1Node) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (rl1 *RunL1Node) View() string {
-	return rl1.GetName() + " Page\n"
+	return fmt.Sprintf("🪢🪢 Welcome to %s Page 🪢🪢\n\nPress enter to continue...", rl1.GetName())
 }
 
 func (rl1 *RunL1Node) GetName() string {

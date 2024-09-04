@@ -22,6 +22,7 @@ type State interface {
 type BaseState struct {
 	Transitions []State
 	Cursor      int
+	Global      *GlobalState
 }
 
 func (bs *BaseState) CommonUpdate(msg tea.Msg, currentState State) (tea.Model, tea.Cmd) {
