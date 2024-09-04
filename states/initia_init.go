@@ -15,21 +15,25 @@ type InitiaInit struct {
 }
 
 // InitiaInitInstance holds the singleton instance of InitiaInit
-var InitiaInitInstance *InitiaInit
+var InitiaInitInstance *InitiaInit = &InitiaInit{}
 
 // GetInitiaInit returns the singleton instance of the InitiaInit state
 func GetInitiaInit() *InitiaInit {
-	// Use sync.Once to ensure the InitiaInit is initialized only once
-	if InitiaInitInstance == nil {
-		InitiaInitInstance = &InitiaInit{}
-		InitiaInitInstance.once.Do(func() {
-			InitiaInitInstance.BaseState = BaseState{
-				Transitions: []State{GetRunL1Node(), GetLaunchNewMinitia()}, // Initialize transitions if needed
-				Global:      GetGlobalState(),
-			}
-		})
-	}
+	InitiaInitInstance.once.Do(func() {
+		InitiaInitInstance.BaseState = BaseState{
+			Global: GetGlobalStorage(),
+		}
+	})
+
+	// Do not set transitions during initialization
 	return InitiaInitInstance
+}
+
+// Set transitions after the instance is initialized
+func SetInitiaInitTransitions() {
+	InitiaInitInstance.BaseState.Transitions = []State{
+		GetRunL1Node(),
+	}
 }
 
 func (ii *InitiaInit) Init() tea.Cmd {

@@ -16,22 +16,26 @@ type RunL1Node struct {
 }
 
 // RunL1NodeInstance holds the singleton instance of RunL1Node
-var RunL1NodeInstance *RunL1Node
+var RunL1NodeInstance *RunL1Node = &RunL1Node{} // Initialize the instance ahead of time
 
 // GetRunL1Node returns the singleton instance of the RunL1Node state
 func GetRunL1Node() *RunL1Node {
-	if RunL1NodeInstance == nil {
-		RunL1NodeInstance = &RunL1Node{}
-		RunL1NodeInstance.once.Do(func() {
-			RunL1NodeInstance.BaseState = BaseState{
-				Transitions: []State{
-					GetTextInput(),
-				},
-				Global: GetGlobalState(),
-			}
-		})
-	}
+	RunL1NodeInstance.once.Do(func() {
+		// Initialize RunL1Node without transitions
+		RunL1NodeInstance.BaseState = BaseState{
+			Global: GetGlobalStorage(),
+		}
+	})
+
+	// Do not set transitions in the initialization phase
 	return RunL1NodeInstance
+}
+
+// Set transitions when required (not during initialization)
+func SetRunL1NodeTransitions() {
+	RunL1NodeInstance.BaseState.Transitions = []State{
+		GetRunL1NodeTextInput(), // Add the text input state here
+	}
 }
 
 func (rl1 *RunL1Node) Init() tea.Cmd {

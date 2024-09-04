@@ -16,21 +16,23 @@ type HomePage struct {
 }
 
 // HomePageInstance holds the singleton instance of HomePage
-var HomePageInstance *HomePage
+var HomePageInstance *HomePage = &HomePage{}
 
-// GetHomePage returns the singleton instance of the HomePage state
 func GetHomePage() *HomePage {
-	// Use sync.Once to ensure the HomePage is initialized only once
-	if HomePageInstance == nil {
-		HomePageInstance = &HomePage{}
-		HomePageInstance.once.Do(func() {
-			HomePageInstance.BaseState = BaseState{
-				Transitions: []State{GetInitiaInit()},
-				Global:      GetGlobalState(),
-			}
-		})
-	}
+	HomePageInstance.once.Do(func() {
+		HomePageInstance.BaseState = BaseState{
+			Global: GetGlobalStorage(),
+		}
+	})
+
 	return HomePageInstance
+}
+
+// Set transitions after initialization
+func SetHomePageTransitions() {
+	HomePageInstance.BaseState.Transitions = []State{
+		GetInitiaInit(),
+	}
 }
 
 func (hp *HomePage) Init() tea.Cmd {

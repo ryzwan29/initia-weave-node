@@ -15,19 +15,17 @@ type LaunchNewMinitia struct {
 }
 
 // LaunchNewMinitiaInstance holds the singleton instance of LaunchNewMinitia
-var LaunchNewMinitiaInstance *LaunchNewMinitia
+var LaunchNewMinitiaInstance *LaunchNewMinitia = &LaunchNewMinitia{}
 
 // GetLaunchNewMinitia returns the singleton instance of the LaunchNewMinitia state
 func GetLaunchNewMinitia() *LaunchNewMinitia {
-	if LaunchNewMinitiaInstance == nil {
-		LaunchNewMinitiaInstance = &LaunchNewMinitia{}
-		LaunchNewMinitiaInstance.once.Do(func() {
-			LaunchNewMinitiaInstance.BaseState = BaseState{
-				Transitions: []State{},
-				Global:      GetGlobalState(),
-			}
-		})
-	}
+	LaunchNewMinitiaInstance.once.Do(func() {
+		// Initialize LaunchNewMinitia without transitions to avoid recursion
+		LaunchNewMinitiaInstance.BaseState = BaseState{
+			Global: GetGlobalStorage(),
+		}
+	})
+
 	return LaunchNewMinitiaInstance
 }
 
