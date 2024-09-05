@@ -48,7 +48,7 @@ func (ii *InitiaInit) View() string {
 	view := "weave weaveinit\n\nWhat action would you like to perform?\n"
 	for i, transition := range ii.Transitions {
 		if i == ii.Cursor {
-			view += "(•) " + transition.GetName() + "\n"
+			view += "(■) " + transition.GetName() + "\n"
 		} else {
 			view += "( ) " + transition.GetName() + "\n"
 		}

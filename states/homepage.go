@@ -47,7 +47,7 @@ func (hp *HomePage) View() string {
 	view := "Which action would you like to do?\n"
 	for i, transition := range hp.Transitions {
 		if i == hp.Cursor {
-			view += "(•) " + transition.GetName() + "\n"
+			view += "(■) " + transition.GetName() + "\n"
 		} else {
 			view += "( ) " + transition.GetName() + "\n"
 		}

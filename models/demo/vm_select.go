@@ -42,7 +42,7 @@ func (m *VMSelect) View() string {
 	view := "Which vm would you like to build on?\n"
 	for i, option := range m.Options {
 		if i == m.Cursor {
-			view += "(•) " + option + "\n"
+			view += "(■) " + option + "\n"
 		} else {
 			view += "( ) " + option + "\n"
 		}

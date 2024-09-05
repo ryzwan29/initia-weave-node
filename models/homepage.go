@@ -75,7 +75,7 @@ func (m *Homepage) View() string {
 		view += "What would you like to do today?\n"
 		for i, option := range m.Options {
 			if i == m.Cursor {
-				view += "(•) " + string(option) + "\n"
+				view += "(■) " + string(option) + "\n"
 			} else {
 				view += "( ) " + string(option) + "\n"
 			}

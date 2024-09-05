@@ -51,7 +51,7 @@ func (m *RunL1Node) View() string {
 	view := "? Which network will your node participate in?\n"
 	for i, option := range m.Options {
 		if i == m.Cursor {
-			view += "(•) " + string(option) + "\n"
+			view += "(■) " + string(option) + "\n"
 		} else {
 			view += "( ) " + string(option) + "\n"
 		}

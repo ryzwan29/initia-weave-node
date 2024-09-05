@@ -52,7 +52,7 @@ func (m *WeaveInit) View() string {
 	view := "? What action would you like to perform?\n"
 	for i, option := range m.Options {
 		if i == m.Cursor {
-			view += "(•) " + string(option) + "\n"
+			view += "(■) " + string(option) + "\n"
 		} else {
 			view += "( ) " + string(option) + "\n"
 		}
