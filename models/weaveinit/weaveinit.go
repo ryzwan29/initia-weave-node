@@ -7,7 +7,6 @@ import (
 
 type WeaveInit struct {
 	utils.Selector[WeaveInitOption]
-	state *State
 }
 
 type WeaveInitOption string
@@ -19,7 +18,7 @@ const (
 	StartRelayerOption     WeaveInitOption = "Start a Relayer"
 )
 
-func NewWeaveInit(state *State) *WeaveInit {
+func NewWeaveInit() *WeaveInit {
 	return &WeaveInit{
 		Selector: utils.Selector[WeaveInitOption]{
 			Options: []WeaveInitOption{
@@ -30,7 +29,6 @@ func NewWeaveInit(state *State) *WeaveInit {
 			},
 			Cursor: 0,
 		},
-		state: state,
 	}
 }
 
@@ -43,7 +41,7 @@ func (m *WeaveInit) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if selected != nil {
 		switch *selected {
 		case RunL1NodeOption:
-			return NewRunL1Node(&State{}), nil
+			return NewRunL1Node(&RunL1NodeState{}), nil
 		}
 	}
 

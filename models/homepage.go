@@ -37,7 +37,7 @@ func (m *Homepage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if selected != nil {
 		switch *selected {
 		case InitOption:
-			return weaveinit.NewWeaveInit(&weaveinit.State{}), nil
+			return weaveinit.NewWeaveInit(), nil
 		}
 	}
 

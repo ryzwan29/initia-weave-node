@@ -25,3 +25,6 @@ endif
 
 $(BUILDDIR)/:
 	mkdir -p $(BUILDDIR)/
+
+test: build
+	./weave

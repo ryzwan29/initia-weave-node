@@ -1,6 +1,5 @@
 package weaveinit
 
-type State struct {
-	vm                 string
+type RunL1NodeState struct {
 	gasStationMnemonic string
 }

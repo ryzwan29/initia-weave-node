@@ -8,10 +8,10 @@ import (
 
 type RunL1Node struct {
 	utils.TextInput
-	state *State
+	state *RunL1NodeState
 }
 
-func NewRunL1Node(state *State) *RunL1Node {
+func NewRunL1Node(state *RunL1NodeState) *RunL1Node {
 	return &RunL1Node{
 		TextInput: "",
 		state:     state,
@@ -34,5 +34,5 @@ func (m *RunL1Node) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *RunL1Node) View() string {
-	return fmt.Sprintf("? Please set up a Gas Station account\n %s\n", m.TextInput)
+	return fmt.Sprintf("? Please set up a Gas Station account (The account that will hold the funds required by the OPinit-bots or relayer to send transactions)\nYou can also set this up later. Weave will not send any transactions without your confirmation.\n> %s\n", m.TextInput)
 }
