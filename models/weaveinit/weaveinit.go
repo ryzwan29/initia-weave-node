@@ -41,7 +41,7 @@ func (m *WeaveInit) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if selected != nil {
 		switch *selected {
 		case RunL1NodeOption:
-			return NewRunL1Node(&RunL1NodeState{}), nil
+			return NewRunL1NodeNetworkSelect(&RunL1NodeState{}), nil
 		}
 	}
 
