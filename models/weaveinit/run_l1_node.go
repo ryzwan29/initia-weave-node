@@ -7,14 +7,28 @@ import (
 )
 
 type RunL1Node struct {
-	utils.TextInput
+	utils.Selector[L1NodeNetworkOption]
 	state *RunL1NodeState
 }
 
+type L1NodeNetworkOption string
+
+const (
+	Mainnet L1NodeNetworkOption = "Mainnet"
+	Testnet L1NodeNetworkOption = "Testnet"
+	Local   L1NodeNetworkOption = "Local"
+)
+
 func NewRunL1Node(state *RunL1NodeState) *RunL1Node {
 	return &RunL1Node{
-		TextInput: "",
-		state:     state,
+		Selector: utils.Selector[L1NodeNetworkOption]{
+			Options: []L1NodeNetworkOption{
+				Mainnet,
+				Testnet,
+				Local,
+			},
+		},
+		state: state,
 	}
 }
 
@@ -23,16 +37,24 @@ func (m *RunL1Node) Init() tea.Cmd {
 }
 
 func (m *RunL1Node) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	input, done := m.TextInput.Update(msg)
-	if done {
-		m.state.gasStationMnemonic = string(input)
+	selected, cmd := m.Select(msg)
+	if selected != nil {
+		m.state.network = string(*selected)
 		fmt.Println("[info] state ", m.state)
 		return m, tea.Quit
 	}
-	m.TextInput = input
-	return m, nil
+
+	return m, cmd
 }
 
 func (m *RunL1Node) View() string {
-	return fmt.Sprintf("? Please set up a Gas Station account (The account that will hold the funds required by the OPinit-bots or relayer to send transactions)\nYou can also set this up later. Weave will not send any transactions without your confirmation.\n> %s\n", m.TextInput)
+	view := "? Which network will your node participate in?\n"
+	for i, option := range m.Options {
+		if i == m.Cursor {
+			view += "(•) " + string(option) + "\n"
+		} else {
+			view += "( ) " + string(option) + "\n"
+		}
+	}
+	return view + "\nPress Enter to select, or q to quit."
 }

@@ -1,6 +1,7 @@
 package models
 
 import (
+	"fmt"
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/initia-labs/weave/models/weaveinit"
@@ -9,6 +10,8 @@ import (
 
 type Homepage struct {
 	utils.Selector[HomepageOption]
+	TextInput        utils.TextInput
+	isFirstTimeSetup bool
 }
 
 type HomepageOption string
@@ -25,6 +28,8 @@ func NewHomepage() tea.Model {
 			},
 			Cursor: 0,
 		},
+		isFirstTimeSetup: utils.IsFirstTimeSetup(),
+		TextInput:        "",
 	}
 }
 
@@ -33,6 +38,19 @@ func (m *Homepage) Init() tea.Cmd {
 }
 
 func (m *Homepage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if m.isFirstTimeSetup {
+		input, done := m.TextInput.Update(msg)
+		if done {
+			err := utils.SetConfig("common.gas_station_mnemonic", string(input))
+			if err != nil {
+				return nil, nil
+			}
+			return NewHomepage(), nil
+		}
+		m.TextInput = input
+		return m, nil
+	}
+
 	selected, cmd := m.Select(msg)
 	if selected != nil {
 		switch *selected {
@@ -46,12 +64,24 @@ func (m *Homepage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *Homepage) View() string {
 	view := "Hi 👋🏻 Weave is a CLI for managing Initia deployments.\n"
-	for i, option := range m.Options {
-		if i == m.Cursor {
-			view += "(•) " + string(option) + "\n"
-		} else {
-			view += "( ) " + string(option) + "\n"
+
+	if m.isFirstTimeSetup {
+		view += fmt.Sprintf(
+			"It looks like this is your first time using Weave. Let's get started!\n"+
+				"Please set up a Gas Station account (The account that will hold the funds required by the "+
+				"OPinit-bots or relayer to send transactions):\n> %s\n", m.TextInput,
+		)
+	} else {
+		view += "What would you like to do today?\n"
+		for i, option := range m.Options {
+			if i == m.Cursor {
+				view += "(•) " + string(option) + "\n"
+			} else {
+				view += "( ) " + string(option) + "\n"
+			}
 		}
+		view += "\nPress Enter to select, or q to quit."
 	}
-	return view + "\nPress Enter to select, or q to quit."
+
+	return view
 }
