@@ -2,12 +2,12 @@ package cmd
 
 import (
 	"context"
+	"github.com/initia-labs/weave/models"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/initia-labs/weave/models/demo"
 	"github.com/initia-labs/weave/states"
 )
 
@@ -28,7 +28,7 @@ func Execute() error {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			_, err := tea.NewProgram(demo.New()).Run()
+			_, err := tea.NewProgram(models.NewHomepage()).Run()
 			if err != nil {
 				return err
 			}

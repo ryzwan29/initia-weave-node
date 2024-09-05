@@ -45,7 +45,7 @@ func (ii *InitiaInit) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (ii *InitiaInit) View() string {
-	view := "weave init\n\nWhat action would you like to perform?\n"
+	view := "weave weaveinit\n\nWhat action would you like to perform?\n"
 	for i, transition := range ii.Transitions {
 		if i == ii.Cursor {
 			view += "(•) " + transition.GetName() + "\n"
