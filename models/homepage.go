@@ -2,8 +2,8 @@ package models
 
 import (
 	"fmt"
-	tea "github.com/charmbracelet/bubbletea"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/initia-labs/weave/models/weaveinit"
 	"github.com/initia-labs/weave/utils"
 )
