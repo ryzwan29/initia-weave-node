@@ -148,7 +148,6 @@ func (m *RunL1NodeMonikerInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	input, done := m.TextInput.Update(msg)
 	if done {
 		m.state.moniker = string(input)
-		fmt.Println("\n[info] state", m.state)
 		return NewExistingAppChecker(m.state), utils.DoTick()
 	}
 	m.TextInput = input
@@ -160,14 +159,12 @@ func (m *RunL1NodeMonikerInput) View() string {
 }
 
 type ExistingAppChecker struct {
-	checkComplete bool
-	state         *RunL1NodeState
+	state *RunL1NodeState
 }
 
 func NewExistingAppChecker(state *RunL1NodeState) *ExistingAppChecker {
 	return &ExistingAppChecker{
-		checkComplete: false,
-		state:         state,
+		state: state,
 	}
 }
 
@@ -178,26 +175,20 @@ func (m *ExistingAppChecker) Init() tea.Cmd {
 func (m *ExistingAppChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg.(type) {
 	case utils.TickMsg:
-		if !m.checkComplete {
-			homeDir, err := os.UserHomeDir()
-			if err != nil {
-				fmt.Printf("[error] Failed to get user home directory: %v\n", err)
-				return m, tea.Quit
-			}
-
-			configTomlPath := filepath.Join(homeDir, ".initia", "config", "config.toml")
-			if !utils.FileOrFolderExists(configTomlPath) {
-				fmt.Println("\n[info] No existing Initia app found")
-			} else {
-				return NewExistingAppReplaceSelect(m.state), nil
-			}
-
-			m.checkComplete = true
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			fmt.Printf("[error] Failed to get user home directory: %v\n", err)
+			return m, tea.Quit
 		}
-		if m.checkComplete {
-			return NewRunL1NodeNetworkSelect(m.state), nil
+
+		configTomlPath := filepath.Join(homeDir, ".initia", "config", "config.toml")
+		if !utils.FileOrFolderExists(configTomlPath) {
+			m.state.existingApp = false
+			return NewMinGasPriceInput(m.state), nil
+		} else {
+			m.state.existingApp = true
+			return NewExistingAppReplaceSelect(m.state), nil
 		}
-		return m, nil
 	default:
 		return m, nil
 	}
@@ -240,9 +231,11 @@ func (m *ExistingAppReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if selected != nil {
 		switch *selected {
 		case UseCurrent:
+			m.state.replaceExistingApp = false
 			fmt.Println("\n[info] Using current files")
 		case Replace:
-			fmt.Println("\n[info] Replacing files")
+			m.state.replaceExistingApp = true
+			return NewMinGasPriceInput(m.state), nil
 		}
 		return m, tea.Quit
 	}
@@ -260,4 +253,38 @@ func (m *ExistingAppReplaceSelect) View() string {
 		}
 	}
 	return view + "\nPress Enter to select, or q to quit."
+}
+
+type MinGasPriceInput struct {
+	utils.TextInput
+	state *RunL1NodeState
+}
+
+func NewMinGasPriceInput(state *RunL1NodeState) *MinGasPriceInput {
+	return &MinGasPriceInput{
+		TextInput: "",
+		state:     state,
+	}
+}
+
+func (m *MinGasPriceInput) Init() tea.Cmd {
+	return nil
+}
+
+func (m *MinGasPriceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	input, done := m.TextInput.Update(msg)
+	if done {
+		m.state.minGasPrice = string(input)
+		return m, tea.Quit
+	}
+	m.TextInput = input
+	return m, nil
+}
+
+func (m *MinGasPriceInput) View() string {
+	preText := ""
+	if !m.state.existingApp {
+		preText += "No existing .initia directory found. Creating a new one.\n"
+	}
+	return fmt.Sprintf("%s? Please specify min-gas-price (uinit)\n> %s\n", preText, string(m.TextInput))
 }
