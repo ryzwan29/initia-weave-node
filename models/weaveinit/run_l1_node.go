@@ -75,7 +75,7 @@ type RunL1NodeVersionInput struct {
 
 func NewRunL1NodeVersionInput(state *RunL1NodeState) *RunL1NodeVersionInput {
 	return &RunL1NodeVersionInput{
-		TextInput: "",
+		TextInput: utils.NewTextInput(),
 		state:     state,
 	}
 }
@@ -87,7 +87,7 @@ func (m *RunL1NodeVersionInput) Init() tea.Cmd {
 func (m *RunL1NodeVersionInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	input, done := m.TextInput.Update(msg)
 	if done {
-		m.state.initiadVersion = string(input)
+		m.state.initiadVersion = string(input.Text)
 		return NewRunL1NodeChainIdInput(m.state), nil
 	}
 	m.TextInput = input
@@ -95,7 +95,7 @@ func (m *RunL1NodeVersionInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *RunL1NodeVersionInput) View() string {
-	return fmt.Sprintf("? Please specify the initiad version\n> %s\n", string(m.TextInput))
+	return fmt.Sprintf("? Please specify the initiad version\n> %s\n", m.TextInput.View())
 }
 
 type RunL1NodeChainIdInput struct {
@@ -105,7 +105,7 @@ type RunL1NodeChainIdInput struct {
 
 func NewRunL1NodeChainIdInput(state *RunL1NodeState) *RunL1NodeChainIdInput {
 	return &RunL1NodeChainIdInput{
-		TextInput: "",
+		TextInput: utils.NewTextInput(),
 		state:     state,
 	}
 }
@@ -117,7 +117,7 @@ func (m *RunL1NodeChainIdInput) Init() tea.Cmd {
 func (m *RunL1NodeChainIdInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	input, done := m.TextInput.Update(msg)
 	if done {
-		m.state.chainId = string(input)
+		m.state.chainId = string(input.Text)
 		return NewRunL1NodeMonikerInput(m.state), nil
 	}
 	m.TextInput = input
@@ -125,7 +125,7 @@ func (m *RunL1NodeChainIdInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *RunL1NodeChainIdInput) View() string {
-	return fmt.Sprintf("? Please specify the chain ID\n> %s\n", string(m.TextInput))
+	return fmt.Sprintf("? Please specify the chain ID\n> %s\n", m.TextInput.View())
 }
 
 type RunL1NodeMonikerInput struct {
@@ -135,7 +135,7 @@ type RunL1NodeMonikerInput struct {
 
 func NewRunL1NodeMonikerInput(state *RunL1NodeState) *RunL1NodeMonikerInput {
 	return &RunL1NodeMonikerInput{
-		TextInput: "",
+		TextInput: utils.NewTextInput(),
 		state:     state,
 	}
 }
@@ -147,7 +147,8 @@ func (m *RunL1NodeMonikerInput) Init() tea.Cmd {
 func (m *RunL1NodeMonikerInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	input, done := m.TextInput.Update(msg)
 	if done {
-		m.state.moniker = string(input)
+		m.state.moniker = string(input.Text)
+		fmt.Println("\n[info] state", m.state)
 		return NewExistingAppChecker(m.state), utils.DoTick()
 	}
 	m.TextInput = input
@@ -155,7 +156,7 @@ func (m *RunL1NodeMonikerInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *RunL1NodeMonikerInput) View() string {
-	return fmt.Sprintf("? Please specify the moniker\n> %s\n", string(m.TextInput))
+	return fmt.Sprintf("? Please specify the moniker\n> %s\n", m.TextInput.View())
 }
 
 type ExistingAppChecker struct {
@@ -262,7 +263,7 @@ type MinGasPriceInput struct {
 
 func NewMinGasPriceInput(state *RunL1NodeState) *MinGasPriceInput {
 	return &MinGasPriceInput{
-		TextInput: "",
+		TextInput: utils.NewTextInput(),
 		state:     state,
 	}
 }
@@ -274,7 +275,7 @@ func (m *MinGasPriceInput) Init() tea.Cmd {
 func (m *MinGasPriceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	input, done := m.TextInput.Update(msg)
 	if done {
-		m.state.minGasPrice = string(input)
+		m.state.minGasPrice = string(input.Text)
 		return m, tea.Quit
 	}
 	m.TextInput = input
@@ -286,5 +287,5 @@ func (m *MinGasPriceInput) View() string {
 	if !m.state.existingApp {
 		preText += "No existing .initia directory found. Creating a new one.\n"
 	}
-	return fmt.Sprintf("%s? Please specify min-gas-price (uinit)\n> %s\n", preText, string(m.TextInput))
+	return fmt.Sprintf("%s? Please specify min-gas-price (uinit)\n> %s\n", preText, m.TextInput.View())
 }

@@ -29,7 +29,7 @@ func NewHomepage() tea.Model {
 			Cursor: 0,
 		},
 		isFirstTimeSetup: utils.IsFirstTimeSetup(),
-		TextInput:        "",
+		TextInput:        utils.NewTextInput(),
 	}
 }
 
@@ -41,7 +41,7 @@ func (m *Homepage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.isFirstTimeSetup {
 		input, done := m.TextInput.Update(msg)
 		if done {
-			err := utils.SetConfig("common.gas_station_mnemonic", string(input))
+			err := utils.SetConfig("common.gas_station_mnemonic", string(input.Text))
 			if err != nil {
 				return nil, nil
 			}
@@ -69,7 +69,7 @@ func (m *Homepage) View() string {
 		view += fmt.Sprintf(
 			"It looks like this is your first time using Weave. Let's get started!\n"+
 				"Please set up a Gas Station account (The account that will hold the funds required by the "+
-				"OPinit-bots or relayer to send transactions):\n> %s\n", m.TextInput,
+				"OPinit-bots or relayer to send transactions):\n> %s\n", m.TextInput.View(),
 		)
 	} else {
 		view += "What would you like to do today?\n"
