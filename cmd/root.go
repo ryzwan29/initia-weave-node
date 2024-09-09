@@ -2,12 +2,13 @@ package cmd
 
 import (
 	"context"
-	"github.com/initia-labs/weave/models"
-	"github.com/initia-labs/weave/utils"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	"github.com/initia-labs/weave/models"
+	"github.com/initia-labs/weave/utils"
 )
 
 func Execute() error {
@@ -34,6 +35,8 @@ func Execute() error {
 			return nil
 		},
 	}
+
+	rootCmd.AddCommand(InitCommand())
 
 	return rootCmd.ExecuteContext(context.Background())
 }
