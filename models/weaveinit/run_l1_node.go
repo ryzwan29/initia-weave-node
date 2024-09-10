@@ -234,8 +234,7 @@ func (m *ExistingAppReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch *selected {
 		case UseCurrentApp:
 			m.state.replaceExistingApp = false
-			// TODO: Continue
-			fmt.Println("\n[info] Using current files")
+			return NewExistingGenesisChecker(m.state), utils.DoTick()
 		case ReplaceApp:
 			m.state.replaceExistingApp = true
 			return NewMinGasPriceInput(m.state), nil
