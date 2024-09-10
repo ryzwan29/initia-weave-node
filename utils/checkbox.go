@@ -65,3 +65,13 @@ func (s *CheckBox[T]) View() string {
 	}
 	return b.String()
 }
+
+func (s *CheckBox[T]) GetSelected() []T {
+	selected := make([]T, 0)
+	for idx, isSelected := range s.Selected {
+		if isSelected {
+			selected = append(selected, s.Options[idx])
+		}
+	}
+	return selected
+}
