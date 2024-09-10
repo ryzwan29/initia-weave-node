@@ -148,7 +148,6 @@ func (m *RunL1NodeMonikerInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
 		m.state.moniker = input.Text
-		fmt.Println("\n[info] state", m.state)
 		return NewExistingAppChecker(m.state), utils.DoTick()
 	}
 	m.TextInput = input
@@ -482,8 +481,7 @@ func (m *ExistingGenesisReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) 
 			// TODO: Continue
 			fmt.Println("\n[info] Using current genesis")
 		case ReplaceGenesis:
-			// TODO: Continue
-			fmt.Println("\n[info] Replacing genesis")
+			return NewGenesisEndpointInput(m.state), nil
 		}
 		return m, tea.Quit
 	}
@@ -531,7 +529,11 @@ func (m *GenesisEndpointInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *GenesisEndpointInput) View() string {
-	return fmt.Sprintf("i There is no config/genesis.json available. You will need to enter the required information to proceed.\n\n? Please specify the endpoint to fetch genesis.json\n> %s\n", m.TextInput.View())
+	preText := ""
+	if !m.state.existingGenesis {
+		preText += "i There is no config/genesis.json available. You will need to enter the required information to proceed.\n\n"
+	}
+	return fmt.Sprintf("%s? Please specify the endpoint to fetch genesis.json\n> %s\n", preText, m.TextInput.View())
 }
 
 type InitializingAppLoading struct {
