@@ -478,8 +478,8 @@ func (m *ExistingGenesisReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) 
 	if selected != nil {
 		switch *selected {
 		case UseCurrentGenesis:
-			// TODO: Continue
-			fmt.Println("\n[info] Using current genesis")
+			newLoader := NewInitializingAppLoading(m.state)
+			return newLoader, newLoader.Init()
 		case ReplaceGenesis:
 			return NewGenesisEndpointInput(m.state), nil
 		}
