@@ -88,7 +88,7 @@ func (m *RunL1NodeVersionInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
 		m.state.initiadVersion = input.Text
-		return NewRunL1NodeChainIdInput(m.state), nil
+		return NewRunL1NodeChainIdInput(m.state), cmd
 	}
 	m.TextInput = input
 	return m, cmd
@@ -118,7 +118,7 @@ func (m *RunL1NodeChainIdInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
 		m.state.chainId = input.Text
-		return NewRunL1NodeMonikerInput(m.state), nil
+		return NewRunL1NodeMonikerInput(m.state), cmd
 	}
 	m.TextInput = input
 	return m, cmd
@@ -277,7 +277,7 @@ func (m *MinGasPriceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
 		m.state.minGasPrice = input.Text
-		return NewEnableFeaturesCheckbox(m.state), nil
+		return NewEnableFeaturesCheckbox(m.state), cmd
 	}
 	m.TextInput = input
 	return m, cmd
@@ -359,7 +359,7 @@ func (m *SeedsInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
 		m.state.seeds = input.Text
-		return NewPersistentPeersInput(m.state), nil
+		return NewPersistentPeersInput(m.state), cmd
 	}
 	m.TextInput = input
 	return m, cmd
