@@ -67,9 +67,9 @@ func (m *Homepage) View() string {
 
 	if m.isFirstTimeSetup {
 		view += fmt.Sprintf(
-			"It looks like this is your first time using Weave. Let's get started!\n"+
-				"Please set up a Gas Station account (The account that will hold the funds required by the "+
-				"OPinit-bots or relayer to send transactions):\n> %s\n", m.TextInput.View(),
+			m.TextInput.View("It looks like this is your first time using Weave. Let's get started!\n" +
+				"Please set up a Gas Station account (The account that will hold the funds required by the " +
+				"OPinit-bots or relayer to send transactions):"),
 		)
 	} else {
 		view += "What would you like to do today?\n"

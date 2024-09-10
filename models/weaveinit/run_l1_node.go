@@ -95,7 +95,7 @@ func (m *RunL1NodeVersionInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *RunL1NodeVersionInput) View() string {
-	return fmt.Sprintf("? Please specify the initiad version\n> %s\n", m.TextInput.View())
+	return m.TextInput.View("Please specify the initiad version")
 }
 
 type RunL1NodeChainIdInput struct {
@@ -125,7 +125,7 @@ func (m *RunL1NodeChainIdInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *RunL1NodeChainIdInput) View() string {
-	return fmt.Sprintf("? Please specify the chain ID\n> %s\n", m.TextInput.View())
+	return m.TextInput.View("Please specify the chain ID")
 }
 
 type RunL1NodeMonikerInput struct {
@@ -155,7 +155,7 @@ func (m *RunL1NodeMonikerInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *RunL1NodeMonikerInput) View() string {
-	return fmt.Sprintf("? Please specify the moniker\n> %s\n", m.TextInput.View())
+	return m.TextInput.View("Please specify the moniker")
 }
 
 type ExistingAppChecker struct {
@@ -288,7 +288,7 @@ func (m *MinGasPriceInput) View() string {
 	if !m.state.existingApp {
 		preText += "i There is no config/app.toml or config/config.toml available. You will need to enter the required information to proceed.\n\n"
 	}
-	return fmt.Sprintf("%s? Please specify min-gas-price (uinit)\n> %s\n", preText, m.TextInput.View())
+	return fmt.Sprintf("%s%s\n", preText, m.TextInput.View("Please specify min-gas-price (uinit)"))
 }
 
 type EnableFeaturesCheckbox struct {
@@ -366,7 +366,7 @@ func (m *SeedsInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *SeedsInput) View() string {
-	return fmt.Sprintf("? Please specify seeds\n> %s\n", m.TextInput.View())
+	return m.TextInput.View("Please specify seeds")
 }
 
 type PersistentPeersInput struct {
@@ -396,7 +396,7 @@ func (m *PersistentPeersInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *PersistentPeersInput) View() string {
-	return fmt.Sprintf("? Please specify persistent_peers\n> %s\n", m.TextInput.View())
+	return m.TextInput.View("Please specify persistent_peers")
 }
 
 type ExistingGenesisChecker struct {
@@ -532,7 +532,7 @@ func (m *GenesisEndpointInput) View() string {
 	if !m.state.existingGenesis {
 		preText += "i There is no config/genesis.json available. You will need to enter the required information to proceed.\n\n"
 	}
-	return fmt.Sprintf("%s? Please specify the endpoint to fetch genesis.json\n> %s\n", preText, m.TextInput.View())
+	return fmt.Sprintf("%s%s\n", preText, m.TextInput.View("Please specify the endpoint to fetch genesis.json"))
 }
 
 type InitializingAppLoading struct {

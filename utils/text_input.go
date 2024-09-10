@@ -11,10 +11,11 @@ type TextInput struct {
 	Text        string
 	Cursor      int // Cursor position within the text
 	Placeholder string
+	Entered     bool
 }
 
 func NewTextInput() TextInput {
-	return TextInput{Text: "", Cursor: 0, Placeholder: "<todo: Jennie revisit placeholder>"}
+	return TextInput{Text: "", Cursor: 0, Placeholder: "<todo: Jennie revisit placeholder>", Entered: false}
 }
 
 func (ti TextInput) Update(msg tea.Msg) (TextInput, tea.Cmd, bool) {
@@ -46,10 +47,16 @@ func (ti TextInput) Update(msg tea.Msg) (TextInput, tea.Cmd, bool) {
 	return ti, nil, false
 }
 
-func (ti TextInput) View() string {
+func (ti TextInput) View(questionText string) string {
+	if !ti.Entered {
+		questionText = styles.Text("? ", styles.Cyan) + questionText + "\n> "
+	} else {
+		questionText = styles.Text("✓ ", styles.Green) + questionText + "\n> "
+	}
+
 	var beforeCursor, cursorChar, afterCursor string
 	if len(ti.Text) == 0 {
-		return styles.Text(ti.Placeholder, styles.Gray) + styles.Cursor(" ") + "\n\nPress Enter to submit, or Ctrl+c to quit."
+		return questionText + styles.Text(ti.Placeholder, styles.Gray) + styles.Cursor(" ") + "\n\nPress Enter to submit, or Ctrl+c to quit."
 	} else if ti.Cursor < len(ti.Text) {
 		// Cursor is within the text
 		beforeCursor = styles.Text(ti.Text[:ti.Cursor], styles.White)
@@ -62,5 +69,5 @@ func (ti TextInput) View() string {
 	}
 
 	// Compose the full view string
-	return fmt.Sprintf("%s%s%s\n\nPress Enter to submit, or Ctrl+c to quit.", beforeCursor, cursorChar, afterCursor)
+	return fmt.Sprintf("%s%s%s%s\n\nPress Enter to submit, or Ctrl+c to quit.", questionText, beforeCursor, cursorChar, afterCursor)
 }
