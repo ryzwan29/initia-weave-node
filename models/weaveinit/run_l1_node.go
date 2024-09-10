@@ -182,7 +182,7 @@ func (m *ExistingAppChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		}
 
-		initiaConfigPath := filepath.Join(homeDir, ".initia", "config")
+		initiaConfigPath := filepath.Join(homeDir, utils.InitiaConfigDirectory)
 		appTomlPath := filepath.Join(initiaConfigPath, "app.toml")
 		configTomlPath := filepath.Join(initiaConfigPath, "config.toml")
 		if !utils.FileOrFolderExists(configTomlPath) || !utils.FileOrFolderExists(appTomlPath) {
@@ -209,16 +209,16 @@ type ExistingAppReplaceSelect struct {
 type ExistingAppReplaceOption string
 
 const (
-	UseCurrent ExistingAppReplaceOption = "Use current files"
-	Replace    ExistingAppReplaceOption = "Replace"
+	UseCurrentApp ExistingAppReplaceOption = "Use current files"
+	ReplaceApp    ExistingAppReplaceOption = "Replace"
 )
 
 func NewExistingAppReplaceSelect(state *RunL1NodeState) *ExistingAppReplaceSelect {
 	return &ExistingAppReplaceSelect{
 		Selector: utils.Selector[ExistingAppReplaceOption]{
 			Options: []ExistingAppReplaceOption{
-				UseCurrent,
-				Replace,
+				UseCurrentApp,
+				ReplaceApp,
 			},
 		},
 		state: state,
@@ -233,11 +233,11 @@ func (m *ExistingAppReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	selected, cmd := m.Select(msg)
 	if selected != nil {
 		switch *selected {
-		case UseCurrent:
+		case UseCurrentApp:
 			m.state.replaceExistingApp = false
 			// TODO: Continue
 			fmt.Println("\n[info] Using current files")
-		case Replace:
+		case ReplaceApp:
 			m.state.replaceExistingApp = true
 			return NewMinGasPriceInput(m.state), nil
 		}
@@ -319,9 +319,10 @@ func (m *EnableFeaturesCheckbox) Init() tea.Cmd {
 func (m *EnableFeaturesCheckbox) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	cb, cmd, done := m.Select(msg)
 	if done {
-		fmt.Println("yo")
+		// TODO: Remove and pull this logic
+		return NewSeedsInput(m.state), nil
 	}
-	m.CheckBox = *cb
+
 	return m, cmd
 }
 
@@ -329,4 +330,161 @@ func (m *EnableFeaturesCheckbox) View() string {
 	view := "? Would you like to enable the following options?\n"
 	view += m.CheckBox.View()
 	return view + "\nUse arrow-keys. Space to select. Return to submit, or q to quit."
+}
+
+type SeedsInput struct {
+	utils.TextInput
+	state *RunL1NodeState
+}
+
+func NewSeedsInput(state *RunL1NodeState) *SeedsInput {
+	return &SeedsInput{
+		TextInput: utils.NewTextInput(),
+		state:     state,
+	}
+}
+
+func (m *SeedsInput) Init() tea.Cmd {
+	return nil
+}
+
+func (m *SeedsInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	input, done := m.TextInput.Update(msg)
+	if done {
+		m.state.seeds = input.Text
+		return NewPersistentPeersInput(m.state), nil
+	}
+	m.TextInput = input
+	return m, nil
+}
+
+func (m *SeedsInput) View() string {
+	return fmt.Sprintf("? Please specify seeds\n> %s\n", m.TextInput.View())
+}
+
+type PersistentPeersInput struct {
+	utils.TextInput
+	state *RunL1NodeState
+}
+
+func NewPersistentPeersInput(state *RunL1NodeState) *PersistentPeersInput {
+	return &PersistentPeersInput{
+		TextInput: utils.NewTextInput(),
+		state:     state,
+	}
+}
+
+func (m *PersistentPeersInput) Init() tea.Cmd {
+	return nil
+}
+
+func (m *PersistentPeersInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	input, done := m.TextInput.Update(msg)
+	if done {
+		m.state.persistentPeers = input.Text
+		return NewExistingGenesisChecker(m.state), utils.DoTick()
+	}
+	m.TextInput = input
+	return m, nil
+}
+
+func (m *PersistentPeersInput) View() string {
+	return fmt.Sprintf("? Please specify persistent_peers\n> %s\n", m.TextInput.View())
+}
+
+type ExistingGenesisChecker struct {
+	state *RunL1NodeState
+}
+
+func NewExistingGenesisChecker(state *RunL1NodeState) *ExistingGenesisChecker {
+	return &ExistingGenesisChecker{
+		state: state,
+	}
+}
+
+func (m *ExistingGenesisChecker) Init() tea.Cmd {
+	return utils.DoTick()
+}
+
+func (m *ExistingGenesisChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg.(type) {
+	case utils.TickMsg:
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			fmt.Printf("[error] Failed to get user home directory: %v\n", err)
+			return m, tea.Quit
+		}
+
+		initiaConfigPath := filepath.Join(homeDir, utils.InitiaConfigDirectory)
+		genesisFilePath := filepath.Join(initiaConfigPath, "genesis.json")
+		if !utils.FileOrFolderExists(genesisFilePath) {
+			m.state.existingGenesis = false
+			// TODO: Continue
+		} else {
+			m.state.existingGenesis = true
+			return NewExistingGenesisReplaceSelect(m.state), nil
+		}
+	default:
+		return m, nil
+	}
+}
+
+func (m *ExistingGenesisChecker) View() string {
+	return "Checking for existing Initia genesis file..."
+}
+
+type ExistingGenesisReplaceSelect struct {
+	utils.Selector[ExistingGenesisReplaceOption]
+	state *RunL1NodeState
+}
+
+type ExistingGenesisReplaceOption string
+
+const (
+	UseCurrentGenesis ExistingGenesisReplaceOption = "Use current one"
+	ReplaceGenesis    ExistingGenesisReplaceOption = "Replace"
+)
+
+func NewExistingGenesisReplaceSelect(state *RunL1NodeState) *ExistingGenesisReplaceSelect {
+	return &ExistingGenesisReplaceSelect{
+		Selector: utils.Selector[ExistingGenesisReplaceOption]{
+			Options: []ExistingGenesisReplaceOption{
+				UseCurrentGenesis,
+				ReplaceGenesis,
+			},
+		},
+		state: state,
+	}
+}
+
+func (m *ExistingGenesisReplaceSelect) Init() tea.Cmd {
+	return nil
+}
+
+func (m *ExistingGenesisReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	selected, cmd := m.Select(msg)
+	if selected != nil {
+		switch *selected {
+		case UseCurrentGenesis:
+			// TODO: Continue
+			fmt.Println("\n[info] Using current genesis")
+		case ReplaceGenesis:
+			return NewMinGasPriceInput(m.state), nil
+		}
+		return m, tea.Quit
+	}
+
+	return m, cmd
+}
+
+func (m *ExistingGenesisReplaceSelect) View() string {
+	view := "? Existing config/genesis.json detected. Would you like to use the current one or replace it?\n"
+	for i, option := range m.Options {
+		if i == m.Cursor {
+			view += "(■) " + string(option) + "\n"
+		} else {
+			view += "( ) " + string(option) + "\n"
+		}
+	}
+	return view + "\nPress Enter to select, or q to quit."
 }
