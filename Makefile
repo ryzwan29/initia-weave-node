@@ -27,4 +27,5 @@ $(BUILDDIR)/:
 	mkdir -p $(BUILDDIR)/
 
 test: build
+	clear
 	./weave

@@ -5,7 +5,6 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/initia-labs/weave/models/weaveinit"
-	"github.com/initia-labs/weave/styles"
 	"github.com/initia-labs/weave/utils"
 )
 
@@ -42,7 +41,7 @@ func (m *Homepage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.isFirstTimeSetup {
 		input, cmd, done := m.TextInput.Update(msg)
 		if done {
-			err := utils.SetConfig("common.gas_station_mnemonic", string(input.Text))
+			err := utils.SetConfig("common.gas_station_mnemonic", input.Text)
 			if err != nil {
 				return nil, nil
 			}
@@ -84,6 +83,5 @@ func (m *Homepage) View() string {
 		view += "\nPress Enter to select, or q to quit."
 	}
 
-	view += styles.Text("\n?", styles.Cyan) + " Please specify the endpoint to fetch genesis.json " + styles.Text("> add in http format", styles.Gray)
 	return view
 }

@@ -429,7 +429,8 @@ func (m *ExistingGenesisChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if !utils.FileOrFolderExists(genesisFilePath) {
 			m.state.existingGenesis = false
 			if m.state.network == string(Local) {
-				return m, tea.Quit
+				newLoader := NewInitializingAppLoading(m.state)
+				return newLoader, newLoader.Init()
 			}
 			return NewGenesisEndpointInput(m.state), nil
 		} else {
@@ -528,5 +529,30 @@ func (m *GenesisEndpointInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *GenesisEndpointInput) View() string {
-	return fmt.Sprintf("i There is no config/genesis.json available. You will need to enter the required information to proceed.\n\nPlease specify the endpoint to fetch genesis.json\n> %s\n", m.TextInput.View())
+	return fmt.Sprintf("i There is no config/genesis.json available. You will need to enter the required information to proceed.\n\n? Please specify the endpoint to fetch genesis.json\n> %s\n", m.TextInput.View())
+}
+
+type InitializingAppLoading struct {
+	utils.Loading
+	state *RunL1NodeState
+}
+
+func NewInitializingAppLoading(state *RunL1NodeState) *InitializingAppLoading {
+	return &InitializingAppLoading{
+		Loading: utils.NewLoading("Initializing Initia App..."),
+		state:   state,
+	}
+}
+
+func (m *InitializingAppLoading) Init() tea.Cmd {
+	return m.Loading.Init()
+}
+
+func (m *InitializingAppLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	md, cmd := m.Loading.Update(msg)
+	return md, cmd
+}
+
+func (m *InitializingAppLoading) View() string {
+	return m.Loading.View()
 }
