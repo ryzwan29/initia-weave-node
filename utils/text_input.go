@@ -15,12 +15,12 @@ func NewTextInput() TextInput {
 	return TextInput{Text: "", Cursor: 0}
 }
 
-func (ti TextInput) Update(msg tea.Msg) (TextInput, bool) {
+func (ti TextInput) Update(msg tea.Msg) (TextInput, tea.Cmd, bool) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyEnter:
-			return ti, true
+			return ti, nil, true
 		case tea.KeyBackspace, tea.KeyCtrlH:
 			if ti.Cursor > 0 && len(ti.Text) > 0 {
 				ti.Text = ti.Text[:ti.Cursor-1] + ti.Text[ti.Cursor:]
@@ -37,9 +37,11 @@ func (ti TextInput) Update(msg tea.Msg) (TextInput, bool) {
 			if ti.Cursor < len(ti.Text) {
 				ti.Cursor++
 			}
+		case tea.KeyCtrlC:
+			return ti, tea.Quit, false
 		}
 	}
-	return ti, false
+	return ti, nil, false
 }
 
 func (ti TextInput) View() string {
@@ -59,5 +61,5 @@ func (ti TextInput) View() string {
 
 	// Render the text with the cursor
 	// Use reverse video for the cursor character to highlight it
-	return fmt.Sprintf("%s\x1b[7m%s\x1b[0m%s", beforeCursor, cursorChar, afterCursor)
+	return fmt.Sprintf("%s\x1b[7m%s\x1b[0m%s\n\nPress Enter to submit, or Ctrl+c to quit.", beforeCursor, cursorChar, afterCursor)
 }

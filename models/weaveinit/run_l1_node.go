@@ -85,13 +85,13 @@ func (m *RunL1NodeVersionInput) Init() tea.Cmd {
 }
 
 func (m *RunL1NodeVersionInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	input, done := m.TextInput.Update(msg)
+	input, cmd, done := m.TextInput.Update(msg)
 	if done {
 		m.state.initiadVersion = input.Text
 		return NewRunL1NodeChainIdInput(m.state), nil
 	}
 	m.TextInput = input
-	return m, nil
+	return m, cmd
 }
 
 func (m *RunL1NodeVersionInput) View() string {
@@ -115,13 +115,13 @@ func (m *RunL1NodeChainIdInput) Init() tea.Cmd {
 }
 
 func (m *RunL1NodeChainIdInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	input, done := m.TextInput.Update(msg)
+	input, cmd, done := m.TextInput.Update(msg)
 	if done {
 		m.state.chainId = input.Text
 		return NewRunL1NodeMonikerInput(m.state), nil
 	}
 	m.TextInput = input
-	return m, nil
+	return m, cmd
 }
 
 func (m *RunL1NodeChainIdInput) View() string {
@@ -145,14 +145,14 @@ func (m *RunL1NodeMonikerInput) Init() tea.Cmd {
 }
 
 func (m *RunL1NodeMonikerInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	input, done := m.TextInput.Update(msg)
+	input, cmd, done := m.TextInput.Update(msg)
 	if done {
 		m.state.moniker = input.Text
 		fmt.Println("\n[info] state", m.state)
 		return NewExistingAppChecker(m.state), utils.DoTick()
 	}
 	m.TextInput = input
-	return m, nil
+	return m, cmd
 }
 
 func (m *RunL1NodeMonikerInput) View() string {
@@ -276,13 +276,13 @@ func (m *MinGasPriceInput) Init() tea.Cmd {
 }
 
 func (m *MinGasPriceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	input, done := m.TextInput.Update(msg)
+	input, cmd, done := m.TextInput.Update(msg)
 	if done {
 		m.state.minGasPrice = input.Text
 		return NewEnableFeaturesCheckbox(m.state), nil
 	}
 	m.TextInput = input
-	return m, nil
+	return m, cmd
 }
 
 func (m *MinGasPriceInput) View() string {
@@ -358,13 +358,13 @@ func (m *SeedsInput) Init() tea.Cmd {
 }
 
 func (m *SeedsInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	input, done := m.TextInput.Update(msg)
+	input, cmd, done := m.TextInput.Update(msg)
 	if done {
 		m.state.seeds = input.Text
 		return NewPersistentPeersInput(m.state), nil
 	}
 	m.TextInput = input
-	return m, nil
+	return m, cmd
 }
 
 func (m *SeedsInput) View() string {
@@ -388,13 +388,13 @@ func (m *PersistentPeersInput) Init() tea.Cmd {
 }
 
 func (m *PersistentPeersInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	input, done := m.TextInput.Update(msg)
+	input, cmd, done := m.TextInput.Update(msg)
 	if done {
 		m.state.persistentPeers = input.Text
 		return NewExistingGenesisChecker(m.state), utils.DoTick()
 	}
 	m.TextInput = input
-	return m, nil
+	return m, cmd
 }
 
 func (m *PersistentPeersInput) View() string {
@@ -518,13 +518,13 @@ func (m *GenesisEndpointInput) Init() tea.Cmd {
 }
 
 func (m *GenesisEndpointInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	input, done := m.TextInput.Update(msg)
+	input, cmd, done := m.TextInput.Update(msg)
 	if done {
 		m.state.genesisEndpoint = input.Text
 		return m, tea.Quit
 	}
 	m.TextInput = input
-	return m, nil
+	return m, cmd
 }
 
 func (m *GenesisEndpointInput) View() string {

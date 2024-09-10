@@ -39,7 +39,7 @@ func (m *Homepage) Init() tea.Cmd {
 
 func (m *Homepage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.isFirstTimeSetup {
-		input, done := m.TextInput.Update(msg)
+		input, cmd, done := m.TextInput.Update(msg)
 		if done {
 			err := utils.SetConfig("common.gas_station_mnemonic", string(input.Text))
 			if err != nil {
@@ -48,7 +48,7 @@ func (m *Homepage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return NewHomepage(), nil
 		}
 		m.TextInput = input
-		return m, nil
+		return m, cmd
 	}
 
 	selected, cmd := m.Select(msg)
