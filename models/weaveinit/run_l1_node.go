@@ -87,7 +87,7 @@ func (m *RunL1NodeVersionInput) Init() tea.Cmd {
 func (m *RunL1NodeVersionInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	input, done := m.TextInput.Update(msg)
 	if done {
-		m.state.initiadVersion = string(input.Text)
+		m.state.initiadVersion = input.Text
 		return NewRunL1NodeChainIdInput(m.state), nil
 	}
 	m.TextInput = input
@@ -117,7 +117,7 @@ func (m *RunL1NodeChainIdInput) Init() tea.Cmd {
 func (m *RunL1NodeChainIdInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	input, done := m.TextInput.Update(msg)
 	if done {
-		m.state.chainId = string(input.Text)
+		m.state.chainId = input.Text
 		return NewRunL1NodeMonikerInput(m.state), nil
 	}
 	m.TextInput = input
@@ -147,7 +147,7 @@ func (m *RunL1NodeMonikerInput) Init() tea.Cmd {
 func (m *RunL1NodeMonikerInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	input, done := m.TextInput.Update(msg)
 	if done {
-		m.state.moniker = string(input.Text)
+		m.state.moniker = input.Text
 		fmt.Println("\n[info] state", m.state)
 		return NewExistingAppChecker(m.state), utils.DoTick()
 	}
@@ -182,8 +182,10 @@ func (m *ExistingAppChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		}
 
-		configTomlPath := filepath.Join(homeDir, ".initia", "config", "config.toml")
-		if !utils.FileOrFolderExists(configTomlPath) {
+		initiaConfigPath := filepath.Join(homeDir, ".initia", "config")
+		appTomlPath := filepath.Join(initiaConfigPath, "app.toml")
+		configTomlPath := filepath.Join(initiaConfigPath, "config.toml")
+		if !utils.FileOrFolderExists(configTomlPath) || !utils.FileOrFolderExists(appTomlPath) {
 			m.state.existingApp = false
 			return NewMinGasPriceInput(m.state), nil
 		} else {
@@ -233,6 +235,7 @@ func (m *ExistingAppReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch *selected {
 		case UseCurrent:
 			m.state.replaceExistingApp = false
+			// TODO: Continue
 			fmt.Println("\n[info] Using current files")
 		case Replace:
 			m.state.replaceExistingApp = true
@@ -275,8 +278,8 @@ func (m *MinGasPriceInput) Init() tea.Cmd {
 func (m *MinGasPriceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	input, done := m.TextInput.Update(msg)
 	if done {
-		m.state.minGasPrice = string(input.Text)
-		return m, tea.Quit
+		m.state.minGasPrice = input.Text
+		return NewEnableFeaturesCheckbox(m.state), nil
 	}
 	m.TextInput = input
 	return m, nil
@@ -285,7 +288,51 @@ func (m *MinGasPriceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *MinGasPriceInput) View() string {
 	preText := ""
 	if !m.state.existingApp {
-		preText += "No existing .initia directory found. Creating a new one.\n"
+		preText += "i There is no config/app.toml or config/config.toml available. You will need to enter the required information to proceed.\n\n"
 	}
 	return fmt.Sprintf("%s? Please specify min-gas-price (uinit)\n> %s\n", preText, m.TextInput.View())
+}
+
+type EnableFeaturesCheckbox struct {
+	utils.Selector[EnableFeaturesOption]
+	state *RunL1NodeState
+}
+
+type EnableFeaturesOption string
+
+const (
+	LCD  EnableFeaturesOption = "LCD API"
+	gRPC EnableFeaturesOption = "gRPC"
+)
+
+func NewEnableFeaturesCheckbox(state *RunL1NodeState) *EnableFeaturesCheckbox {
+	return &EnableFeaturesCheckbox{
+		Selector: utils.Selector[EnableFeaturesOption]{
+			Options: []EnableFeaturesOption{
+				LCD,
+				gRPC,
+			},
+		},
+		state: state,
+	}
+}
+
+func (m *EnableFeaturesCheckbox) Init() tea.Cmd {
+	return nil
+}
+
+func (m *EnableFeaturesCheckbox) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	return m, nil
+}
+
+func (m *EnableFeaturesCheckbox) View() string {
+	view := "? Would you like to enable the following options?\n"
+	for i, option := range m.Options {
+		if i == m.Cursor {
+			view += "(■) " + string(option) + "\n"
+		} else {
+			view += "( ) " + string(option) + "\n"
+		}
+	}
+	return view + "\nUse arrow-keys. Space to select. Return to submit, or q to quit."
 }
