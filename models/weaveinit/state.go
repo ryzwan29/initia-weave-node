@@ -8,7 +8,10 @@ type RunL1NodeState struct {
 	existingApp        bool
 	replaceExistingApp bool
 	minGasPrice        string
+	enableLCD          bool
+	enableGRPC         bool
 	seeds              string
 	persistentPeers    string
 	existingGenesis    bool
+	genesisEndpoint    string
 }

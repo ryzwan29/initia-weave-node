@@ -319,7 +319,16 @@ func (m *EnableFeaturesCheckbox) Init() tea.Cmd {
 func (m *EnableFeaturesCheckbox) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	cb, cmd, done := m.Select(msg)
 	if done {
-		// TODO: Remove and pull this logic
+		for idx, isSelected := range cb.Selected {
+			if isSelected {
+				switch cb.Options[idx] {
+				case LCD:
+					m.state.enableLCD = true
+				case gRPC:
+					m.state.enableGRPC = true
+				}
+			}
+		}
 		return NewSeedsInput(m.state), nil
 	}
 
@@ -416,10 +425,13 @@ func (m *ExistingGenesisChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		initiaConfigPath := filepath.Join(homeDir, utils.InitiaConfigDirectory)
-		genesisFilePath := filepath.Join(initiaConfigPath, "genesis.json")
+		genesisFilePath := filepath.Join(initiaConfigPath, "genesis.jsona")
 		if !utils.FileOrFolderExists(genesisFilePath) {
 			m.state.existingGenesis = false
-			// TODO: Continue
+			if m.state.network == string(Local) {
+				return m, tea.Quit
+			}
+			return NewGenesisEndpointInput(m.state), nil
 		} else {
 			m.state.existingGenesis = true
 			return NewExistingGenesisReplaceSelect(m.state), nil
@@ -469,7 +481,7 @@ func (m *ExistingGenesisReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) 
 			// TODO: Continue
 			fmt.Println("\n[info] Using current genesis")
 		case ReplaceGenesis:
-			return NewMinGasPriceInput(m.state), nil
+			fmt.Println("\n[info] Replacing genesis")
 		}
 		return m, tea.Quit
 	}
@@ -487,4 +499,34 @@ func (m *ExistingGenesisReplaceSelect) View() string {
 		}
 	}
 	return view + "\nPress Enter to select, or q to quit."
+}
+
+type GenesisEndpointInput struct {
+	utils.TextInput
+	state *RunL1NodeState
+}
+
+func NewGenesisEndpointInput(state *RunL1NodeState) *GenesisEndpointInput {
+	return &GenesisEndpointInput{
+		TextInput: utils.NewTextInput(),
+		state:     state,
+	}
+}
+
+func (m *GenesisEndpointInput) Init() tea.Cmd {
+	return nil
+}
+
+func (m *GenesisEndpointInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	input, done := m.TextInput.Update(msg)
+	if done {
+		m.state.genesisEndpoint = input.Text
+		return m, tea.Quit
+	}
+	m.TextInput = input
+	return m, nil
+}
+
+func (m *GenesisEndpointInput) View() string {
+	return fmt.Sprintf("i There is no config/genesis.json available. You will need to enter the required information to proceed.\n\nPlease specify the endpoint to fetch genesis.json\n> %s\n", m.TextInput.View())
 }
