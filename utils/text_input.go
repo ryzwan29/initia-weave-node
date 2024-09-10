@@ -4,15 +4,17 @@ import (
 	"fmt"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/initia-labs/weave/styles"
 )
 
 type TextInput struct {
-	Text   string
-	Cursor int // Cursor position within the text
+	Text        string
+	Cursor      int // Cursor position within the text
+	Placeholder string
 }
 
 func NewTextInput() TextInput {
-	return TextInput{Text: "", Cursor: 0}
+	return TextInput{Text: "", Cursor: 0, Placeholder: "<todo: Jennie revisit placeholder>"}
 }
 
 func (ti TextInput) Update(msg tea.Msg) (TextInput, tea.Cmd, bool) {
@@ -46,20 +48,19 @@ func (ti TextInput) Update(msg tea.Msg) (TextInput, tea.Cmd, bool) {
 
 func (ti TextInput) View() string {
 	var beforeCursor, cursorChar, afterCursor string
-
-	if ti.Cursor < len(ti.Text) {
+	if len(ti.Text) == 0 {
+		return styles.Text(ti.Placeholder, styles.Gray) + styles.Cursor(" ") + "\n\nPress Enter to submit, or Ctrl+c to quit."
+	} else if ti.Cursor < len(ti.Text) {
 		// Cursor is within the text
-		beforeCursor = ti.Text[:ti.Cursor]
-		cursorChar = ti.Text[ti.Cursor : ti.Cursor+1] // Character at the cursor
-		afterCursor = ti.Text[ti.Cursor+1:]           // Text after the cursor
+		beforeCursor = styles.Text(ti.Text[:ti.Cursor], styles.White)
+		cursorChar = styles.Cursor(ti.Text[ti.Cursor : ti.Cursor+1])
+		afterCursor = styles.Text(ti.Text[ti.Cursor+1:], styles.White)
 	} else {
 		// Cursor is at the end of the text
-		beforeCursor = ti.Text
-		cursorChar = " " // Use a space to represent the cursor at the end
-		afterCursor = "" // No text after the cursor
+		beforeCursor = styles.Text(ti.Text, styles.White)
+		cursorChar = styles.Cursor(" ")
 	}
 
-	// Render the text with the cursor
-	// Use reverse video for the cursor character to highlight it
-	return fmt.Sprintf("%s\x1b[7m%s\x1b[0m%s\n\nPress Enter to submit, or Ctrl+c to quit.", beforeCursor, cursorChar, afterCursor)
+	// Compose the full view string
+	return fmt.Sprintf("%s%s%s\n\nPress Enter to submit, or Ctrl+c to quit.", beforeCursor, cursorChar, afterCursor)
 }
