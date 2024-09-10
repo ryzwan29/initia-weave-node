@@ -294,7 +294,7 @@ func (m *MinGasPriceInput) View() string {
 }
 
 type EnableFeaturesCheckbox struct {
-	utils.Selector[EnableFeaturesOption]
+	utils.CheckBox[EnableFeaturesOption]
 	state *RunL1NodeState
 }
 
@@ -307,13 +307,8 @@ const (
 
 func NewEnableFeaturesCheckbox(state *RunL1NodeState) *EnableFeaturesCheckbox {
 	return &EnableFeaturesCheckbox{
-		Selector: utils.Selector[EnableFeaturesOption]{
-			Options: []EnableFeaturesOption{
-				LCD,
-				gRPC,
-			},
-		},
-		state: state,
+		CheckBox: *utils.NewCheckBox([]EnableFeaturesOption{LCD, gRPC}),
+		state:    state,
 	}
 }
 
@@ -322,17 +317,16 @@ func (m *EnableFeaturesCheckbox) Init() tea.Cmd {
 }
 
 func (m *EnableFeaturesCheckbox) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	return m, nil
+	cb, cmd, done := m.Select(msg)
+	if done {
+		fmt.Println("yo")
+	}
+	m.CheckBox = *cb
+	return m, cmd
 }
 
 func (m *EnableFeaturesCheckbox) View() string {
 	view := "? Would you like to enable the following options?\n"
-	for i, option := range m.Options {
-		if i == m.Cursor {
-			view += "(■) " + string(option) + "\n"
-		} else {
-			view += "( ) " + string(option) + "\n"
-		}
-	}
+	view += m.CheckBox.View()
 	return view + "\nUse arrow-keys. Space to select. Return to submit, or q to quit."
 }

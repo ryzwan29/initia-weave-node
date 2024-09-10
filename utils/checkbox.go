@@ -57,11 +57,11 @@ func (s *CheckBox[T]) View() string {
 		if i == s.Cursor {
 			cursor = ">"
 		}
-		selectedMark := " "
+		selectedMark := "○"
 		if s.Selected[i] {
-			selectedMark = "x"
+			selectedMark = "●"
 		}
-		b.WriteString(fmt.Sprintf("%s [%s] %v\n", cursor, selectedMark, option))
+		b.WriteString(fmt.Sprintf("%s %s %v\n", cursor, selectedMark, option))
 	}
 	return b.String()
 }
