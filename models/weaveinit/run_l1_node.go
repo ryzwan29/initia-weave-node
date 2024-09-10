@@ -425,7 +425,7 @@ func (m *ExistingGenesisChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		initiaConfigPath := filepath.Join(homeDir, utils.InitiaConfigDirectory)
-		genesisFilePath := filepath.Join(initiaConfigPath, "genesis.jsona")
+		genesisFilePath := filepath.Join(initiaConfigPath, "genesis.json")
 		if !utils.FileOrFolderExists(genesisFilePath) {
 			m.state.existingGenesis = false
 			if m.state.network == string(Local) {
@@ -482,6 +482,7 @@ func (m *ExistingGenesisReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) 
 			// TODO: Continue
 			fmt.Println("\n[info] Using current genesis")
 		case ReplaceGenesis:
+			// TODO: Continue
 			fmt.Println("\n[info] Replacing genesis")
 		}
 		return m, tea.Quit
@@ -522,7 +523,8 @@ func (m *GenesisEndpointInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
 		m.state.genesisEndpoint = input.Text
-		return m, tea.Quit
+		newLoader := NewInitializingAppLoading(m.state)
+		return newLoader, newLoader.Init()
 	}
 	m.TextInput = input
 	return m, cmd
