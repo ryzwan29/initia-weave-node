@@ -11,13 +11,15 @@ import (
 )
 
 type Spinner struct {
-	Frames []string
-	FPS    time.Duration
+	Frames   []string
+	Complete string
+	FPS      time.Duration
 }
 
 var Dot = Spinner{
-	Frames: []string{"⣾ ", "⣽ ", "⣻ ", "⢿ ", "⡿ ", "⣟ ", "⣯ ", "⣷ "},
-	FPS:    time.Second / 10, //nolint:gomnd
+	Frames:   []string{"⣾ ", "⣽ ", "⣻ ", "⢿ ", "⡿ ", "⣟ ", "⣯ ", "⣷ "},
+	Complete: styles.CorrectMark,
+	FPS:      time.Second / 10, //nolint:gomnd
 }
 
 type Loading struct {
@@ -25,8 +27,9 @@ type Loading struct {
 	Style   lipgloss.Style
 	Text    string
 
-	quitting bool
-	frame    int
+	quitting   bool
+	completing bool
+	frame      int
 }
 
 func NewLoading(text string) Loading {
@@ -47,6 +50,9 @@ func (m Loading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "q", "esc", "ctrl+c":
 			m.quitting = true
+			return m, tea.Quit
+		case "f":
+			m.completing = true
 			return m, tea.Quit
 		default:
 			return m, nil
@@ -69,6 +75,9 @@ func (m Loading) View() string {
 	}
 	spinner := m.Style.Render(m.Spinner.Frames[m.frame])
 
+	if m.completing {
+		return fmt.Sprintf("\n%s %s\n", m.Spinner.Complete, m.Text)
+	}
 	str := fmt.Sprintf("\n%s %s\n", spinner, m.Text)
 	if m.quitting {
 		return str + "\n"
