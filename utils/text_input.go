@@ -24,7 +24,7 @@ func (ti TextInput) Update(msg tea.Msg) (TextInput, tea.Cmd, bool) {
 		switch msg.Type {
 		case tea.KeyEnter:
 			ti.Entered = true
-			return ti, nil, false
+			return ti, nil, true
 		case tea.KeyBackspace, tea.KeyCtrlH:
 			if ti.Cursor > 0 && len(ti.Text) > 0 {
 				ti.Text = ti.Text[:ti.Cursor-1] + ti.Text[ti.Cursor:]
