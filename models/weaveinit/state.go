@@ -1,6 +1,9 @@
 package weaveinit
 
+import "github.com/initia-labs/weave/types"
+
 type RunL1NodeState struct {
+	weave              types.WeaveState
 	network            string
 	initiadVersion     string
 	chainId            string

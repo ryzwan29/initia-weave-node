@@ -67,3 +67,22 @@ func RenderPrompt(text string, highlights []string, status PromptStatus) string 
 	// Return the prompt with the highlighted text
 	return prompt + text
 }
+
+type ResponseSeparator int64
+
+const (
+	ArrowSeparator ResponseSeparator = iota
+	DotsSeparator
+)
+
+func RenderPreviousResponse(separator ResponseSeparator, question string, highlights []string, answer string) string {
+	var separatorString string
+	switch separator {
+	case ArrowSeparator:
+		separatorString = Text(" > ", Gray)
+	case DotsSeparator:
+		separatorString = Text(" ... ", Gray)
+	}
+
+	return RenderPrompt(question, highlights, Completed) + separatorString + answer + "\n"
+}

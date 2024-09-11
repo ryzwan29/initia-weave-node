@@ -2,6 +2,7 @@ package weaveinit
 
 import (
 	"fmt"
+	"github.com/initia-labs/weave/styles"
 	"os"
 	"path/filepath"
 
@@ -12,7 +13,8 @@ import (
 
 type RunL1NodeNetworkSelect struct {
 	utils.Selector[L1NodeNetworkOption]
-	state *RunL1NodeState
+	state    *RunL1NodeState
+	question string
 }
 
 type L1NodeNetworkOption string
@@ -32,8 +34,13 @@ func NewRunL1NodeNetworkSelect(state *RunL1NodeState) *RunL1NodeNetworkSelect {
 				Local,
 			},
 		},
-		state: state,
+		state:    state,
+		question: "Which network will your node participate in?",
 	}
+}
+
+func (m *RunL1NodeNetworkSelect) GetQuestion() string {
+	return m.question
 }
 
 func (m *RunL1NodeNetworkSelect) Init() tea.Cmd {
@@ -43,7 +50,9 @@ func (m *RunL1NodeNetworkSelect) Init() tea.Cmd {
 func (m *RunL1NodeNetworkSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	selected, cmd := m.Select(msg)
 	if selected != nil {
-		m.state.network = string(*selected)
+		selectedString := string(*selected)
+		m.state.network = selectedString
+		m.state.weave.PreviousResponse += styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, selectedString)
 		switch *selected {
 		case Mainnet, Testnet:
 			return NewExistingAppChecker(m.state), utils.DoTick()
@@ -57,7 +66,11 @@ func (m *RunL1NodeNetworkSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *RunL1NodeNetworkSelect) View() string {
-	view := "? Which network will your node participate in?\n"
+	view := m.state.weave.PreviousResponse + styles.RenderPrompt(
+		"Which network will your node participate in?\n",
+		[]string{},
+		styles.Question,
+	)
 	for i, option := range m.Options {
 		if i == m.Cursor {
 			view += "(■) " + string(option) + "\n"
@@ -95,7 +108,7 @@ func (m *RunL1NodeVersionInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *RunL1NodeVersionInput) View() string {
-	return m.TextInput.View("Please specify the initiad version")
+	return m.state.weave.PreviousResponse + m.TextInput.View("Please specify the initiad version")
 }
 
 type RunL1NodeChainIdInput struct {

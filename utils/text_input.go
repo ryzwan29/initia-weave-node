@@ -11,11 +11,14 @@ type TextInput struct {
 	Text        string
 	Cursor      int // Cursor position within the text
 	Placeholder string
-	Entered     bool
 }
 
 func NewTextInput() TextInput {
-	return TextInput{Text: "", Cursor: 0, Placeholder: "<todo: Jennie revisit placeholder>", Entered: false}
+	return TextInput{
+		Text:        "",
+		Cursor:      0,
+		Placeholder: "<todo: Jennie revisit placeholder>",
+	}
 }
 
 func (ti TextInput) Update(msg tea.Msg) (TextInput, tea.Cmd, bool) {
@@ -23,7 +26,6 @@ func (ti TextInput) Update(msg tea.Msg) (TextInput, tea.Cmd, bool) {
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyEnter:
-			ti.Entered = true
 			return ti, nil, true
 		case tea.KeyBackspace, tea.KeyCtrlH:
 			if ti.Cursor > 0 && len(ti.Text) > 0 {
@@ -50,11 +52,7 @@ func (ti TextInput) Update(msg tea.Msg) (TextInput, tea.Cmd, bool) {
 }
 
 func (ti TextInput) View(questionText string) string {
-	if !ti.Entered {
-		questionText = styles.Text("? ", styles.Cyan) + questionText + "\n> "
-	} else {
-		questionText = styles.Text("✓ ", styles.Green) + questionText + "\n> "
-	}
+	questionText = styles.Text("? ", styles.Cyan) + questionText + "\n> "
 
 	var beforeCursor, cursorChar, afterCursor string
 	if len(ti.Text) == 0 {
