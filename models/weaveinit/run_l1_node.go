@@ -67,10 +67,10 @@ func (m *RunL1NodeNetworkSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *RunL1NodeNetworkSelect) View() string {
 	view := m.state.weave.PreviousResponse + styles.RenderPrompt(
-		"Which network will your node participate in?\n",
+		m.GetQuestion(),
 		[]string{},
 		styles.Question,
-	)
+	) + "\n"
 	for i, option := range m.Options {
 		if i == m.Cursor {
 			view += "(■) " + string(option) + "\n"
