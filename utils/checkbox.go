@@ -61,7 +61,7 @@ func (s *CheckBox[T]) View() string {
 		if s.Selected[i] {
 			selectedMark = "●"
 		}
-		b.WriteString(fmt.Sprintf("%s %s %v\n", cursor, selectedMark, option))
+		b.WriteString(fmt.Sprintf("%s %s %v\n\nUse arrow-keys. Space to select. Return to submit, or q to quit.", cursor, selectedMark, option))
 	}
 	return b.String()
 }
@@ -74,4 +74,14 @@ func (s *CheckBox[T]) GetSelected() []T {
 		}
 	}
 	return selected
+}
+
+func (s *CheckBox[T]) GetSelectedString() string {
+	var selected []string
+	for idx, isSelected := range s.Selected {
+		if isSelected {
+			selected = append(selected, fmt.Sprintf("%v", s.Options[idx]))
+		}
+	}
+	return strings.Join(selected[:], ",")
 }

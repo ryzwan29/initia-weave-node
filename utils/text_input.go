@@ -51,12 +51,10 @@ func (ti TextInput) Update(msg tea.Msg) (TextInput, tea.Cmd, bool) {
 	return ti, nil, false
 }
 
-func (ti TextInput) View(questionText string) string {
-	questionText = styles.Text("? ", styles.Cyan) + questionText + "\n> "
-
+func (ti TextInput) View() string {
 	var beforeCursor, cursorChar, afterCursor string
 	if len(ti.Text) == 0 {
-		return questionText + styles.Text(ti.Placeholder, styles.Gray) + styles.Cursor(" ") + "\n\nPress Enter to submit, or Ctrl+c to quit."
+		return "\n> " + styles.Text(ti.Placeholder, styles.Gray) + styles.Cursor(" ") + "\n\nPress Enter to submit, or Ctrl+c to quit."
 	} else if ti.Cursor < len(ti.Text) {
 		// Cursor is within the text
 		beforeCursor = styles.Text(ti.Text[:ti.Cursor], styles.White)
@@ -69,5 +67,5 @@ func (ti TextInput) View(questionText string) string {
 	}
 
 	// Compose the full view string
-	return fmt.Sprintf("%s%s%s%s\n\nPress Enter to submit, or Ctrl+c to quit.", questionText, beforeCursor, cursorChar, afterCursor)
+	return fmt.Sprintf("\n> %s%s%s\n\nPress Enter to submit, or Ctrl+c to quit.", beforeCursor, cursorChar, afterCursor)
 }
