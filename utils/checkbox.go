@@ -5,6 +5,8 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+
+	"github.com/initia-labs/weave/styles"
 )
 
 type CheckBox[T any] struct {
@@ -55,14 +57,15 @@ func (s *CheckBox[T]) View() string {
 		// Mark selected items and the current cursor
 		cursor := " "
 		if i == s.Cursor {
-			cursor = ">"
+			cursor = styles.Text(">", styles.Yellow)
 		}
 		selectedMark := "○"
 		if s.Selected[i] {
 			selectedMark = "●"
 		}
-		b.WriteString(fmt.Sprintf("%s %s %v\n\nUse arrow-keys. Space to select. Return to submit, or q to quit.", cursor, selectedMark, option))
+		b.WriteString(fmt.Sprintf("%s %s %v\n", cursor, selectedMark, option))
 	}
+	b.WriteString("Use arrow-keys. Space to select. Return to submit, or q to quit.\n")
 	return b.String()
 }
 
@@ -83,5 +86,5 @@ func (s *CheckBox[T]) GetSelectedString() string {
 			selected = append(selected, fmt.Sprintf("%v", s.Options[idx]))
 		}
 	}
-	return strings.Join(selected[:], ",")
+	return strings.Join(selected[:], ", ")
 }

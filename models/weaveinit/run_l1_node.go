@@ -219,7 +219,7 @@ func (m *ExistingAppChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *ExistingAppChecker) View() string {
-	return "Checking for existing Initia app..."
+	return m.state.weave.PreviousResponse + "Checking for existing Initia app..."
 }
 
 type ExistingAppReplaceSelect struct {
@@ -259,7 +259,7 @@ func (m *ExistingAppReplaceSelect) Init() tea.Cmd {
 func (m *ExistingAppReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	selected, cmd := m.Select(msg)
 	if selected != nil {
-		m.state.weave.PreviousResponse = styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"config/app.toml", "config/config.toml"}, string(*selected))
+		m.state.weave.PreviousResponse += styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"config/app.toml", "config/config.toml"}, string(*selected))
 		switch *selected {
 		case UseCurrentApp:
 			m.state.replaceExistingApp = false
@@ -275,7 +275,7 @@ func (m *ExistingAppReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *ExistingAppReplaceSelect) View() string {
-	return styles.RenderPrompt("Existing config/app.toml and config/config.toml detected. Would you like to use the current files or replace them", []string{"config/app.toml", "config/config.toml"}, styles.Question) + m.Selector.View()
+	return m.state.weave.PreviousResponse + styles.RenderPrompt("Existing config/app.toml and config/config.toml detected. Would you like to use the current files or replace them", []string{"config/app.toml", "config/config.toml"}, styles.Question) + m.Selector.View()
 }
 
 type MinGasPriceInput struct {
@@ -369,7 +369,7 @@ func (m *EnableFeaturesCheckbox) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *EnableFeaturesCheckbox) View() string {
-	return m.state.weave.PreviousResponse + styles.RenderPrompt(m.GetQuestion(), []string{}, styles.Question) + m.CheckBox.View()
+	return m.state.weave.PreviousResponse + styles.RenderPrompt(m.GetQuestion(), []string{}, styles.Question) + "\n" + m.CheckBox.View()
 }
 
 type SeedsInput struct {
@@ -488,7 +488,7 @@ func (m *ExistingGenesisChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *ExistingGenesisChecker) View() string {
-	return "Checking for existing Initia genesis file..."
+	return m.state.weave.PreviousResponse + "Checking for existing Initia genesis file..."
 }
 
 type ExistingGenesisReplaceSelect struct {
@@ -528,7 +528,7 @@ func (m *ExistingGenesisReplaceSelect) Init() tea.Cmd {
 func (m *ExistingGenesisReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	selected, cmd := m.Select(msg)
 	if selected != nil {
-		m.state.weave.PreviousResponse = styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"config/genesis.json"}, string(*selected))
+		m.state.weave.PreviousResponse += styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"config/genesis.json"}, string(*selected))
 		switch *selected {
 		case UseCurrentGenesis:
 			newLoader := NewInitializingAppLoading(m.state)
@@ -543,13 +543,11 @@ func (m *ExistingGenesisReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) 
 }
 
 func (m *ExistingGenesisReplaceSelect) View() string {
-	view := m.state.weave.PreviousResponse + styles.RenderPrompt(
+	return m.state.weave.PreviousResponse + styles.RenderPrompt(
 		m.GetQuestion(),
 		[]string{"config/genesis.json"},
 		styles.Question,
-	) + "\n"
-
-	return view + m.Selector.View()
+	) + m.Selector.View()
 }
 
 type GenesisEndpointInput struct {

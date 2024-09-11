@@ -69,7 +69,7 @@ func (m Loading) View() string {
 	}
 	spinner := m.Style.Render(m.Spinner.Frames[m.frame])
 
-	str := fmt.Sprintf("\n%s %s\n\n", spinner, m.Text)
+	str := fmt.Sprintf("\n%s %s\n", spinner, m.Text)
 	if m.quitting {
 		return str + "\n"
 	}
