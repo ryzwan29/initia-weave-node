@@ -41,7 +41,7 @@ var (
 	QuestionMark    string = Text("? ", Cyan)
 	CorrectMark     string = Text("✓ ", Green)
 	InformationMark string = Text("i ", Cyan)
-	SelectorCursor  string = Text("> ", Cyan)
+	SelectorCursor  string = Text("> ", Yellow)
 )
 
 // RenderPrompt highlights phrases in the text if they match any phrase in the highlights list
