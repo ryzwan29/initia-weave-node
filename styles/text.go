@@ -41,6 +41,7 @@ var (
 	QuestionMark    string = Text("? ", Cyan)
 	CorrectMark     string = Text("✓ ", Green)
 	InformationMark string = Text("i ", Cyan)
+	SelectorCursor  string = Text("> ", Cyan)
 )
 
 // RenderPrompt highlights phrases in the text if they match any phrase in the highlights list
@@ -59,7 +60,12 @@ func RenderPrompt(text string, highlights []string, status PromptStatus) string 
 	for _, highlight := range highlights {
 		if strings.Contains(text, highlight) {
 			// Apply Cyan color to the matching highlight
-			coloredHighlight := BoldText(highlight, Cyan)
+			coloredHighlight := ""
+			if status == Information {
+				coloredHighlight = BoldText(highlight, White)
+			} else {
+				coloredHighlight = BoldText(highlight, Cyan)
+			}
 			text = strings.ReplaceAll(text, highlight, coloredHighlight)
 		}
 	}

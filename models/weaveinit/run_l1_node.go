@@ -2,12 +2,12 @@ package weaveinit
 
 import (
 	"fmt"
-	"github.com/initia-labs/weave/styles"
 	"os"
 	"path/filepath"
 
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/initia-labs/weave/styles"
 	"github.com/initia-labs/weave/utils"
 )
 
@@ -66,19 +66,7 @@ func (m *RunL1NodeNetworkSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *RunL1NodeNetworkSelect) View() string {
-	view := m.state.weave.PreviousResponse + styles.RenderPrompt(
-		m.GetQuestion(),
-		[]string{},
-		styles.Question,
-	) + "\n"
-	for i, option := range m.Options {
-		if i == m.Cursor {
-			view += "(■) " + string(option) + "\n"
-		} else {
-			view += "( ) " + string(option) + "\n"
-		}
-	}
-	return view + "\nPress Enter to select, or q to quit."
+	return styles.RenderPrompt("Which network will your node participate in?", []string{}, styles.Question) + m.Selector.View()
 }
 
 type RunL1NodeVersionInput struct {
@@ -287,19 +275,7 @@ func (m *ExistingAppReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *ExistingAppReplaceSelect) View() string {
-	view := m.state.weave.PreviousResponse + styles.RenderPrompt(
-		m.GetQuestion(),
-		[]string{},
-		styles.Question,
-	) + "\n"
-	for i, option := range m.Options {
-		if i == m.Cursor {
-			view += "(■) " + string(option) + "\n"
-		} else {
-			view += "( ) " + string(option) + "\n"
-		}
-	}
-	return view + "\nPress Enter to select, or q to quit."
+	return styles.RenderPrompt("Existing config/app.toml and config/config.toml detected. Would you like to use the current files or replace them", []string{"config/app.toml", "config/config.toml"}, styles.Question) + m.Selector.View()
 }
 
 type MinGasPriceInput struct {
@@ -569,17 +545,11 @@ func (m *ExistingGenesisReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) 
 func (m *ExistingGenesisReplaceSelect) View() string {
 	view := m.state.weave.PreviousResponse + styles.RenderPrompt(
 		m.GetQuestion(),
-		[]string{},
+		[]string{"config/genesis.json"},
 		styles.Question,
 	) + "\n"
-	for i, option := range m.Options {
-		if i == m.Cursor {
-			view += "(■) " + string(option) + "\n"
-		} else {
-			view += "( ) " + string(option) + "\n"
-		}
-	}
-	return view + "\nPress Enter to select, or q to quit."
+
+	return view + m.Selector.View()
 }
 
 type GenesisEndpointInput struct {

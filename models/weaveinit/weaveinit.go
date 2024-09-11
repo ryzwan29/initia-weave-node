@@ -2,6 +2,7 @@ package weaveinit
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/initia-labs/weave/styles"
 	"github.com/initia-labs/weave/utils"
 )
 
@@ -49,13 +50,5 @@ func (m *WeaveInit) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *WeaveInit) View() string {
-	view := "? What action would you like to perform?\n"
-	for i, option := range m.Options {
-		if i == m.Cursor {
-			view += "(■) " + string(option) + "\n"
-		} else {
-			view += "( ) " + string(option) + "\n"
-		}
-	}
-	return view + "\nPress Enter to select, or q to quit."
+	return styles.RenderPrompt("What action would you like to perform?", []string{}, styles.Question) + m.Selector.View()
 }

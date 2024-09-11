@@ -1,11 +1,10 @@
 package models
 
 import (
-	"fmt"
-	"github.com/initia-labs/weave/styles"
-
 	tea "github.com/charmbracelet/bubbletea"
+
 	"github.com/initia-labs/weave/models/weaveinit"
+	"github.com/initia-labs/weave/styles"
 	"github.com/initia-labs/weave/utils"
 )
 
@@ -67,20 +66,11 @@ func (m *Homepage) View() string {
 	view := "Hi 👋🏻 Weave is a CLI for managing Initia deployments.\n"
 
 	if m.isFirstTimeSetup {
-		view += fmt.Sprintf(
-			styles.RenderPrompt("It looks like this is your first time using Weave. Let's get started!\nPlease set up a Gas Station account (The account that will hold the funds required by the OPinit-bots or relayer to send transactions):", []string{}, styles.Information),
-			m.TextInput.View(),
-		)
+		view += styles.RenderPrompt("It looks like this is your first time using Weave. Let's get started!\n"+
+			"Please set up a Gas Station account (The account that will hold the funds required by the "+
+			"OPinit-bots or relayer to send transactions):", []string{}, styles.Information) + m.TextInput.View()
 	} else {
-		view += "What would you like to do today?\n"
-		for i, option := range m.Options {
-			if i == m.Cursor {
-				view += "(■) " + string(option) + "\n"
-			} else {
-				view += "( ) " + string(option) + "\n"
-			}
-		}
-		view += "\nPress Enter to select, or q to quit."
+		view += styles.RenderPrompt("What would you like to do today?", []string{}, styles.Question) + m.Selector.View()
 	}
 
 	return view
