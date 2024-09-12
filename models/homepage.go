@@ -130,7 +130,7 @@ type HomepageSettingUpGasStation struct {
 func NewHomepageSettingUpGasStation(prevRes string) tea.Model {
 	return &HomepageSettingUpGasStation{
 		previousResponse: prevRes,
-		loading:          utils.NewLoading("Setting up Gas Station accoun...", utils.DefaultWait()),
+		loading:          utils.NewLoading("Setting up Gas Station account...", utils.DefaultWait()),
 	}
 }
 
