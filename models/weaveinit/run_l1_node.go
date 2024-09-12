@@ -825,6 +825,7 @@ func (m *SnapshotEndpointInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *SnapshotEndpointInput) View() string {
+	// TODO: Correctly render terminal output
 	return m.state.weave.PreviousResponse + styles.RenderPrompt(m.GetQuestion(), []string{"snapshot url"}, styles.Question) + m.TextInput.View()
 }
 
@@ -863,5 +864,6 @@ func (m *StateSyncEndpointInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *StateSyncEndpointInput) View() string {
+	// TODO: Correctly render terminal output
 	return m.state.weave.PreviousResponse + styles.RenderPrompt(m.GetQuestion(), []string{"state sync RPC"}, styles.Question) + m.TextInput.View()
 }
