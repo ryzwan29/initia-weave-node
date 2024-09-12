@@ -817,8 +817,8 @@ func (m *SnapshotEndpointInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if done {
 		m.state.snapshotEndpoint = input.Text
 		m.state.weave.PreviousResponse += styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"snapshot url"}, input.Text)
-		// TODO: Continue
-		return m, tea.Quit
+		snapshotDownload := NewSnapshotDownloadLoading(m.state)
+		return snapshotDownload, snapshotDownload.Init()
 	}
 	m.TextInput = input
 	return m, cmd
@@ -866,4 +866,37 @@ func (m *StateSyncEndpointInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *StateSyncEndpointInput) View() string {
 	// TODO: Correctly render terminal output
 	return m.state.weave.PreviousResponse + styles.RenderPrompt(m.GetQuestion(), []string{"state sync RPC"}, styles.Question) + m.TextInput.View()
+}
+
+type SnapshotDownloadLoading struct {
+	utils.Loading
+	state *RunL1NodeState
+}
+
+func NewSnapshotDownloadLoading(state *RunL1NodeState) *SnapshotDownloadLoading {
+	return &SnapshotDownloadLoading{
+		Loading: utils.NewLoading("Downloading snapshot from the provided URL...", utils.DefaultWait()),
+		state:   state,
+	}
+}
+
+func (m *SnapshotDownloadLoading) Init() tea.Cmd {
+	return m.Loading.Init()
+}
+
+func (m *SnapshotDownloadLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	loader, cmd := m.Loading.Update(msg)
+	m.Loading = loader
+	if m.Loading.Completing {
+		m.state.weave.PreviousResponse += styles.RenderPreviousResponse(styles.NoSeparator, "Snapshot downloaded successfully.", []string{}, "")
+		return m, tea.Quit
+	}
+	return m, cmd
+}
+
+func (m *SnapshotDownloadLoading) View() string {
+	if m.Completing {
+		return m.state.weave.PreviousResponse
+	}
+	return m.state.weave.PreviousResponse + m.Loading.View()
 }
