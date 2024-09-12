@@ -90,7 +90,7 @@ type HomepageInitialization struct {
 func NewHomepageInitialization(prevRes string) tea.Model {
 	return &HomepageInitialization{
 		previousResponse: prevRes,
-		loading:          utils.NewLoading("Downloading ...", utils.Wait()),
+		loading:          utils.NewLoading("Initializing Weave...", utils.DefaultWait()),
 	}
 }
 

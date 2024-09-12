@@ -599,7 +599,7 @@ type InitializingAppLoading struct {
 
 func NewInitializingAppLoading(state *RunL1NodeState) *InitializingAppLoading {
 	return &InitializingAppLoading{
-		Loading: utils.NewLoading("Initializing Initia App...", utils.Wait()),
+		Loading: utils.NewLoading("Initializing Initia App...", utils.DefaultWait()),
 		state:   state,
 	}
 }

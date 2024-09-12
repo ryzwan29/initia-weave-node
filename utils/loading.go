@@ -60,7 +60,6 @@ func (m Loading) Update(msg tea.Msg) (Loading, tea.Cmd) {
 		if m.frame >= len(m.Spinner.Frames) {
 			m.frame = 0
 		}
-
 		return m, m.tick()
 	case EndLoading:
 		m.Completing = true
@@ -91,7 +90,7 @@ func (m Loading) tick() tea.Cmd {
 
 type EndLoading struct{}
 
-func Wait() tea.Cmd {
+func DefaultWait() tea.Cmd {
 	return func() tea.Msg {
 		time.Sleep(1500 * time.Millisecond)
 		return EndLoading{}
