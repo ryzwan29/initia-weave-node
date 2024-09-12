@@ -32,14 +32,14 @@ func (s *Selector[T]) Select(msg tea.Msg) (*T, tea.Cmd) {
 }
 
 func (s *Selector[T]) View() string {
-	view := "\n"
+	view := "\n\n"
 	for i, option := range s.Options {
 		if i == s.Cursor {
 			view += styles.SelectorCursor + styles.BoldText(fmt.Sprintf("%v", option), styles.White) + "\n"
 		} else {
-			view += "  " + styles.Text(fmt.Sprintf("%v", option), styles.White) + "\n"
+			view += "  " + styles.Text(fmt.Sprintf("%v", option), styles.Ivory) + "\n"
 		}
 	}
 
-	return view + "Press Enter to select, or q to quit.\n"
+	return view + styles.Text("\nPress Enter to select, or q to quit.\n", styles.Gray)
 }

@@ -54,18 +54,18 @@ func (ti TextInput) Update(msg tea.Msg) (TextInput, tea.Cmd, bool) {
 func (ti TextInput) View() string {
 	var beforeCursor, cursorChar, afterCursor string
 	if len(ti.Text) == 0 {
-		return "\n> " + styles.Text(ti.Placeholder, styles.Gray) + styles.Cursor(" ") + "\n\nPress Enter to submit, or Ctrl+c to quit."
+		return "\n" + styles.Text("> ", styles.Yellow) + styles.Text(ti.Placeholder, styles.Gray) + styles.Cursor(" ") + "\n\nPress Enter to submit, or Ctrl+c to quit."
 	} else if ti.Cursor < len(ti.Text) {
 		// Cursor is within the text
-		beforeCursor = styles.Text(ti.Text[:ti.Cursor], styles.White)
+		beforeCursor = styles.Text(ti.Text[:ti.Cursor], styles.Ivory)
 		cursorChar = styles.Cursor(ti.Text[ti.Cursor : ti.Cursor+1])
-		afterCursor = styles.Text(ti.Text[ti.Cursor+1:], styles.White)
+		afterCursor = styles.Text(ti.Text[ti.Cursor+1:], styles.Ivory)
 	} else {
 		// Cursor is at the end of the text
-		beforeCursor = styles.Text(ti.Text, styles.White)
+		beforeCursor = styles.Text(ti.Text, styles.Ivory)
 		cursorChar = styles.Cursor(" ")
 	}
 
 	// Compose the full view string
-	return fmt.Sprintf("\n> %s%s%s\n\nPress Enter to submit, or Ctrl+c to quit.", beforeCursor, cursorChar, afterCursor)
+	return fmt.Sprintf("\n%s %s%s%s\n\nPress Enter to submit, or Ctrl+c to quit.", styles.Text(">", styles.Yellow), beforeCursor, cursorChar, afterCursor)
 }

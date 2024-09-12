@@ -69,7 +69,7 @@ var (
 
 // RenderPrompt highlights phrases in the text if they match any phrase in the highlights list
 func RenderPrompt(text string, highlights []string, status PromptStatus) string {
-	prompt := ""
+	prompt := "\n"
 	switch status {
 	case Question:
 		prompt += QuestionMark
@@ -85,7 +85,7 @@ func RenderPrompt(text string, highlights []string, status PromptStatus) string 
 			// Apply Cyan color to the matching highlight
 			coloredHighlight := ""
 			if status == Information {
-				coloredHighlight = BoldText(highlight, White)
+				coloredHighlight = BoldText(highlight, Ivory)
 			} else {
 				coloredHighlight = BoldText(highlight, Cyan)
 			}

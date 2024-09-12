@@ -47,7 +47,7 @@ func (m *Homepage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			view := styles.RenderPrompt("Please set up a Gas Station account", []string{"Gas Station account"}, styles.Question) +
 				" " + styles.Text("(The account that will hold the funds required by the OPinit-bots or relayer to send transactions)", styles.Gray) +
-				"\n> " + styles.Text(input.Text, styles.White)
+				"\n> " + styles.Text(input.Text, styles.Ivory)
 			model := NewHomepageInitialization(view)
 			return model, model.Init()
 		}
