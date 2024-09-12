@@ -27,21 +27,22 @@ type Loading struct {
 	Style      lipgloss.Style
 	Text       string
 	Completing bool
-
-	quitting bool
-	frame    int
+	quitting   bool
+	frame      int
+	executeFn  tea.Cmd
 }
 
-func NewLoading(text string) Loading {
+func NewLoading(text string, executeFn tea.Cmd) Loading {
 	return Loading{
-		Spinner: Dot,
-		Style:   lipgloss.NewStyle().Foreground(lipgloss.Color(styles.Cyan)),
-		Text:    text,
+		Spinner:   Dot,
+		Style:     lipgloss.NewStyle().Foreground(lipgloss.Color(styles.Cyan)),
+		Text:      text,
+		executeFn: executeFn,
 	}
 }
 
 func (m Loading) Init() tea.Cmd {
-	return m.tick()
+	return tea.Batch(m.tick(), m.executeFn)
 }
 
 func (m Loading) Update(msg tea.Msg) (Loading, tea.Cmd) {
@@ -51,9 +52,6 @@ func (m Loading) Update(msg tea.Msg) (Loading, tea.Cmd) {
 		case "q", "esc", "ctrl+c":
 			m.quitting = true
 			return m, tea.Quit
-		case "f":
-			m.Completing = true
-			return m, nil
 		default:
 			return m, nil
 		}
@@ -64,6 +62,9 @@ func (m Loading) Update(msg tea.Msg) (Loading, tea.Cmd) {
 		}
 
 		return m, m.tick()
+	case EndLoading:
+		m.Completing = true
+		return m, nil
 	default:
 		return m, nil
 	}
@@ -86,4 +87,13 @@ func (m Loading) tick() tea.Cmd {
 	return tea.Tick(m.Spinner.FPS, func(t time.Time) tea.Msg {
 		return TickMsg(t)
 	})
+}
+
+type EndLoading struct{}
+
+func Wait() tea.Cmd {
+	return func() tea.Msg {
+		time.Sleep(1500 * time.Millisecond)
+		return EndLoading{}
+	}
 }

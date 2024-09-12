@@ -28,6 +28,29 @@ func Cursor(cursorChar string) string {
 	return cursorStyle.Render(cursorChar)
 }
 
+func FadeText(text string) string {
+	fadedColors := []HexColor{
+		"#00FFFF", // Cyan
+		"#00EEEE", // Intermediate color 1
+		"#00DDDD", // Intermediate color 2
+		"#00CCCC", // Intermediate color 3
+		"#00BBBB", // Intermediate color 4
+		"#00AAAA", // Intermediate color 5
+		"#009999", // Intermediate color 6
+		"#008B8B", // DarkCyan
+	}
+
+	result := ""
+
+	for i, char := range text {
+		// fmt.Println("-> ", i)
+		color := fadedColors[i*len(fadedColors)/len(text)]
+		result += Text(string(char), color)
+	}
+
+	return result
+}
+
 type PromptStatus string
 
 const (
