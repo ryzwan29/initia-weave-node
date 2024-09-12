@@ -869,34 +869,34 @@ func (m *StateSyncEndpointInput) View() string {
 }
 
 type SnapshotDownloadLoading struct {
-	utils.Loading
+	utils.Downloader
 	state *RunL1NodeState
 }
 
 func NewSnapshotDownloadLoading(state *RunL1NodeState) *SnapshotDownloadLoading {
 	return &SnapshotDownloadLoading{
-		Loading: utils.NewLoading("Downloading snapshot from the provided URL...", utils.DefaultWait()),
-		state:   state,
+		Downloader: *utils.NewDownloader(
+			"Downloading snapshot from the provided URL",
+			state.snapshotEndpoint,
+			"snapshot.weave",
+		),
+		state: state,
 	}
 }
 
 func (m *SnapshotDownloadLoading) Init() tea.Cmd {
-	return m.Loading.Init()
+	return m.Downloader.Init()
 }
 
 func (m *SnapshotDownloadLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	loader, cmd := m.Loading.Update(msg)
-	m.Loading = loader
-	if m.Loading.Completing {
-		m.state.weave.PreviousResponse += styles.RenderPreviousResponse(styles.NoSeparator, "Snapshot downloaded successfully.", []string{}, "")
+	if m.GetCompletion() {
 		return m, tea.Quit
 	}
+	downloader, cmd := m.Downloader.Update(msg)
+	m.Downloader = *downloader
 	return m, cmd
 }
 
 func (m *SnapshotDownloadLoading) View() string {
-	if m.Completing {
-		return m.state.weave.PreviousResponse
-	}
-	return m.state.weave.PreviousResponse + m.Loading.View()
+	return m.state.weave.PreviousResponse + m.Downloader.View()
 }

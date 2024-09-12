@@ -64,12 +64,12 @@ var (
 	QuestionMark    string = Text("? ", Cyan)
 	CorrectMark     string = Text("✓ ", Green)
 	InformationMark string = Text("i ", Cyan)
-	SelectorCursor  string = Text("> ", Yellow)
+	SelectorCursor  string = Text("> ", Cyan)
 )
 
 // RenderPrompt highlights phrases in the text if they match any phrase in the highlights list
 func RenderPrompt(text string, highlights []string, status PromptStatus) string {
-	prompt := "\n"
+	prompt := ""
 	switch status {
 	case Question:
 		prompt += QuestionMark
