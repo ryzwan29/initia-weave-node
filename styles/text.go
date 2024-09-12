@@ -74,21 +74,12 @@ func RenderPrompt(text string, highlights []string, status PromptStatus) string 
 	return prompt + text
 }
 
-type ResponseSeparator int64
-
-const (
-	ArrowSeparator ResponseSeparator = iota
-	DotsSeparator
+var (
+	NoSeparator    string = ""
+	ArrowSeparator string = Text(" > ", Gray)
+	DotsSeparator  string = Text(" ... ", Gray)
 )
 
-func RenderPreviousResponse(separator ResponseSeparator, question string, highlights []string, answer string) string {
-	var separatorString string
-	switch separator {
-	case ArrowSeparator:
-		separatorString = Text(" > ", Gray)
-	case DotsSeparator:
-		separatorString = Text(" ... ", Gray)
-	}
-
-	return RenderPrompt(question, highlights, Completed) + separatorString + answer + "\n"
+func RenderPreviousResponse(separator string, question string, highlights []string, answer string) string {
+	return RenderPrompt(question, highlights, Completed) + separator + answer + "\n"
 }

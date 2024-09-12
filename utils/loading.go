@@ -23,13 +23,13 @@ var Dot = Spinner{
 }
 
 type Loading struct {
-	Spinner Spinner
-	Style   lipgloss.Style
-	Text    string
+	Spinner    Spinner
+	Style      lipgloss.Style
+	Text       string
+	Completing bool
 
-	quitting   bool
-	completing bool
-	frame      int
+	quitting bool
+	frame    int
 }
 
 func NewLoading(text string) Loading {
@@ -44,7 +44,7 @@ func (m Loading) Init() tea.Cmd {
 	return m.tick()
 }
 
-func (m Loading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m Loading) Update(msg tea.Msg) (Loading, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -52,8 +52,8 @@ func (m Loading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.quitting = true
 			return m, tea.Quit
 		case "f":
-			m.completing = true
-			return m, tea.Quit
+			m.Completing = true
+			return m, nil
 		default:
 			return m, nil
 		}
@@ -69,19 +69,16 @@ func (m Loading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 }
 
-func (m Loading) View() string {
+func (m Loading) View(previousResponse string) string {
 	if m.frame >= len(m.Spinner.Frames) {
 		return "(error)"
 	}
 	spinner := m.Style.Render(m.Spinner.Frames[m.frame])
 
-	if m.completing {
-		return fmt.Sprintf("\n%s %s\n", m.Spinner.Complete, m.Text)
+	if m.Completing {
+		return previousResponse
 	}
-	str := fmt.Sprintf("\n%s %s\n", spinner, m.Text)
-	if m.quitting {
-		return str + "\n"
-	}
+	str := fmt.Sprintf("%s%s%s\n", previousResponse, spinner, m.Text)
 	return str
 }
 

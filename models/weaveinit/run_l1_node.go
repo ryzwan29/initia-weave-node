@@ -609,10 +609,15 @@ func (m *InitializingAppLoading) Init() tea.Cmd {
 }
 
 func (m *InitializingAppLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	md, cmd := m.Loading.Update(msg)
-	return md, cmd
+	loader, cmd := m.Loading.Update(msg)
+	m.Loading = loader
+	if m.Loading.Completing {
+		m.state.weave.PreviousResponse += styles.RenderPreviousResponse(styles.NoSeparator, "Initialization successful.", []string{}, "")
+		return m, tea.Quit
+	}
+	return m, cmd
 }
 
 func (m *InitializingAppLoading) View() string {
-	return m.Loading.View()
+	return m.Loading.View(m.state.weave.PreviousResponse)
 }
