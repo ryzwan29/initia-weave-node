@@ -72,7 +72,7 @@ func (m *Homepage) View() string {
 	if m.isFirstTimeSetup {
 		view += styles.RenderPrompt("Please set up a Gas Station account", []string{"Gas Station account"}, styles.Question) +
 			" " + styles.Text("(The account that will hold the funds required by the OPinit-bots or relayer to send transactions)", styles.Gray)
-		view += m.TextInput.View() + "\u202F"
+		view += m.TextInput.View()
 
 	} else {
 		view += styles.RenderPrompt("What would you like to do today?", []string{}, styles.Question) + m.Selector.View()
