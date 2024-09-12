@@ -75,9 +75,9 @@ func RenderPrompt(text string, highlights []string, status PromptStatus) string 
 }
 
 var (
-	NoSeparator    string = ""
-	ArrowSeparator string = Text(" > ", Gray)
-	DotsSeparator  string = Text(" ... ", Gray)
+	NoSeparator    = ""
+	ArrowSeparator = Text(" > ", Gray)
+	DotsSeparator  = Text(" ... ", Gray)
 )
 
 func RenderPreviousResponse(separator string, question string, highlights []string, answer string) string {
