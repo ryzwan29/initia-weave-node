@@ -47,7 +47,7 @@ func (m *Homepage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			view := styles.RenderPrompt("Please set up a Gas Station account", []string{"Gas Station account"}, styles.Question) +
 				" " + styles.Text("(The account that will hold the funds required by the OPinit-bots or relayer to send transactions)", styles.Gray) +
-				"\n" + styles.Text(input.Text, styles.White)
+				"\n> " + styles.Text(input.Text, styles.White)
 			model := NewHomepageInitialization(view)
 			return model, model.Init()
 		}
@@ -72,8 +72,7 @@ func (m *Homepage) View() string {
 	if m.isFirstTimeSetup {
 		view += styles.RenderPrompt("Please set up a Gas Station account", []string{"Gas Station account"}, styles.Question) +
 			" " + styles.Text("(The account that will hold the funds required by the OPinit-bots or relayer to send transactions)", styles.Gray)
-		// view += styles.FadeText("Initia is a network for interwoven rollups ") + "🪢\n"
-		view += m.TextInput.View()
+		view += m.TextInput.View() + "\u202F"
 
 	} else {
 		view += styles.RenderPrompt("What would you like to do today?", []string{}, styles.Question) + m.Selector.View()
@@ -102,11 +101,68 @@ func (hi *HomepageInitialization) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	loader, cmd := hi.loading.Update(msg)
 	hi.loading = loader
 	if hi.loading.Completing {
-		return hi, tea.Quit
+		model := NewHomepageSettingUpGasStation(hi.previousResponse)
+		return model, model.Init()
 	}
 	return hi, cmd
 }
 
 func (hi *HomepageInitialization) View() string {
 	return hi.previousResponse + "\n" + hi.loading.View()
+}
+
+type HomepageSettingUpGasStation struct {
+	previousResponse string
+	loading          utils.Loading
+}
+
+func NewHomepageSettingUpGasStation(prevRes string) tea.Model {
+	return &HomepageSettingUpGasStation{
+		previousResponse: prevRes,
+		loading:          utils.NewLoading("Setting up Gas Station accoun...", utils.DefaultWait()),
+	}
+}
+
+func (hi *HomepageSettingUpGasStation) Init() tea.Cmd {
+	return hi.loading.Init()
+}
+
+func (hi *HomepageSettingUpGasStation) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	loader, cmd := hi.loading.Update(msg)
+	hi.loading = loader
+	if hi.loading.Completing {
+		model := NewHomepageSuccessfullyInitialized(hi.previousResponse)
+		return model, model.Init()
+	}
+	return hi, cmd
+}
+
+func (hi *HomepageSettingUpGasStation) View() string {
+	return hi.previousResponse + "\n" + hi.loading.View()
+}
+
+type HomepageSuccessfullyInitialized struct {
+	previousResponse string
+}
+
+func NewHomepageSuccessfullyInitialized(prevRes string) tea.Model {
+	return &HomepageSuccessfullyInitialized{
+		previousResponse: prevRes,
+	}
+}
+
+func (hi *HomepageSuccessfullyInitialized) Init() tea.Cmd {
+	return utils.DefaultWait()
+}
+
+func (hi *HomepageSuccessfullyInitialized) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg.(type) {
+	case utils.EndLoading:
+		return NewHomepage(), nil
+	}
+	return hi, nil
+}
+
+func (hi *HomepageSuccessfullyInitialized) View() string {
+	return hi.previousResponse + "\n" + styles.FadeText("Initia is a network for interwoven rollups ") + "🪢\n"
 }
