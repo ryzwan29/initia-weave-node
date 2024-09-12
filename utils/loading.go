@@ -96,3 +96,7 @@ func DefaultWait() tea.Cmd {
 		return EndLoading{}
 	}
 }
+
+type ErrorLoading struct {
+	Err error
+}

@@ -1,6 +1,8 @@
 package models
 
 import (
+	"time"
+
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/initia-labs/weave/models/weaveinit"
@@ -41,14 +43,10 @@ func (m *Homepage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.isFirstTimeSetup {
 		input, cmd, done := m.TextInput.Update(msg)
 		if done {
-			err := utils.SetConfig("common.gas_station_mnemonic", input.Text)
-			if err != nil {
-				return nil, nil
-			}
 			view := styles.RenderPrompt("Please set up a Gas Station account", []string{"Gas Station account"}, styles.Question) +
 				" " + styles.Text("(The account that will hold the funds required by the OPinit-bots or relayer to send transactions)", styles.Gray) +
 				"\n> " + styles.Text(input.Text, styles.Ivory)
-			model := NewHomepageInitialization(view)
+			model := NewHomepageInitialization(view, input.Text)
 			return model, model.Init()
 		}
 		m.TextInput = input
@@ -84,17 +82,30 @@ func (m *Homepage) View() string {
 type HomepageInitialization struct {
 	previousResponse string
 	loading          utils.Loading
+	mnemonic         string
 }
 
-func NewHomepageInitialization(prevRes string) tea.Model {
+func NewHomepageInitialization(prevRes, mnemonic string) tea.Model {
 	return &HomepageInitialization{
 		previousResponse: prevRes,
-		loading:          utils.NewLoading("Initializing Weave...", utils.DefaultWait()),
+		loading:          utils.NewLoading("Initializing Weave...", WaitSetGasStation(mnemonic)),
+		mnemonic:         mnemonic,
 	}
 }
 
 func (hi *HomepageInitialization) Init() tea.Cmd {
 	return hi.loading.Init()
+}
+
+func WaitSetGasStation(mnemonic string) tea.Cmd {
+	return func() tea.Msg {
+		err := utils.SetConfig("common.gas_station_mnemonic", mnemonic)
+		if err != nil {
+			return utils.ErrorLoading{Err: err}
+		}
+		time.Sleep(1500 * time.Millisecond)
+		return utils.EndLoading{}
+	}
 }
 
 func (hi *HomepageInitialization) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
