@@ -25,7 +25,7 @@ type Downloader struct {
 
 func NewDownloader(text, url, dest string) *Downloader {
 	return &Downloader{
-		progress: progress.New(progress.WithGradient(string(styles.Cyan), "#008B8B")),
+		progress: progress.New(progress.WithGradient(string(styles.Cyan), string(styles.DarkCyan))),
 		total:    0,
 		text:     text,
 		url:      url,
@@ -35,8 +35,7 @@ func NewDownloader(text, url, dest string) *Downloader {
 
 func (m *Downloader) startDownload() tea.Cmd {
 	return func() tea.Msg {
-		// Use a high buffer size for faster I/O operations
-		const bufferSize = 8192 // 8 KB buffer
+		const bufferSize = 8192
 
 		resp, err := http.Get(m.url)
 		if err != nil {
@@ -69,7 +68,6 @@ func (m *Downloader) startDownload() tea.Cmd {
 				break
 			}
 
-			// Write to file and update progress in a single step
 			if _, err := file.Write(buffer[:n]); err != nil {
 				m.done = true
 				return nil
@@ -78,7 +76,6 @@ func (m *Downloader) startDownload() tea.Cmd {
 			totalDownloaded += int64(n)
 			m.current = totalDownloaded
 
-			// Simulate network delay for smoother updates
 			time.Sleep(10 * time.Millisecond)
 		}
 
