@@ -32,7 +32,7 @@ func (ti TextInput) Update(msg tea.Msg) (TextInput, tea.Cmd, bool) {
 				ti.Text = ti.Text[:ti.Cursor-1] + ti.Text[ti.Cursor:]
 				ti.Cursor--
 			}
-		case tea.KeyRunes:
+		case tea.KeyRunes, tea.KeySpace:
 			ti.Text = ti.Text[:ti.Cursor] + string(msg.Runes) + ti.Text[ti.Cursor:]
 			ti.Cursor += len(msg.Runes)
 		case tea.KeyLeft:

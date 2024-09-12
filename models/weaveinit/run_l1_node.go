@@ -613,7 +613,12 @@ func (m *InitializingAppLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.Loading = loader
 	if m.Loading.Completing {
 		m.state.weave.PreviousResponse += styles.RenderPreviousResponse(styles.NoSeparator, "Initialization successful.", []string{}, "")
-		return m, tea.Quit
+		switch m.state.network {
+		case string(Local):
+			return m, tea.Quit
+		case string(Mainnet), string(Testnet):
+			return NewSyncMethodSelect(m.state), nil
+		}
 	}
 	return m, cmd
 }
@@ -623,4 +628,240 @@ func (m *InitializingAppLoading) View() string {
 		return m.state.weave.PreviousResponse
 	}
 	return m.state.weave.PreviousResponse + m.Loading.View()
+}
+
+type SyncMethodSelect struct {
+	utils.Selector[SyncMethodOption]
+	state    *RunL1NodeState
+	question string
+}
+
+type SyncMethodOption string
+
+const (
+	Snapshot  SyncMethodOption = "Snapshot"
+	StateSync SyncMethodOption = "State Sync"
+)
+
+func NewSyncMethodSelect(state *RunL1NodeState) *SyncMethodSelect {
+	return &SyncMethodSelect{
+		Selector: utils.Selector[SyncMethodOption]{
+			Options: []SyncMethodOption{
+				Snapshot,
+				StateSync,
+			},
+		},
+		state:    state,
+		question: "Please select a sync option",
+	}
+}
+
+func (m *SyncMethodSelect) GetQuestion() string {
+	return m.question
+}
+
+func (m *SyncMethodSelect) Init() tea.Cmd {
+	return nil
+}
+
+func (m *SyncMethodSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	selected, cmd := m.Select(msg)
+	if selected != nil {
+		m.state.syncMethod = string(*selected)
+		m.state.weave.PreviousResponse += styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{""}, string(*selected))
+		return NewExistingDataChecker(m.state), utils.DoTick()
+	}
+
+	return m, cmd
+}
+
+func (m *SyncMethodSelect) View() string {
+	return m.state.weave.PreviousResponse + styles.RenderPrompt(
+		m.GetQuestion(),
+		[]string{""},
+		styles.Question,
+	) + m.Selector.View()
+}
+
+type ExistingDataChecker struct {
+	state *RunL1NodeState
+}
+
+func NewExistingDataChecker(state *RunL1NodeState) *ExistingDataChecker {
+	return &ExistingDataChecker{
+		state: state,
+	}
+}
+
+func (m *ExistingDataChecker) Init() tea.Cmd {
+	return utils.DoTick()
+}
+
+func (m *ExistingDataChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg.(type) {
+	case utils.TickMsg:
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			fmt.Printf("[error] Failed to get user home directory: %v\n", err)
+			return m, tea.Quit
+		}
+
+		initiaDataPath := filepath.Join(homeDir, utils.InitiaDataDirectory)
+		if !utils.FileOrFolderExists(initiaDataPath) {
+			m.state.existingData = false
+			switch m.state.syncMethod {
+			case string(Snapshot):
+				return NewSnapshotEndpointInput(m.state), nil
+			case string(StateSync):
+				return NewStateSyncEndpointInput(m.state), nil
+			}
+			return m, tea.Quit
+		} else {
+			m.state.existingData = true
+			return NewExistingDataReplaceSelect(m.state), nil
+		}
+	default:
+		return m, nil
+	}
+}
+
+func (m *ExistingDataChecker) View() string {
+	return m.state.weave.PreviousResponse + "Checking for existing Initia data..."
+}
+
+type ExistingDataReplaceSelect struct {
+	utils.Selector[ExistingDataReplaceOption]
+	state    *RunL1NodeState
+	question string
+}
+
+type ExistingDataReplaceOption string
+
+const (
+	UseCurrentData ExistingDataReplaceOption = "Use current one"
+	ReplaceData    ExistingDataReplaceOption = "Replace"
+)
+
+func NewExistingDataReplaceSelect(state *RunL1NodeState) *ExistingDataReplaceSelect {
+	return &ExistingDataReplaceSelect{
+		Selector: utils.Selector[ExistingDataReplaceOption]{
+			Options: []ExistingDataReplaceOption{
+				UseCurrentData,
+				ReplaceData,
+			},
+		},
+		state:    state,
+		question: "Existing .initia/data detected. Would you like to use the current one or replace it",
+	}
+}
+
+func (m *ExistingDataReplaceSelect) GetQuestion() string {
+	return m.question
+}
+
+func (m *ExistingDataReplaceSelect) Init() tea.Cmd {
+	return nil
+}
+
+func (m *ExistingDataReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	selected, cmd := m.Select(msg)
+	if selected != nil {
+		m.state.weave.PreviousResponse += styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{".initia/data"}, string(*selected))
+		switch *selected {
+		case UseCurrentData:
+			m.state.replaceExistingData = false
+			return m, tea.Quit
+		case ReplaceData:
+			m.state.replaceExistingData = true
+			switch m.state.syncMethod {
+			case string(Snapshot):
+				return NewSnapshotEndpointInput(m.state), nil
+			case string(StateSync):
+				return NewStateSyncEndpointInput(m.state), nil
+			}
+		}
+		return m, tea.Quit
+	}
+
+	return m, cmd
+}
+
+func (m *ExistingDataReplaceSelect) View() string {
+	return m.state.weave.PreviousResponse + styles.RenderPrompt(m.GetQuestion(), []string{".initia/data"}, styles.Question) + m.Selector.View()
+}
+
+type SnapshotEndpointInput struct {
+	utils.TextInput
+	state    *RunL1NodeState
+	question string
+}
+
+func NewSnapshotEndpointInput(state *RunL1NodeState) *SnapshotEndpointInput {
+	return &SnapshotEndpointInput{
+		TextInput: utils.NewTextInput(),
+		state:     state,
+		question:  "Please specify the snapshot url to download",
+	}
+}
+
+func (m *SnapshotEndpointInput) GetQuestion() string {
+	return m.question
+}
+
+func (m *SnapshotEndpointInput) Init() tea.Cmd {
+	return nil
+}
+
+func (m *SnapshotEndpointInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	input, cmd, done := m.TextInput.Update(msg)
+	if done {
+		m.state.snapshotEndpoint = input.Text
+		m.state.weave.PreviousResponse += styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"snapshot url"}, input.Text)
+		// TODO: Continue
+		return m, tea.Quit
+	}
+	m.TextInput = input
+	return m, cmd
+}
+
+func (m *SnapshotEndpointInput) View() string {
+	return m.state.weave.PreviousResponse + styles.RenderPrompt(m.GetQuestion(), []string{"snapshot url"}, styles.Question) + m.TextInput.View()
+}
+
+type StateSyncEndpointInput struct {
+	utils.TextInput
+	state    *RunL1NodeState
+	question string
+}
+
+func NewStateSyncEndpointInput(state *RunL1NodeState) *StateSyncEndpointInput {
+	return &StateSyncEndpointInput{
+		TextInput: utils.NewTextInput(),
+		state:     state,
+		question:  "Please specify the state sync RPC server url",
+	}
+}
+
+func (m *StateSyncEndpointInput) GetQuestion() string {
+	return m.question
+}
+
+func (m *StateSyncEndpointInput) Init() tea.Cmd {
+	return nil
+}
+
+func (m *StateSyncEndpointInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	input, cmd, done := m.TextInput.Update(msg)
+	if done {
+		m.state.stateSyncEndpoint = input.Text
+		m.state.weave.PreviousResponse += styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"state sync RPC"}, input.Text)
+		// TODO: Continue
+		return m, tea.Quit
+	}
+	m.TextInput = input
+	return m, cmd
+}
+
+func (m *StateSyncEndpointInput) View() string {
+	return m.state.weave.PreviousResponse + styles.RenderPrompt(m.GetQuestion(), []string{"state sync RPC"}, styles.Question) + m.TextInput.View()
 }
