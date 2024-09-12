@@ -69,16 +69,16 @@ func (m Loading) Update(msg tea.Msg) (Loading, tea.Cmd) {
 	}
 }
 
-func (m Loading) View(previousResponse string) string {
+func (m Loading) View() string {
 	if m.frame >= len(m.Spinner.Frames) {
 		return "(error)"
 	}
 	spinner := m.Style.Render(m.Spinner.Frames[m.frame])
 
 	if m.Completing {
-		return previousResponse
+		return ""
 	}
-	str := fmt.Sprintf("%s%s%s\n", previousResponse, spinner, m.Text)
+	str := fmt.Sprintf("%s%s\n", spinner, m.Text)
 	return str
 }
 

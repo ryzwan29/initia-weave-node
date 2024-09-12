@@ -619,5 +619,8 @@ func (m *InitializingAppLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *InitializingAppLoading) View() string {
-	return m.Loading.View(m.state.weave.PreviousResponse)
+	if m.Completing {
+		return m.state.weave.PreviousResponse
+	}
+	return m.state.weave.PreviousResponse + m.Loading.View()
 }
