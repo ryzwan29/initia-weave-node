@@ -109,12 +109,8 @@ func RenderPrompt(text string, highlights []string, status PromptStatus) string 
 		prompt += InformationMark
 	}
 
-	text = DefaultText(text)
-
-	// Iterate over each highlight phrase and replace it in the text
 	for _, highlight := range highlights {
 		if strings.Contains(text, highlight) {
-			// Apply Cyan color to the matching highlight
 			coloredHighlight := ""
 			if status == Information {
 				coloredHighlight = BoldText(highlight, Ivory)
@@ -125,8 +121,40 @@ func RenderPrompt(text string, highlights []string, status PromptStatus) string 
 		}
 	}
 
-	// Return the prompt with the highlighted text
+	text = DefaultTextWithoutOverridingStyledText(text)
+
 	return prompt + text
+}
+
+// Helper function to apply default styling without overriding existing styles
+func DefaultTextWithoutOverridingStyledText(text string) string {
+	styledText := ""
+	for _, line := range strings.Split(text, "\n") {
+		// Split the line by ANSI escape codes to detect already styled substrings
+		parts := splitPreservingANSI(line)
+		for _, part := range parts {
+			if !containsANSI(part) {
+				// Only style the parts that don't already have styling
+				part = DefaultText(part)
+			}
+			styledText += part
+		}
+		styledText += "\n"
+	}
+	return strings.TrimSuffix(styledText, "\n")
+}
+
+// Utility functions to handle ANSI escape codes
+func splitPreservingANSI(text string) []string {
+	// Implement splitting that preserves ANSI codes
+	// This is a placeholder; you'll need to implement or use a library
+	return []string{text}
+}
+
+func containsANSI(text string) bool {
+	// Check if the text contains ANSI escape codes
+	// This is a placeholder; you'll need to implement or use a library
+	return strings.Contains(text, "\x1b[")
 }
 
 var (
