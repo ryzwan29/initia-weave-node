@@ -27,6 +27,13 @@ func Execute() error {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if utils.IsFirstTimeSetup() {
+				_, err := tea.NewProgram(models.NewExistingAppChecker()).Run()
+				if err != nil {
+					return err
+				}
+			}
+
 			_, err := tea.NewProgram(models.NewHomepage()).Run()
 			if err != nil {
 				return err
@@ -37,6 +44,7 @@ func Execute() error {
 	}
 
 	rootCmd.AddCommand(InitCommand())
+	rootCmd.AddCommand(InitiaInitCommand())
 
 	return rootCmd.ExecuteContext(context.Background())
 }

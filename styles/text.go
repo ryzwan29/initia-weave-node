@@ -6,16 +6,46 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+func DefaultText(text string) string {
+	return Text(text, Ivory)
+}
+
+func SetColor(text string, color HexColor) string {
+	style := lipgloss.NewStyle().Foreground(lipgloss.Color(string(color)))
+	return style.Render(text)
+}
+
 // Text applies a hex color to a given string and returns the styled string
 func Text(text string, color HexColor) string {
-	style := lipgloss.NewStyle().Foreground(lipgloss.Color(string(color)))
+	coloredText := ""
+
+	texts := strings.Split(text, "\n")
+	for idx, t := range texts {
+		coloredText += SetColor(t, color)
+		if idx != len(texts)-1 {
+			coloredText += "\n"
+		}
+	}
+	return coloredText
+}
+
+func SetBoldColor(text string, color HexColor) string {
+	style := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(string(color)))
 	return style.Render(text)
 }
 
 // BoldText applies bold and color styling to a string
 func BoldText(text string, color HexColor) string {
-	style := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(string(color)))
-	return style.Render(text)
+	styledText := ""
+
+	texts := strings.Split(text, "\n")
+	for idx, t := range texts {
+		styledText += SetBoldColor(t, color)
+		if idx != len(texts)-1 {
+			styledText += "\n"
+		}
+	}
+	return styledText
 }
 
 func Cursor(cursorChar string) string {
@@ -78,6 +108,8 @@ func RenderPrompt(text string, highlights []string, status PromptStatus) string 
 	case Information:
 		prompt += InformationMark
 	}
+
+	text = DefaultText(text)
 
 	// Iterate over each highlight phrase and replace it in the text
 	for _, highlight := range highlights {
