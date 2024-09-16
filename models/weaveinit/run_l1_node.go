@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 
@@ -171,7 +172,8 @@ func (m *RunL1NodeMonikerInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if done {
 		m.state.moniker = input.Text
 		m.state.weave.PreviousResponse += styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"moniker"}, input.Text)
-		return NewExistingAppChecker(m.state), utils.DoTick()
+		model := NewExistingAppChecker(m.state)
+		return model, model.Init()
 	}
 	m.TextInput = input
 	return m, cmd
@@ -182,45 +184,58 @@ func (m *RunL1NodeMonikerInput) View() string {
 }
 
 type ExistingAppChecker struct {
-	state *RunL1NodeState
+	state   *RunL1NodeState
+	loading utils.Loading
 }
 
 func NewExistingAppChecker(state *RunL1NodeState) *ExistingAppChecker {
 	return &ExistingAppChecker{
-		state: state,
+		state:   state,
+		loading: utils.NewLoading("Checking for an existing Initia app...", WaitExistingAppChecker(state)),
 	}
 }
 
 func (m *ExistingAppChecker) Init() tea.Cmd {
-	return utils.DoTick()
+	return m.loading.Init()
 }
 
-func (m *ExistingAppChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg.(type) {
-	case utils.TickMsg:
+func WaitExistingAppChecker(state *RunL1NodeState) tea.Cmd {
+	return func() tea.Msg {
 		homeDir, err := os.UserHomeDir()
 		if err != nil {
-			fmt.Printf("[error] Failed to get user home directory: %v\n", err)
-			return m, tea.Quit
+			return utils.ErrorLoading{Err: err}
 		}
 
 		initiaConfigPath := filepath.Join(homeDir, utils.InitiaConfigDirectory)
 		appTomlPath := filepath.Join(initiaConfigPath, "app.toml")
 		configTomlPath := filepath.Join(initiaConfigPath, "config.toml")
+		time.Sleep(1500 * time.Millisecond)
 		if !utils.FileOrFolderExists(configTomlPath) || !utils.FileOrFolderExists(appTomlPath) {
-			m.state.existingApp = false
-			return NewMinGasPriceInput(m.state), nil
+			state.existingApp = false
+			return utils.EndLoading{}
 		} else {
-			m.state.existingApp = true
-			return NewExistingAppReplaceSelect(m.state), nil
+			state.existingApp = true
+			return utils.EndLoading{}
 		}
-	default:
-		return m, nil
 	}
 }
 
+func (m *ExistingAppChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	loader, cmd := m.loading.Update(msg)
+	m.loading = loader
+	if m.loading.Completing {
+
+		if !m.state.existingApp {
+			return NewMinGasPriceInput(m.state), nil
+		} else {
+			return NewExistingAppReplaceSelect(m.state), nil
+		}
+	}
+	return m, cmd
+}
+
 func (m *ExistingAppChecker) View() string {
-	return m.state.weave.PreviousResponse + "Checking for an existing Initia app..."
+	return m.state.weave.PreviousResponse + "\n" + m.loading.View()
 }
 
 type ExistingAppReplaceSelect struct {
@@ -443,7 +458,8 @@ func (m *PersistentPeersInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if done {
 		m.state.persistentPeers = input.Text
 		m.state.weave.PreviousResponse += styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"persistent_peers"}, input.Text)
-		return NewExistingGenesisChecker(m.state), utils.DoTick()
+		model := NewExistingGenesisChecker(m.state)
+		return model, model.Init()
 	}
 	m.TextInput = input
 	return m, cmd
@@ -454,48 +470,62 @@ func (m *PersistentPeersInput) View() string {
 }
 
 type ExistingGenesisChecker struct {
-	state *RunL1NodeState
+	state   *RunL1NodeState
+	loading utils.Loading
 }
 
 func NewExistingGenesisChecker(state *RunL1NodeState) *ExistingGenesisChecker {
 	return &ExistingGenesisChecker{
-		state: state,
+		state:   state,
+		loading: utils.NewLoading("Checking for an existing Initia genesis file...", WaitExistingGenesisChecker(state)),
 	}
 }
 
 func (m *ExistingGenesisChecker) Init() tea.Cmd {
-	return utils.DoTick()
+	return m.loading.Init()
 }
 
-func (m *ExistingGenesisChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg.(type) {
-	case utils.TickMsg:
+func WaitExistingGenesisChecker(state *RunL1NodeState) tea.Cmd {
+	return func() tea.Msg {
 		homeDir, err := os.UserHomeDir()
 		if err != nil {
 			fmt.Printf("[error] Failed to get user home directory: %v\n", err)
-			return m, tea.Quit
+			return utils.ErrorLoading{Err: err}
 		}
-
 		initiaConfigPath := filepath.Join(homeDir, utils.InitiaConfigDirectory)
 		genesisFilePath := filepath.Join(initiaConfigPath, "genesis.json")
+
+		time.Sleep(1500 * time.Millisecond)
+
 		if !utils.FileOrFolderExists(genesisFilePath) {
-			m.state.existingGenesis = false
+			state.existingGenesis = false
+			return utils.EndLoading{}
+		} else {
+			state.existingGenesis = true
+			return utils.EndLoading{}
+		}
+	}
+}
+
+func (m *ExistingGenesisChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	loader, cmd := m.loading.Update(msg)
+	m.loading = loader
+	if m.loading.Completing {
+		if !m.state.existingGenesis {
 			if m.state.network == string(Local) {
 				newLoader := NewInitializingAppLoading(m.state)
 				return newLoader, newLoader.Init()
 			}
 			return NewGenesisEndpointInput(m.state), nil
 		} else {
-			m.state.existingGenesis = true
 			return NewExistingGenesisReplaceSelect(m.state), nil
 		}
-	default:
-		return m, nil
 	}
+	return m, cmd
 }
 
 func (m *ExistingGenesisChecker) View() string {
-	return m.state.weave.PreviousResponse + "Checking for an existing Initia genesis file..."
+	return m.state.weave.PreviousResponse + "\n" + m.loading.View()
 }
 
 type ExistingGenesisReplaceSelect struct {
@@ -676,7 +706,8 @@ func (m *SyncMethodSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if selected != nil {
 		m.state.syncMethod = string(*selected)
 		m.state.weave.PreviousResponse += styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{""}, string(*selected))
-		return NewExistingDataChecker(m.state), utils.DoTick()
+		model := NewExistingDataChecker(m.state)
+		return model, model.Init()
 	}
 
 	return m, cmd
@@ -691,31 +722,47 @@ func (m *SyncMethodSelect) View() string {
 }
 
 type ExistingDataChecker struct {
-	state *RunL1NodeState
+	state   *RunL1NodeState
+	loading utils.Loading
 }
 
 func NewExistingDataChecker(state *RunL1NodeState) *ExistingDataChecker {
 	return &ExistingDataChecker{
-		state: state,
+		state:   state,
+		loading: utils.NewLoading("Checking for an existing Initia data...", WaitExistingDataChecker(state)),
 	}
 }
 
 func (m *ExistingDataChecker) Init() tea.Cmd {
-	return utils.DoTick()
+	return m.loading.Init()
 }
 
-func (m *ExistingDataChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg.(type) {
-	case utils.TickMsg:
+func WaitExistingDataChecker(state *RunL1NodeState) tea.Cmd {
+	return func() tea.Msg {
 		homeDir, err := os.UserHomeDir()
 		if err != nil {
 			fmt.Printf("[error] Failed to get user home directory: %v\n", err)
-			return m, tea.Quit
+			return utils.ErrorLoading{Err: err}
 		}
 
 		initiaDataPath := filepath.Join(homeDir, utils.InitiaDataDirectory)
+		time.Sleep(1500 * time.Millisecond)
+
 		if !utils.FileOrFolderExists(initiaDataPath) {
-			m.state.existingData = false
+			state.existingData = false
+			return utils.EndLoading{}
+		} else {
+			state.existingData = true
+			return utils.EndLoading{}
+		}
+	}
+}
+
+func (m *ExistingDataChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	loader, cmd := m.loading.Update(msg)
+	m.loading = loader
+	if m.loading.Completing {
+		if !m.state.existingData {
 			switch m.state.syncMethod {
 			case string(Snapshot):
 				return NewSnapshotEndpointInput(m.state), nil
@@ -727,13 +774,12 @@ func (m *ExistingDataChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.state.existingData = true
 			return NewExistingDataReplaceSelect(m.state), nil
 		}
-	default:
-		return m, nil
 	}
+	return m, cmd
 }
 
 func (m *ExistingDataChecker) View() string {
-	return m.state.weave.PreviousResponse + "Checking for an existing Initia data..."
+	return m.state.weave.PreviousResponse + "\n" + m.loading.View()
 }
 
 type ExistingDataReplaceSelect struct {

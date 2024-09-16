@@ -111,13 +111,7 @@ func RenderPrompt(text string, highlights []string, status PromptStatus) string 
 
 	for _, highlight := range highlights {
 		if strings.Contains(text, highlight) {
-			coloredHighlight := ""
-			if status == Information {
-				coloredHighlight = BoldText(highlight, Ivory)
-			} else {
-				coloredHighlight = BoldText(highlight, Cyan)
-			}
-			text = strings.ReplaceAll(text, highlight, coloredHighlight)
+			text = strings.ReplaceAll(text, highlight, BoldText(highlight, Cyan))
 		}
 	}
 
