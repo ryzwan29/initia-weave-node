@@ -38,7 +38,7 @@ func (m *MockedFilesystem) Stat(name string) (os.FileInfo, error) {
 func TestInitializeConfig(t *testing.T) {
 	fs := new(MockedFilesystem)
 	home := "/mock/home"
-	configPath := filepath.Join(home, ".weave", "config.json")
+	configPath := filepath.Join(home, WeaveDirectory, "config.json")
 
 	// Resetting mocks for next test case
 	fs.Mock = mock.Mock{}

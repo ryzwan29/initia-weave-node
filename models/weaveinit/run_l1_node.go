@@ -3,6 +3,7 @@ package weaveinit
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -351,8 +352,10 @@ func (m *EnableFeaturesCheckbox) Init() tea.Cmd {
 func (m *EnableFeaturesCheckbox) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	cb, cmd, done := m.Select(msg)
 	if done {
+		empty := true
 		for idx, isSelected := range cb.Selected {
 			if isSelected {
+				empty = false
 				switch cb.Options[idx] {
 				case LCD:
 					m.state.enableLCD = true
@@ -361,7 +364,11 @@ func (m *EnableFeaturesCheckbox) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 		}
-		m.state.weave.PreviousResponse += styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, cb.GetSelectedString())
+		if empty {
+			m.state.weave.PreviousResponse += styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, "None")
+		} else {
+			m.state.weave.PreviousResponse += styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, cb.GetSelectedString())
+		}
 		return NewSeedsInput(m.state), nil
 	}
 
@@ -751,7 +758,7 @@ func NewExistingDataReplaceSelect(state *RunL1NodeState) *ExistingDataReplaceSel
 			},
 		},
 		state:    state,
-		question: "Existing .initia/data detected. Would you like to use the current one or replace it",
+		question: fmt.Sprintf("Existing %s detected. Would you like to use the current one or replace it", utils.InitiaDataDirectory),
 	}
 }
 
@@ -766,7 +773,7 @@ func (m *ExistingDataReplaceSelect) Init() tea.Cmd {
 func (m *ExistingDataReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	selected, cmd := m.Select(msg)
 	if selected != nil {
-		m.state.weave.PreviousResponse += styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{".initia/data"}, string(*selected))
+		m.state.weave.PreviousResponse += styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{utils.InitiaDataDirectory}, string(*selected))
 		switch *selected {
 		case UseCurrentData:
 			m.state.replaceExistingData = false
@@ -787,7 +794,7 @@ func (m *ExistingDataReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *ExistingDataReplaceSelect) View() string {
-	return m.state.weave.PreviousResponse + styles.RenderPrompt(m.GetQuestion(), []string{".initia/data"}, styles.Question) + m.Selector.View()
+	return m.state.weave.PreviousResponse + styles.RenderPrompt(m.GetQuestion(), []string{utils.InitiaDataDirectory}, styles.Question) + m.Selector.View()
 }
 
 type SnapshotEndpointInput struct {
@@ -874,11 +881,17 @@ type SnapshotDownloadLoading struct {
 }
 
 func NewSnapshotDownloadLoading(state *RunL1NodeState) *SnapshotDownloadLoading {
+	userHome, err := os.UserHomeDir()
+	if err != nil {
+		fmt.Printf("[error] Failed to get user home: %v\n", err)
+		// TODO: Return error
+	}
+
 	return &SnapshotDownloadLoading{
 		Downloader: *utils.NewDownloader(
 			"Downloading snapshot from the provided URL",
 			state.snapshotEndpoint,
-			"snapshot.weave",
+			fmt.Sprintf("%s/%s/%s", userHome, utils.WeaveDataDirectory, utils.SnapshotFilename),
 		),
 		state: state,
 	}
@@ -890,7 +903,9 @@ func (m *SnapshotDownloadLoading) Init() tea.Cmd {
 
 func (m *SnapshotDownloadLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.GetCompletion() {
-		return m, tea.Quit
+		m.state.weave.PreviousResponse += styles.RenderPreviousResponse(styles.NoSeparator, "Snapshot download completed.", []string{}, "")
+		newLoader := NewSnapshotExtractLoading(m.state)
+		return newLoader, newLoader.Init()
 	}
 	downloader, cmd := m.Downloader.Update(msg)
 	m.Downloader = *downloader
@@ -899,4 +914,59 @@ func (m *SnapshotDownloadLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *SnapshotDownloadLoading) View() string {
 	return m.state.weave.PreviousResponse + m.Downloader.View()
+}
+
+type SnapshotExtractLoading struct {
+	utils.Loading
+	state *RunL1NodeState
+}
+
+func NewSnapshotExtractLoading(state *RunL1NodeState) *SnapshotExtractLoading {
+	return &SnapshotExtractLoading{
+		Loading: utils.NewLoading("Extracting downloaded snapshot...", snapshotExtractor()),
+		state:   state,
+	}
+}
+
+func (m *SnapshotExtractLoading) Init() tea.Cmd {
+	return m.Loading.Init()
+}
+
+func (m *SnapshotExtractLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	loader, cmd := m.Loading.Update(msg)
+	m.Loading = loader
+	if m.Loading.Completing {
+		m.state.weave.PreviousResponse += styles.RenderPreviousResponse(styles.NoSeparator, fmt.Sprintf("Snapshot extracted to %s successfully.", utils.InitiaDataDirectory), []string{}, "")
+		return m, tea.Quit
+	}
+	return m, cmd
+}
+
+func (m *SnapshotExtractLoading) View() string {
+	if m.Completing {
+		return m.state.weave.PreviousResponse
+	}
+	return m.state.weave.PreviousResponse + m.Loading.View()
+}
+
+func snapshotExtractor() tea.Cmd {
+	return func() tea.Msg {
+		userHome, err := os.UserHomeDir()
+		if err != nil {
+			fmt.Printf("[error] Failed to get user home: %v\n", err)
+			// TODO: Return error
+		}
+
+		targetDir := filepath.Join(userHome, utils.InitiaDirectory)
+		cmd := exec.Command("bash", "-c", fmt.Sprintf("lz4 -c -d %s | tar -x -C %s", filepath.Join(userHome, utils.WeaveDataDirectory, utils.SnapshotFilename), targetDir))
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+
+		err = cmd.Run()
+		if err != nil {
+			fmt.Printf("[error] Failed to extract snapshot: %v\n", err)
+			// TODO: Return error
+		}
+		return utils.EndLoading{}
+	}
 }

@@ -1,6 +1,12 @@
 package utils
 
 const (
-	InitiaConfigDirectory = ".initia/config"
-	InitiaDataDirectory   = ".initia/data"
+	WeaveDirectory     = ".weave"
+	WeaveDataDirectory = WeaveDirectory + "/data"
+
+	SnapshotFilename = "snapshot.weave"
+
+	InitiaDirectory       = ".initiatest"
+	InitiaConfigDirectory = InitiaDirectory + "/config"
+	InitiaDataDirectory   = InitiaDirectory + "/data"
 )

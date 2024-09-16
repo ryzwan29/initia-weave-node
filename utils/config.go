@@ -14,9 +14,14 @@ func InitializeConfig() error {
 		return fmt.Errorf("failed to get user home directory: %v", err)
 	}
 
-	configPath := filepath.Join(homeDir, ".weave", "config.json")
+	configPath := filepath.Join(homeDir, WeaveDirectory, "config.json")
 	if err := os.MkdirAll(filepath.Dir(configPath), os.ModePerm); err != nil {
 		return fmt.Errorf("failed to create config directory: %v", err)
+	}
+
+	dataPath := filepath.Join(homeDir, WeaveDataDirectory)
+	if err := os.MkdirAll(dataPath, os.ModePerm); err != nil {
+		return fmt.Errorf("failed to create data directory: %v", err)
 	}
 
 	viper.SetConfigFile(configPath)
