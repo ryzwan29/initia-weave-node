@@ -35,7 +35,7 @@ func NewDownloader(text, url, dest string) *Downloader {
 
 func (m *Downloader) startDownload() tea.Cmd {
 	return func() tea.Msg {
-		const bufferSize = 8192
+		const bufferSize = 65536
 
 		resp, err := http.Get(m.url)
 		if err != nil {
@@ -75,8 +75,6 @@ func (m *Downloader) startDownload() tea.Cmd {
 
 			totalDownloaded += int64(n)
 			m.current = totalDownloaded
-
-			time.Sleep(10 * time.Millisecond)
 		}
 
 		m.done = true
