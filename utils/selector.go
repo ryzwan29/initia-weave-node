@@ -41,5 +41,5 @@ func (s *Selector[T]) View() string {
 		}
 	}
 
-	return view + styles.Text("\nPress Enter to select, or q to quit.\n", styles.Gray)
+	return view + styles.Text("\nPress Enter to select, press Ctrl+C or q to quit.\n", styles.Gray)
 }

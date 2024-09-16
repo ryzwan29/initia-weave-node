@@ -59,7 +59,7 @@ func (ti TextInput) Update(msg tea.Msg) (TextInput, tea.Cmd, bool) {
 
 func (ti TextInput) View() string {
 	var beforeCursor, cursorChar, afterCursor string
-	bottomText := styles.Text("Press Enter to submit, or Ctrl+c to quit.", styles.Gray)
+	bottomText := styles.Text("Press Enter to submit or Ctrl+C to quit.", styles.Gray)
 	if len(ti.Text) == 0 {
 		return "\n" + styles.Text("> ", styles.Yellow) + styles.Text(ti.Placeholder, styles.Gray) + styles.Cursor(" ") + "\n\n" + bottomText
 	} else if ti.Cursor < len(ti.Text) {

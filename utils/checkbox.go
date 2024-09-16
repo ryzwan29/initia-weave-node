@@ -61,11 +61,11 @@ func (s *CheckBox[T]) View() string {
 		}
 		selectedMark := "○"
 		if s.Selected[i] {
-			selectedMark = "●"
+			selectedMark = styles.Text("●", styles.Cyan)
 		}
 		b.WriteString(fmt.Sprintf("%s %s %v\n", cursor, selectedMark, option))
 	}
-	b.WriteString("Use arrow-keys. Space to select. Return to submit, or q to quit.\n")
+	b.WriteString(styles.Text("\nUse arrow-keys. Space to select. Return to submit, or q to quit.\n", styles.Gray))
 	return b.String()
 }
 

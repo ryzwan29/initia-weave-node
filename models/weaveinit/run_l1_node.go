@@ -67,7 +67,7 @@ func (m *RunL1NodeNetworkSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *RunL1NodeNetworkSelect) View() string {
-	return styles.RenderPrompt("Which network will your node participate in?", []string{}, styles.Question) + m.Selector.View()
+	return styles.RenderPrompt("Which network will your node participate in?", []string{"network"}, styles.Question) + m.Selector.View()
 }
 
 type RunL1NodeVersionInput struct {
@@ -220,7 +220,7 @@ func (m *ExistingAppChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *ExistingAppChecker) View() string {
-	return m.state.weave.PreviousResponse + "Checking for existing Initia app..."
+	return m.state.weave.PreviousResponse + "Checking for an existing Initia app..."
 }
 
 type ExistingAppReplaceSelect struct {
@@ -315,7 +315,7 @@ func (m *MinGasPriceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *MinGasPriceInput) View() string {
 	preText := ""
 	if !m.state.existingApp {
-		preText += styles.RenderPrompt("i There is no config/app.toml or config/config.toml available. You will need to enter the required information to proceed.\n\n", []string{"config/app.toml", "config/config.toml"}, styles.Information)
+		preText += styles.RenderPrompt("There is no config/app.toml or config/config.toml available. You will need to enter the required information to proceed.\n\n", []string{"config/app.toml", "config/config.toml"}, styles.Information)
 	}
 	return m.state.weave.PreviousResponse + preText + styles.RenderPrompt(m.GetQuestion(), []string{"min-gas-price"}, styles.Question) + m.TextInput.View()
 }
@@ -376,7 +376,7 @@ func (m *EnableFeaturesCheckbox) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *EnableFeaturesCheckbox) View() string {
-	return m.state.weave.PreviousResponse + styles.RenderPrompt(m.GetQuestion(), []string{}, styles.Question) + "\n" + m.CheckBox.View()
+	return m.state.weave.PreviousResponse + "\n" + styles.RenderPrompt(m.GetQuestion(), []string{}, styles.Question) + "\n" + m.CheckBox.View()
 }
 
 type SeedsInput struct {
@@ -495,7 +495,7 @@ func (m *ExistingGenesisChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *ExistingGenesisChecker) View() string {
-	return m.state.weave.PreviousResponse + "Checking for existing Initia genesis file..."
+	return m.state.weave.PreviousResponse + "Checking for an existing Initia genesis file..."
 }
 
 type ExistingGenesisReplaceSelect struct {
@@ -594,7 +594,7 @@ func (m *GenesisEndpointInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *GenesisEndpointInput) View() string {
 	preText := ""
 	if !m.state.existingApp {
-		preText += styles.RenderPrompt("i There is no config/genesis.json available. You will need to enter the required information to proceed.\n\n", []string{"config/genesis.json"}, styles.Information)
+		preText += styles.RenderPrompt("There is no config/genesis.json available. You will need to enter the required information to proceed.\n\n", []string{"config/genesis.json"}, styles.Information)
 	}
 	return m.state.weave.PreviousResponse + preText + styles.RenderPrompt(m.GetQuestion(), []string{"endpoint"}, styles.Question) + m.TextInput.View()
 }
@@ -733,7 +733,7 @@ func (m *ExistingDataChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *ExistingDataChecker) View() string {
-	return m.state.weave.PreviousResponse + "Checking for existing Initia data..."
+	return m.state.weave.PreviousResponse + "Checking for an existing Initia data..."
 }
 
 type ExistingDataReplaceSelect struct {
