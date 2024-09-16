@@ -6,7 +6,7 @@ const (
 	White    HexColor = "#FFFFFF"
 	Ivory    HexColor = "#EEEEEE"
 	Cyan     HexColor = "#27D8FF"
-	DarkCyan HexColor = "#008B8B"
+	DarkCyan HexColor = "#178299"
 	Green    HexColor = "#B0EE5F"
 	Gray     HexColor = "#808080"
 	Red      HexColor = "#FF5656"

@@ -60,14 +60,14 @@ func Cursor(cursorChar string) string {
 
 func FadeText(text string) string {
 	fadedColors := []HexColor{
-		"#00FFFF", // Cyan
-		"#00EEEE", // Intermediate color 1
-		"#00DDDD", // Intermediate color 2
-		"#00CCCC", // Intermediate color 3
-		"#00BBBB", // Intermediate color 4
-		"#00AAAA", // Intermediate color 5
-		"#009999", // Intermediate color 6
-		"#008B8B", // DarkCyan
+		"#27D8FF", // Cyan
+		"#25ccf0", // Intermediate color 1
+		"#22bfe2", // Intermediate color 2
+		"#20b3d3", // Intermediate color 3
+		"#1ea7c5", // Intermediate color 4
+		"#1c9bb6", // Intermediate color 5
+		"#198ea8", // Intermediate color 6
+		"#178299", // DarkCyan
 	}
 
 	result := ""

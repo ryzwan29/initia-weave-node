@@ -33,11 +33,19 @@ func (m *ExistingAppChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *ExistingAppChecker) View() string {
-	view := styles.DefaultText("Hi 👋🏻 Weave is a CLI for managing Initia deployments.\n\n")
+	view := styles.FadeText("Welcome to Weave! 🪢\n\n")
+
+	view += styles.RenderPrompt("As this is your first time using Weave, we ask that you set up your Gas Station account,\nwhich will hold the necessary funds for the OPinit-bots or relayer to send transactions.\n\n", []string{"Gas Station account"}, styles.Empty)
+
+	view += styles.BoldText("Please note that Weave will not send any transactions without your confirmation.\n", styles.Yellow)
+
+	view += styles.Text("While you can complete this setup later, we recommend doing it now to ensure a smoother experience.\n\n", styles.Gray)
+
+	// TODO add new step to ask if user want to set up gas station account or not, if not we will skip to the next step
 
 	view += styles.RenderPrompt("Please set up a Gas Station account", []string{"Gas Station account"}, styles.Question) +
 		" " + styles.Text("(The account that will hold the funds required by the OPinit-bots or relayer to send transactions)", styles.Gray)
-	view += "\n" + m.TextInput.View()
+	view += m.TextInput.View()
 
 	return view
 }
