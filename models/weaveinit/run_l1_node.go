@@ -55,7 +55,7 @@ func (m *RunL1NodeNetworkSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.state.weave.PreviousResponse += styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, selectedString)
 		switch *selected {
 		case Mainnet, Testnet:
-			return NewExistingAppChecker(m.state), utils.DoTick()
+			return NewRunL1NodeMonikerInput(m.state), cmd
 		case Local:
 			return NewRunL1NodeVersionInput(m.state), nil
 		}
