@@ -85,9 +85,10 @@ type PromptStatus string
 
 const (
 	Empty       PromptStatus = "empty"
-	Completed   PromptStatus = "completed"
+	Checked     PromptStatus = "checked"
 	Question    PromptStatus = "question"
 	Information PromptStatus = "information"
+	Completed   PromptStatus = "completed"
 )
 
 var (
@@ -100,23 +101,30 @@ var (
 // RenderPrompt highlights phrases in the text if they match any phrase in the highlights list
 func RenderPrompt(text string, highlights []string, status PromptStatus) string {
 	prompt := ""
+	if status == Question {
+		prompt += "\n"
+	}
 	switch status {
 	case Question:
 		prompt += QuestionMark
-	case Completed:
+	case Checked:
 		prompt += CorrectMark
 	case Information:
 		prompt += InformationMark
+	case Completed:
+		prompt += CorrectMark
 	}
 
-	for _, highlight := range highlights {
-		if strings.Contains(text, highlight) {
-			text = strings.ReplaceAll(text, highlight, BoldText(highlight, Cyan))
+	if status != Completed {
+		for _, highlight := range highlights {
+			if strings.Contains(text, highlight) {
+				text = strings.ReplaceAll(text, highlight, BoldText(highlight, Cyan))
+			}
 		}
+		text = DefaultTextWithoutOverridingStyledText(text)
+	} else {
+		text = FadeText(text)
 	}
-
-	text = DefaultTextWithoutOverridingStyledText(text)
-
 	return prompt + text
 }
 
@@ -162,7 +170,7 @@ var (
 )
 
 func RenderPreviousResponse(separator string, question string, highlights []string, answer string) string {
-	return RenderPrompt(question, highlights, Completed) + separator + answer + "\n"
+	return RenderPrompt(question, highlights, Checked) + separator + answer + "\n"
 }
 
 func RenderError(err error) string {

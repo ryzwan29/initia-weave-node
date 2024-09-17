@@ -304,8 +304,9 @@ func NewMinGasPriceInput(state *RunL1NodeState) *MinGasPriceInput {
 	model := &MinGasPriceInput{
 		TextInput: utils.NewTextInput(),
 		state:     state,
-		question:  "Please specify min-gas-price (uinit)",
+		question:  "Please specify min-gas-price",
 	}
+	model.WithPlaceholder("add a number with denom")
 	model.WithValidatorFn(utils.ValidateDecCoin)
 	return model
 }
@@ -330,9 +331,9 @@ func (m *MinGasPriceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *MinGasPriceInput) View() string {
-	preText := ""
+	preText := "\n"
 	if !m.state.existingApp {
-		preText += styles.RenderPrompt("There is no config/app.toml or config/config.toml available. You will need to enter the required information to proceed.\n\n", []string{"config/app.toml", "config/config.toml"}, styles.Information)
+		preText += styles.RenderPrompt("There is no config/app.toml or config/config.toml available. You will need to enter the required information to proceed.\n", []string{"config/app.toml", "config/config.toml"}, styles.Information)
 	}
 	return m.state.weave.PreviousResponse + preText + styles.RenderPrompt(m.GetQuestion(), []string{"min-gas-price"}, styles.Question) + m.TextInput.View()
 }
@@ -393,7 +394,7 @@ func (m *EnableFeaturesCheckbox) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *EnableFeaturesCheckbox) View() string {
-	return m.state.weave.PreviousResponse + "\n" + styles.RenderPrompt(m.GetQuestion(), []string{}, styles.Question) + "\n" + m.CheckBox.View()
+	return m.state.weave.PreviousResponse + styles.RenderPrompt(m.GetQuestion(), []string{}, styles.Question) + "\n" + m.CheckBox.View()
 }
 
 type SeedsInput struct {
@@ -408,6 +409,7 @@ func NewSeedsInput(state *RunL1NodeState) *SeedsInput {
 		state:     state,
 		question:  "Please specify the seeds",
 	}
+	model.WithPlaceholder("add in the format id@ip:port, you can add multiple seeds by adding comma (,)")
 	model.WithValidatorFn(utils.IsValidPeerOrSeed)
 	return model
 }
@@ -447,6 +449,7 @@ func NewPersistentPeersInput(state *RunL1NodeState) *PersistentPeersInput {
 		state:     state,
 		question:  "Please specify the persistent_peers",
 	}
+	model.WithPlaceholder("add in the format id@ip:port, you can add multiple seeds by adding comma (,)")
 	model.WithValidatorFn(utils.IsValidPeerOrSeed)
 	return model
 }
@@ -628,9 +631,9 @@ func (m *GenesisEndpointInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *GenesisEndpointInput) View() string {
-	preText := ""
+	preText := "\n"
 	if !m.state.existingApp {
-		preText += styles.RenderPrompt("There is no config/genesis.json available. You will need to enter the required information to proceed.\n\n", []string{"config/genesis.json"}, styles.Information)
+		preText += styles.RenderPrompt("There is no config/genesis.json available. You will need to enter the required information to proceed.\n", []string{"config/genesis.json"}, styles.Information)
 	}
 	return m.state.weave.PreviousResponse + preText + styles.RenderPrompt(m.GetQuestion(), []string{"endpoint"}, styles.Question) + m.TextInput.View()
 }
@@ -655,7 +658,7 @@ func (m *InitializingAppLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	loader, cmd := m.Loading.Update(msg)
 	m.Loading = loader
 	if m.Loading.Completing {
-		m.state.weave.PreviousResponse += styles.RenderPreviousResponse(styles.NoSeparator, "Initialization successful.", []string{}, "")
+		m.state.weave.PreviousResponse += styles.RenderPrompt("Initialization successful.\n", []string{}, styles.Completed)
 		switch m.state.network {
 		case string(Local):
 			return m, tea.Quit

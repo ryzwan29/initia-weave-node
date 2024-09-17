@@ -207,6 +207,7 @@ func IsValidPeerOrSeed(addresses string) error {
 		}
 	}
 
+	// TODO add in error that id need to bbe 40 chars
 	if len(invalidAddresses) > 0 {
 		// Return an error with detailed messages
 		return errors.New("invalid peer/seed addresses:" + strings.Join(invalidAddresses, ","))

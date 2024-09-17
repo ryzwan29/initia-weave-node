@@ -49,7 +49,7 @@ func (m *Homepage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *Homepage) View() string {
-	view := styles.FadeText("Welcome to Weave! 🪢  CLI for managing Initia deployments.\n\n")
+	view := styles.FadeText("\nWelcome to Weave! 🪢  CLI for managing Initia deployments.\n")
 	view += styles.RenderPrompt("What would you like to do today?", []string{}, styles.Question) + m.Selector.View()
 	return view
 }
