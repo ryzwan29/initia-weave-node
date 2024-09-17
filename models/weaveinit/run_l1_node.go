@@ -281,7 +281,8 @@ func (m *ExistingAppReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch *selected {
 		case UseCurrentApp:
 			m.state.replaceExistingApp = false
-			return NewExistingGenesisChecker(m.state), utils.DoTick()
+			model := NewExistingGenesisChecker(m.state)
+			return model, model.Init()
 		case ReplaceApp:
 			m.state.replaceExistingApp = true
 			return NewMinGasPriceInput(m.state), nil
