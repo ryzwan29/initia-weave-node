@@ -14,7 +14,9 @@ type ExistingAppChecker struct {
 }
 
 func NewExistingAppChecker() *ExistingAppChecker {
-	return &ExistingAppChecker{}
+	model := &ExistingAppChecker{}
+	model.TextInput.WithValidatorFn(utils.ValidateMnemonic)
+	return model
 }
 
 func (m *ExistingAppChecker) Init() tea.Cmd {

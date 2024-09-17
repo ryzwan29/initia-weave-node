@@ -1,6 +1,7 @@
 package styles
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
@@ -73,7 +74,6 @@ func FadeText(text string) string {
 	result := ""
 
 	for i, char := range text {
-		// fmt.Println("-> ", i)
 		color := fadedColors[i*len(fadedColors)/len(text)]
 		result += Text(string(char), color)
 	}
@@ -120,8 +120,7 @@ func RenderPrompt(text string, highlights []string, status PromptStatus) string 
 	return prompt + text
 }
 
-// Helper function to apply default styling without overriding existing styles
-func DefaultTextWithoutOverridingStyledText(text string) string {
+func TextWithoutOverridingStyledText(text string, color HexColor) string {
 	styledText := ""
 	for _, line := range strings.Split(text, "\n") {
 		// Split the line by ANSI escape codes to detect already styled substrings
@@ -129,13 +128,18 @@ func DefaultTextWithoutOverridingStyledText(text string) string {
 		for _, part := range parts {
 			if !containsANSI(part) {
 				// Only style the parts that don't already have styling
-				part = DefaultText(part)
+				part = Text(part, color)
 			}
 			styledText += part
 		}
 		styledText += "\n"
 	}
 	return strings.TrimSuffix(styledText, "\n")
+}
+
+// Helper function to apply default styling without overriding existing styles
+func DefaultTextWithoutOverridingStyledText(text string) string {
+	return TextWithoutOverridingStyledText(text, Ivory)
 }
 
 // Utility functions to handle ANSI escape codes
@@ -159,4 +163,8 @@ var (
 
 func RenderPreviousResponse(separator string, question string, highlights []string, answer string) string {
 	return RenderPrompt(question, highlights, Completed) + separator + answer + "\n"
+}
+
+func RenderError(err error) string {
+	return TextWithoutOverridingStyledText(fmt.Sprintf("%v\n", err), Yellow)
 }

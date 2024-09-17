@@ -11,7 +11,8 @@ type TextInput struct {
 	Text         string
 	Cursor       int // Cursor position within the text
 	Placeholder  string
-	ValidationFn func(string) bool
+	ValidationFn func(string) error
+	IsEntered    bool
 }
 
 func NewTextInput() TextInput {
@@ -23,8 +24,8 @@ func NewTextInput() TextInput {
 	}
 }
 
-func NoOps(c string) bool {
-	return true
+func (ti *TextInput) WithValidatorFn(fn func(string) error) {
+	ti.ValidationFn = fn
 }
 
 func (ti TextInput) Update(msg tea.Msg) (TextInput, tea.Cmd, bool) {
@@ -32,24 +33,30 @@ func (ti TextInput) Update(msg tea.Msg) (TextInput, tea.Cmd, bool) {
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyEnter:
-			return ti, nil, true
+			ti.IsEntered = true
+			return ti, nil, ti.ValidationFn(ti.Text) == nil
 		case tea.KeyBackspace, tea.KeyCtrlH:
+			ti.IsEntered = false
 			if ti.Cursor > 0 && len(ti.Text) > 0 {
 				ti.Text = ti.Text[:ti.Cursor-1] + ti.Text[ti.Cursor:]
 				ti.Cursor--
 			}
 		case tea.KeyRunes, tea.KeySpace:
+			ti.IsEntered = false
 			ti.Text = ti.Text[:ti.Cursor] + string(msg.Runes) + ti.Text[ti.Cursor:]
 			ti.Cursor += len(msg.Runes)
 		case tea.KeyLeft:
+			ti.IsEntered = false
 			if ti.Cursor > 0 {
 				ti.Cursor--
 			}
 		case tea.KeyRight:
+			ti.IsEntered = false
 			if ti.Cursor < len(ti.Text) {
 				ti.Cursor++
 			}
 		case tea.KeyCtrlC:
+			ti.IsEntered = false
 			return ti, tea.Quit, false
 		}
 
@@ -73,6 +80,13 @@ func (ti TextInput) View() string {
 		cursorChar = styles.Cursor(" ")
 	}
 
+	feedback := ""
+	if ti.IsEntered {
+		if err := ti.ValidationFn(ti.Text); err != nil {
+			feedback = styles.RenderError(err)
+		}
+	}
+
 	// Compose the full view string
-	return fmt.Sprintf("\n%s %s%s%s\n\n%s", styles.Text(">", styles.Cyan), beforeCursor, cursorChar, afterCursor, bottomText)
+	return fmt.Sprintf("\n%s %s%s%s\n\n%s%s", styles.Text(">", styles.Cyan), beforeCursor, cursorChar, afterCursor, feedback, bottomText)
 }
