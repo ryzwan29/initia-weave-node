@@ -28,7 +28,7 @@ func InitializeConfig() error {
 	viper.SetConfigType("json")
 
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		if err := createEmptyConfigFile(configPath); err != nil {
+		if err := createDefaultConfigFile(configPath); err != nil {
 			return fmt.Errorf("failed to create default config file: %v", err)
 		}
 	}
@@ -36,15 +36,14 @@ func InitializeConfig() error {
 	return LoadConfig()
 }
 
-func createEmptyConfigFile(filePath string) error {
+func createDefaultConfigFile(filePath string) error {
 	file, err := os.Create(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to create config file: %v", err)
 	}
 	defer file.Close()
 
-	// Initialize with an empty JSON object
-	_, err = file.WriteString("{}")
+	_, err = file.WriteString(DefaultConfigTemplate)
 	if err != nil {
 		return fmt.Errorf("failed to write to config file: %v", err)
 	}
@@ -78,3 +77,18 @@ func WriteConfig() error {
 func IsFirstTimeSetup() bool {
 	return viper.Get("common.gas_station_mnemonic") == nil
 }
+
+const DefaultConfigTemplate = `
+{
+	"endpoints": {
+		"mainnet": {
+			"rpc": "https://rpc.initia.xyz",
+			"lcd": "https://lcd.initia.xyz"
+		},
+		"testnet": {
+			"rpc": "https://rpc.testnet.initia.xyz",
+			"lcd": "https://lcd.testnet.initia.xyz"
+		}
+	}
+}
+`
