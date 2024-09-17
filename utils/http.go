@@ -66,38 +66,46 @@ type InitiaRelease struct {
 	} `json:"assets"`
 }
 
-func ListInitiaReleases(os, arch string) error {
+type InitiaVersionWithDownloadURL struct {
+	Version string
+	URL     string
+}
+
+func ListInitiaReleases(os, arch string) []InitiaVersionWithDownloadURL {
 	url := "https://api.github.com/repos/initia-labs/initia/releases"
 	resp, err := http.Get(url)
 	if err != nil {
-		return fmt.Errorf("failed to fetch releases: %v", err)
+		panic(fmt.Errorf("failed to fetch releases: %v", err))
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		panic(fmt.Errorf("unexpected status code: %d", resp.StatusCode))
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("failed to read response body: %v", err)
+		panic(fmt.Errorf("failed to read response body: %v", err))
 	}
 
 	var releases []InitiaRelease
 	if err := json.Unmarshal(body, &releases); err != nil {
-		return fmt.Errorf("failed to unmarshal JSON: %v", err)
+		panic(fmt.Errorf("failed to unmarshal JSON: %v", err))
 	}
 
 	searchString := fmt.Sprintf("%s_%s.tar.gz", os, arch)
+	versions := make([]InitiaVersionWithDownloadURL, 0)
 
 	for _, release := range releases {
 		for _, asset := range release.Assets {
 			if strings.Contains(asset.BrowserDownloadURL, searchString) {
-				fmt.Printf("Release: %s contains a prebuilt binary for %s_%s\n", release.TagName, os, arch)
-				fmt.Printf("Download URL: %s\n", asset.BrowserDownloadURL)
+				versions = append(versions, InitiaVersionWithDownloadURL{
+					Version: release.TagName,
+					URL:     asset.BrowserDownloadURL,
+				})
 			}
 		}
 	}
 
-	return nil
+	return versions
 }
