@@ -145,3 +145,39 @@ func ValidateMnemonic(mnemonic string) error {
 	}
 	return nil
 }
+
+// IsValidPeerOrSeed checks if each address in a comma-separated list is valid
+// It allows empty strings and returns an error if any address is invalid
+func IsValidPeerOrSeed(addresses string) error {
+	// Compile the regular expression once
+	peerRegex, err := regexp.Compile(`^[a-f0-9]{40}@[a-zA-Z0-9\.\-]+(:[0-9]+)?$`)
+	if err != nil {
+		return fmt.Errorf("failed to compile regex: %v", err)
+	}
+
+	// Split the input string by commas to handle multiple addresses
+	addressList := strings.Split(addresses, ",")
+
+	var invalidAddresses []string
+
+	// Iterate over each address and validate
+	for _, address := range addressList {
+		address = strings.TrimSpace(address) // Remove any leading/trailing spaces
+
+		// Skip empty strings, as they're considered valid
+		if address == "" {
+			continue
+		}
+
+		if !peerRegex.MatchString(address) {
+			invalidAddresses = append(invalidAddresses, address)
+		}
+	}
+
+	if len(invalidAddresses) > 0 {
+		// Return an error listing all invalid addresses
+		return errors.New("invalid peer/seed addresses: " + strings.Join(invalidAddresses, ", "))
+	}
+
+	return nil
+}

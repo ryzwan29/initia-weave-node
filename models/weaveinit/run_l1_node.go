@@ -301,11 +301,13 @@ type MinGasPriceInput struct {
 }
 
 func NewMinGasPriceInput(state *RunL1NodeState) *MinGasPriceInput {
-	return &MinGasPriceInput{
+	model := &MinGasPriceInput{
 		TextInput: utils.NewTextInput(),
 		state:     state,
 		question:  "Please specify min-gas-price (uinit)",
 	}
+	model.WithValidatorFn(utils.ValidateDecCoin)
+	return model
 }
 
 func (m *MinGasPriceInput) GetQuestion() string {
@@ -401,11 +403,13 @@ type SeedsInput struct {
 }
 
 func NewSeedsInput(state *RunL1NodeState) *SeedsInput {
-	return &SeedsInput{
+	model := &SeedsInput{
 		TextInput: utils.NewTextInput(),
 		state:     state,
 		question:  "Please specify the seeds",
 	}
+	model.WithValidatorFn(utils.IsValidPeerOrSeed)
+	return model
 }
 
 func (m *SeedsInput) GetQuestion() string {
@@ -438,11 +442,13 @@ type PersistentPeersInput struct {
 }
 
 func NewPersistentPeersInput(state *RunL1NodeState) *PersistentPeersInput {
-	return &PersistentPeersInput{
+	model := &PersistentPeersInput{
 		TextInput: utils.NewTextInput(),
 		state:     state,
 		question:  "Please specify the persistent_peers",
 	}
+	model.WithValidatorFn(utils.IsValidPeerOrSeed)
+	return model
 }
 
 func (m *PersistentPeersInput) GetQuestion() string {
