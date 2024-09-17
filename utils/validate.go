@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"net"
 	"regexp"
 	"strings"
 
@@ -147,12 +148,12 @@ func ValidateMnemonic(mnemonic string) error {
 }
 
 // IsValidPeerOrSeed checks if each address in a comma-separated list is valid
-// It allows empty strings and returns an error if any address is invalid
+// It allows empty strings and returns an error with detailed reasons if any address is invalid
 func IsValidPeerOrSeed(addresses string) error {
 	// Compile the regular expression once
-	peerRegex, err := regexp.Compile(`^[a-f0-9]{40}@[a-zA-Z0-9\.\-]+(:[0-9]+)?$`)
+	nodeIDRegex, err := regexp.Compile(`^[a-f0-9]{40}$`)
 	if err != nil {
-		return fmt.Errorf("failed to compile regex: %v", err)
+		return fmt.Errorf("failed to compile nodeID regex: %v", err)
 	}
 
 	// Split the input string by commas to handle multiple addresses
@@ -169,14 +170,46 @@ func IsValidPeerOrSeed(addresses string) error {
 			continue
 		}
 
-		if !peerRegex.MatchString(address) {
-			invalidAddresses = append(invalidAddresses, address)
+		parts := strings.Split(address, "@")
+		if len(parts) != 2 {
+			invalidAddresses = append(invalidAddresses, fmt.Sprintf("'%s': must be in format nodeID@ip:port", address))
+			continue
+		}
+
+		nodeID := parts[0]
+		peerAddr := parts[1]
+
+		// Validate node ID
+		if !nodeIDRegex.MatchString(nodeID) {
+			invalidAddresses = append(invalidAddresses, fmt.Sprintf("'%s': invalid node ID (must be 40-character hex string)", address))
+			continue
+		}
+
+		// Split address into IP and optional port
+		host, port, err := net.SplitHostPort(peerAddr)
+		if err != nil && !strings.Contains(err.Error(), "missing port in address") {
+			invalidAddresses = append(invalidAddresses, fmt.Sprintf("'%s': invalid address (IP:Port format required)", address))
+			continue
+		}
+
+		// Validate IP (host part)
+		if net.ParseIP(host) == nil {
+			invalidAddresses = append(invalidAddresses, fmt.Sprintf("'%s': invalid IP address", address))
+			continue
+		}
+
+		// Validate port if present
+		if port != "" {
+			if _, err := fmt.Sscanf(port, "%d", new(int)); err != nil {
+				invalidAddresses = append(invalidAddresses, fmt.Sprintf("'%s': invalid port", address))
+				continue
+			}
 		}
 	}
 
 	if len(invalidAddresses) > 0 {
-		// Return an error listing all invalid addresses
-		return errors.New("invalid peer/seed addresses: " + strings.Join(invalidAddresses, ", "))
+		// Return an error with detailed messages
+		return errors.New("invalid peer/seed addresses:" + strings.Join(invalidAddresses, ","))
 	}
 
 	return nil
