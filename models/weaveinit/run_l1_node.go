@@ -745,8 +745,6 @@ func initializeApp(state *RunL1NodeState) tea.Cmd {
 
 			// TODO: Continue from this
 			runCmd := exec.Command(binaryPath)
-			runCmd.Stdout = os.Stdout
-			runCmd.Stderr = os.Stderr
 			if err := runCmd.Run(); err != nil {
 				panic(fmt.Sprintf("failed to run binary: %v", err))
 			}
