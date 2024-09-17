@@ -61,7 +61,7 @@ func (ti TextInput) View() string {
 	var beforeCursor, cursorChar, afterCursor string
 	bottomText := styles.Text("Press Enter to submit or Ctrl+C to quit.", styles.Gray)
 	if len(ti.Text) == 0 {
-		return "\n" + styles.Text("> ", styles.Yellow) + styles.Text(ti.Placeholder, styles.Gray) + styles.Cursor(" ") + "\n\n" + bottomText
+		return "\n" + styles.Text("> ", styles.Cyan) + styles.Text(ti.Placeholder, styles.Gray) + styles.Cursor(" ") + "\n\n" + bottomText
 	} else if ti.Cursor < len(ti.Text) {
 		// Cursor is within the text
 		beforeCursor = styles.Text(ti.Text[:ti.Cursor], styles.Ivory)
@@ -74,5 +74,5 @@ func (ti TextInput) View() string {
 	}
 
 	// Compose the full view string
-	return fmt.Sprintf("\n%s %s%s%s\n\n%s", styles.Text(">", styles.Yellow), beforeCursor, cursorChar, afterCursor, bottomText)
+	return fmt.Sprintf("\n%s %s%s%s\n\n%s", styles.Text(">", styles.Cyan), beforeCursor, cursorChar, afterCursor, bottomText)
 }

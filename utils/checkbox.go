@@ -57,7 +57,7 @@ func (s *CheckBox[T]) View() string {
 		// Mark selected items and the current cursor
 		cursor := " "
 		if i == s.Cursor {
-			cursor = styles.Text(">", styles.Yellow)
+			cursor = styles.Text(">", styles.Cyan)
 		}
 		selectedMark := "○"
 		if s.Selected[i] {

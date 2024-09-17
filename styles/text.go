@@ -7,7 +7,7 @@ import (
 )
 
 func DefaultText(text string) string {
-	return Text(text, Ivory)
+	return Text(text, White)
 }
 
 func SetColor(text string, color HexColor) string {
