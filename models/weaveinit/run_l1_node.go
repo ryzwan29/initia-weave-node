@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strings"
 	"time"
 
@@ -61,7 +62,7 @@ func (m *RunL1NodeNetworkSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case Mainnet, Testnet:
 			return NewRunL1NodeMonikerInput(m.state), cmd
 		case Local:
-			return NewRunL1NodeVersionInput(m.state), nil
+			return NewRunL1NodeVersionSelect(m.state), nil
 		}
 		return m, tea.Quit
 	}
@@ -73,41 +74,52 @@ func (m *RunL1NodeNetworkSelect) View() string {
 	return styles.RenderPrompt("Which network will your node participate in?", []string{"network"}, styles.Question) + m.Selector.View()
 }
 
-type RunL1NodeVersionInput struct {
-	utils.TextInput
+type RunL1NodeVersionSelect struct {
+	utils.Selector[string]
 	state    *RunL1NodeState
+	versions utils.InitiaVersionWithDownloadURL
 	question string
 }
 
-func NewRunL1NodeVersionInput(state *RunL1NodeState) *RunL1NodeVersionInput {
-	return &RunL1NodeVersionInput{
-		TextInput: utils.NewTextInput(),
-		state:     state,
-		question:  "Please specify the initiad version",
+func NewRunL1NodeVersionSelect(state *RunL1NodeState) *RunL1NodeVersionSelect {
+	versions := utils.ListInitiaReleases()
+	options := make([]string, 0, len(versions))
+	for key := range versions {
+		options = append(options, key)
+	}
+	sort.Sort(sort.Reverse(sort.StringSlice(options)))
+	return &RunL1NodeVersionSelect{
+		Selector: utils.Selector[string]{
+			Options: options,
+		},
+		state:    state,
+		versions: versions,
+		question: "Which network will your node participate in?",
 	}
 }
 
-func (m *RunL1NodeVersionInput) GetQuestion() string {
+func (m *RunL1NodeVersionSelect) GetQuestion() string {
 	return m.question
 }
 
-func (m *RunL1NodeVersionInput) Init() tea.Cmd {
+func (m *RunL1NodeVersionSelect) Init() tea.Cmd {
 	return nil
 }
 
-func (m *RunL1NodeVersionInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	input, cmd, done := m.TextInput.Update(msg)
-	if done {
-		m.state.initiadVersion = input.Text
-		m.state.weave.PreviousResponse += styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"initiad version"}, input.Text)
+func (m *RunL1NodeVersionSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	selected, cmd := m.Select(msg)
+	if selected != nil {
+		m.state.initiadVersion = *selected
+		m.state.initiadEndpoint = m.versions[*selected]
+		m.state.weave.PreviousResponse += styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"initiad version"}, m.state.initiadVersion)
 		return NewRunL1NodeChainIdInput(m.state), cmd
 	}
-	m.TextInput = input
+
 	return m, cmd
 }
 
-func (m *RunL1NodeVersionInput) View() string {
-	return m.state.weave.PreviousResponse + styles.RenderPrompt(m.GetQuestion(), []string{"initiad version"}, styles.Question) + m.TextInput.View()
+func (m *RunL1NodeVersionSelect) View() string {
+	return styles.RenderPrompt("Which network will your node participate in?", []string{"network"}, styles.Question) + m.Selector.View()
 }
 
 type RunL1NodeChainIdInput struct {

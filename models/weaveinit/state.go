@@ -6,6 +6,7 @@ type RunL1NodeState struct {
 	weave               types.WeaveState
 	network             string
 	initiadVersion      string
+	initiadEndpoint     string
 	chainId             string
 	moniker             string
 	existingApp         bool
