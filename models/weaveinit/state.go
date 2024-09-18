@@ -24,3 +24,9 @@ type RunL1NodeState struct {
 	snapshotEndpoint    string
 	stateSyncEndpoint   string
 }
+
+func NewRunL1NodeState() *RunL1NodeState {
+	return &RunL1NodeState{
+		weave: types.NewWeaveState(),
+	}
+}

@@ -57,7 +57,7 @@ func (m *RunL1NodeNetworkSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if selected != nil {
 		selectedString := string(*selected)
 		m.state.network = selectedString
-		m.state.weave.PreviousResponse += styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"network"}, selectedString)
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"network"}, selectedString))
 		switch *selected {
 		case Mainnet, Testnet:
 			return NewRunL1NodeMonikerInput(m.state), cmd
@@ -111,7 +111,7 @@ func (m *RunL1NodeVersionSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if selected != nil {
 		m.state.initiadVersion = *selected
 		m.state.initiadEndpoint = m.versions[*selected]
-		m.state.weave.PreviousResponse += styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"initiad version"}, m.state.initiadVersion)
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"initiad version"}, m.state.initiadVersion))
 		return NewRunL1NodeChainIdInput(m.state), cmd
 	}
 
@@ -119,7 +119,7 @@ func (m *RunL1NodeVersionSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *RunL1NodeVersionSelect) View() string {
-	return m.state.weave.PreviousResponse + styles.RenderPrompt("Which initiad version would you like to use?", []string{"initiad version"}, styles.Question) + m.Selector.View()
+	return m.state.weave.Render() + styles.RenderPrompt("Which initiad version would you like to use?", []string{"initiad version"}, styles.Question) + m.Selector.View()
 }
 
 type RunL1NodeChainIdInput struct {
@@ -148,7 +148,7 @@ func (m *RunL1NodeChainIdInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
 		m.state.chainId = input.Text
-		m.state.weave.PreviousResponse += styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"chain id"}, input.Text)
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"chain id"}, input.Text))
 		return NewRunL1NodeMonikerInput(m.state), cmd
 	}
 	m.TextInput = input
@@ -156,7 +156,7 @@ func (m *RunL1NodeChainIdInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *RunL1NodeChainIdInput) View() string {
-	return m.state.weave.PreviousResponse + styles.RenderPrompt(m.GetQuestion(), []string{"chain id"}, styles.Question) + m.TextInput.View()
+	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"chain id"}, styles.Question) + m.TextInput.View()
 }
 
 type RunL1NodeMonikerInput struct {
@@ -185,7 +185,7 @@ func (m *RunL1NodeMonikerInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
 		m.state.moniker = input.Text
-		m.state.weave.PreviousResponse += styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"moniker"}, input.Text)
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"moniker"}, input.Text))
 		model := NewExistingAppChecker(m.state)
 		return model, model.Init()
 	}
@@ -194,7 +194,7 @@ func (m *RunL1NodeMonikerInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *RunL1NodeMonikerInput) View() string {
-	return m.state.weave.PreviousResponse + styles.RenderPrompt(m.GetQuestion(), []string{"moniker"}, styles.Question) + m.TextInput.View()
+	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"moniker"}, styles.Question) + m.TextInput.View()
 }
 
 type ExistingAppChecker struct {
@@ -249,7 +249,7 @@ func (m *ExistingAppChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *ExistingAppChecker) View() string {
-	return m.state.weave.PreviousResponse + "\n" + m.loading.View()
+	return m.state.weave.Render() + "\n" + m.loading.View()
 }
 
 type ExistingAppReplaceSelect struct {
@@ -289,7 +289,7 @@ func (m *ExistingAppReplaceSelect) Init() tea.Cmd {
 func (m *ExistingAppReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	selected, cmd := m.Select(msg)
 	if selected != nil {
-		m.state.weave.PreviousResponse += styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"config/app.toml", "config/config.toml"}, string(*selected))
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"config/app.toml", "config/config.toml"}, string(*selected)))
 		switch *selected {
 		case UseCurrentApp:
 			m.state.replaceExistingApp = false
@@ -306,7 +306,7 @@ func (m *ExistingAppReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *ExistingAppReplaceSelect) View() string {
-	return m.state.weave.PreviousResponse + styles.RenderPrompt("Existing config/app.toml and config/config.toml detected. Would you like to use the current files or replace them", []string{"config/app.toml", "config/config.toml"}, styles.Question) + m.Selector.View()
+	return m.state.weave.Render() + styles.RenderPrompt("Existing config/app.toml and config/config.toml detected. Would you like to use the current files or replace them", []string{"config/app.toml", "config/config.toml"}, styles.Question) + m.Selector.View()
 }
 
 type MinGasPriceInput struct {
@@ -338,7 +338,7 @@ func (m *MinGasPriceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
 		m.state.minGasPrice = input.Text
-		m.state.weave.PreviousResponse += styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"min-gas-price"}, input.Text)
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"min-gas-price"}, input.Text))
 		return NewEnableFeaturesCheckbox(m.state), cmd
 	}
 	m.TextInput = input
@@ -350,7 +350,7 @@ func (m *MinGasPriceInput) View() string {
 	if !m.state.existingApp {
 		preText += styles.RenderPrompt("There is no config/app.toml or config/config.toml available. You will need to enter the required information to proceed.\n", []string{"config/app.toml", "config/config.toml"}, styles.Information)
 	}
-	return m.state.weave.PreviousResponse + preText + styles.RenderPrompt(m.GetQuestion(), []string{"min-gas-price"}, styles.Question) + m.TextInput.View()
+	return m.state.weave.Render() + preText + styles.RenderPrompt(m.GetQuestion(), []string{"min-gas-price"}, styles.Question) + m.TextInput.View()
 }
 
 type EnableFeaturesCheckbox struct {
@@ -398,9 +398,9 @@ func (m *EnableFeaturesCheckbox) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 		if empty {
-			m.state.weave.PreviousResponse += styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, "None")
+			m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, "None"))
 		} else {
-			m.state.weave.PreviousResponse += styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, cb.GetSelectedString())
+			m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, cb.GetSelectedString()))
 		}
 		return NewSeedsInput(m.state), nil
 	}
@@ -409,7 +409,7 @@ func (m *EnableFeaturesCheckbox) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *EnableFeaturesCheckbox) View() string {
-	return m.state.weave.PreviousResponse + styles.RenderPrompt(m.GetQuestion(), []string{}, styles.Question) + "\n" + m.CheckBox.View()
+	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{}, styles.Question) + "\n" + m.CheckBox.View()
 }
 
 type SeedsInput struct {
@@ -441,7 +441,7 @@ func (m *SeedsInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
 		m.state.seeds = input.Text
-		m.state.weave.PreviousResponse += styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"seeds"}, input.Text)
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"seeds"}, input.Text))
 		return NewPersistentPeersInput(m.state), cmd
 	}
 	m.TextInput = input
@@ -449,7 +449,7 @@ func (m *SeedsInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *SeedsInput) View() string {
-	return m.state.weave.PreviousResponse + styles.RenderPrompt(m.GetQuestion(), []string{"seeds"}, styles.Question) + m.TextInput.View()
+	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"seeds"}, styles.Question) + m.TextInput.View()
 }
 
 type PersistentPeersInput struct {
@@ -481,7 +481,7 @@ func (m *PersistentPeersInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
 		m.state.persistentPeers = input.Text
-		m.state.weave.PreviousResponse += styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"persistent_peers"}, input.Text)
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"persistent_peers"}, input.Text))
 		model := NewExistingGenesisChecker(m.state)
 		return model, model.Init()
 	}
@@ -490,7 +490,7 @@ func (m *PersistentPeersInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *PersistentPeersInput) View() string {
-	return m.state.weave.PreviousResponse + styles.RenderPrompt(m.GetQuestion(), []string{"persistent_peers"}, styles.Question) + m.TextInput.View()
+	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"persistent_peers"}, styles.Question) + m.TextInput.View()
 }
 
 type ExistingGenesisChecker struct {
@@ -549,7 +549,7 @@ func (m *ExistingGenesisChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *ExistingGenesisChecker) View() string {
-	return m.state.weave.PreviousResponse + "\n" + m.loading.View()
+	return m.state.weave.Render() + "\n" + m.loading.View()
 }
 
 type ExistingGenesisReplaceSelect struct {
@@ -589,7 +589,7 @@ func (m *ExistingGenesisReplaceSelect) Init() tea.Cmd {
 func (m *ExistingGenesisReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	selected, cmd := m.Select(msg)
 	if selected != nil {
-		m.state.weave.PreviousResponse += styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"config/genesis.json"}, string(*selected))
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"config/genesis.json"}, string(*selected)))
 		switch *selected {
 		case UseCurrentGenesis:
 			newLoader := NewInitializingAppLoading(m.state)
@@ -604,7 +604,7 @@ func (m *ExistingGenesisReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) 
 }
 
 func (m *ExistingGenesisReplaceSelect) View() string {
-	return m.state.weave.PreviousResponse + styles.RenderPrompt(
+	return m.state.weave.Render() + styles.RenderPrompt(
 		m.GetQuestion(),
 		[]string{"config/genesis.json"},
 		styles.Question,
@@ -637,7 +637,7 @@ func (m *GenesisEndpointInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
 		m.state.genesisEndpoint = input.Text
-		m.state.weave.PreviousResponse += styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"endpoint"}, input.Text)
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"endpoint"}, input.Text))
 		newLoader := NewInitializingAppLoading(m.state)
 		return newLoader, newLoader.Init()
 	}
@@ -650,7 +650,7 @@ func (m *GenesisEndpointInput) View() string {
 	if !m.state.existingApp {
 		preText += styles.RenderPrompt("There is no config/genesis.json available. You will need to enter the required information to proceed.\n", []string{"config/genesis.json"}, styles.Information)
 	}
-	return m.state.weave.PreviousResponse + preText + styles.RenderPrompt(m.GetQuestion(), []string{"endpoint"}, styles.Question) + m.TextInput.View()
+	return m.state.weave.Render() + preText + styles.RenderPrompt(m.GetQuestion(), []string{"endpoint"}, styles.Question) + m.TextInput.View()
 }
 
 type InitializingAppLoading struct {
@@ -673,7 +673,7 @@ func (m *InitializingAppLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	loader, cmd := m.Loading.Update(msg)
 	m.Loading = loader
 	if m.Loading.Completing {
-		m.state.weave.PreviousResponse += styles.RenderPrompt("Initialization successful.\n", []string{}, styles.Completed)
+		m.state.weave.PushPreviousResponse(styles.RenderPrompt("Initialization successful.\n", []string{}, styles.Completed))
 		switch m.state.network {
 		case string(Local):
 			return m, tea.Quit
@@ -686,9 +686,9 @@ func (m *InitializingAppLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *InitializingAppLoading) View() string {
 	if m.Completing {
-		return m.state.weave.PreviousResponse
+		return m.state.weave.Render()
 	}
-	return m.state.weave.PreviousResponse + m.Loading.View()
+	return m.state.weave.Render() + m.Loading.View()
 }
 
 func initializeApp(state *RunL1NodeState) tea.Cmd {
@@ -831,7 +831,7 @@ func (m *SyncMethodSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	selected, cmd := m.Select(msg)
 	if selected != nil {
 		m.state.syncMethod = string(*selected)
-		m.state.weave.PreviousResponse += styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{""}, string(*selected))
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{""}, string(*selected)))
 		model := NewExistingDataChecker(m.state)
 		return model, model.Init()
 	}
@@ -840,7 +840,7 @@ func (m *SyncMethodSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *SyncMethodSelect) View() string {
-	return m.state.weave.PreviousResponse + styles.RenderPrompt(
+	return m.state.weave.Render() + styles.RenderPrompt(
 		m.GetQuestion(),
 		[]string{""},
 		styles.Question,
@@ -905,7 +905,7 @@ func (m *ExistingDataChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *ExistingDataChecker) View() string {
-	return m.state.weave.PreviousResponse + "\n" + m.loading.View()
+	return m.state.weave.Render() + "\n" + m.loading.View()
 }
 
 type ExistingDataReplaceSelect struct {
@@ -945,7 +945,7 @@ func (m *ExistingDataReplaceSelect) Init() tea.Cmd {
 func (m *ExistingDataReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	selected, cmd := m.Select(msg)
 	if selected != nil {
-		m.state.weave.PreviousResponse += styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{utils.InitiaDataDirectory}, string(*selected))
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{utils.InitiaDataDirectory}, string(*selected)))
 		switch *selected {
 		case UseCurrentData:
 			m.state.replaceExistingData = false
@@ -966,13 +966,14 @@ func (m *ExistingDataReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *ExistingDataReplaceSelect) View() string {
-	return m.state.weave.PreviousResponse + styles.RenderPrompt(m.GetQuestion(), []string{utils.InitiaDataDirectory}, styles.Question) + m.Selector.View()
+	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{utils.InitiaDataDirectory}, styles.Question) + m.Selector.View()
 }
 
 type SnapshotEndpointInput struct {
 	utils.TextInput
 	state    *RunL1NodeState
 	question string
+	err      error
 }
 
 func NewSnapshotEndpointInput(state *RunL1NodeState) *SnapshotEndpointInput {
@@ -995,9 +996,12 @@ func (m *SnapshotEndpointInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
 		m.state.snapshotEndpoint = input.Text
-		m.state.weave.PreviousResponse += styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"snapshot url"}, input.Text)
-		snapshotDownload := NewSnapshotDownloadLoading(m.state)
-		return snapshotDownload, snapshotDownload.Init()
+		// m.state.weave.PreviousResponse += styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"snapshot url"}, input.Text)
+		if snapshotDownload, err := NewSnapshotDownloadLoading(m.state); err == nil {
+			return snapshotDownload, snapshotDownload.Init()
+		} else {
+			return snapshotDownload, tea.Quit
+		}
 	}
 	m.TextInput = input
 	return m, cmd
@@ -1005,7 +1009,11 @@ func (m *SnapshotEndpointInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *SnapshotEndpointInput) View() string {
 	// TODO: Correctly render terminal output
-	return m.state.weave.PreviousResponse + styles.RenderPrompt(m.GetQuestion(), []string{"snapshot url"}, styles.Question) + m.TextInput.View()
+	view := m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"snapshot url"}, styles.Question)
+	if m.err != nil {
+		return view + "\n" + m.TextInput.ViewErr(m.err)
+	}
+	return view + m.TextInput.View()
 }
 
 type StateSyncEndpointInput struct {
@@ -1034,7 +1042,7 @@ func (m *StateSyncEndpointInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
 		m.state.stateSyncEndpoint = input.Text
-		m.state.weave.PreviousResponse += styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"state sync RPC"}, input.Text)
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"state sync RPC"}, input.Text))
 		// TODO: Continue
 		return m, tea.Quit
 	}
@@ -1044,7 +1052,7 @@ func (m *StateSyncEndpointInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *StateSyncEndpointInput) View() string {
 	// TODO: Correctly render terminal output
-	return m.state.weave.PreviousResponse + styles.RenderPrompt(m.GetQuestion(), []string{"state sync RPC"}, styles.Question) + m.TextInput.View()
+	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"state sync RPC"}, styles.Question) + m.TextInput.View()
 }
 
 type SnapshotDownloadLoading struct {
@@ -1052,11 +1060,11 @@ type SnapshotDownloadLoading struct {
 	state *RunL1NodeState
 }
 
-func NewSnapshotDownloadLoading(state *RunL1NodeState) *SnapshotDownloadLoading {
+func NewSnapshotDownloadLoading(state *RunL1NodeState) (*SnapshotDownloadLoading, error) {
 	userHome, err := os.UserHomeDir()
 	if err != nil {
 		fmt.Printf("[error] Failed to get user home: %v\n", err)
-		// TODO: Return error
+		return nil, err
 	}
 
 	return &SnapshotDownloadLoading{
@@ -1066,7 +1074,7 @@ func NewSnapshotDownloadLoading(state *RunL1NodeState) *SnapshotDownloadLoading 
 			fmt.Sprintf("%s/%s/%s", userHome, utils.WeaveDataDirectory, utils.SnapshotFilename),
 		),
 		state: state,
-	}
+	}, nil
 }
 
 func (m *SnapshotDownloadLoading) Init() tea.Cmd {
@@ -1074,18 +1082,28 @@ func (m *SnapshotDownloadLoading) Init() tea.Cmd {
 }
 
 func (m *SnapshotDownloadLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if err := m.GetError(); err != nil {
+		model := NewSnapshotEndpointInput(m.state)
+		model.err = err
+		return model, nil
+	}
+
 	if m.GetCompletion() {
-		m.state.weave.PreviousResponse += styles.RenderPreviousResponse(styles.NoSeparator, "Snapshot download completed.", []string{}, "")
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "Snapshot download completed.", []string{}, ""))
 		newLoader := NewSnapshotExtractLoading(m.state)
+
 		return newLoader, newLoader.Init()
 	}
+
 	downloader, cmd := m.Downloader.Update(msg)
 	m.Downloader = *downloader
+
 	return m, cmd
 }
 
 func (m *SnapshotDownloadLoading) View() string {
-	return m.state.weave.PreviousResponse + m.Downloader.View()
+	view := m.state.weave.Render() + m.Downloader.View()
+	return view
 }
 
 type SnapshotExtractLoading struct {
@@ -1108,7 +1126,7 @@ func (m *SnapshotExtractLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	loader, cmd := m.Loading.Update(msg)
 	m.Loading = loader
 	if m.Loading.Completing {
-		m.state.weave.PreviousResponse += styles.RenderPreviousResponse(styles.NoSeparator, fmt.Sprintf("Snapshot extracted to %s successfully.", utils.InitiaDataDirectory), []string{}, "")
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, fmt.Sprintf("Snapshot extracted to %s successfully.", utils.InitiaDataDirectory), []string{}, ""))
 		return m, tea.Quit
 	}
 	return m, cmd
@@ -1116,9 +1134,9 @@ func (m *SnapshotExtractLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *SnapshotExtractLoading) View() string {
 	if m.Completing {
-		return m.state.weave.PreviousResponse
+		return m.state.weave.Render()
 	}
-	return m.state.weave.PreviousResponse + m.Loading.View()
+	return m.state.weave.Render() + m.Loading.View()
 }
 
 func snapshotExtractor() tea.Cmd {

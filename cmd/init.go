@@ -44,7 +44,7 @@ func InitiaInitCommand() *cobra.Command {
 				}
 			}
 
-			_, err := tea.NewProgram(weaveinit.NewRunL1NodeNetworkSelect(&weaveinit.RunL1NodeState{})).Run()
+			_, err := tea.NewProgram(weaveinit.NewRunL1NodeNetworkSelect(weaveinit.NewRunL1NodeState())).Run()
 			if err != nil {
 				return err
 			}

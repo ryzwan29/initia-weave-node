@@ -21,6 +21,7 @@ type Downloader struct {
 	url      string
 	dest     string
 	done     bool
+	err      error
 }
 
 func NewDownloader(text, url, dest string) *Downloader {
@@ -30,54 +31,78 @@ func NewDownloader(text, url, dest string) *Downloader {
 		text:     text,
 		url:      url,
 		dest:     dest,
+		err:      nil,
 	}
+}
+
+func (m *Downloader) GetError() error {
+	return m.err
 }
 
 func (m *Downloader) startDownload() tea.Cmd {
 	return func() tea.Msg {
 		const bufferSize = 65536
 
+		// Send a GET request to the URL
 		resp, err := http.Get(m.url)
 		if err != nil {
 			m.done = true
+			m.err = fmt.Errorf("failed to connect to URL: %w", err)
 			return nil
 		}
 		defer resp.Body.Close()
 
+		// Check if the response status is not 200 OK
+		if resp.StatusCode != http.StatusOK {
+			m.done = true
+			m.err = fmt.Errorf("failed to download: received status code %d", resp.StatusCode)
+			return nil
+		}
+
+		// Get the total size of the file
 		m.total = resp.ContentLength
 		if m.total <= 0 {
+			// If Content-Length is not provided, we set a default value for safety
 			m.total = 1
 		}
 
+		// Create the destination file
 		file, err := os.Create(m.dest)
 		if err != nil {
 			m.done = true
+			m.err = fmt.Errorf("failed to create destination file: %w", err)
 			return nil
 		}
 		defer file.Close()
 
+		// Prepare to download the file in chunks
 		buffer := make([]byte, bufferSize)
 		var totalDownloaded int64
 		for {
 			n, err := resp.Body.Read(buffer)
 			if err != nil && err != io.EOF {
 				m.done = true
+				m.err = fmt.Errorf("error during file download: %w", err)
 				return nil
 			}
 			if n == 0 {
 				break
 			}
 
+			// Write the downloaded chunk to the file
 			if _, err := file.Write(buffer[:n]); err != nil {
 				m.done = true
+				m.err = fmt.Errorf("failed to write to file: %w", err)
 				return nil
 			}
 
+			// Update the progress
 			totalDownloaded += int64(n)
 			m.current = totalDownloaded
 		}
 
 		m.done = true
+		m.err = nil
 		return nil
 	}
 }
@@ -103,6 +128,10 @@ func (m *Downloader) Update(msg tea.Msg) (*Downloader, tea.Cmd) {
 }
 
 func (m *Downloader) View() string {
+	if m.err != nil {
+		return ""
+	}
+
 	if m.done {
 		return fmt.Sprintf("%sDownload Complete!\nTotal Size: %d bytes\n", styles.CorrectMark, m.total)
 	}

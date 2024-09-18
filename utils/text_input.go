@@ -94,3 +94,30 @@ func (ti TextInput) View() string {
 	// Compose the full view string
 	return fmt.Sprintf("\n%s %s%s%s\n\n%s%s", styles.Text(">", styles.Cyan), beforeCursor, cursorChar, afterCursor, feedback, bottomText)
 }
+
+func (ti TextInput) ViewErr(err error) string {
+	var beforeCursor, cursorChar, afterCursor string
+	bottomText := styles.Text("Press Enter to submit or Ctrl+C to quit.", styles.Gray)
+	if len(ti.Text) == 0 {
+		return "\n" + styles.Text("> ", styles.Cyan) + styles.Text(ti.Placeholder, styles.Gray) + styles.Cursor(" ") + "\n\n" + styles.RenderError(err) + bottomText
+	} else if ti.Cursor < len(ti.Text) {
+		// Cursor is within the text
+		beforeCursor = styles.Text(ti.Text[:ti.Cursor], styles.Ivory)
+		cursorChar = styles.Cursor(ti.Text[ti.Cursor : ti.Cursor+1])
+		afterCursor = styles.Text(ti.Text[ti.Cursor+1:], styles.Ivory)
+	} else {
+		// Cursor is at the end of the text
+		beforeCursor = styles.Text(ti.Text, styles.Ivory)
+		cursorChar = styles.Cursor(" ")
+	}
+
+	feedback := ""
+	if ti.IsEntered {
+		if err := ti.ValidationFn(ti.Text); err != nil {
+			feedback = styles.RenderError(err)
+		}
+	}
+
+	// Compose the full view string
+	return fmt.Sprintf("\n%s %s%s%s\n\n%s%s%s", styles.Text(">", styles.Cyan), beforeCursor, cursorChar, afterCursor, feedback, styles.RenderError(err), bottomText)
+}

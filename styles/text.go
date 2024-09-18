@@ -98,6 +98,29 @@ var (
 	SelectorCursor  string = Text("> ", Cyan)
 )
 
+func RenderPromptWithError(text string, highlights []string, err error, status PromptStatus) string {
+	prompt := ""
+	switch status {
+	case Question:
+		prompt += QuestionMark
+	case Completed:
+		prompt += CorrectMark
+	case Information:
+		prompt += InformationMark
+	}
+
+	for _, highlight := range highlights {
+		if strings.Contains(text, highlight) {
+			text = strings.ReplaceAll(text, highlight, BoldText(highlight, Cyan))
+		}
+	}
+
+	text = DefaultTextWithoutOverridingStyledText(text)
+
+	return prompt + RenderError(err) + text
+
+}
+
 // RenderPrompt highlights phrases in the text if they match any phrase in the highlights list
 func RenderPrompt(text string, highlights []string, status PromptStatus) string {
 	prompt := ""
