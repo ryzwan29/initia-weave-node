@@ -16,6 +16,22 @@ func FileOrFolderExists(path string) bool {
 	return !os.IsNotExist(err)
 }
 
+func DownloadAndExtractTarGz(url, tarballPath, extractedPath string) error {
+	if err := DownloadFile(url, tarballPath); err != nil {
+		return err
+	}
+
+	if err := ExtractTarGz(tarballPath, extractedPath); err != nil {
+		return err
+	}
+
+	if err := os.Remove(tarballPath); err != nil {
+		return fmt.Errorf("failed to remove tarball file: %v", err)
+	}
+
+	return nil
+}
+
 func DownloadFile(url, filepath string) error {
 	resp, err := http.Get(url)
 	if err != nil {

@@ -693,78 +693,72 @@ func (m *InitializingAppLoading) View() string {
 
 func initializeApp(state *RunL1NodeState) tea.Cmd {
 	return func() tea.Msg {
-		// TODO: Separate this logic depending on the network
 		userHome, err := os.UserHomeDir()
 		if err != nil {
 			panic(fmt.Sprintf("failed to get user home directory: %v", err))
 		}
+		weaveDataPath := filepath.Join(userHome, utils.WeaveDataDirectory)
+		tarballPath := filepath.Join(weaveDataPath, "initia.tar.gz")
 
-		var result map[string]interface{}
-		err = utils.MakeGetRequest(strings.ToLower(state.network), "lcd", "/cosmos/base/tendermint/v1beta1/node_info", nil, &result)
-		if err != nil {
-			panic(err)
-		}
+		var nodeVersion, extractedPath, binaryPath, url string
 
-		if applicationVersion, ok := result["application_version"].(map[string]interface{}); ok {
-			nodeVersion := applicationVersion["version"].(string)
+		switch state.network {
+		case string(Local):
+			nodeVersion = state.initiadVersion
+			extractedPath = filepath.Join(weaveDataPath, fmt.Sprintf("initia@%s", nodeVersion))
+			url = state.initiadEndpoint
+		case string(Mainnet), string(Testnet):
+			var result map[string]interface{}
+			err = utils.MakeGetRequest(strings.ToLower(state.network), "lcd", "/cosmos/base/tendermint/v1beta1/node_info", nil, &result)
+			if err != nil {
+				panic(err)
+			}
 
+			applicationVersion, ok := result["application_version"].(map[string]interface{})
+			if !ok {
+				panic("failed to get node version")
+			}
+
+			nodeVersion = applicationVersion["version"].(string)
 			goos := runtime.GOOS
 			goarch := runtime.GOARCH
-
-			url := getBinaryURL(nodeVersion, goos, goarch)
-			if url == "" {
-				panic("unsupported OS or architecture")
-			}
-
-			weaveDataPath := filepath.Join(userHome, utils.WeaveDataDirectory)
-			tarballPath := filepath.Join(weaveDataPath, "initia.tar.gz")
-			extractedPath := filepath.Join(weaveDataPath, fmt.Sprintf("initia@%s", nodeVersion))
-			binaryPath := filepath.Join(extractedPath, "initiad")
-
-			if _, err := os.Stat(binaryPath); os.IsNotExist(err) {
-				if _, err := os.Stat(extractedPath); os.IsNotExist(err) {
-					err := os.MkdirAll(extractedPath, os.ModePerm)
-					if err != nil {
-						panic(fmt.Sprintf("failed to create weave data directory: %v", err))
-					}
-				}
-
-				err = utils.DownloadFile(url, tarballPath)
-				if err != nil {
-					panic(fmt.Sprintf("failed to download file: %v", err))
-				}
-
-				err = utils.ExtractTarGz(tarballPath, extractedPath)
-				if err != nil {
-					panic(fmt.Sprintf("failed to extract tarball: %v", err))
-				}
-
-				err = os.Remove(tarballPath)
-				if err != nil {
-					panic(fmt.Sprintf("failed to remove tarball file: %v", err))
-				}
-
-				err = os.Chmod(binaryPath, os.ModePerm)
-				if err != nil {
-					panic(fmt.Sprintf("failed to set permissions for binary: %v", err))
-				}
-			}
-
-			err = os.Setenv("DYLD_LIBRARY_PATH", extractedPath)
-			if err != nil {
-				panic(fmt.Sprintf("failed to set DYLD_LIBRARY_PATH: %v", err))
-			}
-
-			// TODO: Continue from this
-			runCmd := exec.Command(binaryPath)
-			if err := runCmd.Run(); err != nil {
-				panic(fmt.Sprintf("failed to run binary: %v", err))
-			}
-
-			return utils.EndLoading{}
-		} else {
-			panic("failed to get node version")
+			url = getBinaryURL(nodeVersion, goos, goarch)
+			extractedPath = filepath.Join(weaveDataPath, fmt.Sprintf("initia@%s", nodeVersion))
+		default:
+			panic("unsupported network")
 		}
+
+		binaryPath = filepath.Join(extractedPath, "initiad")
+		if _, err := os.Stat(binaryPath); os.IsNotExist(err) {
+			if _, err := os.Stat(extractedPath); os.IsNotExist(err) {
+				err := os.MkdirAll(extractedPath, os.ModePerm)
+				if err != nil {
+					panic(fmt.Sprintf("failed to create weave data directory: %v", err))
+				}
+			}
+
+			if err = utils.DownloadAndExtractTarGz(url, tarballPath, extractedPath); err != nil {
+				panic(fmt.Sprintf("failed to download and extract binary: %v", err))
+			}
+
+			err = os.Chmod(binaryPath, os.ModePerm)
+			if err != nil {
+				panic(fmt.Sprintf("failed to set permissions for binary: %v", err))
+			}
+		}
+
+		err = os.Setenv("DYLD_LIBRARY_PATH", extractedPath)
+		if err != nil {
+			panic(fmt.Sprintf("failed to set DYLD_LIBRARY_PATH: %v", err))
+		}
+
+		// TODO: Continue from this
+		runCmd := exec.Command(binaryPath)
+		if err := runCmd.Run(); err != nil {
+			panic(fmt.Sprintf("failed to run binary: %v", err))
+		}
+
+		return utils.EndLoading{}
 	}
 }
 
