@@ -57,7 +57,7 @@ func (m *RunL1NodeNetworkSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if selected != nil {
 		selectedString := string(*selected)
 		m.state.network = selectedString
-		m.state.weave.PreviousResponse += styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, selectedString)
+		m.state.weave.PreviousResponse += styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"network"}, selectedString)
 		switch *selected {
 		case Mainnet, Testnet:
 			return NewRunL1NodeMonikerInput(m.state), cmd
@@ -94,7 +94,7 @@ func NewRunL1NodeVersionSelect(state *RunL1NodeState) *RunL1NodeVersionSelect {
 		},
 		state:    state,
 		versions: versions,
-		question: "Which network will your node participate in?",
+		question: "Which initiad version would you like to use?",
 	}
 }
 
@@ -119,7 +119,7 @@ func (m *RunL1NodeVersionSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *RunL1NodeVersionSelect) View() string {
-	return styles.RenderPrompt("Which network will your node participate in?", []string{"network"}, styles.Question) + m.Selector.View()
+	return m.state.weave.PreviousResponse + styles.RenderPrompt("Which initiad version would you like to use?", []string{"initiad version"}, styles.Question) + m.Selector.View()
 }
 
 type RunL1NodeChainIdInput struct {

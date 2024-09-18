@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"runtime"
 	"strings"
 	"time"
 )
@@ -66,12 +67,30 @@ type InitiaRelease struct {
 	} `json:"assets"`
 }
 
-type InitiaVersionWithDownloadURL struct {
-	Version string
-	URL     string
-}
+type InitiaVersionWithDownloadURL map[string]string
 
-func ListInitiaReleases(os, arch string) []InitiaVersionWithDownloadURL {
+func ListInitiaReleases() InitiaVersionWithDownloadURL {
+	goos := runtime.GOOS
+	goarch := runtime.GOARCH
+
+	var os, arch string
+	switch goos {
+	case "darwin":
+		os = "Darwin"
+	case "linux":
+		os = "Linux"
+	default:
+		panic(fmt.Errorf("unsupported OS: %s", goos))
+	}
+	switch goarch {
+	case "amd64":
+		arch = "x86_64"
+	case "arm64":
+		arch = "aarch64"
+	default:
+		panic(fmt.Errorf("unsupported architecture: %s", goarch))
+	}
+
 	url := "https://api.github.com/repos/initia-labs/initia/releases"
 	resp, err := http.Get(url)
 	if err != nil {
@@ -94,15 +113,12 @@ func ListInitiaReleases(os, arch string) []InitiaVersionWithDownloadURL {
 	}
 
 	searchString := fmt.Sprintf("%s_%s.tar.gz", os, arch)
-	versions := make([]InitiaVersionWithDownloadURL, 0)
+	versions := make(InitiaVersionWithDownloadURL)
 
 	for _, release := range releases {
 		for _, asset := range release.Assets {
 			if strings.Contains(asset.BrowserDownloadURL, searchString) {
-				versions = append(versions, InitiaVersionWithDownloadURL{
-					Version: release.TagName,
-					URL:     asset.BrowserDownloadURL,
-				})
+				versions[release.TagName] = asset.BrowserDownloadURL
 			}
 		}
 	}
