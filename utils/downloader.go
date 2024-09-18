@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"net/http"
@@ -101,10 +102,47 @@ func (m *Downloader) startDownload() tea.Cmd {
 			m.current = totalDownloaded
 		}
 
+		// Now, check if the file is a valid .tar.lz4 file
+		if err := m.validateTarLz4Header(); err != nil {
+			m.done = true
+			m.err = fmt.Errorf("invalid file format: %w", err)
+			return nil
+		}
+
 		m.done = true
 		m.err = nil
 		return nil
 	}
+}
+
+// LZ4 magic number for LZ4 frame format
+var lz4MagicNumber = []byte{0x04, 0x22, 0x4D, 0x18}
+
+// validateTarLz4Header checks if the downloaded file is a valid .tar.lz4 file based on the file header.
+func (m *Downloader) validateTarLz4Header() error {
+	// Open the .lz4 file
+	file, err := os.Open(m.dest)
+	if err != nil {
+		return fmt.Errorf("failed to open file: %w", err)
+	}
+	defer file.Close()
+
+	// Read the first few bytes of the file (header)
+	header := make([]byte, 4)
+	_, err = file.Read(header)
+	if err != nil {
+		return fmt.Errorf("failed to read file header: %w", err)
+	}
+
+	// Check if the header matches the LZ4 magic number
+	if !bytes.Equal(header, lz4MagicNumber) {
+		return fmt.Errorf("invalid file format: the file is not a valid .lz4 file")
+	}
+
+	// If the header matches, we assume it's a valid .lz4 file.
+	// You could continue checking the contents further if needed, but this verifies the file is compressed with LZ4.
+
+	return nil
 }
 
 func (m *Downloader) Init() tea.Cmd {

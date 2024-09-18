@@ -932,7 +932,7 @@ func NewExistingDataReplaceSelect(state *RunL1NodeState) *ExistingDataReplaceSel
 			},
 		},
 		state:    state,
-		question: fmt.Sprintf("Existing %s detected. Would you like to use the current one or replace it", utils.InitiaDataDirectory),
+		question: fmt.Sprintf("Existing %s detected. Would you like to use the current one or replace it?", utils.InitiaDataDirectory),
 	}
 }
 
@@ -998,7 +998,8 @@ func (m *SnapshotEndpointInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
 		m.state.snapshotEndpoint = input.Text
-		// m.state.weave.PreviousResponse += styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"snapshot url"}, input.Text)
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"snapshot url"}, input.Text))
+
 		if snapshotDownload, err := NewSnapshotDownloadLoading(m.state); err == nil {
 			return snapshotDownload, snapshotDownload.Init()
 		} else {
@@ -1065,8 +1066,7 @@ type SnapshotDownloadLoading struct {
 func NewSnapshotDownloadLoading(state *RunL1NodeState) (*SnapshotDownloadLoading, error) {
 	userHome, err := os.UserHomeDir()
 	if err != nil {
-		fmt.Printf("[error] Failed to get user home: %v\n", err)
-		return nil, err
+		return nil, fmt.Errorf("[error] Failed to get user home: %v", err)
 	}
 
 	return &SnapshotDownloadLoading{
@@ -1087,7 +1087,7 @@ func (m *SnapshotDownloadLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if err := m.GetError(); err != nil {
 		model := NewSnapshotEndpointInput(m.state)
 		model.err = err
-		return model, nil
+		return model, model.Init()
 	}
 
 	if m.GetCompletion() {
@@ -1104,8 +1104,7 @@ func (m *SnapshotDownloadLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *SnapshotDownloadLoading) View() string {
-	view := m.state.weave.Render() + m.Downloader.View()
-	return view
+	return m.state.weave.Render() + m.Downloader.View()
 }
 
 type SnapshotExtractLoading struct {
@@ -1127,6 +1126,15 @@ func (m *SnapshotExtractLoading) Init() tea.Cmd {
 func (m *SnapshotExtractLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	loader, cmd := m.Loading.Update(msg)
 	m.Loading = loader
+	switch msg := msg.(type) {
+	case utils.ErrorLoading:
+		m.state.weave.PopPreviousResponse()
+		m.state.weave.PopPreviousResponse()
+		model := NewSnapshotEndpointInput(m.state)
+		model.err = msg.Err
+		return model, cmd
+	}
+
 	if m.Loading.Completing {
 		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, fmt.Sprintf("Snapshot extracted to %s successfully.", utils.InitiaDataDirectory), []string{}, ""))
 		return m, tea.Quit
@@ -1145,8 +1153,7 @@ func snapshotExtractor() tea.Cmd {
 	return func() tea.Msg {
 		userHome, err := os.UserHomeDir()
 		if err != nil {
-			fmt.Printf("[error] Failed to get user home: %v\n", err)
-			// TODO: Return error
+			return utils.ErrorLoading{Err: fmt.Errorf("[error] Failed to get user home: %v", err)}
 		}
 
 		targetDir := filepath.Join(userHome, utils.InitiaDirectory)
@@ -1156,8 +1163,7 @@ func snapshotExtractor() tea.Cmd {
 
 		err = cmd.Run()
 		if err != nil {
-			fmt.Printf("[error] Failed to extract snapshot: %v\n", err)
-			// TODO: Return error
+			return utils.ErrorLoading{Err: fmt.Errorf("[error] Failed to extract snapshot: %v", err)}
 		}
 		return utils.EndLoading{}
 	}

@@ -30,6 +30,7 @@ type Loading struct {
 	quitting   bool
 	frame      int
 	executeFn  tea.Cmd
+	Err        error
 }
 
 func NewLoading(text string, executeFn tea.Cmd) Loading {
@@ -63,6 +64,9 @@ func (m Loading) Update(msg tea.Msg) (Loading, tea.Cmd) {
 		return m, m.tick()
 	case EndLoading:
 		m.Completing = true
+		return m, nil
+	case ErrorLoading:
+		m.Err = msg.Err
 		return m, nil
 	default:
 		return m, nil
