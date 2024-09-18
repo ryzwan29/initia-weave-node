@@ -80,14 +80,20 @@ func IsFirstTimeSetup() bool {
 
 const DefaultConfigTemplate = `
 {
-	"endpoints": {
-		"mainnet": {
-			"rpc": "https://rpc.initia.xyz",
-			"lcd": "https://lcd.initia.xyz"
+	"constants": {
+		"chain_id": {
+			"mainnet": "initia-1",
+			"testnet": "initiation-1"
 		},
-		"testnet": {
-			"rpc": "https://rpc.testnet.initia.xyz",
-			"lcd": "https://lcd.testnet.initia.xyz"
+		"endpoints": {
+			"mainnet": {
+				"rpc": "https://rpc.initia.xyz",
+				"lcd": "https://lcd.initia.xyz"
+			},
+			"testnet": {
+				"rpc": "https://rpc.testnet.initia.xyz",
+				"lcd": "https://lcd.testnet.initia.xyz"
+			}
 		}
 	}
 }

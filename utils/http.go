@@ -11,7 +11,7 @@ import (
 )
 
 func GetEndpointURL(network, endpoint string) (string, error) {
-	endpoints := GetConfig(fmt.Sprintf("endpoints.%s", network))
+	endpoints := GetConfig(fmt.Sprintf("constants.endpoints.%s", network))
 	netEndpoints := endpoints.(map[string]interface{})
 	url, ok := netEndpoints[endpoint].(string)
 	if !ok {

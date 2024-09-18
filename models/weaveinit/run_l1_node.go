@@ -60,6 +60,8 @@ func (m *RunL1NodeNetworkSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"network"}, selectedString))
 		switch *selected {
 		case Mainnet, Testnet:
+			chainId := utils.GetConfig(fmt.Sprintf("constants.chain_id.%s", strings.ToLower(selectedString)))
+			m.state.chainId = chainId.(string)
 			return NewRunL1NodeMonikerInput(m.state), cmd
 		case Local:
 			return NewRunL1NodeVersionSelect(m.state), nil
@@ -752,10 +754,16 @@ func initializeApp(state *RunL1NodeState) tea.Cmd {
 			panic(fmt.Sprintf("failed to set DYLD_LIBRARY_PATH: %v", err))
 		}
 
-		// TODO: Continue from this
-		runCmd := exec.Command(binaryPath)
-		if err := runCmd.Run(); err != nil {
-			panic(fmt.Sprintf("failed to run binary: %v", err))
+		initiaHome := filepath.Join(userHome, utils.InitiaDirectory)
+		if state.existingGenesis {
+			// TODO: Continue
+			return utils.EndLoading{}
+		} else {
+			// TODO: Continue
+			runCmd := exec.Command(binaryPath, "init", state.moniker, "--chain-id", state.chainId, "--home", initiaHome)
+			if err := runCmd.Run(); err != nil {
+				panic(fmt.Sprintf("failed to run initiad init: %v", err))
+			}
 		}
 
 		return utils.EndLoading{}
