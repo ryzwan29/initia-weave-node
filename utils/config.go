@@ -88,11 +88,13 @@ const DefaultConfigTemplate = `
 		"endpoints": {
 			"mainnet": {
 				"rpc": "https://rpc.initia.xyz",
-				"lcd": "https://lcd.initia.xyz"
+				"lcd": "https://lcd.initia.xyz",
+				"genesis": "https://initia.s3.ap-southeast-1.amazonaws.com/initia-1/genesis.json"
 			},
 			"testnet": {
 				"rpc": "https://rpc.testnet.initia.xyz",
-				"lcd": "https://lcd.testnet.initia.xyz"
+				"lcd": "https://lcd.testnet.initia.xyz",
+				"genesis": "https://initia.s3.ap-southeast-1.amazonaws.com/initiation-1/genesis.json"
 			}
 		}
 	}

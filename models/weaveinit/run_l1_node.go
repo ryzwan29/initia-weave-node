@@ -61,8 +61,14 @@ func (m *RunL1NodeNetworkSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"network"}, selectedString))
 		switch *selected {
 		case Mainnet, Testnet:
-			chainId := utils.GetConfig(fmt.Sprintf("constants.chain_id.%s", strings.ToLower(selectedString)))
+			lowerNetwork := strings.ToLower(selectedString)
+			chainId := utils.GetConfig(fmt.Sprintf("constants.chain_id.%s", lowerNetwork))
+			genesisEndpoint, err := utils.GetEndpointURL(lowerNetwork, "genesis")
+			if err != nil {
+				panic(err)
+			}
 			m.state.chainId = chainId.(string)
+			m.state.genesisEndpoint = genesisEndpoint
 			return NewRunL1NodeMonikerInput(m.state), cmd
 		case Local:
 			return NewRunL1NodeVersionSelect(m.state), nil
@@ -296,8 +302,14 @@ func (m *ExistingAppReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch *selected {
 		case UseCurrentApp:
 			m.state.replaceExistingApp = false
-			model := NewExistingGenesisChecker(m.state)
-			return model, model.Init()
+			switch m.state.network {
+			case string(Local):
+				model := NewExistingGenesisChecker(m.state)
+				return model, model.Init()
+			case string(Mainnet), string(Testnet):
+				newLoader := NewInitializingAppLoading(m.state)
+				return newLoader, newLoader.Init()
+			}
 		case ReplaceApp:
 			m.state.replaceExistingApp = true
 			return NewMinGasPriceInput(m.state), nil
@@ -485,8 +497,14 @@ func (m *PersistentPeersInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if done {
 		m.state.persistentPeers = input.Text
 		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"persistent_peers"}, input.Text))
-		model := NewExistingGenesisChecker(m.state)
-		return model, model.Init()
+		switch m.state.network {
+		case string(Local):
+			model := NewExistingGenesisChecker(m.state)
+			return model, model.Init()
+		case string(Mainnet), string(Testnet):
+			newLoader := NewInitializingAppLoading(m.state)
+			return newLoader, newLoader.Init()
+		}
 	}
 	m.TextInput = input
 	return m, cmd
@@ -831,6 +849,7 @@ type SyncMethodOption string
 const (
 	Snapshot  SyncMethodOption = "Snapshot"
 	StateSync SyncMethodOption = "State Sync"
+	NoSync    SyncMethodOption = "No Sync"
 )
 
 func NewSyncMethodSelect(state *RunL1NodeState) *SyncMethodSelect {
@@ -839,6 +858,7 @@ func NewSyncMethodSelect(state *RunL1NodeState) *SyncMethodSelect {
 			Options: []SyncMethodOption{
 				Snapshot,
 				StateSync,
+				NoSync,
 			},
 		},
 		state:    state,
@@ -858,9 +878,14 @@ func (m *SyncMethodSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	selected, cmd := m.Select(msg)
 	if selected != nil {
 		m.state.syncMethod = string(*selected)
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{""}, string(*selected)))
-		model := NewExistingDataChecker(m.state)
-		return model, model.Init()
+		switch *selected {
+		case NoSync:
+			return m, tea.Quit
+		case Snapshot, StateSync:
+			m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{""}, string(*selected)))
+			model := NewExistingDataChecker(m.state)
+			return model, model.Init()
+		}
 	}
 
 	return m, cmd
