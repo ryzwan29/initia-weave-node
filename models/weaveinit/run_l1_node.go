@@ -763,20 +763,30 @@ func initializeApp(state *RunL1NodeState) tea.Cmd {
 			}
 		}
 
-		if err := utils.UpdateTomlValue(filepath.Join(utils.InitiaConfigDirectory, "app.toml"), "minimum-gas-prices", state.minGasPrice); err != nil {
+		initiaConfigPath := filepath.Join(userHome, utils.InitiaConfigDirectory)
+
+		if err := utils.UpdateTomlValue(filepath.Join(initiaConfigPath, "app.toml"), "minimum-gas-prices", state.minGasPrice); err != nil {
 			panic(fmt.Sprintf("failed to update minimum-gas-prices: %v", err))
 		}
 
-		if err := utils.UpdateTomlValue(filepath.Join(utils.InitiaConfigDirectory, "app.toml"), "api.enable", strconv.FormatBool(state.enableLCD)); err != nil {
+		if err := utils.UpdateTomlValue(filepath.Join(initiaConfigPath, "app.toml"), "api.enable", strconv.FormatBool(state.enableLCD)); err != nil {
 			panic(fmt.Sprintf("failed to update api enable: %v", err))
 		}
 
-		if err := utils.UpdateTomlValue(filepath.Join(utils.InitiaConfigDirectory, "config.toml"), "p2p.seeds", state.seeds); err != nil {
+		if err := utils.UpdateTomlValue(filepath.Join(initiaConfigPath, "config.toml"), "p2p.seeds", state.seeds); err != nil {
 			panic(fmt.Sprintf("failed to update seeds: %v", err))
 		}
 
-		if err := utils.UpdateTomlValue(filepath.Join(utils.InitiaConfigDirectory, "config.toml"), "p2p.persistent_peers", state.persistentPeers); err != nil {
+		if err := utils.UpdateTomlValue(filepath.Join(initiaConfigPath, "config.toml"), "p2p.persistent_peers", state.persistentPeers); err != nil {
 			panic(fmt.Sprintf("failed to update persistent_peers: %v", err))
+		}
+
+		if state.genesisEndpoint != "" {
+			if err := utils.DownloadFile(filepath.Join(utils.WeaveDataDirectory, "genesis.json"), state.genesisEndpoint); err != nil {
+				panic(fmt.Sprintf("failed to download genesis.json: %v", err))
+			}
+
+			// TODO: Continue with the rest of the genesis.json setup
 		}
 
 		return utils.EndLoading{}
