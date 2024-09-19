@@ -782,11 +782,13 @@ func initializeApp(state *RunL1NodeState) tea.Cmd {
 		}
 
 		if state.genesisEndpoint != "" {
-			if err := utils.DownloadFile(filepath.Join(utils.WeaveDataDirectory, "genesis.json"), state.genesisEndpoint); err != nil {
+			if err := utils.DownloadFile(state.genesisEndpoint, filepath.Join(weaveDataPath, "genesis.json")); err != nil {
 				panic(fmt.Sprintf("failed to download genesis.json: %v", err))
 			}
 
-			// TODO: Continue with the rest of the genesis.json setup
+			if err := os.Rename(filepath.Join(weaveDataPath, "genesis.json"), filepath.Join(initiaConfigPath, "genesis.json")); err != nil {
+				panic(fmt.Sprintf("failed to move genesis.json: %v", err))
+			}
 		}
 
 		return utils.EndLoading{}
