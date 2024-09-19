@@ -792,6 +792,10 @@ func initializeApp(state *RunL1NodeState) tea.Cmd {
 
 		initiaConfigPath := filepath.Join(userHome, utils.InitiaConfigDirectory)
 
+		if err := utils.UpdateTomlValue(filepath.Join(initiaConfigPath, "config.toml"), "moniker", state.moniker); err != nil {
+			panic(fmt.Sprintf("failed to update moniker: %v", err))
+		}
+
 		if err := utils.UpdateTomlValue(filepath.Join(initiaConfigPath, "app.toml"), "minimum-gas-prices", state.minGasPrice); err != nil {
 			panic(fmt.Sprintf("failed to update minimum-gas-prices: %v", err))
 		}
