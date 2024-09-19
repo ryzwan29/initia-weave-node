@@ -755,11 +755,7 @@ func initializeApp(state *RunL1NodeState) tea.Cmd {
 		}
 
 		initiaHome := filepath.Join(userHome, utils.InitiaDirectory)
-		if state.existingGenesis {
-			// TODO: Continue
-			return utils.EndLoading{}
-		} else {
-			// TODO: Continue
+		if _, err := os.Stat(initiaHome); os.IsNotExist(err) {
 			runCmd := exec.Command(binaryPath, "init", state.moniker, "--chain-id", state.chainId, "--home", initiaHome)
 			if err := runCmd.Run(); err != nil {
 				panic(fmt.Sprintf("failed to run initiad init: %v", err))
