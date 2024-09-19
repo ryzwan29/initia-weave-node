@@ -147,10 +147,21 @@ func ValidateMnemonic(mnemonic string) error {
 	return nil
 }
 
-// IsValidPeerOrSeed checks if each address in a comma-separated list is valid
-// It allows empty strings and returns an error with detailed reasons if any address is invalid
+// IsValidDNS checks if a given string is a valid DNS name
+func IsValidDNS(dns string) bool {
+	// Regular expression for validating DNS names
+	dnsRegex := `^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$`
+	re := regexp.MustCompile(dnsRegex)
+
+	// Validate DNS name
+	return re.MatchString(dns)
+}
+
+// IsValidPeerOrSeed checks if each address in a comma-separated list is valid.
+// It allows empty strings and returns an error with detailed reasons if any address is invalid.
+// It accepts both IP addresses and DNS names.
 func IsValidPeerOrSeed(addresses string) error {
-	// Compile the regular expression once
+	// Compile the regular expression for node ID
 	nodeIDRegex, err := regexp.Compile(`^[a-f0-9]{40}$`)
 	if err != nil {
 		return fmt.Errorf("failed to compile nodeID regex: %v", err)
@@ -172,7 +183,7 @@ func IsValidPeerOrSeed(addresses string) error {
 
 		parts := strings.Split(address, "@")
 		if len(parts) != 2 {
-			invalidAddresses = append(invalidAddresses, fmt.Sprintf("'%s': must be in format nodeID@ip:port", address))
+			invalidAddresses = append(invalidAddresses, fmt.Sprintf("'%s': must be in format nodeID@ip_or_dns:port", address))
 			continue
 		}
 
@@ -185,16 +196,16 @@ func IsValidPeerOrSeed(addresses string) error {
 			continue
 		}
 
-		// Split address into IP and optional port
+		// Split peer address into host (IP or DNS) and port
 		host, port, err := net.SplitHostPort(peerAddr)
 		if err != nil && !strings.Contains(err.Error(), "missing port in address") {
-			invalidAddresses = append(invalidAddresses, fmt.Sprintf("'%s': invalid address (IP:Port format required)", address))
+			invalidAddresses = append(invalidAddresses, fmt.Sprintf("'%s': invalid address (IP:Port or DNS:Port format required)", address))
 			continue
 		}
 
-		// Validate IP (host part)
-		if net.ParseIP(host) == nil {
-			invalidAddresses = append(invalidAddresses, fmt.Sprintf("'%s': invalid IP address", address))
+		// Validate host (can be IP or DNS)
+		if net.ParseIP(host) == nil && !IsValidDNS(host) {
+			invalidAddresses = append(invalidAddresses, fmt.Sprintf("'%s': invalid IP or DNS name", address))
 			continue
 		}
 
@@ -207,10 +218,9 @@ func IsValidPeerOrSeed(addresses string) error {
 		}
 	}
 
-	// TODO add in error that id need to bbe 40 chars
+	// If there are any invalid addresses, return an error with detailed messages
 	if len(invalidAddresses) > 0 {
-		// Return an error with detailed messages
-		return errors.New("invalid peer/seed addresses:" + strings.Join(invalidAddresses, ","))
+		return errors.New("invalid peer/seed addresses: " + strings.Join(invalidAddresses, ", "))
 	}
 
 	return nil
