@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -760,6 +761,22 @@ func initializeApp(state *RunL1NodeState) tea.Cmd {
 			if err := runCmd.Run(); err != nil {
 				panic(fmt.Sprintf("failed to run initiad init: %v", err))
 			}
+		}
+
+		if err := utils.UpdateTomlValue(filepath.Join(utils.InitiaConfigDirectory, "app.toml"), "minimum-gas-prices", state.minGasPrice); err != nil {
+			panic(fmt.Sprintf("failed to update minimum-gas-prices: %v", err))
+		}
+
+		if err := utils.UpdateTomlValue(filepath.Join(utils.InitiaConfigDirectory, "app.toml"), "api.enable", strconv.FormatBool(state.enableLCD)); err != nil {
+			panic(fmt.Sprintf("failed to update api enable: %v", err))
+		}
+
+		if err := utils.UpdateTomlValue(filepath.Join(utils.InitiaConfigDirectory, "config.toml"), "p2p.seeds", state.seeds); err != nil {
+			panic(fmt.Sprintf("failed to update seeds: %v", err))
+		}
+
+		if err := utils.UpdateTomlValue(filepath.Join(utils.InitiaConfigDirectory, "config.toml"), "p2p.persistent_peers", state.persistentPeers); err != nil {
+			panic(fmt.Sprintf("failed to update persistent_peers: %v", err))
 		}
 
 		return utils.EndLoading{}
