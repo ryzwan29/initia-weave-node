@@ -20,12 +20,19 @@ func GetEndpointURL(network, endpoint string) (string, error) {
 	return url, nil
 }
 
-func MakeGetRequest(network, endpoint, additionalPath string, params map[string]string, result interface{}) error {
+func MakeGetRequestUsingConfig(network, endpoint, additionalPath string, params map[string]string, result interface{}) error {
 	baseURL, err := GetEndpointURL(network, endpoint)
 	if err != nil {
 		return err
 	}
+	return makeGetRequest(baseURL, additionalPath, params, result)
+}
 
+func MakeGetRequestUsingURL(overrideURL, additionalPath string, params map[string]string, result interface{}) error {
+	return makeGetRequest(overrideURL, additionalPath, params, result)
+}
+
+func makeGetRequest(baseURL, additionalPath string, params map[string]string, result interface{}) error {
 	fullURL := fmt.Sprintf("%s%s", baseURL, additionalPath)
 
 	client := &http.Client{

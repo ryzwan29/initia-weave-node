@@ -739,7 +739,7 @@ func initializeApp(state *RunL1NodeState) tea.Cmd {
 			url = state.initiadEndpoint
 		case string(Mainnet), string(Testnet):
 			var result map[string]interface{}
-			err = utils.MakeGetRequest(strings.ToLower(state.network), "lcd", "/cosmos/base/tendermint/v1beta1/node_info", nil, &result)
+			err = utils.MakeGetRequestUsingConfig(strings.ToLower(state.network), "lcd", "/cosmos/base/tendermint/v1beta1/node_info", nil, &result)
 			if err != nil {
 				panic(err)
 			}
@@ -1016,6 +1016,7 @@ func (m *ExistingDataReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.state.replaceExistingData = false
 			return m, tea.Quit
 		case ReplaceData:
+			// TODO: comet unsafe-reset-all here too
 			m.state.replaceExistingData = true
 			switch m.state.syncMethod {
 			case string(Snapshot):
@@ -1074,7 +1075,6 @@ func (m *SnapshotEndpointInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *SnapshotEndpointInput) View() string {
-	// TODO: Correctly render terminal output
 	view := m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"snapshot url"}, styles.Question)
 	if m.err != nil {
 		return view + "\n" + m.TextInput.ViewErr(m.err)
@@ -1086,6 +1086,7 @@ type StateSyncEndpointInput struct {
 	utils.TextInput
 	state    *RunL1NodeState
 	question string
+	err      error
 }
 
 func NewStateSyncEndpointInput(state *RunL1NodeState) *StateSyncEndpointInput {
@@ -1109,8 +1110,8 @@ func (m *StateSyncEndpointInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if done {
 		m.state.stateSyncEndpoint = input.Text
 		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"state sync RPC"}, input.Text))
-		// TODO: Continue
-		return m, tea.Quit
+		newLoader := NewStateSyncSetupLoading(m.state)
+		return newLoader, newLoader.Init()
 	}
 	m.TextInput = input
 	return m, cmd
@@ -1118,7 +1119,11 @@ func (m *StateSyncEndpointInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *StateSyncEndpointInput) View() string {
 	// TODO: Correctly render terminal output
-	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"state sync RPC"}, styles.Question) + m.TextInput.View()
+	view := m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"state sync RPC"}, styles.Question)
+	if m.err != nil {
+		return view + "\n" + m.TextInput.ViewErr(m.err)
+	}
+	return view + m.TextInput.View()
 }
 
 type SnapshotDownloadLoading struct {
@@ -1228,6 +1233,78 @@ func snapshotExtractor() tea.Cmd {
 		if err != nil {
 			return utils.ErrorLoading{Err: fmt.Errorf("[error] Failed to extract snapshot: %v", err)}
 		}
+		return utils.EndLoading{}
+	}
+}
+
+type StateSyncSetupLoading struct {
+	utils.Loading
+	state *RunL1NodeState
+}
+
+func NewStateSyncSetupLoading(state *RunL1NodeState) *StateSyncSetupLoading {
+	return &StateSyncSetupLoading{
+		Loading: utils.NewLoading("Setting up State Sync...", setupStateSync(state)),
+		state:   state,
+	}
+}
+
+func (m *StateSyncSetupLoading) Init() tea.Cmd {
+	return m.Loading.Init()
+}
+
+func (m *StateSyncSetupLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	loader, cmd := m.Loading.Update(msg)
+	m.Loading = loader
+	switch msg := msg.(type) {
+	case utils.ErrorLoading:
+		m.state.weave.PopPreviousResponse()
+		m.state.weave.PopPreviousResponse()
+		model := NewStateSyncEndpointInput(m.state)
+		model.err = msg.Err
+		return model, cmd
+	}
+
+	if m.Loading.Completing {
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, fmt.Sprintf("Snapshot setup successfully."), []string{}, ""))
+		return m, tea.Quit
+	}
+	return m, cmd
+}
+
+func (m *StateSyncSetupLoading) View() string {
+	if m.Completing {
+		return m.state.weave.Render()
+	}
+	return m.state.weave.Render() + m.Loading.View()
+}
+
+func setupStateSync(state *RunL1NodeState) tea.Cmd {
+	return func() tea.Msg {
+		userHome, err := os.UserHomeDir()
+		if err != nil {
+			return utils.ErrorLoading{Err: fmt.Errorf("[error] Failed to get user home: %v", err)}
+		}
+
+		stateSyncInfo, err := utils.GetStateSyncInfo(state.stateSyncEndpoint)
+		if err != nil {
+			return utils.ErrorLoading{Err: fmt.Errorf("[error] Failed to get state sync info: %v", err)}
+		}
+
+		initiaConfigPath := filepath.Join(userHome, utils.InitiaConfigDirectory)
+		if err = utils.UpdateTomlValue(filepath.Join(initiaConfigPath, "config.toml"), "statesync.enable", "true"); err != nil {
+			return utils.ErrorLoading{Err: fmt.Errorf("[error] Failed to setup state sync enable: %v", err)}
+		}
+		if err = utils.UpdateTomlValue(filepath.Join(initiaConfigPath, "config.toml"), "statesync.rpc_servers", fmt.Sprintf("%[1]s,%[1]s", state.stateSyncEndpoint)); err != nil {
+			return utils.ErrorLoading{Err: fmt.Errorf("[error] Failed to setup state sync rpc_servers: %v", err)}
+		}
+		if err = utils.UpdateTomlValue(filepath.Join(initiaConfigPath, "config.toml"), "statesync.trust_height", fmt.Sprintf("%d", stateSyncInfo.TrustHeight)); err != nil {
+			return utils.ErrorLoading{Err: fmt.Errorf("[error] Failed to setup state sync trust_height: %v", err)}
+		}
+		if err = utils.UpdateTomlValue(filepath.Join(initiaConfigPath, "config.toml"), "statesync.trust_hash", fmt.Sprintf("%s", stateSyncInfo.TrustHash)); err != nil {
+			return utils.ErrorLoading{Err: fmt.Errorf("[error] Failed to setup state sync trust_hash: %v", err)}
+		}
+
 		return utils.EndLoading{}
 	}
 }
