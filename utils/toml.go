@@ -8,14 +8,14 @@ import (
 )
 
 // Utility function to clean the string by trimming spaces and removing ^M characters
-func cleanString(input string) string {
+func CleanString(input string) string {
 	return strings.TrimSpace(strings.ReplaceAll(input, "\r", ""))
 }
 
 // UpdateTomlValue updates a TOML file based on the provided key and value.
 // The key can be a field in a section (e.g., "api.enable") or a top-level field (e.g., "minimum-gas-prices").
 func UpdateTomlValue(filePath, key, value string) error {
-	value = cleanString(value)
+	value = CleanString(value)
 	// Open the TOML file for reading
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -83,15 +83,27 @@ func getSectionName(header string) string {
 	return strings.Trim(header, "[]")
 }
 
-// shouldModifyField checks if the current line should be modified.
+// shouldModifyField checks if the current line should be modified by splitting and trimming the key and value.
 func shouldModifyField(inTargetSection bool, currentSection, field, line string) bool {
-	// If there is no section (top-level), and the line starts with the field, modify it
-	if currentSection == "" && strings.HasPrefix(strings.TrimSpace(line), field) {
-		return true
+	trimmedLine := strings.TrimSpace(line)
+
+	// Check if the line contains the '=' delimiter
+	if !strings.Contains(trimmedLine, "=") {
+		// No '=' found, so we don't need to modify this line
+		return false
 	}
 
-	// If we are in the target section and the line starts with the field, modify it
-	if inTargetSection && strings.HasPrefix(strings.TrimSpace(line), field) {
+	// Split the line by '=' into key and value pair
+	parts := strings.SplitN(trimmedLine, "=", 2)
+	key := strings.TrimSpace(parts[0])
+
+	// Check if the key matches the target field
+	if key != field {
+		return false
+	}
+
+	// If we are at the top-level or in the target section, return true
+	if currentSection == "" || inTargetSection {
 		return true
 	}
 

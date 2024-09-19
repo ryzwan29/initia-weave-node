@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 	"net"
+	"net/url"
 	"regexp"
 	"strings"
 
@@ -143,6 +144,18 @@ func ValidateDecFromStr(str string) error {
 func ValidateMnemonic(mnemonic string) error {
 	if !bip39.IsMnemonicValid(mnemonic) {
 		return errors.New("invalid bip39 mnemonic")
+	}
+	return nil
+}
+
+// Function to validate if a string is a valid URL and return an error if invalid
+func ValidateURL(str string) error {
+	u, err := url.Parse(str)
+	if err != nil {
+		return fmt.Errorf("invalid URL format: %v", err)
+	}
+	if u.Scheme == "" || u.Host == "" {
+		return fmt.Errorf("URL is missing scheme or host")
 	}
 	return nil
 }

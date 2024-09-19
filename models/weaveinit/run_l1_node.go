@@ -636,6 +636,7 @@ type GenesisEndpointInput struct {
 	utils.TextInput
 	state    *RunL1NodeState
 	question string
+	err      error
 }
 
 func NewGenesisEndpointInput(state *RunL1NodeState) *GenesisEndpointInput {
@@ -643,6 +644,7 @@ func NewGenesisEndpointInput(state *RunL1NodeState) *GenesisEndpointInput {
 		TextInput: utils.NewTextInput(),
 		state:     state,
 		question:  "Please specify the endpoint to fetch genesis.json",
+		err:       nil,
 	}
 }
 
@@ -658,9 +660,13 @@ func (m *GenesisEndpointInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
 		m.state.genesisEndpoint = input.Text
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"endpoint"}, input.Text))
-		newLoader := NewInitializingAppLoading(m.state)
-		return newLoader, newLoader.Init()
+		dns := utils.CleanString(input.Text)
+		m.err = utils.ValidateURL(dns)
+		if m.err == nil {
+			m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"endpoint"}, dns))
+			newLoader := NewInitializingAppLoading(m.state)
+			return newLoader, newLoader.Init()
+		}
 	}
 	m.TextInput = input
 	return m, cmd
@@ -670,6 +676,9 @@ func (m *GenesisEndpointInput) View() string {
 	preText := "\n"
 	if !m.state.existingApp {
 		preText += styles.RenderPrompt("There is no config/genesis.json available. You will need to enter the required information to proceed.\n", []string{"config/genesis.json"}, styles.Information)
+	}
+	if m.IsEntered && m.err != nil {
+		return m.state.weave.Render() + preText + styles.RenderPrompt(m.GetQuestion(), []string{"endpoint"}, styles.Question) + m.TextInput.ViewErr(m.err)
 	}
 	return m.state.weave.Render() + preText + styles.RenderPrompt(m.GetQuestion(), []string{"endpoint"}, styles.Question) + m.TextInput.View()
 }
