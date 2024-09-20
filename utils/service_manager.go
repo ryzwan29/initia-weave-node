@@ -138,11 +138,7 @@ func StopService(serviceName string) error {
 		}
 		return nil
 	case "darwin":
-		userHome, err := os.UserHomeDir()
-		if err != nil {
-			return fmt.Errorf("failed to get user home directory: %v", err)
-		}
-		cmd := exec.Command("launchctl", "unload", filepath.Join(userHome, fmt.Sprintf("Library/LaunchAgents/%s.plist", serviceName)))
+		cmd := exec.Command("launchctl", "stop", serviceName)
 		if err := cmd.Run(); err != nil {
 			return fmt.Errorf("failed to stop service: %v", err)
 		}
