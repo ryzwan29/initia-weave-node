@@ -1021,8 +1021,8 @@ func (m *ExistingDataReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.state.replaceExistingData = false
 			return m, tea.Quit
 		case ReplaceData:
-			// TODO: comet unsafe-reset-all here too
 			m.state.replaceExistingData = true
+			// TODO: do the deletion confirmation
 			switch m.state.syncMethod {
 			case string(Snapshot):
 				return NewSnapshotEndpointInput(m.state), nil
@@ -1186,7 +1186,7 @@ type SnapshotExtractLoading struct {
 
 func NewSnapshotExtractLoading(state *RunL1NodeState) *SnapshotExtractLoading {
 	return &SnapshotExtractLoading{
-		Loading: utils.NewLoading("Extracting downloaded snapshot...", snapshotExtractor()),
+		Loading: utils.NewLoading("Extracting downloaded snapshot...", snapshotExtractor(state)),
 		state:   state,
 	}
 }
@@ -1221,15 +1221,22 @@ func (m *SnapshotExtractLoading) View() string {
 	return m.state.weave.Render() + m.Loading.View()
 }
 
-func snapshotExtractor() tea.Cmd {
+func snapshotExtractor(state *RunL1NodeState) tea.Cmd {
 	return func() tea.Msg {
 		userHome, err := os.UserHomeDir()
 		if err != nil {
 			return utils.ErrorLoading{Err: fmt.Errorf("[error] Failed to get user home: %v", err)}
 		}
 
-		targetDir := filepath.Join(userHome, utils.InitiaDirectory)
-		cmd := exec.Command("bash", "-c", fmt.Sprintf("lz4 -c -d %s | tar -x -C %s", filepath.Join(userHome, utils.WeaveDataDirectory, utils.SnapshotFilename), targetDir))
+		initiaHome := filepath.Join(userHome, utils.InitiaDirectory)
+		binaryPath := filepath.Join(userHome, utils.WeaveDataDirectory, fmt.Sprintf("initia@%s", state.initiadVersion), "initiad")
+
+		runCmd := exec.Command(binaryPath, "comet", "unsafe-reset-all", "--keep-addr-book", "--home", initiaHome)
+		if err := runCmd.Run(); err != nil {
+			panic(fmt.Sprintf("failed to run initiad comet unsafe-reset-all: %v", err))
+		}
+
+		cmd := exec.Command("bash", "-c", fmt.Sprintf("lz4 -c -d %s | tar -x -C %s", filepath.Join(userHome, utils.WeaveDataDirectory, utils.SnapshotFilename), initiaHome))
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 
@@ -1307,6 +1314,14 @@ func setupStateSync(state *RunL1NodeState) tea.Cmd {
 		}
 		if err = utils.UpdateTomlValue(filepath.Join(initiaConfigPath, "config.toml"), "statesync.trust_hash", fmt.Sprintf("%s", stateSyncInfo.TrustHash)); err != nil {
 			return utils.ErrorLoading{Err: fmt.Errorf("[error] Failed to setup state sync trust_hash: %v", err)}
+		}
+
+		initiaHome := filepath.Join(userHome, utils.InitiaDirectory)
+		binaryPath := filepath.Join(userHome, utils.WeaveDataDirectory, fmt.Sprintf("initia@%s", state.initiadVersion), "initiad")
+
+		runCmd := exec.Command(binaryPath, "comet", "unsafe-reset-all", "--keep-addr-book", "--home", initiaHome)
+		if err := runCmd.Run(); err != nil {
+			panic(fmt.Sprintf("failed to run initiad comet unsafe-reset-all: %v", err))
 		}
 
 		return utils.EndLoading{}

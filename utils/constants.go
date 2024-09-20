@@ -7,7 +7,7 @@ const (
 
 	SnapshotFilename = "snapshot.weave"
 
-	InitiaDirectory       = ".initia"
+	InitiaDirectory       = ".initiatest"
 	InitiaConfigDirectory = InitiaDirectory + "/config"
 	InitiaDataDirectory   = InitiaDirectory + "/data"
 
