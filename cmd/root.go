@@ -44,7 +44,7 @@ func Execute() error {
 	}
 
 	rootCmd.AddCommand(InitCommand())
-	rootCmd.AddCommand(InitiaInitCommand())
+	rootCmd.AddCommand(InitiaCommand())
 
 	return rootCmd.ExecuteContext(context.Background())
 }
