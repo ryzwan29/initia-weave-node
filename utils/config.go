@@ -24,6 +24,11 @@ func InitializeConfig() error {
 		return fmt.Errorf("failed to create data directory: %v", err)
 	}
 
+	logPath := filepath.Join(homeDir, WeaveLogDirectory)
+	if err := os.MkdirAll(logPath, os.ModePerm); err != nil {
+		return fmt.Errorf("failed to create log directory: %v", err)
+	}
+
 	viper.SetConfigFile(configPath)
 	viper.SetConfigType("json")
 

@@ -3,6 +3,7 @@ package utils
 const (
 	WeaveDirectory     = ".weave"
 	WeaveDataDirectory = WeaveDirectory + "/data"
+	WeaveLogDirectory  = WeaveDirectory + "/log"
 
 	SnapshotFilename = "snapshot.weave"
 

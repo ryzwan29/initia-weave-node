@@ -24,10 +24,10 @@ const DarwinRunL1NodeTemplate = `<?xml version="1.0" encoding="UTF-8"?>
     </array>
 
     <key>RunAtLoad</key>
-    <true/>
+    <false/>
 
     <key>KeepAlive</key>
-    <true/>
+    <false/>
 
     <!-- Adding the environment variable -->
     <key>EnvironmentVariables</key>
@@ -39,10 +39,10 @@ const DarwinRunL1NodeTemplate = `<?xml version="1.0" encoding="UTF-8"?>
     </dict>
 
     <key>StandardOutPath</key>
-    <string>/tmp/initia.stdout.log</string>
+    <string>%[4]s/initia.stdout.log</string>
 
     <key>StandardErrorPath</key>
-    <string>/tmp/initia.stderr.log</string>
+    <string>%[4]s/initia.stderr.log</string>
 
     <key>HardResourceLimits</key>
     <dict>
@@ -66,7 +66,11 @@ func CreateService(serviceName, serviceContent string) error {
 		}
 		return EnableService(serviceName)
 	case "darwin":
-		cmd := exec.Command("sudo", "tee", fmt.Sprintf("/Library/LaunchDaemons/%s.plist", serviceName))
+		userHome, err := os.UserHomeDir()
+		if err != nil {
+			return fmt.Errorf("failed to get user home directory: %v", err)
+		}
+		cmd := exec.Command("tee", filepath.Join(userHome, fmt.Sprintf("Library/LaunchAgents/%s.plist", serviceName)))
 		cmd.Stdin = strings.NewReader(serviceContent)
 		if err := cmd.Run(); err != nil {
 			return fmt.Errorf("failed to create service: %v", err)
@@ -94,7 +98,11 @@ func EnableService(serviceName string) error {
 }
 
 func LoadService(serviceName string) error {
-	loadCmd := exec.Command("sudo", "launchctl", "load", fmt.Sprintf("/Library/LaunchDaemons/%s.plist", serviceName))
+	userHome, err := os.UserHomeDir()
+	if err != nil {
+		return fmt.Errorf("failed to get user home directory: %v", err)
+	}
+	loadCmd := exec.Command("launchctl", "load", filepath.Join(userHome, fmt.Sprintf("Library/LaunchAgents/%s.plist", serviceName)))
 	if err := loadCmd.Run(); err != nil {
 		return fmt.Errorf("failed to load service: %v", err)
 	}
@@ -110,12 +118,7 @@ func StartService(serviceName string) error {
 		}
 		return nil
 	case "darwin":
-		loadCmd := exec.Command("sudo", "launchctl", "load", fmt.Sprintf("/Library/LaunchDaemons/%s.plist", serviceName))
-		if err := loadCmd.Run(); err != nil {
-			return fmt.Errorf("failed to load service: %v", err)
-		}
-
-		startCmd := exec.Command("sudo", "launchctl", "start", serviceName)
+		startCmd := exec.Command("launchctl", "start", serviceName)
 		if err := startCmd.Run(); err != nil {
 			return fmt.Errorf("failed to start service: %v", err)
 		}
@@ -135,7 +138,11 @@ func StopService(serviceName string) error {
 		}
 		return nil
 	case "darwin":
-		cmd := exec.Command("sudo", "launchctl", "unload", fmt.Sprintf("/Library/LaunchDaemons/%s.plist", serviceName))
+		userHome, err := os.UserHomeDir()
+		if err != nil {
+			return fmt.Errorf("failed to get user home directory: %v", err)
+		}
+		cmd := exec.Command("launchctl", "unload", filepath.Join(userHome, fmt.Sprintf("Library/LaunchAgents/%s.plist", serviceName)))
 		if err := cmd.Run(); err != nil {
 			return fmt.Errorf("failed to stop service: %v", err)
 		}
@@ -162,6 +169,7 @@ func GetDarwinRunL1NodePlist(version string) string {
 		panic(fmt.Errorf("failed to get user home directory: %v", err))
 	}
 	weaveDataPath := filepath.Join(userHome, WeaveDataDirectory)
+	weaveLogPath := filepath.Join(userHome, WeaveLogDirectory)
 	binaryPath := filepath.Join(weaveDataPath, "initia@"+version)
 	initiaHome := filepath.Join(userHome, InitiaDirectory)
 	if err = os.Setenv("DYLD_LIBRARY_PATH", binaryPath); err != nil {
@@ -171,5 +179,5 @@ func GetDarwinRunL1NodePlist(version string) string {
 		panic(fmt.Errorf("failed to set HOME: %v", err))
 	}
 
-	return fmt.Sprintf(DarwinRunL1NodeTemplate, binaryPath, userHome, initiaHome)
+	return fmt.Sprintf(DarwinRunL1NodeTemplate, binaryPath, userHome, initiaHome, weaveLogPath)
 }

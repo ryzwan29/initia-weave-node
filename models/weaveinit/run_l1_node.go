@@ -750,6 +750,7 @@ func initializeApp(state *RunL1NodeState) tea.Cmd {
 			}
 
 			nodeVersion = applicationVersion["version"].(string)
+			state.initiadVersion = nodeVersion
 			goos := runtime.GOOS
 			goarch := runtime.GOARCH
 			url = getBinaryURL(nodeVersion, goos, goarch)
