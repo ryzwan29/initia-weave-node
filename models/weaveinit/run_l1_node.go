@@ -823,7 +823,7 @@ func initializeApp(state *RunL1NodeState) tea.Cmd {
 			}
 		}
 
-		if err = utils.CreateService(utils.GetRunL1NodeServiceName(), utils.GetDarwinRunL1NodePlist(state.initiadVersion)); err != nil {
+		if err = utils.CreateService(utils.GetRunL1NodeServiceName(), utils.GetRunL1NodeServiceContent(state.initiadVersion)); err != nil {
 			panic(fmt.Sprintf("failed to create service: %v", err))
 		}
 

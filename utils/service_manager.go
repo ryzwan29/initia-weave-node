@@ -159,6 +159,22 @@ func GetRunL1NodeServiceName() string {
 	}
 }
 
+func GetRunL1NodeServiceContent(version string) string {
+	switch runtime.GOOS {
+	case "linux":
+		return GetLinuxRunL1NodeServiceContent(version)
+	case "darwin":
+		return GetDarwinRunL1NodePlist(version)
+	default:
+		panic(fmt.Errorf("unsupported operating system: %s", runtime.GOOS))
+	}
+}
+
+func GetLinuxRunL1NodeServiceContent(version string) string {
+	// TODO: Implement this function
+	return ""
+}
+
 func GetDarwinRunL1NodePlist(version string) string {
 	userHome, err := os.UserHomeDir()
 	if err != nil {
