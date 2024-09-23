@@ -644,12 +644,14 @@ type GenesisEndpointInput struct {
 }
 
 func NewGenesisEndpointInput(state *RunL1NodeState) *GenesisEndpointInput {
-	return &GenesisEndpointInput{
+	model := &GenesisEndpointInput{
 		TextInput: utils.NewTextInput(),
 		state:     state,
 		question:  "Please specify the endpoint to fetch genesis.json",
 		err:       nil,
 	}
+	model.WithPlaceholder("Enter endpoint URL")
+	return model
 }
 
 func (m *GenesisEndpointInput) GetQuestion() string {
