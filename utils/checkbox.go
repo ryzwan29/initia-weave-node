@@ -65,7 +65,7 @@ func (s *CheckBox[T]) View() string {
 		}
 		b.WriteString(fmt.Sprintf("%s %s %v\n", cursor, selectedMark, option))
 	}
-	b.WriteString(styles.Text("\nUse arrow-keys. Space to select. Return to submit, or q to quit.\n", styles.Gray))
+	b.WriteString(styles.Text("\nUse arrow-keys. Space to select. Return to submit, or q to quit.\n", styles.White))
 	return b.String()
 }
 

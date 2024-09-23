@@ -102,12 +102,12 @@ func (ti TextInput) ViewErr(err error) string {
 		return "\n" + styles.Text("> ", styles.Cyan) + styles.Text(ti.Placeholder, styles.Gray) + styles.Cursor(" ") + "\n\n" + styles.RenderError(err) + bottomText
 	} else if ti.Cursor < len(ti.Text) {
 		// Cursor is within the text
-		beforeCursor = styles.Text(ti.Text[:ti.Cursor], styles.Ivory)
+		beforeCursor = styles.Text(ti.Text[:ti.Cursor], styles.White)
 		cursorChar = styles.Cursor(ti.Text[ti.Cursor : ti.Cursor+1])
-		afterCursor = styles.Text(ti.Text[ti.Cursor+1:], styles.Ivory)
+		afterCursor = styles.Text(ti.Text[ti.Cursor+1:], styles.White)
 	} else {
 		// Cursor is at the end of the text
-		beforeCursor = styles.Text(ti.Text, styles.Ivory)
+		beforeCursor = styles.Text(ti.Text, styles.White)
 		cursorChar = styles.Cursor(" ")
 	}
 

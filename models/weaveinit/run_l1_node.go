@@ -138,11 +138,13 @@ type RunL1NodeChainIdInput struct {
 }
 
 func NewRunL1NodeChainIdInput(state *RunL1NodeState) *RunL1NodeChainIdInput {
-	return &RunL1NodeChainIdInput{
+	model := &RunL1NodeChainIdInput{
 		TextInput: utils.NewTextInput(),
 		state:     state,
 		question:  "Please specify the chain id",
 	}
+	model.WithPlaceholder("Enter in alphanumeric format")
+	return model
 }
 
 func (m *RunL1NodeChainIdInput) GetQuestion() string {
@@ -175,11 +177,13 @@ type RunL1NodeMonikerInput struct {
 }
 
 func NewRunL1NodeMonikerInput(state *RunL1NodeState) *RunL1NodeMonikerInput {
-	return &RunL1NodeMonikerInput{
+	model := &RunL1NodeMonikerInput{
 		TextInput: utils.NewTextInput(),
 		state:     state,
 		question:  "Please specify the moniker",
 	}
+	model.WithPlaceholder("Enter moniker")
+	return model
 }
 
 func (m *RunL1NodeMonikerInput) GetQuestion() string {
@@ -336,7 +340,7 @@ func NewMinGasPriceInput(state *RunL1NodeState) *MinGasPriceInput {
 		state:     state,
 		question:  "Please specify min-gas-price",
 	}
-	model.WithPlaceholder("add a number with denom")
+	model.WithPlaceholder("Enter a number with its denom")
 	model.WithValidatorFn(utils.ValidateDecCoin)
 	return model
 }
@@ -439,7 +443,7 @@ func NewSeedsInput(state *RunL1NodeState) *SeedsInput {
 		state:     state,
 		question:  "Please specify the seeds",
 	}
-	model.WithPlaceholder("add in the format id@ip:port, you can add multiple seeds by adding comma (,)")
+	model.WithPlaceholder("Enter in the format `id@ip:port`. You can add multiple seeds by separating them with a comma (,)")
 	model.WithValidatorFn(utils.IsValidPeerOrSeed)
 	return model
 }
@@ -479,7 +483,7 @@ func NewPersistentPeersInput(state *RunL1NodeState) *PersistentPeersInput {
 		state:     state,
 		question:  "Please specify the persistent_peers",
 	}
-	model.WithPlaceholder("add in the format id@ip:port, you can add multiple seeds by adding comma (,)")
+	model.WithPlaceholder("Enter in the format `id@ip:port`. You can add multiple seeds by separating them with a comma (,)")
 	model.WithValidatorFn(utils.IsValidPeerOrSeed)
 	return model
 }
