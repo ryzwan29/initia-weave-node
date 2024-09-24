@@ -88,7 +88,7 @@ const DefaultConfigTemplate = `
 	"constants": {
 		"chain_id": {
 			"mainnet": "initia-1",
-			"testnet": "initiation-1"
+			"testnet": "initiation-2"
 		},
 		"endpoints": {
 			"mainnet": {
@@ -97,9 +97,9 @@ const DefaultConfigTemplate = `
 				"genesis": "https://initia.s3.ap-southeast-1.amazonaws.com/initia-1/genesis.json"
 			},
 			"testnet": {
-				"rpc": "https://rpc.testnet.initia.xyz",
-				"lcd": "https://lcd.testnet.initia.xyz",
-				"genesis": "https://initia.s3.ap-southeast-1.amazonaws.com/initiation-1/genesis.json"
+				"rpc": "https://rpc.initiation-2.initia.xyz",
+				"lcd": "https://lcd.initiation-2.initia.xyz",
+				"genesis": "https://storage.googleapis.com/initia-binaries/genesis.json"
 			}
 		}
 	}

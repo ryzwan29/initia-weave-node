@@ -117,6 +117,18 @@ func EnableService(serviceName string) error {
 	return nil
 }
 
+func UnloadService(serviceName string) error {
+	userHome, err := os.UserHomeDir()
+	if err != nil {
+		return fmt.Errorf("failed to get user home directory: %v", err)
+	}
+	loadCmd := exec.Command("launchctl", "unload", filepath.Join(userHome, fmt.Sprintf("Library/LaunchAgents/%s.plist", serviceName)))
+	if err := loadCmd.Run(); err != nil {
+		return fmt.Errorf("failed to load service: %v", err)
+	}
+	return nil
+}
+
 func LoadService(serviceName string) error {
 	userHome, err := os.UserHomeDir()
 	if err != nil {
@@ -138,8 +150,12 @@ func StartService(serviceName string) error {
 		}
 		return nil
 	case "darwin":
+		err := LoadService(serviceName)
+		if err != nil {
+			return fmt.Errorf("failed to load service: %v", err)
+		}
 		startCmd := exec.Command("launchctl", "start", serviceName)
-		if err := startCmd.Run(); err != nil {
+		if err = startCmd.Run(); err != nil {
 			return fmt.Errorf("failed to start service: %v", err)
 		}
 
@@ -162,7 +178,7 @@ func StopService(serviceName string) error {
 		if err := cmd.Run(); err != nil {
 			return fmt.Errorf("failed to stop service: %v", err)
 		}
-		return nil
+		return UnloadService(serviceName)
 	default:
 		return fmt.Errorf("unsupported operating system: %s", runtime.GOOS)
 	}

@@ -777,12 +777,16 @@ func initializeApp(state *RunL1NodeState) tea.Cmd {
 				panic(err)
 			}
 
-			applicationVersion, ok := result["application_version"].(map[string]interface{})
-			if !ok {
-				panic("failed to get node version")
+			// TODO: Remove this logic when we have a working version of the node_info endpoint
+			if state.chainId == "initiation-2" {
+				nodeVersion = "v0.4.11-initiation.1"
+			} else {
+				applicationVersion, ok := result["application_version"].(map[string]interface{})
+				if !ok {
+					panic("failed to get node version")
+				}
+				nodeVersion = applicationVersion["version"].(string)
 			}
-
-			nodeVersion = applicationVersion["version"].(string)
 			state.initiadVersion = nodeVersion
 			goos := runtime.GOOS
 			goarch := runtime.GOARCH
@@ -863,11 +867,6 @@ func initializeApp(state *RunL1NodeState) tea.Cmd {
 }
 
 func getBinaryURL(version, os, arch string) string {
-	// Remove this when we have a release, or initiation-2 has prebuilt binaries
-	if version == "v0.2.24-stage-2" {
-		return "https://storage.googleapis.com/initia-binaries/initia_v0.2.24-stage-2_Darwin_aarch64.tar.gz"
-	}
-
 	switch os {
 	case "darwin":
 		switch arch {
