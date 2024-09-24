@@ -727,6 +727,34 @@ func (m *InitializingAppLoading) View() string {
 	return m.state.weave.Render() + m.Loading.View()
 }
 
+// Get binary path based on OS
+func getBinaryPath(extractedPath string) string {
+	switch runtime.GOOS {
+	case "linux":
+		return filepath.Join(extractedPath, "initia_v0.4.10", "initiad")
+	case "darwin":
+		return filepath.Join(extractedPath, "initiad")
+	default:
+		panic("unsupported OS")
+	}
+}
+
+// Set environment variables for the library paths based on the OS
+func setLibraryPaths(binaryDir string) {
+	switch runtime.GOOS {
+	case "darwin":
+		if err := os.Setenv("DYLD_LIBRARY_PATH", binaryDir); err != nil {
+			panic(fmt.Sprint("failed to set DYLD_LIBRARY_PATH", err))
+		}
+	case "linux":
+		if err := os.Setenv("LD_LIBRARY_PATH", binaryDir); err != nil {
+			panic(fmt.Sprint("failed to set LD_LIBRARY_PATH", err))
+		}
+	default:
+		panic(fmt.Sprint("unsupported OS for setting library paths", fmt.Errorf(runtime.GOOS)))
+	}
+}
+
 func initializeApp(state *RunL1NodeState) tea.Cmd {
 	return func() tea.Msg {
 		userHome, err := os.UserHomeDir()
@@ -741,7 +769,6 @@ func initializeApp(state *RunL1NodeState) tea.Cmd {
 		switch state.network {
 		case string(Local):
 			nodeVersion = state.initiadVersion
-			extractedPath = filepath.Join(weaveDataPath, fmt.Sprintf("initia@%s", nodeVersion))
 			url = state.initiadEndpoint
 		case string(Mainnet), string(Testnet):
 			var result map[string]interface{}
@@ -760,12 +787,13 @@ func initializeApp(state *RunL1NodeState) tea.Cmd {
 			goos := runtime.GOOS
 			goarch := runtime.GOARCH
 			url = getBinaryURL(nodeVersion, goos, goarch)
-			extractedPath = filepath.Join(weaveDataPath, fmt.Sprintf("initia@%s", nodeVersion))
 		default:
 			panic("unsupported network")
 		}
 
-		binaryPath = filepath.Join(extractedPath, "initiad")
+		extractedPath = filepath.Join(weaveDataPath, fmt.Sprintf("initia@%s", nodeVersion))
+		binaryPath = getBinaryPath(extractedPath)
+
 		if _, err := os.Stat(binaryPath); os.IsNotExist(err) {
 			if _, err := os.Stat(extractedPath); os.IsNotExist(err) {
 				err := os.MkdirAll(extractedPath, os.ModePerm)
@@ -778,16 +806,13 @@ func initializeApp(state *RunL1NodeState) tea.Cmd {
 				panic(fmt.Sprintf("failed to download and extract binary: %v", err))
 			}
 
-			err = os.Chmod(binaryPath, os.ModePerm)
+			err = os.Chmod(binaryPath, 0755) // 0755 ensures read, write, execute permissions for the owner, and read-execute for group/others
 			if err != nil {
 				panic(fmt.Sprintf("failed to set permissions for binary: %v", err))
 			}
 		}
 
-		err = os.Setenv("DYLD_LIBRARY_PATH", extractedPath)
-		if err != nil {
-			panic(fmt.Sprintf("failed to set DYLD_LIBRARY_PATH: %v", err))
-		}
+		setLibraryPaths(filepath.Dir(binaryPath))
 
 		initiaHome := filepath.Join(userHome, utils.InitiaDirectory)
 		if _, err := os.Stat(initiaHome); os.IsNotExist(err) {

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"os/user"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -51,6 +52,25 @@ const DarwinRunL1NodeTemplate = `<?xml version="1.0" encoding="UTF-8"?>
     </dict>
 </dict>
 </plist>
+`
+
+const LinuxRunL1NodeTemplate = `
+[Unit]
+Description=Initia Daemon
+After=network.target
+
+[Service]
+Type=exec
+User=%[1]s
+ExecStart=%[2]s/initiad start
+KillSignal=SIGINT
+Environment="LD_LIBRARY_PATH=%[2]s"
+
+[Install]
+WantedBy=multi-user.target
+
+[Service]
+LimitNOFILE=65535
 `
 
 func CreateService(serviceName, serviceContent string) error {
@@ -171,8 +191,20 @@ func GetRunL1NodeServiceContent(version string) string {
 }
 
 func GetLinuxRunL1NodeServiceContent(version string) string {
-	// TODO: Implement this function
-	return ""
+	userHome, err := os.UserHomeDir()
+	if err != nil {
+		panic(fmt.Errorf("failed to get user home directory: %v", err))
+	}
+
+	currentUser, err := user.Current()
+	if err != nil {
+		panic(fmt.Errorf("failed to get current user: %v", err))
+	}
+
+	weaveDataPath := filepath.Join(userHome, WeaveDataDirectory)
+	binaryPath := filepath.Join(weaveDataPath, "initia@"+version, "initia_v0.4.10")
+
+	return fmt.Sprintf(LinuxRunL1NodeTemplate, currentUser.Username, binaryPath)
 }
 
 func GetDarwinRunL1NodePlist(version string) string {

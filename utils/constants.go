@@ -12,5 +12,5 @@ const (
 	InitiaDataDirectory   = InitiaDirectory + "/data"
 
 	RunL1NodeDarwinServiceName = "com.initia.daemon"
-	RunL1NodeLinuxServiceName  = "initia.service"
+	RunL1NodeLinuxServiceName  = "initia"
 )
