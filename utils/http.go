@@ -6,6 +6,8 @@ import (
 	"io"
 	"net/http"
 	"runtime"
+	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -131,4 +133,60 @@ func ListInitiaReleases() InitiaVersionWithDownloadURL {
 	}
 
 	return versions
+}
+
+// sortVersions sorts the versions based on semantic versioning, including pre-release handling
+func SortVersions(versions InitiaVersionWithDownloadURL) []string {
+	var versionTags []string
+	for tag := range versions {
+		versionTags = append(versionTags, tag)
+	}
+
+	// Sort based on major, minor, patch, and pre-release metadata
+	sort.Slice(versionTags, func(i, j int) bool {
+		return compareSemVer(versionTags[i], versionTags[j])
+	})
+
+	return versionTags
+}
+
+// compareSemVer compares two semantic version strings and returns true if v1 should be ordered before v2
+func compareSemVer(v1, v2 string) bool {
+	// Trim "v" prefix
+	v1 = strings.TrimPrefix(v1, "v")
+	v2 = strings.TrimPrefix(v2, "v")
+
+	v1Main, v1Pre := splitVersion(v1)
+	v2Main, v2Pre := splitVersion(v2)
+
+	// Compare the main (major, minor, patch) versions
+	v1MainParts := strings.Split(v1Main, ".")
+	v2MainParts := strings.Split(v2Main, ".")
+	for i := 0; i < 3; i++ {
+		v1Part, _ := strconv.Atoi(v1MainParts[i])
+		v2Part, _ := strconv.Atoi(v2MainParts[i])
+
+		if v1Part != v2Part {
+			return v1Part > v2Part
+		}
+	}
+
+	// Compare pre-release parts if main versions are equal
+	// A pre-release version is always ordered lower than the normal version
+	if v1Pre == "" && v2Pre != "" {
+		return true
+	}
+	if v1Pre != "" && v2Pre == "" {
+		return false
+	}
+	return v1Pre > v2Pre
+}
+
+// splitVersion separates the main version (e.g., "0.4.11") from the pre-release (e.g., "initiation.1")
+func splitVersion(version string) (mainVersion, preRelease string) {
+	if strings.Contains(version, "-") {
+		parts := strings.SplitN(version, "-", 2)
+		return parts[0], parts[1]
+	}
+	return version, ""
 }

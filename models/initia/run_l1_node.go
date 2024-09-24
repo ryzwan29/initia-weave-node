@@ -99,7 +99,7 @@ func NewRunL1NodeVersionSelect(state *RunL1NodeState) *RunL1NodeVersionSelect {
 	sort.Sort(sort.Reverse(sort.StringSlice(options)))
 	return &RunL1NodeVersionSelect{
 		Selector: utils.Selector[string]{
-			Options: options,
+			Options: utils.SortVersions(versions),
 		},
 		state:    state,
 		versions: versions,
