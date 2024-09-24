@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"runtime"
 	"syscall"
 	"time"
 
@@ -107,28 +109,57 @@ func initiaLogCommand() *cobra.Command {
 		Use:   "log",
 		Short: "Stream the logs of the initiad full node application.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			userHome, err := os.UserHomeDir()
-			if err != nil {
-				return fmt.Errorf("failed to get user home directory: %v", err)
+			// Check if the OS is Linux
+			switch runtime.GOOS {
+			case "linux":
+				return streamLogsFromJournalctl()
+			case "darwin":
+				// If not Linux, fall back to file-based log streaming
+				return streamLogsFromFiles()
+			default:
+				return fmt.Errorf("unsupported OS: %s", runtime.GOOS)
 			}
-
-			logFilePathOut := filepath.Join(userHome, utils.WeaveLogDirectory, "initia.stdout.log")
-			logFilePathErr := filepath.Join(userHome, utils.WeaveLogDirectory, "initia.stderr.log")
-
-			sigChan := make(chan os.Signal, 1)
-			signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
-
-			go tailLogFile(logFilePathOut, os.Stdout)
-			go tailLogFile(logFilePathErr, os.Stderr)
-
-			<-sigChan
-
-			fmt.Println("Stopping log streaming...")
-			return nil
 		},
 	}
 
 	return logCmd
+}
+
+// streamLogsFromJournalctl uses journalctl to stream logs from initia.service
+func streamLogsFromJournalctl() error {
+	// Execute the journalctl command to follow logs of initia.service
+	cmd := exec.Command("journalctl", "-f", "-u", "initia.service")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	// Run the command and return any errors
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to stream logs using journalctl: %v", err)
+	}
+
+	return nil
+}
+
+// streamLogsFromFiles streams logs from file-based logs
+func streamLogsFromFiles() error {
+	userHome, err := os.UserHomeDir()
+	if err != nil {
+		return fmt.Errorf("failed to get user home directory: %v", err)
+	}
+
+	logFilePathOut := filepath.Join(userHome, utils.WeaveLogDirectory, "initia.stdout.log")
+	logFilePathErr := filepath.Join(userHome, utils.WeaveLogDirectory, "initia.stderr.log")
+
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+
+	go tailLogFile(logFilePathOut, os.Stdout)
+	go tailLogFile(logFilePathErr, os.Stderr)
+
+	<-sigChan
+
+	fmt.Println("Stopping log streaming...")
+	return nil
 }
 
 func tailLogFile(filePath string, output io.Writer) {
