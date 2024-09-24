@@ -91,7 +91,7 @@ type RunL1NodeVersionSelect struct {
 }
 
 func NewRunL1NodeVersionSelect(state *RunL1NodeState) *RunL1NodeVersionSelect {
-	versions := utils.ListInitiaReleases()
+	versions := utils.ListInitiaReleases("https://api.github.com/repos/initia-labs/initia/releases")
 	options := make([]string, 0, len(versions))
 	for key := range versions {
 		options = append(options, key)

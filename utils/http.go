@@ -78,7 +78,7 @@ type InitiaRelease struct {
 
 type InitiaVersionWithDownloadURL map[string]string
 
-func ListInitiaReleases() InitiaVersionWithDownloadURL {
+func ListInitiaReleases(url string) InitiaVersionWithDownloadURL {
 	goos := runtime.GOOS
 	goarch := runtime.GOARCH
 
@@ -100,7 +100,6 @@ func ListInitiaReleases() InitiaVersionWithDownloadURL {
 		panic(fmt.Errorf("unsupported architecture: %s", goarch))
 	}
 
-	url := "https://api.github.com/repos/initia-labs/initia/releases"
 	resp, err := http.Get(url)
 	if err != nil {
 		panic(fmt.Errorf("failed to fetch releases: %v", err))
