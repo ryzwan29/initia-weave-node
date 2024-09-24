@@ -1,4 +1,4 @@
-package weaveinit
+package initia
 
 import (
 	"fmt"

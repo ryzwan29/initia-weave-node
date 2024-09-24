@@ -45,6 +45,7 @@ func Execute() error {
 
 	rootCmd.AddCommand(InitCommand())
 	rootCmd.AddCommand(InitiaCommand())
+	rootCmd.AddCommand(MinitiaCommand())
 
 	return rootCmd.ExecuteContext(context.Background())
 }

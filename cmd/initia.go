@@ -14,7 +14,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/initia-labs/weave/models"
-	"github.com/initia-labs/weave/models/weaveinit"
+	"github.com/initia-labs/weave/models/initia"
 	"github.com/initia-labs/weave/utils"
 )
 
@@ -52,7 +52,7 @@ func initiaInitCommand() *cobra.Command {
 				}
 			}
 
-			_, err := tea.NewProgram(weaveinit.NewRunL1NodeNetworkSelect(weaveinit.NewRunL1NodeState())).Run()
+			_, err := tea.NewProgram(initia.NewRunL1NodeNetworkSelect(initia.NewRunL1NodeState())).Run()
 			if err != nil {
 				return err
 			}
