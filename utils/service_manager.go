@@ -202,7 +202,7 @@ func GetLinuxRunL1NodeServiceContent(version string) string {
 	}
 
 	weaveDataPath := filepath.Join(userHome, WeaveDataDirectory)
-	binaryPath := filepath.Join(weaveDataPath, "initia@"+version, "initia_v0.4.10")
+	binaryPath := filepath.Join(weaveDataPath, "initia@"+version, "initia_"+version)
 
 	return fmt.Sprintf(LinuxRunL1NodeTemplate, currentUser.Username, binaryPath)
 }

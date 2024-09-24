@@ -728,10 +728,10 @@ func (m *InitializingAppLoading) View() string {
 }
 
 // Get binary path based on OS
-func getBinaryPath(extractedPath string) string {
+func getBinaryPath(extractedPath string, version string) string {
 	switch runtime.GOOS {
 	case "linux":
-		return filepath.Join(extractedPath, "initia_v0.4.10", "initiad")
+		return filepath.Join(extractedPath, "initia_"+version, "initiad")
 	case "darwin":
 		return filepath.Join(extractedPath, "initiad")
 	default:
@@ -792,7 +792,7 @@ func initializeApp(state *RunL1NodeState) tea.Cmd {
 		}
 
 		extractedPath = filepath.Join(weaveDataPath, fmt.Sprintf("initia@%s", nodeVersion))
-		binaryPath = getBinaryPath(extractedPath)
+		binaryPath = getBinaryPath(extractedPath, nodeVersion)
 
 		if _, err := os.Stat(binaryPath); os.IsNotExist(err) {
 			if _, err := os.Stat(extractedPath); os.IsNotExist(err) {
