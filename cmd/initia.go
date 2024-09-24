@@ -46,9 +46,16 @@ func initiaInitCommand() *cobra.Command {
 		Short: "Init for initializing the initia CLI.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if utils.IsFirstTimeSetup() {
-				_, err := tea.NewProgram(models.NewExistingAppChecker()).Run()
+				// Capture both the final model and the error from Run()
+				finalModel, err := tea.NewProgram(models.NewExistingAppChecker()).Run()
 				if err != nil {
 					return err
+				}
+
+				// Check if the final model is of type WeaveAppSuccessfullyInitialized
+				if _, ok := finalModel.(*models.WeaveAppSuccessfullyInitialized); !ok {
+					// If the model is not of the expected type, return or handle as needed
+					return nil
 				}
 			}
 
