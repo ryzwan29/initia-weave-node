@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 	"time"
 
@@ -228,11 +227,6 @@ type VersionSelect struct {
 
 func NewRunL1NodeVersionSelect(state *LaunchState) *VersionSelect {
 	versions := utils.ListInitiaReleases(fmt.Sprintf("https://api.github.com/repos/initia-labs/mini%s/releases", strings.ToLower(state.vmType)))
-	options := make([]string, 0, len(versions))
-	for key := range versions {
-		options = append(options, key)
-	}
-	sort.Sort(sort.Reverse(sort.StringSlice(options)))
 	return &VersionSelect{
 		Selector: utils.Selector[string]{
 			Options: utils.SortVersions(versions),

@@ -6,7 +6,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -92,11 +91,6 @@ type RunL1NodeVersionSelect struct {
 
 func NewRunL1NodeVersionSelect(state *RunL1NodeState) *RunL1NodeVersionSelect {
 	versions := utils.ListInitiaReleases("https://api.github.com/repos/initia-labs/initia/releases")
-	options := make([]string, 0, len(versions))
-	for key := range versions {
-		options = append(options, key)
-	}
-	sort.Sort(sort.Reverse(sort.StringSlice(options)))
 	return &RunL1NodeVersionSelect{
 		Selector: utils.Selector[string]{
 			Options: utils.SortVersions(versions),
