@@ -3,7 +3,8 @@ package minitia
 import "github.com/initia-labs/weave/types"
 
 type LaunchState struct {
-	weave types.WeaveState
+	weave              types.WeaveState
+	existingMinitiaApp bool
 }
 
 func NewLaunchState() *LaunchState {

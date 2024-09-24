@@ -238,3 +238,12 @@ func IsValidPeerOrSeed(addresses string) error {
 
 	return nil
 }
+
+func ValidateExactString(expect string) func(s string) error {
+	return func(s string) error {
+		if s != expect {
+			return fmt.Errorf("please type `%s` to proceed", expect)
+		}
+		return nil
+	}
+}

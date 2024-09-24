@@ -13,4 +13,6 @@ const (
 
 	RunL1NodeDarwinServiceName = "com.initia.daemon"
 	RunL1NodeLinuxServiceName  = "initia"
+
+	MinitiaDirectory = ".minitia"
 )
