@@ -46,7 +46,7 @@ jobs:
           repository: initia-labs/weave-binaries
           draft: false
           prerelease: true
-          token: ${{ secrets.WEAVE_BINARIES_GITHUB_TOKEN }}
+          token: ${{ secrets.GH_RELEASE_TOKEN }}
           files: |
             build/${{ matrix.goos }}-${{ matrix.goarch }}/weave
 
