@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"unicode"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/initia-labs/weave/styles"
@@ -35,37 +36,93 @@ func (ti *TextInput) WithPlaceholder(placeholder string) {
 func (ti TextInput) Update(msg tea.Msg) (TextInput, tea.Cmd, bool) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		switch msg.Type {
-		case tea.KeyEnter:
+		switch {
+		// Handle Enter key
+		case msg.Type == tea.KeyEnter:
 			ti.IsEntered = true
 			return ti, nil, ti.ValidationFn(ti.Text) == nil
-		case tea.KeyBackspace, tea.KeyCtrlH:
+
+		// Handle Backspace key
+		case msg.Type == tea.KeyBackspace || msg.Type == tea.KeyCtrlH:
 			ti.IsEntered = false
 			if ti.Cursor > 0 && len(ti.Text) > 0 {
 				ti.Text = ti.Text[:ti.Cursor-1] + ti.Text[ti.Cursor:]
 				ti.Cursor--
 			}
-		case tea.KeyRunes, tea.KeySpace:
+
+		// Handle Option + Left (move one word left) - Detected as "alt+b"
+		case msg.String() == "alt+b":
 			ti.IsEntered = false
-			ti.Text = ti.Text[:ti.Cursor] + string(msg.Runes) + ti.Text[ti.Cursor:]
-			ti.Cursor += len(msg.Runes)
-		case tea.KeyLeft:
+			ti.Cursor = moveToPreviousWord(ti.Text, ti.Cursor)
+
+		// Handle Option + Right (move one word right) - Detected as "alt+f"
+		case msg.String() == "alt+f":
+			ti.IsEntered = false
+			ti.Cursor = moveToNextWord(ti.Text, ti.Cursor)
+
+		// Handle Arrow Left (move cursor one character left)
+		case msg.Type == tea.KeyLeft:
 			ti.IsEntered = false
 			if ti.Cursor > 0 {
 				ti.Cursor--
 			}
-		case tea.KeyRight:
+
+		// Handle Arrow Right (move cursor one character right)
+		case msg.Type == tea.KeyRight:
 			ti.IsEntered = false
 			if ti.Cursor < len(ti.Text) {
 				ti.Cursor++
 			}
-		case tea.KeyCtrlC:
+
+		// Handle Ctrl+C (quit)
+		case msg.Type == tea.KeyCtrlC:
 			ti.IsEntered = false
 			return ti, tea.Quit, false
-		}
 
+		default:
+			ti.IsEntered = false
+
+			// Normal typing
+			ti.Text = ti.Text[:ti.Cursor] + string(msg.Runes) + ti.Text[ti.Cursor:]
+			ti.Cursor += len(msg.Runes)
+
+		}
 	}
 	return ti, nil, false
+}
+
+// Helper function to move the cursor to the beginning of the previous word
+func moveToPreviousWord(text string, cursor int) int {
+	if cursor == 0 {
+		return 0
+	}
+
+	// Move cursor left while encountering spaces
+	for cursor > 0 && unicode.IsSpace(rune(text[cursor-1])) {
+		cursor--
+	}
+	// Move cursor left until the beginning of the word is found
+	for cursor > 0 && !unicode.IsSpace(rune(text[cursor-1])) {
+		cursor--
+	}
+	return cursor
+}
+
+// Helper function to move the cursor to the beginning of the next word
+func moveToNextWord(text string, cursor int) int {
+	if cursor >= len(text) {
+		return len(text)
+	}
+
+	// Move cursor right while encountering non-space characters (current word)
+	for cursor < len(text) && !unicode.IsSpace(rune(text[cursor])) {
+		cursor++
+	}
+	// Move cursor right while encountering spaces
+	for cursor < len(text) && unicode.IsSpace(rune(text[cursor])) {
+		cursor++
+	}
+	return cursor
 }
 
 func (ti TextInput) View() string {
