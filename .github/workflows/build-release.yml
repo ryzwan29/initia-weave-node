@@ -35,7 +35,7 @@ jobs:
       - name: Upload binaries as artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.goos }}-${{ matrix.goarch }}/weave
+          name: ${{ matrix.goos }}-${{ matrix.goarch }}
           path: |
             build/${{ matrix.goos }}-${{ matrix.goarch }}/weave
 
