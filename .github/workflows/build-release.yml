@@ -36,6 +36,6 @@ jobs:
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: build/${{ matrix.goos }}-${{ matrix.goarch }}/weave
+          asset_path: build/weave-${{ matrix.goos }}-${{ matrix.goarch }}
           asset_name: weave-${{ matrix.goos }}-${{ matrix.goarch }}
           asset_content_type: application/octet-stream
