@@ -28,16 +28,14 @@ jobs:
         run: |
           mkdir -p build
           GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o build/weave-${{ matrix.goos }}-${{ matrix.goarch }}
-        shell: bash
 
-      - name: List built files (for debugging)
+      - name: List files in build directory
         run: ls -l build/
-        shell: bash
 
       - name: Upload binaries to GitHub release
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: build/weave-${{ matrix.goos }}-${{ matrix.goarch }}
+          asset_path: build/${{ matrix.goos }}-${{ matrix.goarch }}/weave
           asset_name: weave-${{ matrix.goos }}-${{ matrix.goarch }}
           asset_content_type: application/octet-stream
