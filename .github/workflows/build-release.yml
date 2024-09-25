@@ -26,7 +26,13 @@ jobs:
 
       - name: Build binary
         run: |
+          mkdir -p build
           GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o build/weave-${{ matrix.goos }}-${{ matrix.goarch }}
+        shell: bash
+
+      - name: List built files (for debugging)
+        run: ls -l build/
+        shell: bash
 
       - name: Upload binaries to GitHub release
         uses: actions/upload-release-asset@v1
