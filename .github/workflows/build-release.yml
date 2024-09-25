@@ -56,7 +56,7 @@ jobs:
       - name: Create a release in weave-binaries
         run: |
           RELEASE_ID=$(curl -s -X POST \
-            -H "Authorization: token ${{ secrets.PERSONAL_ACCESS_TOKEN }}" \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
             https://api.github.com/repos/initia-labs/weave-binaries/releases \
             -d '{
@@ -70,10 +70,10 @@ jobs:
 
           for file in build/darwin-amd64/weave build/darwin-arm64/weave build/linux-amd64/weave build/linux-arm64/weave; do
             curl -X POST \
-              -H "Authorization: token ${{ secrets.PERSONAL_ACCESS_TOKEN }}" \
+              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
               -H "Content-Type: application/octet-stream" \
               --data-binary @$file \
               "https://uploads.github.com/repos/initia-labs/weave-binaries/releases/$RELEASE_ID/assets?name=$(basename $file)"
           done
         env:
-          PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
