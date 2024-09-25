@@ -35,12 +35,9 @@ jobs:
       - name: Upload binaries as artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: binaries
+          name: ${{ matrix.goos }}-${{ matrix.goarch }}/weave
           path: |
-            build/darwin-amd64/weave
-            build/darwin-arm64/weave
-            build/linux-amd64/weave
-            build/linux-arm64/weave
+            build/${{ matrix.goos }}-${{ matrix.goarch }}/weave
 
   upload-to-weave-binaries:
     name: Upload to weave-binaries release
