@@ -40,7 +40,7 @@ jobs:
       - name: Upload binaries as artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: build/weave_${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz
+          name: weave_${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz
           path: |
             build/weave_${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz
 
