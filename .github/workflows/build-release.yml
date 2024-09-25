@@ -26,29 +26,23 @@ jobs:
 
       - name: Build binary
         run: |
-          mkdir -p build/${{ matrix.goos }}-${{ matrix.goarch }}
-          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o build/${{ matrix.goos }}-${{ matrix.goarch }}/weave
+          mkdir -p build/${{ matrix.goos }}_${{ matrix.goarch }}
+          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o build/weave_${{ matrix.goos }}_${{ matrix.goarch }}
 
       - name: List files in build directory (optional for debugging)
         run: ls -R build/
 
+      # tar.gz
+      - name: Create tar.gz
+        run: |
+          tar -czvf build/weave_${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz build/weave_${{ matrix.goos }}_${{ matrix.goarch }}
+
       - name: Upload binaries as artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.goos }}-${{ matrix.goarch }}
+          name: build/weave_${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz
           path: |
-            build/${{ matrix.goos }}-${{ matrix.goarch }}/weave
-
-      - name: Create a release in weave-binaries
-        uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/')
-        with:
-          repository: initia-labs/weave-binaries
-          draft: false
-          prerelease: true
-          token: ${{ secrets.GH_RELEASE_TOKEN }}
-          files: |
-            build/${{ matrix.goos }}-${{ matrix.goarch }}/weave
+            build/weave_${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz
 
   # upload-to-weave-binaries:
   #   name: Upload to weave-binaries release
