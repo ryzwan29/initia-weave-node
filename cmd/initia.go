@@ -45,7 +45,7 @@ func InitiaCommand() *cobra.Command {
 func initiaInitCommand() *cobra.Command {
 	initCmd := &cobra.Command{
 		Use:   "init",
-		Short: "Init for initializing the initia CLI.",
+		Short: "Bootstrap your Initia full node",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if utils.IsFirstTimeSetup() {
 				// Capture both the final model and the error from Run()

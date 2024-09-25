@@ -3,51 +3,16 @@ package cmd
 import (
 	"context"
 
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-
-	"github.com/initia-labs/weave/models"
-	"github.com/initia-labs/weave/utils"
 )
+
+var Version string
 
 func Execute() error {
 	rootCmd := &cobra.Command{
-		Version: "v1.0.0",
+		Version: Version,
 		Use:     "weave",
-		Long:    "Weave is a CLI for managing Initia deployments.",
-		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			viper.AutomaticEnv()
-			viper.SetEnvPrefix("weave")
-
-			if err := utils.InitializeConfig(); err != nil {
-				return err
-			}
-
-			return nil
-		},
-		RunE: func(cmd *cobra.Command, args []string) error {
-			if utils.IsFirstTimeSetup() {
-				// Capture both the final model and the error from Run()
-				finalModel, err := tea.NewProgram(models.NewExistingAppChecker()).Run()
-				if err != nil {
-					return err
-				}
-
-				// Check if the final model is of type WeaveAppSuccessfullyInitialized
-				if _, ok := finalModel.(*models.WeaveAppSuccessfullyInitialized); !ok {
-					// If the model is not of the expected type, return or handle as needed
-					return nil
-				}
-			}
-
-			_, err := tea.NewProgram(models.NewHomepage()).Run()
-			if err != nil {
-				return err
-			}
-
-			return nil
-		},
+		Long:    "Weave is the CLI for managing Initia deployments.",
 	}
 
 	rootCmd.AddCommand(InitCommand())

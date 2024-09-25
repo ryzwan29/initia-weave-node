@@ -4,6 +4,8 @@ GO_VERSION=1.22
 GO_SYSTEM_VERSION = $(shell go version | cut -c 14- | cut -d' ' -f1 | cut -d'.' -f1-2)
 REQUIRE_GO_VERSION = $(GO_VERSION)
 
+WEAVE_VERSION=v0.0.1
+
 BUILDDIR ?= $(CURDIR)/build
 BUILD_TARGETS = build
 
@@ -20,7 +22,7 @@ $(BUILD_TARGETS): check_version go.sum $(BUILDDIR)/
 ifeq ($(OS),Windows_NT)
 	exit 1
 else
-	go $@ -mod=readonly .
+	go $@ -mod=readonly -ldflags "-X github.com/initia-labs/weave/cmd.Version=$(WEAVE_VERSION)" .
 endif
 
 $(BUILDDIR)/:

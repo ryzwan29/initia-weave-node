@@ -27,7 +27,7 @@ func MinitiaCommand() *cobra.Command {
 func minitiaLaunchCommand() *cobra.Command {
 	launchCmd := &cobra.Command{
 		Use:   "launch",
-		Short: "Launch for initializing a new L2 node.",
+		Short: "Launch a new Minitia from scratch",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if utils.IsFirstTimeSetup() {
 				// Capture both the final model and the error from Run()

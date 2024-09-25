@@ -12,8 +12,7 @@ import (
 func InitCommand() *cobra.Command {
 	initCmd := &cobra.Command{
 		Use:   "init",
-		Short: "Init for initializing the weave CLI.",
-		Long:  "Init for initializing the weave CLI.",
+		Short: "Initialize Weave CLI, funding gas station and setting up config.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if utils.IsFirstTimeSetup() {
 				// Capture both the final model and the error from Run()
