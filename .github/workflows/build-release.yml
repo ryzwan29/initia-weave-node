@@ -1,4 +1,4 @@
-name: Build Go binaries and upload to release
+name: Build Go binaries and upload to weave-binaries release
 
 on:
   release:
@@ -32,16 +32,55 @@ jobs:
       - name: List files in build directory (optional for debugging)
         run: ls -R build/
 
-      - name: Upload binaries
+      - name: Create zip files for binaries
+        run: |
+          zip -j darwin-amd64-binary.zip build/darwin-amd64/weave
+          zip -j darwin-arm64-binary.zip build/darwin-arm64/weave
+          zip -j linux-amd64-binary.zip build/linux-amd64/weave
+          zip -j linux-arm64-binary.zip build/linux-arm64/weave
+
+      - name: Upload binaries as artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.goos }}-${{ matrix.goarch }}-binary
-          path: build/${{ matrix.goos }}-${{ matrix.goarch }}/weave
-          
-      # - name: Upload binaries to GitHub release
-      #   uses: actions/upload-release-asset@v1
-      #   with:
-      #     upload_url: ${{ github.event.release.upload_url }}
-      #     asset_path: build/weave-${{ matrix.goos }}-${{ matrix.goarch }}
-      #     asset_name: weave-${{ matrix.goos }}-${{ matrix.goarch }}
-      #     asset_content_type: application/octet-stream
+          name: binaries
+          path: |
+            darwin-amd64-binary.zip
+            darwin-arm64-binary.zip
+            linux-amd64-binary.zip
+            linux-arm64-binary.zip
+
+  upload-to-weave-binaries:
+    name: Upload to weave-binaries release
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download binaries
+        uses: actions/download-artifact@v3
+        with:
+          name: binaries
+
+      - name: Create a release in weave-binaries
+        run: |
+          RELEASE_ID=$(curl -s -X POST \
+            -H "Authorization: token ${{ secrets.PERSONAL_ACCESS_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/initia-labs/weave-binaries/releases \
+            -d '{
+              "tag_name": "${{ github.event.release.tag_name }}",
+              "target_commitish": "main",
+              "name": "${{ github.event.release.name }}",
+              "body": "Release for ${{ github.event.release.tag_name }}",
+              "draft": false,
+              "prerelease": false
+            }' | jq -r '.id')
+
+          for file in darwin-amd64-binary.zip darwin-arm64-binary.zip linux-amd64-binary.zip linux-arm64-binary.zip; do
+            curl -X POST \
+              -H "Authorization: token ${{ secrets.PERSONAL_ACCESS_TOKEN }}" \
+              -H "Content-Type: application/zip" \
+              --data-binary @$file \
+              "https://uploads.github.com/repos/initia-labs/weave-binaries/releases/$RELEASE_ID/assets?name=$(basename $file)"
+          done
+        env:
+          PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
