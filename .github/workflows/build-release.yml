@@ -32,22 +32,15 @@ jobs:
       - name: List files in build directory (optional for debugging)
         run: ls -R build/
 
-      - name: Create zip files for binaries
-        run: |
-          zip -j darwin-amd64-binary.zip build/darwin-amd64/weave
-          zip -j darwin-arm64-binary.zip build/darwin-arm64/weave
-          zip -j linux-amd64-binary.zip build/linux-amd64/weave
-          zip -j linux-arm64-binary.zip build/linux-arm64/weave
-
       - name: Upload binaries as artifacts
         uses: actions/upload-artifact@v3
         with:
           name: binaries
           path: |
-            darwin-amd64-binary.zip
-            darwin-arm64-binary.zip
-            linux-amd64-binary.zip
-            linux-arm64-binary.zip
+            build/darwin-amd64/weave
+            build/darwin-arm64/weave
+            build/linux-amd64/weave
+            build/linux-arm64/weave
 
   upload-to-weave-binaries:
     name: Upload to weave-binaries release
@@ -75,10 +68,10 @@ jobs:
               "prerelease": false
             }' | jq -r '.id')
 
-          for file in darwin-amd64-binary.zip darwin-arm64-binary.zip linux-amd64-binary.zip linux-arm64-binary.zip; do
+          for file in build/darwin-amd64/weave build/darwin-arm64/weave build/linux-amd64/weave build/linux-arm64/weave; do
             curl -X POST \
               -H "Authorization: token ${{ secrets.PERSONAL_ACCESS_TOKEN }}" \
-              -H "Content-Type: application/zip" \
+              -H "Content-Type: application/octet-stream" \
               --data-binary @$file \
               "https://uploads.github.com/repos/initia-labs/weave-binaries/releases/$RELEASE_ID/assets?name=$(basename $file)"
           done
