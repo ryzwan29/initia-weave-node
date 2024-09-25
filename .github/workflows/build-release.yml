@@ -22,7 +22,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.22.6'
+          go-version: "1.22.6"
 
       - name: Build binary
         run: |
@@ -54,26 +54,15 @@ jobs:
           name: binaries
 
       - name: Create a release in weave-binaries
-        run: |
-          RELEASE_ID=$(curl -s -X POST \
-            -H "Authorization: token ${{ secrets.WEAVE_BINARIES_GITHUB_TOKEN }}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            https://api.github.com/repos/initia-labs/weave-binaries/releases \
-            -d '{
-              "tag_name": "${{ github.event.release.tag_name }}",
-              "target_commitish": "main",
-              "name": "${{ github.event.release.name }}",
-              "body": "Release for ${{ github.event.release.tag_name }}",
-              "draft": false,
-              "prerelease": false
-            }' | jq -r '.id')
-
-          for file in build/darwin-amd64/weave build/darwin-arm64/weave build/linux-amd64/weave build/linux-arm64/weave; do
-            curl -X POST \
-              -H "Authorization: token ${{ secrets.WEAVE_BINARIES_GITHUB_TOKEN }}" \
-              -H "Content-Type: application/octet-stream" \
-              --data-binary @$file \
-              "https://uploads.github.com/repos/initia-labs/weave-binaries/releases/$RELEASE_ID/assets?name=$(basename $file)"
-          done
-        env:
-          WEAVE_BINARIES_GITHUB_TOKEN: ${{ secrets.WEAVE_BINARIES_GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          repository: initia-labs/weave-binaries
+          draft: false
+          prerelease: true
+          token: ${{ secrets.WEAVE_BINARIES_GITHUB_TOKEN }}
+          files: |
+            build/darwin-amd64/weave
+            build/darwin-arm64/weave
+            build/linux-amd64/weave
+            build/linux-arm64/weave
