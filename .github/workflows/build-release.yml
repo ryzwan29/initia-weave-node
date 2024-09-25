@@ -64,7 +64,7 @@ jobs:
           prerelease: true
           token: ${{ secrets.GH_RELEASE_TOKEN }}
           files: |
-            artifacts/weave_linux_amd64
-            artifacts/weave_linux_arm64
-            artifacts/weave_darwin_amd64
-            artifacts/weave_darwin_arm64
+            /home/runner/work/weave/weave/artifacts/weave_linux_amd64
+            /home/runner/work/weave/weave/artifacts/weave_linux_arm64
+            /home/runner/work/weave/weave/artifacts/weave_darwin_amd64
+            /home/runner/work/weave/weave/artifacts/weave_darwin_arm64
