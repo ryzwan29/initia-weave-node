@@ -29,8 +29,11 @@ jobs:
           mkdir -p build
           GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o build/weave-${{ matrix.goos }}-${{ matrix.goarch }}
 
-      - name: List files in build directory
-        run: ls -l build/
+      - name: Upload binaries
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.goos }}-${{ matrix.goarch }}-binary
+          path: build/${{ matrix.goos }}-${{ matrix.goarch }}/weave
 
       # - name: Upload binaries to GitHub release
       #   uses: actions/upload-release-asset@v1
