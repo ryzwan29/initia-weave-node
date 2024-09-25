@@ -27,7 +27,7 @@ jobs:
       - name: Build binary
         run: |
           mkdir -p build/${{ matrix.goos }}_${{ matrix.goarch }}
-          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o build/weave_${{ matrix.goos }}_${{ matrix.goarch }}
+          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o build/${{ matrix.goos }}_${{ matrix.goarch }}/weave
 
       - name: List files in build directory (optional for debugging)
         run: ls -R build/
@@ -35,14 +35,14 @@ jobs:
       # tar.gz
       - name: Create tar.gz
         run: |
-          tar -czvf build/weave_${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz build/weave_${{ matrix.goos }}_${{ matrix.goarch }}
+          tar -czvf weave_${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz build/${{ matrix.goos }}_${{ matrix.goarch }}/weave
 
       - name: Upload binaries as artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: weave_${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz
-          path: |
-            build/weave_${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz
+          name: weave_${{ matrix.goos }}_${{ matrix.goarch }}
+          path: weave_${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz
+          if-no-files-found: error
 
   # upload-to-weave-binaries:
   #   name: Upload to weave-binaries release
@@ -64,7 +64,7 @@ jobs:
   #         prerelease: true
   #         token: ${{ secrets.WEAVE_BINARIES_GITHUB_TOKEN }}
   #         files: |
-  #           build/darwin-amd64/weave
-  #           build/darwin-arm64/weave
-  #           build/linux-amd64/weave
-  #           build/linux-arm64/weave
+  #           weave_linux_amd64.tar.gz
+  #           weave_linux_arm64.tar.gz
+  #           weave_darwin_amd64.tar.gz
+  #           weave_darwin_arm64.tar.gz
