@@ -62,7 +62,7 @@ jobs:
           repository: initia-labs/weave-binaries
           draft: false
           prerelease: true
-          token: ${{ secrets.WEAVE_BINARIES_GITHUB_TOKEN }}
+          token: ${{ secrets.GH_RELEASE_TOKEN }}
           files: |
             artifacts/weave_linux_amd64.tar.gz
             artifacts/weave_linux_arm64.tar.gz
