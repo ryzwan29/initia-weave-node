@@ -1,0 +1,35 @@
+name: Build Go binaries for release
+
+on:
+  release:
+    types:
+      - published
+
+jobs:
+  build:
+    name: Build Go binaries
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        goos: [linux, darwin]
+        goarch: [amd64, arm64] # You can modify this if you want other architectures like ARM
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.22.6' # Set to Go version 1.22.6
+          
+      - name: Build binary
+        run: |
+          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o build/${{ matrix.goos }}-${{ matrix.goarch }}/weave
+
+      - name: Upload binaries
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.goos }}-${{ matrix.goarch }}-binary
+          path: build/${{ matrix.goos }}-${{ matrix.goarch }}/weave
