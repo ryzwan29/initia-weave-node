@@ -28,6 +28,9 @@ endif
 $(BUILDDIR)/:
 	mkdir -p $(BUILDDIR)/
 
+install:
+	go install -ldflags "-X github.com/initia-labs/weave/cmd.Version=$(WEAVE_VERSION)" .
+
 test: build
 	clear
 	./weave
