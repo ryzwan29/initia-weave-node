@@ -35,13 +35,13 @@ jobs:
       # tar.gz
       - name: Create tar.gz
         run: |
-          tar -czvf weave_${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz -C build/${{ matrix.goos }}_${{ matrix.goarch }} weave
+          tar -czvf weave_${{ github.ref_name }}_${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz -C build/${{ matrix.goos }}_${{ matrix.goarch }} weave
 
       - name: Upload binaries as artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: weave_${{ matrix.goos }}_${{ matrix.goarch }}
-          path: weave_${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz
+          name: weave_${{ github.ref_name }}_${{ matrix.goos }}_${{ matrix.goarch }}
+          path: weave_${{ github.ref_name }}_${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz
           if-no-files-found: error
 
   upload-to-weave-binaries:
@@ -60,11 +60,12 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         with:
           repository: initia-labs/weave-binaries
+          name: ${{ github.ref_name }}
           draft: false
           prerelease: true
           token: ${{ secrets.GH_RELEASE_TOKEN }}
           files: |
-            /home/runner/work/weave/weave/artifacts/weave_linux_amd64
-            /home/runner/work/weave/weave/artifacts/weave_linux_arm64
-            /home/runner/work/weave/weave/artifacts/weave_darwin_amd64
-            /home/runner/work/weave/weave/artifacts/weave_darwin_arm64
+            artifacts/weave_${{ github.ref_name }}_linux_amd64.tar.gz
+            artifacts/weave_${{ github.ref_name }}_linux_arm64.tar.gz
+            artifacts/weave_${{ github.ref_name }}_darwin_amd64.tar.gz
+            artifacts/weave_${{ github.ref_name }}_darwin_arm64.tar.gz
