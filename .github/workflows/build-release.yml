@@ -65,7 +65,7 @@ jobs:
           prerelease: true
           token: ${{ secrets.GH_RELEASE_TOKEN }}
           files: |
-            artifacts/weave_${{ github.ref_name }}_linux_amd64.tar.gz
-            artifacts/weave_${{ github.ref_name }}_linux_arm64.tar.gz
-            artifacts/weave_${{ github.ref_name }}_darwin_amd64.tar.gz
-            artifacts/weave_${{ github.ref_name }}_darwin_arm64.tar.gz
+            artifacts/weave_${{ github.ref_name }}_linux_amd64/weave_${{ github.ref_name }}_linux_amd64.tar.gz
+            artifacts/weave_${{ github.ref_name }}_linux_arm64/weave_${{ github.ref_name }}_linux_arm64.tar.gz
+            artifacts/weave_${{ github.ref_name }}_darwin_amd64/weave_${{ github.ref_name }}_darwin_amd64.tar.gz
+            artifacts/weave_${{ github.ref_name }}_darwin_arm64/weave_${{ github.ref_name }}_darwin_arm64.tar.gz
