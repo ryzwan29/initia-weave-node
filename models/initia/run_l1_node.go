@@ -959,8 +959,9 @@ func (m *SyncMethodSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.state.syncMethod = string(*selected)
 		switch *selected {
 		case NoSync:
+			m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{""}, string(*selected)))
 			// TODO: What if there's existing /data. Should we also prune it here?
-			return m, tea.Quit
+			return NewTerminalState(m.state), cmd
 		case Snapshot, StateSync:
 			m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{""}, string(*selected)))
 			model := NewExistingDataChecker(m.state)
@@ -1389,4 +1390,27 @@ func setupStateSync(state *RunL1NodeState) tea.Cmd {
 
 		return utils.EndLoading{}
 	}
+}
+
+type TerminalState struct {
+	state *RunL1NodeState
+}
+
+func NewTerminalState(state *RunL1NodeState) *TerminalState {
+	return &TerminalState{
+		state: state,
+	}
+}
+
+func (m *TerminalState) Init() tea.Cmd {
+	return nil
+}
+
+func (m *TerminalState) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	return m, tea.Quit
+}
+
+func (m *TerminalState) View() string {
+	// TODO: revisit congraturation text
+	return m.state.weave.Render() + "🪢🪢🪢   " + styles.FadeText("Success") + "  🪢🪢🪢\n"
 }
