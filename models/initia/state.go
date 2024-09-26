@@ -21,7 +21,7 @@ type RunL1NodeState struct {
 	existingData                      bool
 	syncMethod                        string
 	replaceExistingData               bool
-	replaceExisitigGenesisWithDefault bool
+	replaceExistingGenesisWithDefault bool
 	snapshotEndpoint                  string
 	stateSyncEndpoint                 string
 }

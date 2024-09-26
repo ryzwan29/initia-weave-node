@@ -582,7 +582,7 @@ type ExistingGenesisReplaceOption string
 
 const (
 	UseCurrentGenesis ExistingGenesisReplaceOption = "Use current one"
-	ReplaceGenesis    ExistingGenesisReplaceOption = "Replace"
+	ReplaceGenesis    ExistingGenesisReplaceOption = "Replace" // TODO: Dynamic text based on Network
 )
 
 func NewExistingGenesisReplaceSelect(state *RunL1NodeState) *ExistingGenesisReplaceSelect {
@@ -620,7 +620,7 @@ func (m *ExistingGenesisReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) 
 			}
 		} else {
 			if *selected == ReplaceGenesis {
-				m.state.replaceExisitigGenesisWithDefault = true
+				m.state.replaceExistingGenesisWithDefault = true
 			}
 			newLoader := NewInitializingAppLoading(m.state)
 			return newLoader, newLoader.Init()
@@ -866,7 +866,8 @@ func initializeApp(state *RunL1NodeState) tea.Cmd {
 		if err = utils.CreateService(utils.GetRunL1NodeServiceName(), utils.GetRunL1NodeServiceContent(state.initiadVersion)); err != nil {
 			panic(fmt.Sprintf("failed to create service: %v", err))
 		}
-		if state.replaceExisitigGenesisWithDefault {
+
+		if state.replaceExistingGenesisWithDefault {
 			// Create a temporary home directory for the Initia node
 			tmpInitiaHome := filepath.Join(weaveDataPath, "tmp_initia")
 			if err := os.MkdirAll(tmpInitiaHome, os.ModePerm); err != nil {
@@ -879,15 +880,15 @@ func initializeApp(state *RunL1NodeState) tea.Cmd {
 				panic(fmt.Sprintf("failed to run temporary initiad init: %v", err))
 			}
 
-			// Move the temporary genesis.json file to the real Initia config path
+			// Move the temporary genesis.json file to the user Initia config path
 			tmpGenesisPath := filepath.Join(tmpInitiaHome, "config/genesis.json")
-			realGenesisPath := filepath.Join(initiaConfigPath, "genesis.json")
-			if err := os.Rename(tmpGenesisPath, realGenesisPath); err != nil {
+			userGenesisPath := filepath.Join(initiaConfigPath, "genesis.json")
+			if err = os.Rename(tmpGenesisPath, userGenesisPath); err != nil {
 				panic(fmt.Sprintf("failed to move genesis.json: %v", err))
 			}
 
 			// Clean up the temporary Initia directory
-			if err := os.RemoveAll(tmpInitiaHome); err != nil {
+			if err = os.RemoveAll(tmpInitiaHome); err != nil {
 				panic(fmt.Sprintf("failed to remove temporary Initia home directory: %v", err))
 			}
 		}
