@@ -360,9 +360,9 @@ func (m *MinGasPriceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *MinGasPriceInput) View() string {
-	preText := "\n"
+	preText := ""
 	if !m.state.existingApp {
-		preText += styles.RenderPrompt("There is no config/app.toml or config/config.toml available. You will need to enter the required information to proceed.\n", []string{"config/app.toml", "config/config.toml"}, styles.Information)
+		preText += styles.RenderPrompt("\nThere is no config/app.toml or config/config.toml available. You will need to enter the required information to proceed.\n", []string{"config/app.toml", "config/config.toml"}, styles.Information)
 	}
 	return m.state.weave.Render() + preText + styles.RenderPrompt(m.GetQuestion(), []string{"min-gas-price"}, styles.Question) + m.TextInput.View()
 }
@@ -823,25 +823,26 @@ func initializeApp(state *RunL1NodeState) tea.Cmd {
 
 		initiaConfigPath := filepath.Join(userHome, utils.InitiaConfigDirectory)
 
-		// TODO: make sure this works with using existing config
-		if err := utils.UpdateTomlValue(filepath.Join(initiaConfigPath, "config.toml"), "moniker", state.moniker); err != nil {
-			panic(fmt.Sprintf("failed to update moniker: %v", err))
-		}
+		if state.replaceExistingApp {
+			if err := utils.UpdateTomlValue(filepath.Join(initiaConfigPath, "config.toml"), "moniker", state.moniker); err != nil {
+				panic(fmt.Sprintf("failed to update moniker: %v", err))
+			}
 
-		if err := utils.UpdateTomlValue(filepath.Join(initiaConfigPath, "app.toml"), "minimum-gas-prices", state.minGasPrice); err != nil {
-			panic(fmt.Sprintf("failed to update minimum-gas-prices: %v", err))
-		}
+			if err := utils.UpdateTomlValue(filepath.Join(initiaConfigPath, "config.toml"), "p2p.seeds", state.seeds); err != nil {
+				panic(fmt.Sprintf("failed to update seeds: %v", err))
+			}
 
-		if err := utils.UpdateTomlValue(filepath.Join(initiaConfigPath, "app.toml"), "api.enable", strconv.FormatBool(state.enableLCD)); err != nil {
-			panic(fmt.Sprintf("failed to update api enable: %v", err))
-		}
+			if err := utils.UpdateTomlValue(filepath.Join(initiaConfigPath, "config.toml"), "p2p.persistent_peers", state.persistentPeers); err != nil {
+				panic(fmt.Sprintf("failed to update persistent_peers: %v", err))
+			}
 
-		if err := utils.UpdateTomlValue(filepath.Join(initiaConfigPath, "config.toml"), "p2p.seeds", state.seeds); err != nil {
-			panic(fmt.Sprintf("failed to update seeds: %v", err))
-		}
+			if err := utils.UpdateTomlValue(filepath.Join(initiaConfigPath, "app.toml"), "minimum-gas-prices", state.minGasPrice); err != nil {
+				panic(fmt.Sprintf("failed to update minimum-gas-prices: %v", err))
+			}
 
-		if err := utils.UpdateTomlValue(filepath.Join(initiaConfigPath, "config.toml"), "p2p.persistent_peers", state.persistentPeers); err != nil {
-			panic(fmt.Sprintf("failed to update persistent_peers: %v", err))
+			if err := utils.UpdateTomlValue(filepath.Join(initiaConfigPath, "app.toml"), "api.enable", strconv.FormatBool(state.enableLCD)); err != nil {
+				panic(fmt.Sprintf("failed to update api enable: %v", err))
+			}
 		}
 
 		if state.genesisEndpoint != "" {
@@ -924,6 +925,7 @@ func (m *SyncMethodSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.state.syncMethod = string(*selected)
 		switch *selected {
 		case NoSync:
+			// TODO: What if there's existing /data. Should we also prune it here?
 			return m, tea.Quit
 		case Snapshot, StateSync:
 			m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{""}, string(*selected)))
@@ -936,6 +938,7 @@ func (m *SyncMethodSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *SyncMethodSelect) View() string {
+	// TODO: Render No Sync terminal state
 	return m.state.weave.Render() + styles.RenderPrompt(
 		m.GetQuestion(),
 		[]string{""},
