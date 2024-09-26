@@ -5,51 +5,99 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/initia-labs/weave/models/weaveinit"
 	"github.com/initia-labs/weave/styles"
 	"github.com/initia-labs/weave/utils"
 )
 
-type ExistingAppChecker struct {
-	TextInput utils.TextInput
+func InitHeader() string {
+	return styles.FadeText("Welcome to Weave! 🪢\n\n") +
+		styles.RenderPrompt("As this is your first time using Weave, we ask that you set up your Gas Station account,\nwhich will hold the necessary funds for the OPinit-bots or relayer to send transactions.\n\n", []string{"Gas Station account"}, styles.Empty) +
+		styles.BoldText("Please note that Weave will not send any transactions without your confirmation.\n", styles.Yellow) +
+		styles.Text("While you can complete this setup later, we recommend doing it now to ensure a smoother experience.\n\n", styles.Gray)
 }
 
-func NewExistingAppChecker() *ExistingAppChecker {
-	model := &ExistingAppChecker{}
-	model.TextInput.WithValidatorFn(utils.ValidateMnemonic)
-	return model
+type ExistingWeaveChecker struct {
+	utils.Selector[ExistingWeaveOption]
 }
 
-func (m *ExistingAppChecker) Init() tea.Cmd {
+type ExistingWeaveOption string
+
+const (
+	Yes ExistingWeaveOption = "Yes"
+	No  ExistingWeaveOption = "No"
+)
+
+func NewExistingAppChecker() *ExistingWeaveChecker {
+	return &ExistingWeaveChecker{
+		Selector: utils.Selector[ExistingWeaveOption]{
+			Options: []ExistingWeaveOption{
+				Yes,
+				No,
+			},
+		},
+	}
+}
+
+func (m *ExistingWeaveChecker) Init() tea.Cmd {
 	return utils.DoTick()
 }
 
-func (m *ExistingAppChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m *ExistingWeaveChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	selected, cmd := m.Select(msg)
+	if selected != nil {
+		switch *selected {
+		case Yes:
+			view := styles.RenderPreviousResponse(styles.ArrowSeparator, "Would you like to set up a Gas Station account", []string{"Gas Station account"}, string(*selected))
+			return NewGasStationMnemonicInput(view), nil
+		case No:
+			return weaveinit.NewWeaveInit(), nil
+		}
+	}
+	return m, cmd
+}
+
+func (m *ExistingWeaveChecker) View() string {
+	view := InitHeader()
+	view += styles.RenderPrompt("Would you like to set up a Gas Station account", []string{"Gas Station account"}, styles.Question) +
+		" " + styles.Text("(The account that will hold the funds required by the OPinit-bots or relayer to send transactions)", styles.Gray)
+	view += m.Selector.View()
+
+	return view
+}
+
+type GasStationMnemonicInput struct {
+	previousResponse string
+	utils.TextInput
+}
+
+func NewGasStationMnemonicInput(previousResponse string) *GasStationMnemonicInput {
+	model := &GasStationMnemonicInput{
+		previousResponse: previousResponse,
+		TextInput:        utils.NewTextInput(),
+	}
+	model.WithPlaceholder("Add mnemonic")
+	model.WithValidatorFn(utils.ValidateMnemonic)
+	return model
+}
+
+func (m *GasStationMnemonicInput) Init() tea.Cmd {
+	return nil
+}
+
+func (m *GasStationMnemonicInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-		view := styles.RenderPreviousResponse(styles.ArrowSeparator, "Please set up a Gas Station account", []string{"Gas Station account"}, input.Text)
-		model := NewWeaveAppInitialization(view, input.Text)
+		m.previousResponse += styles.RenderPreviousResponse(styles.DotsSeparator, "Please set up a Gas Station account", []string{"Gas Station account"}, "*Mnemonic has been entered and is now hidden for security purposes.*")
+		model := NewWeaveAppInitialization(m.previousResponse, input.Text)
 		return model, model.Init()
 	}
 	m.TextInput = input
 	return m, cmd
 }
 
-func (m *ExistingAppChecker) View() string {
-	view := styles.FadeText("Welcome to Weave! 🪢\n\n")
-
-	view += styles.RenderPrompt("As this is your first time using Weave, we ask that you set up your Gas Station account,\nwhich will hold the necessary funds for the OPinit-bots or relayer to send transactions.\n\n", []string{"Gas Station account"}, styles.Empty)
-
-	view += styles.BoldText("Please note that Weave will not send any transactions without your confirmation.\n", styles.Yellow)
-
-	view += styles.Text("While you can complete this setup later, we recommend doing it now to ensure a smoother experience.\n\n", styles.Gray)
-
-	// TODO add new step to ask if user want to set up gas station account or not, if not we will skip to the next step
-
-	view += styles.RenderPrompt("Please set up a Gas Station account", []string{"Gas Station account"}, styles.Question) +
-		" " + styles.Text("(The account that will hold the funds required by the OPinit-bots or relayer to send transactions)", styles.Gray)
-	view += m.TextInput.View()
-
-	return view
+func (m *GasStationMnemonicInput) View() string {
+	return InitHeader() + m.previousResponse + styles.RenderPrompt("Please set up a Gas Station account", []string{"Gas Station account"}, styles.Question) + m.TextInput.View()
 }
 
 type WeaveAppInitialization struct {
