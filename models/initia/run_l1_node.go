@@ -360,9 +360,9 @@ func (m *MinGasPriceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *MinGasPriceInput) View() string {
-	preText := ""
+	preText := "\n"
 	if !m.state.existingApp {
-		preText += styles.RenderPrompt("\nThere is no config/app.toml or config/config.toml available. You will need to enter the required information to proceed.\n", []string{"config/app.toml", "config/config.toml"}, styles.Information)
+		preText += styles.RenderPrompt("There is no config/app.toml or config/config.toml available. You will need to enter the required information to proceed.\n", []string{"config/app.toml", "config/config.toml"}, styles.Information)
 	}
 	return m.state.weave.Render() + preText + styles.RenderPrompt(m.GetQuestion(), []string{"min-gas-price"}, styles.Question) + m.TextInput.View()
 }
@@ -774,7 +774,7 @@ func initializeApp(state *RunL1NodeState) tea.Cmd {
 
 			// TODO: Remove this logic when we have a working version of the node_info endpoint
 			if state.chainId == "initiation-2" {
-				nodeVersion = "v0.4.11-initiation.1"
+				nodeVersion = "v0.5.1"
 			} else {
 				applicationVersion, ok := result["application_version"].(map[string]interface{})
 				if !ok {
