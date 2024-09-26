@@ -9,14 +9,13 @@ WEAVE_VERSION=v0.0.1
 BUILDDIR ?= $(CURDIR)/build
 BUILD_TARGETS = build
 
-release=0.0.15
+release_version=$(filter-out $@,$(MAKECMDGOALS))
 
 check_version:
 ifneq ($(GO_SYSTEM_VERSION), $(REQUIRE_GO_VERSION))
 	@echo "ERROR: Go version ${REQUIRE_GO_VERSION} is required for Weave."
 	exit 1
 endif
-
 
 build: BUILD_ARGS=-o $(BUILDDIR)/
 
@@ -38,6 +37,13 @@ test: build
 	./weave
 
 release:
-	git tag -a v$(release) -m "Release version $(release)"
-	git push origin v$(release)
-	gh release create v$(release) --title "Release v$(release)" --notes "Release notes for version $(release)"
+	@if [ -z "$(release_version)" ]; then \
+		echo "ERROR: You must provide a release version. Example: make release v0.0.15"; \
+		exit 1; \
+	fi
+	git tag -a $(release_version) -m "$(release_version)"
+	git push origin $(release_version)
+	gh release create $(release_version) --title "$(release_version)" --notes "Release notes for version $(release_version)"
+
+%:
+	@:
