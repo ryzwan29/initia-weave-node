@@ -34,7 +34,7 @@ func NewRunL1NodeNetworkSelect(state *RunL1NodeState) *RunL1NodeNetworkSelect {
 	return &RunL1NodeNetworkSelect{
 		Selector: utils.Selector[L1NodeNetworkOption]{
 			Options: []L1NodeNetworkOption{
-				Mainnet,
+				// Mainnet,
 				Testnet,
 				Local,
 			},
@@ -68,7 +68,8 @@ func (m *RunL1NodeNetworkSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.state.chainId = chainId.(string)
 			m.state.genesisEndpoint = genesisEndpoint
-			return NewRunL1NodeMonikerInput(m.state), cmd
+			model := NewExistingAppChecker(m.state)
+			return model, model.Init()
 		case Local:
 			return NewRunL1NodeVersionSelect(m.state), nil
 		}
@@ -154,7 +155,8 @@ func (m *RunL1NodeChainIdInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if done {
 		m.state.chainId = input.Text
 		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"chain id"}, input.Text))
-		return NewRunL1NodeMonikerInput(m.state), cmd
+		model := NewExistingAppChecker(m.state)
+		return model, model.Init()
 	}
 	m.TextInput = input
 	return m, cmd
@@ -168,40 +170,6 @@ type RunL1NodeMonikerInput struct {
 	utils.TextInput
 	state    *RunL1NodeState
 	question string
-}
-
-func NewRunL1NodeMonikerInput(state *RunL1NodeState) *RunL1NodeMonikerInput {
-	model := &RunL1NodeMonikerInput{
-		TextInput: utils.NewTextInput(),
-		state:     state,
-		question:  "Please specify the moniker",
-	}
-	model.WithPlaceholder("Enter moniker")
-	return model
-}
-
-func (m *RunL1NodeMonikerInput) GetQuestion() string {
-	return m.question
-}
-
-func (m *RunL1NodeMonikerInput) Init() tea.Cmd {
-	return nil
-}
-
-func (m *RunL1NodeMonikerInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	input, cmd, done := m.TextInput.Update(msg)
-	if done {
-		m.state.moniker = input.Text
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"moniker"}, input.Text))
-		model := NewExistingAppChecker(m.state)
-		return model, model.Init()
-	}
-	m.TextInput = input
-	return m, cmd
-}
-
-func (m *RunL1NodeMonikerInput) View() string {
-	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"moniker"}, styles.Question) + m.TextInput.View()
 }
 
 type ExistingAppChecker struct {
@@ -310,7 +278,7 @@ func (m *ExistingAppReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case ReplaceApp:
 			m.state.replaceExistingApp = true
-			return NewMinGasPriceInput(m.state), nil
+			return NewRunL1NodeMonikerInput(m.state), nil
 		}
 		return m, tea.Quit
 	}
@@ -320,6 +288,39 @@ func (m *ExistingAppReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *ExistingAppReplaceSelect) View() string {
 	return m.state.weave.Render() + styles.RenderPrompt("Existing config/app.toml and config/config.toml detected. Would you like to use the current files or replace them", []string{"config/app.toml", "config/config.toml"}, styles.Question) + m.Selector.View()
+}
+
+func NewRunL1NodeMonikerInput(state *RunL1NodeState) *RunL1NodeMonikerInput {
+	model := &RunL1NodeMonikerInput{
+		TextInput: utils.NewTextInput(),
+		state:     state,
+		question:  "Please specify the moniker",
+	}
+	model.WithPlaceholder("Enter moniker")
+	return model
+}
+
+func (m *RunL1NodeMonikerInput) GetQuestion() string {
+	return m.question
+}
+
+func (m *RunL1NodeMonikerInput) Init() tea.Cmd {
+	return nil
+}
+
+func (m *RunL1NodeMonikerInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	input, cmd, done := m.TextInput.Update(msg)
+	if done {
+		m.state.moniker = input.Text
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"moniker"}, input.Text))
+		return NewMinGasPriceInput(m.state), cmd
+	}
+	m.TextInput = input
+	return m, cmd
+}
+
+func (m *RunL1NodeMonikerInput) View() string {
+	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"moniker"}, styles.Question) + m.TextInput.View()
 }
 
 type MinGasPriceInput struct {
@@ -822,6 +823,7 @@ func initializeApp(state *RunL1NodeState) tea.Cmd {
 
 		initiaConfigPath := filepath.Join(userHome, utils.InitiaConfigDirectory)
 
+		// TODO: make sure this works with using existing config
 		if err := utils.UpdateTomlValue(filepath.Join(initiaConfigPath, "config.toml"), "moniker", state.moniker); err != nil {
 			panic(fmt.Sprintf("failed to update moniker: %v", err))
 		}
