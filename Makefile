@@ -15,6 +15,8 @@ BUILDDIR ?= $(CURDIR)/build
 # Build targets
 BUILD_TARGETS := build install test
 
+release_version=$(filter-out $@,$(MAKECMDGOALS))
+
 # Version check
 check_version:
 	@if [ "$(GO_SYSTEM_VERSION)" != "$(REQUIRE_GO_VERSION)" ]; then \
