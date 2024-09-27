@@ -25,8 +25,8 @@ type RunL1NodeNetworkSelect struct {
 type L1NodeNetworkOption string
 
 const (
-	Mainnet L1NodeNetworkOption = "Mainnet (initia-1)"
-	Testnet L1NodeNetworkOption = "Testnet (initiation-2)"
+	Mainnet L1NodeNetworkOption = "Mainnet"
+	Testnet L1NodeNetworkOption = "Testnet"
 	Local   L1NodeNetworkOption = "Local"
 )
 

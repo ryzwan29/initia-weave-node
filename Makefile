@@ -1,40 +1,42 @@
 #!/usr/bin/make -f
 
-GO_VERSION=1.22
-GO_SYSTEM_VERSION = $(shell go version | cut -c 14- | cut -d' ' -f1 | cut -d'.' -f1-2)
-REQUIRE_GO_VERSION = $(GO_VERSION)
+# Go version and build settings
+GO_VERSION := 1.22
+GO_SYSTEM_VERSION := $(shell go version | cut -c 14- | cut -d' ' -f1 | cut -d'.' -f1-2)
+REQUIRE_GO_VERSION := $(GO_VERSION)
+ENABLED_FLAGS :=
 
-WEAVE_VERSION=v0.0.1
+# Project version
+WEAVE_VERSION := v0.0.1
 
+# Build directory
 BUILDDIR ?= $(CURDIR)/build
-BUILD_TARGETS = build
 
-release_version=$(filter-out $@,$(MAKECMDGOALS))
+# Build targets
+BUILD_TARGETS := build install test
 
+# Version check
 check_version:
-ifneq ($(GO_SYSTEM_VERSION), $(REQUIRE_GO_VERSION))
-	@echo "ERROR: Go version ${REQUIRE_GO_VERSION} is required for Weave."
-	exit 1
-endif
+	@if [ "$(GO_SYSTEM_VERSION)" != "$(REQUIRE_GO_VERSION)" ]; then \
+		echo "ERROR: Go version $(REQUIRE_GO_VERSION) is required for Weave."; \
+		exit 1; \
+	fi
 
-build: BUILD_ARGS=-o $(BUILDDIR)/
+# Build settings
+LDFLAGS := -X github.com/initia-labs/weave/cmd.Version=$(WEAVE_VERSION) \
+           -X github.com/initia-labs/weave/flags.EnabledFlags=$(ENABLED_FLAGS)
 
-$(BUILD_TARGETS): check_version go.sum $(BUILDDIR)/
-ifeq ($(OS),Windows_NT)
-	exit 1
-else
-	go $@ -mod=readonly -ldflags "-X github.com/initia-labs/weave/cmd.Version=$(WEAVE_VERSION)" .
-endif
+# Build targets
+build: check_version $(BUILDDIR)
+	go build -mod=readonly -ldflags "$(LDFLAGS)" -o $(BUILDDIR)/weave .
 
-$(BUILDDIR)/:
-	mkdir -p $(BUILDDIR)/
+install: check_version
+	go install -ldflags "$(LDFLAGS)" .
 
-install:
-	go install -ldflags "-X github.com/initia-labs/weave/cmd.Version=$(WEAVE_VERSION)" .
-
-test:
+test: check_version
 	go test -v ./...
 
+# Release process
 release:
 	@if [ -z "$(release_version)" ]; then \
 		echo "ERROR: You must provide a release version. Example: make release v0.0.15"; \
@@ -44,5 +46,6 @@ release:
 	git push origin $(release_version)
 	gh release create $(release_version) --title "$(release_version)" --notes "Release notes for version $(release_version)"
 
+# Catch-all target
 %:
 	@:
