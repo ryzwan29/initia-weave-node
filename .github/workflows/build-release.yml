@@ -44,15 +44,22 @@ jobs:
         with:
           go-version: "1.22.6"
 
+      - name: Read enabled flags
+        run: |
+          ENABLED_FLAGS=$(cat enabled_flags.txt)
+          echo "Enabled flags: $ENABLED_FLAGS"
+          echo "ENABLED_FLAGS=$ENABLED_FLAGS" >> $GITHUB_ENV
+
       - name: Build binary
+        env:
+          ENABLED_FLAGS: ${{ env.ENABLED_FLAGS }}
         run: |
           mkdir -p build/${{ matrix.goos }}_${{ matrix.goarch }}
-          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o build/${{ matrix.goos }}_${{ matrix.goarch }}/weave
+          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -ldflags "-X github.com/initia-labs/weave/cmd.Version=${{ github.ref_name }} -X github.com/initia-labs/weave/flags.EnabledFlags=${{ env.ENABLED_FLAGS }}" -o build/${{ matrix.goos }}_${{ matrix.goarch }}/weave
 
       - name: List files in build directory (optional for debugging)
         run: ls -R build/
 
-      # tar.gz
       - name: Create tar.gz
         run: |
           tar -czvf weave_${{ github.ref_name }}_${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz -C build/${{ matrix.goos }}_${{ matrix.goarch }} weave
