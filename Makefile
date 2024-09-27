@@ -32,9 +32,8 @@ $(BUILDDIR)/:
 install:
 	go install -ldflags "-X github.com/initia-labs/weave/cmd.Version=$(WEAVE_VERSION)" .
 
-test: build
-	clear
-	./weave
+test:
+	go test -v ./...
 
 release:
 	@if [ -z "$(release_version)" ]; then \

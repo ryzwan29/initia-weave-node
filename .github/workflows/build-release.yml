@@ -6,8 +6,28 @@ on:
       - published
 
 jobs:
+  test:
+    name: Run Go Format and Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.22.6"
+
+      - name: Go Format
+        run: go fmt ./...
+
+      - name: Run Go Tests
+        run: go test -v ./...
+
   build:
     name: Build Go binaries
+    needs: test
     runs-on: ubuntu-latest
 
     strategy:
