@@ -1340,7 +1340,7 @@ func (m *StateSyncSetupLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	if m.Loading.Completing {
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, fmt.Sprintf("Snapshot setup successfully."), []string{}, ""))
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "Snapshot setup successfully.", []string{}, ""))
 		return m, tea.Quit
 	}
 	return m, cmd
@@ -1375,7 +1375,7 @@ func setupStateSync(state *RunL1NodeState) tea.Cmd {
 		if err = utils.UpdateTomlValue(filepath.Join(initiaConfigPath, "config.toml"), "statesync.trust_height", fmt.Sprintf("%d", stateSyncInfo.TrustHeight)); err != nil {
 			return utils.ErrorLoading{Err: fmt.Errorf("[error] Failed to setup state sync trust_height: %v", err)}
 		}
-		if err = utils.UpdateTomlValue(filepath.Join(initiaConfigPath, "config.toml"), "statesync.trust_hash", fmt.Sprintf("%s", stateSyncInfo.TrustHash)); err != nil {
+		if err = utils.UpdateTomlValue(filepath.Join(initiaConfigPath, "config.toml"), "statesync.trust_hash", stateSyncInfo.TrustHash); err != nil {
 			return utils.ErrorLoading{Err: fmt.Errorf("[error] Failed to setup state sync trust_hash: %v", err)}
 		}
 

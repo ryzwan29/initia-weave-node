@@ -47,16 +47,14 @@ func (m *Downloader) startDownload() tea.Cmd {
 		// Send a GET request to the URL
 		resp, err := http.Get(m.url)
 		if err != nil {
-			m.done = true
-			m.err = fmt.Errorf("failed to connect to URL: %w", err)
+			m.SetError(fmt.Errorf("failed to connect to URL: %w", err))
 			return nil
 		}
 		defer resp.Body.Close()
 
 		// Check if the response status is not 200 OK
 		if resp.StatusCode != http.StatusOK {
-			m.done = true
-			m.err = fmt.Errorf("failed to download: received status code %d", resp.StatusCode)
+			m.SetError(fmt.Errorf("failed to download: received status code %d", resp.StatusCode))
 			return nil
 		}
 
@@ -70,8 +68,7 @@ func (m *Downloader) startDownload() tea.Cmd {
 		// Create the destination file
 		file, err := os.Create(m.dest)
 		if err != nil {
-			m.done = true
-			m.err = fmt.Errorf("failed to create destination file: %w", err)
+			m.SetError(fmt.Errorf("failed to create destination file: %w", err))
 			return nil
 		}
 		defer file.Close()
@@ -82,8 +79,7 @@ func (m *Downloader) startDownload() tea.Cmd {
 		for {
 			n, err := resp.Body.Read(buffer)
 			if err != nil && err != io.EOF {
-				m.done = true
-				m.err = fmt.Errorf("error during file download: %w", err)
+				m.SetError(fmt.Errorf("error during file download: %w", err))
 				return nil
 			}
 			if n == 0 {
@@ -92,8 +88,7 @@ func (m *Downloader) startDownload() tea.Cmd {
 
 			// Write the downloaded chunk to the file
 			if _, err := file.Write(buffer[:n]); err != nil {
-				m.done = true
-				m.err = fmt.Errorf("failed to write to file: %w", err)
+				m.SetError(fmt.Errorf("failed to write to file: %w", err))
 				return nil
 			}
 
@@ -104,13 +99,12 @@ func (m *Downloader) startDownload() tea.Cmd {
 
 		// Now, check if the file is a valid .tar.lz4 file
 		if err := m.validateTarLz4Header(); err != nil {
-			m.done = true
-			m.err = fmt.Errorf("invalid file format: %w", err)
+			m.SetError(fmt.Errorf("invalid file format: %w", err))
 			return nil
 		}
 
-		m.done = true
-		m.err = nil
+		// Set completion when the download finishes successfully
+		m.SetCompletion(true)
 		return nil
 	}
 }
@@ -198,4 +192,15 @@ func ByteCountSI(b int64) string {
 		exp++
 	}
 	return fmt.Sprintf("%.3f %cB", float64(b)/float64(div), "kMGTPE"[exp])
+}
+
+// SetCompletion allows you to manually set the completion state for testing purposes.
+func (m *Downloader) SetCompletion(complete bool) {
+	m.done = complete
+}
+
+// SetError allows you to manually set an error for testing purposes.
+func (m *Downloader) SetError(err error) {
+	m.err = err
+	m.done = true // Mark as done when an error occurs
 }
