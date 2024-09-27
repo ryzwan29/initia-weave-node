@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"github.com/initia-labs/weave/flags"
 	"github.com/initia-labs/weave/utils"
 )
 
@@ -28,7 +29,9 @@ func Execute() error {
 
 	rootCmd.AddCommand(InitCommand())
 	rootCmd.AddCommand(InitiaCommand())
-	rootCmd.AddCommand(MinitiaCommand())
+	if flags.IsEnabled(flags.MinitiaLaunch) {
+		rootCmd.AddCommand(MinitiaCommand())
+	}
 
 	return rootCmd.ExecuteContext(context.Background())
 }

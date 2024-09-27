@@ -3,6 +3,7 @@ package weaveinit
 import (
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/initia-labs/weave/flags"
 	"github.com/initia-labs/weave/models/initia"
 	"github.com/initia-labs/weave/models/minitia"
 	"github.com/initia-labs/weave/styles"
@@ -22,16 +23,31 @@ const (
 	StartRelayerOption     WeaveInitOption = "Start a Relayer"
 )
 
+func GetWeaveInitOptions() []WeaveInitOption {
+	options := []WeaveInitOption{
+		RunL1NodeOption,
+	}
+
+	if flags.IsEnabled(flags.MinitiaLaunch) {
+		options = append(options, LaunchNewMinitiaOption)
+	}
+
+	if flags.IsEnabled(flags.OPInitBots) {
+		options = append(options, InitializeOPBotsOption)
+	}
+
+	if flags.IsEnabled(flags.Relayer) {
+		options = append(options, StartRelayerOption)
+	}
+
+	return options
+}
+
 func NewWeaveInit() *WeaveInit {
 	return &WeaveInit{
 		Selector: utils.Selector[WeaveInitOption]{
-			Options: []WeaveInitOption{
-				RunL1NodeOption,
-				LaunchNewMinitiaOption,
-				InitializeOPBotsOption,
-				StartRelayerOption,
-			},
-			Cursor: 0,
+			Options: GetWeaveInitOptions(),
+			Cursor:  0,
 		},
 	}
 }

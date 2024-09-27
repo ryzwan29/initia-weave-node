@@ -7,9 +7,9 @@ var EnabledFlags string
 type FeatureFlag string
 
 const (
-	MinitiaLaunch      FeatureFlag = "minitia_launch"
-	OPInitBotsExecutor FeatureFlag = "opinit-bots-executor"
-	Relayer            FeatureFlag = "relayer"
+	MinitiaLaunch FeatureFlag = "minitia_launch"
+	OPInitBots    FeatureFlag = "opinit_bots"
+	Relayer       FeatureFlag = "relayer"
 )
 
 func IsEnabled(flag FeatureFlag) bool {
