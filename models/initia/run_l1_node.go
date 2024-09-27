@@ -1042,28 +1042,28 @@ func (m *ExistingDataChecker) View() string {
 }
 
 type ExistingDataReplaceSelect struct {
-	utils.Selector[ExistingDataReplaceOption]
+	utils.Selector[SyncConfirmationOption]
 	state    *RunL1NodeState
 	question string
 }
 
-type ExistingDataReplaceOption string
+type SyncConfirmationOption string
 
 const (
-	UseCurrentData ExistingDataReplaceOption = "Use current one"
-	ReplaceData    ExistingDataReplaceOption = "Replace"
+	ProceedWithSync SyncConfirmationOption = "Yes"
+	Skip            SyncConfirmationOption = "No, I want to skip syncing"
 )
 
 func NewExistingDataReplaceSelect(state *RunL1NodeState) *ExistingDataReplaceSelect {
 	return &ExistingDataReplaceSelect{
-		Selector: utils.Selector[ExistingDataReplaceOption]{
-			Options: []ExistingDataReplaceOption{
-				UseCurrentData,
-				ReplaceData,
+		Selector: utils.Selector[SyncConfirmationOption]{
+			Options: []SyncConfirmationOption{
+				ProceedWithSync,
+				Skip,
 			},
 		},
 		state:    state,
-		question: fmt.Sprintf("Existing %s detected. Would you like to use the current one or replace it?", utils.InitiaDataDirectory),
+		question: fmt.Sprintf("Existing %s detected. By sycing, the existing data will be replaced. Would you want to proceed ?", utils.InitiaDataDirectory),
 	}
 }
 
@@ -1080,10 +1080,10 @@ func (m *ExistingDataReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if selected != nil {
 		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{utils.InitiaDataDirectory}, string(*selected)))
 		switch *selected {
-		case UseCurrentData:
+		case Skip:
 			m.state.replaceExistingData = false
 			return m, tea.Quit
-		case ReplaceData:
+		case ProceedWithSync:
 			m.state.replaceExistingData = true
 			// TODO: do the deletion confirmation
 			switch m.state.syncMethod {

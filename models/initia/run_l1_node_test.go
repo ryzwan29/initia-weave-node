@@ -773,7 +773,7 @@ func TestExistingDataReplaceSelect(t *testing.T) {
 	// Define test cases for selecting different options (UseCurrentData or ReplaceData)
 	testCases := []struct {
 		keyPresses        []tea.KeyMsg // Simulating key presses to reach the desired selection
-		expectedSelection ExistingDataReplaceOption
+		expectedSelection SyncConfirmationOption
 		expectedModel     interface{}
 		syncMethod        string // Sync method for the test case (Snapshot or StateSync)
 		expectQuit        bool
@@ -781,19 +781,19 @@ func TestExistingDataReplaceSelect(t *testing.T) {
 		{
 			// Simulate selecting the first option (UseCurrentData)
 			keyPresses:    []tea.KeyMsg{tea.KeyMsg{Type: tea.KeyEnter}},
-			expectedModel: &ExistingDataReplaceSelect{}, // Should quit after selecting UseCurrentData
+			expectedModel: &SnapshotEndpointInput{}, // Should quit after selecting UseCurrentData
 			syncMethod:    string(Snapshot),
 		},
 		{
 			// Simulate selecting the second option (ReplaceData) with Snapshot and pressing enter
 			keyPresses:    []tea.KeyMsg{tea.KeyMsg{Type: tea.KeyDown}, tea.KeyMsg{Type: tea.KeyEnter}},
-			expectedModel: &SnapshotEndpointInput{}, // Should transition to SnapshotEndpointInput for Snapshot sync method
+			expectedModel: &ExistingDataReplaceSelect{}, // Should transition to SnapshotEndpointInput for Snapshot sync method
 			syncMethod:    string(Snapshot),
 		},
 		{
 			// Simulate selecting ReplaceData with StateSync and pressing enter
 			keyPresses:    []tea.KeyMsg{tea.KeyMsg{Type: tea.KeyDown}, tea.KeyMsg{Type: tea.KeyEnter}},
-			expectedModel: &StateSyncEndpointInput{}, // Should transition to StateSyncEndpointInput for StateSync sync method
+			expectedModel: &ExistingDataReplaceSelect{}, // Should transition to StateSyncEndpointInput for StateSync sync method
 			syncMethod:    string(StateSync),
 		},
 	}
