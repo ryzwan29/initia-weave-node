@@ -46,7 +46,4 @@ func TestIsEnabled(t *testing.T) {
 			assert.Equal(t, tc.expectedValue, result)
 		})
 	}
-
-	// intentionally fail the test
-	assert.Equal(t, true, IsEnabled(MinitiaLaunch))
 }
