@@ -10,8 +10,6 @@ type CommandName string
 const (
 	Initia  CommandName = "initia"
 	Minitia CommandName = "minitia"
-
-	DarwinServiceName = "com.initia.daemon"
 )
 
 type Service interface {
