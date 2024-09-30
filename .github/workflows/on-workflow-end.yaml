@@ -1,4 +1,5 @@
-name: Notify Slack on workflow failure
+name: Notify Slack on workflow completion
+
 on:
   workflow_run:
     workflows:
@@ -9,27 +10,35 @@ on:
     types: [completed]
 
 jobs:
-  on-failure:
+  notify-slack:
     runs-on: ubuntu-latest
-    if: github.event.workflow_run.conclusion == 'failure' || github.event.workflow_run.conclusion == 'timed_out'
     steps:
+      - uses: actions/checkout@v2
+
+      - name: Get Slack member ID
+        id: get-slack-id
+        run: |
+          SLACK_ID=$(jq -r --arg GITHUB_USER "${{ github.actor }}" '.[$GITHUB_USER] // "Unknown"' .github/slack-users.json)
+          echo "slack_id=$SLACK_ID" >> $GITHUB_OUTPUT
+
+      - name: Set job-specific variables
+        id: set-variables
+        run: |
+          if [[ "${{ github.event.workflow_run.conclusion }}" == "success" ]]; then
+            echo "status_emoji=:white_check_mark:" >> $GITHUB_OUTPUT
+            echo "action_text=Savior" >> $GITHUB_OUTPUT
+            echo "view_text=View Success" >> $GITHUB_OUTPUT
+          else
+            echo "status_emoji=:fire:" >> $GITHUB_OUTPUT
+            echo "action_text=Culprit" >> $GITHUB_OUTPUT
+            echo "view_text=View Failure" >> $GITHUB_OUTPUT
+          fi
+
       - uses: ravsamhq/notify-slack-action@v2
         with:
           status: ${{ github.event.workflow_run.conclusion }}
-          notification_title: " ${{github.event.workflow_run.name}} - ${{github.event.workflow_run.conclusion}} on ${{github.event.workflow_run.head_branch}} - <${{github.server_url}}/${{github.repository}}/actions/runs/${{github.event.workflow_run.id}}|View Failure>"
-          message_format: ":fire: *${{github.event.workflow_run.name}}* ${{github.event.workflow_run.conclusion}} in <${{github.server_url}}/${{github.repository}}/${{github.event.workflow_run.head_branch}}|${{github.repository}}>"
-          footer: "Culprit: ${{github.actor}}"
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-  on-success:
-    runs-on: ubuntu-latest
-    if: github.event.workflow_run.conclusion == 'success'
-    steps:
-      - uses: ravsamhq/notify-slack-action@v2
-        with:
-          status: ${{ github.event.workflow_run.conclusion }}
-          notification_title: " ${{github.event.workflow_run.name}} - ${{github.event.workflow_run.conclusion}} on ${{github.event.workflow_run.head_branch}} - <${{github.server_url}}/${{github.repository}}/actions/runs/${{github.event.workflow_run.id}}|View Success>"
-          message_format: ":white_check_mark: *${{github.event.workflow_run.name}}* ${{github.event.workflow_run.conclusion}} in <${{github.server_url}}/${{github.repository}}/${{github.event.workflow_run.head_branch}}|${{github.repository}}>"
-          footer: "Savior: <@U079BTK4WFP>"
+          notification_title: "${{github.event.workflow_run.name}} - ${{github.event.workflow_run.conclusion}} on ${{github.event.workflow_run.head_branch}} - <${{github.server_url}}/${{github.repository}}/actions/runs/${{github.event.workflow_run.id}}|${{ steps.set-variables.outputs.view_text }}>"
+          message_format: "${{ steps.set-variables.outputs.status_emoji }} *${{github.event.workflow_run.name}}* ${{github.event.workflow_run.conclusion}} in <${{github.server_url}}/${{github.repository}}/${{github.event.workflow_run.head_branch}}|${{github.repository}}>"
+          footer: "${{ steps.set-variables.outputs.action_text }}: <@${{ steps.get-slack-id.outputs.slack_id }}>"
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
