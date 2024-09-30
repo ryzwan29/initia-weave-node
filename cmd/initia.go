@@ -36,6 +36,7 @@ func InitiaCommand() *cobra.Command {
 		initiaInitCommand(),
 		initiaStartCommand(),
 		initiaStopCommand(),
+		initiaRestartCommand(),
 		initiaLogCommand(),
 	)
 
@@ -102,6 +103,27 @@ func initiaStopCommand() *cobra.Command {
 	}
 
 	return startCmd
+}
+
+func initiaRestartCommand() *cobra.Command {
+	reStartCmd := &cobra.Command{
+		Use:   "restart",
+		Short: "Restart the initiad full node application.",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			err := utils.StopService(utils.GetRunL1NodeServiceName())
+			if err != nil {
+				return err
+			}
+
+			err = utils.StartService(utils.GetRunL1NodeServiceName())
+			if err != nil {
+				return err
+			}
+			return nil
+		},
+	}
+
+	return reStartCmd
 }
 
 func initiaLogCommand() *cobra.Command {
