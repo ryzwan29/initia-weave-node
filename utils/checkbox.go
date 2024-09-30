@@ -71,8 +71,8 @@ func (s *CheckBox[T]) View() string {
 
 func (s *CheckBox[T]) GetSelected() []T {
 	selected := make([]T, 0)
-	for idx, isSelected := range s.Selected {
-		if isSelected {
+	for idx := range s.Options {
+		if s.Selected[idx] {
 			selected = append(selected, s.Options[idx])
 		}
 	}
@@ -81,8 +81,8 @@ func (s *CheckBox[T]) GetSelected() []T {
 
 func (s *CheckBox[T]) GetSelectedString() string {
 	var selected []string
-	for idx, isSelected := range s.Selected {
-		if isSelected {
+	for idx := range s.Options {
+		if s.Selected[idx] {
 			selected = append(selected, fmt.Sprintf("%v", s.Options[idx]))
 		}
 	}
