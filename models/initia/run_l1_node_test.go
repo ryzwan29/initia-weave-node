@@ -42,7 +42,7 @@ func TestRunL1NodeNetworkSelect_SaveToState(t *testing.T) {
 	// _, _ = networkSelect.Update(tea.KeyMsg{Type: tea.KeyDown})
 	m, _ := networkSelect.Update(tea.KeyMsg{Type: tea.KeyEnter})
 
-	assert.Equal(t, "Testnet", mockState.network)
+	assert.Equal(t, "Testnet (initiation-2)", mockState.network)
 	assert.Equal(t, "https://storage.googleapis.com/initia-binaries/genesis.json", mockState.genesisEndpoint)
 
 	assert.IsType(t, m, &ExistingAppChecker{})
@@ -119,7 +119,7 @@ func TestExistingAppChecker(t *testing.T) {
 
 	existingAppChecker := NewExistingAppChecker(mockState)
 	m, _ := existingAppChecker.Update(utils.EndLoading{})
-	assert.IsType(t, m, &MinGasPriceInput{})
+	assert.IsType(t, m, &RunL1NodeMonikerInput{})
 
 	mockState.existingApp = true
 	m, _ = existingAppChecker.Update(utils.EndLoading{})
@@ -787,13 +787,13 @@ func TestExistingDataReplaceSelect(t *testing.T) {
 		{
 			// Simulate selecting the second option (ReplaceData) with Snapshot and pressing enter
 			keyPresses:    []tea.KeyMsg{tea.KeyMsg{Type: tea.KeyDown}, tea.KeyMsg{Type: tea.KeyEnter}},
-			expectedModel: &ExistingDataReplaceSelect{}, // Should transition to SnapshotEndpointInput for Snapshot sync method
+			expectedModel: &TerminalState{}, // Should transition to SnapshotEndpointInput for Snapshot sync method
 			syncMethod:    string(Snapshot),
 		},
 		{
 			// Simulate selecting ReplaceData with StateSync and pressing enter
 			keyPresses:    []tea.KeyMsg{tea.KeyMsg{Type: tea.KeyDown}, tea.KeyMsg{Type: tea.KeyEnter}},
-			expectedModel: &ExistingDataReplaceSelect{}, // Should transition to StateSyncEndpointInput for StateSync sync method
+			expectedModel: &TerminalState{}, // Should transition to StateSyncEndpointInput for StateSync sync method
 			syncMethod:    string(StateSync),
 		},
 	}

@@ -220,7 +220,7 @@ func (m *ExistingAppChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.loading.Completing {
 
 		if !m.state.existingApp {
-			return NewMinGasPriceInput(m.state), nil
+			return NewRunL1NodeMonikerInput(m.state), nil
 		} else {
 			return NewExistingAppReplaceSelect(m.state), nil
 		}
@@ -791,7 +791,7 @@ func initializeApp(state *RunL1NodeState) tea.Cmd {
 
 			// TODO: Remove this logic when we have a working version of the node_info endpoint
 			if state.chainId == "initiation-2" {
-				nodeVersion = "v0.5.1"
+				nodeVersion = "v0.5.3"
 			} else {
 				applicationVersion, ok := result["application_version"].(map[string]interface{})
 				if !ok {
