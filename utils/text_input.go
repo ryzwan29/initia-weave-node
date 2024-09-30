@@ -12,6 +12,7 @@ type TextInput struct {
 	Text         string
 	Cursor       int // Cursor position within the text
 	Placeholder  string
+	DefaultValue string
 	ValidationFn func(string) error
 	IsEntered    bool
 }
@@ -21,6 +22,7 @@ func NewTextInput() TextInput {
 		Text:         "",
 		Cursor:       0,
 		Placeholder:  "<todo: Jennie revisit placeholder>",
+		DefaultValue: "",
 		ValidationFn: NoOps,
 		IsEntered:    false,
 	}
@@ -32,6 +34,10 @@ func (ti *TextInput) WithValidatorFn(fn func(string) error) {
 
 func (ti *TextInput) WithPlaceholder(placeholder string) {
 	ti.Placeholder = placeholder
+}
+
+func (ti *TextInput) WithDefaultValue(value string) {
+	ti.DefaultValue = value
 }
 
 func (ti TextInput) Update(msg tea.Msg) (TextInput, tea.Cmd, bool) {
@@ -49,6 +55,13 @@ func (ti TextInput) Update(msg tea.Msg) (TextInput, tea.Cmd, bool) {
 			if ti.Cursor > 0 && len(ti.Text) > 0 {
 				ti.Text = ti.Text[:ti.Cursor-1] + ti.Text[ti.Cursor:]
 				ti.Cursor--
+			}
+
+		case msg.Type == tea.KeyTab:
+			ti.IsEntered = false
+			if ti.Text == "" {
+				ti.Text = ti.DefaultValue
+				ti.Cursor = len(ti.Text)
 			}
 
 		// Handle Option + Left (move one word left) - Detected as "alt+b"

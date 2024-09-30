@@ -562,6 +562,7 @@ func NewOpBridgeSubmissionIntervalInput(state *LaunchState) *OpBridgeSubmissionI
 		question:  "Please specify OP bridge config: Submission Interval (format m, h or d - ex. 1m, 23h, 7d)",
 	}
 	model.WithPlaceholder("Press tab to use “1m”")
+	model.WithDefaultValue("1m")
 	return model
 }
 
