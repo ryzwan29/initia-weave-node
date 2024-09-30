@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"strconv"
-	"strings"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -24,13 +23,16 @@ type RunL1NodeNetworkSelect struct {
 
 type L1NodeNetworkOption string
 
-const (
-	Mainnet L1NodeNetworkOption = "Mainnet"
-	Testnet L1NodeNetworkOption = "Testnet"
-	Local   L1NodeNetworkOption = "Local"
+var (
+	Mainnet L1NodeNetworkOption = ""
+	Testnet L1NodeNetworkOption = ""
 )
 
+const Local L1NodeNetworkOption = "Local"
+
 func NewRunL1NodeNetworkSelect(state *RunL1NodeState) *RunL1NodeNetworkSelect {
+	Testnet = L1NodeNetworkOption(fmt.Sprintf("Testnet (%s)", utils.GetConfig("constants.chain_id.testnet")))
+	Mainnet = L1NodeNetworkOption(fmt.Sprintf("Mainnet (%s)", utils.GetConfig("constants.chain_id.mainnet")))
 	return &RunL1NodeNetworkSelect{
 		Selector: utils.Selector[L1NodeNetworkOption]{
 			Options: []L1NodeNetworkOption{
@@ -60,7 +62,10 @@ func (m *RunL1NodeNetworkSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"network"}, selectedString))
 		switch *selected {
 		case Mainnet, Testnet:
-			lowerNetwork := strings.ToLower(selectedString)
+			lowerNetwork := "testnet"
+			if *selected == Mainnet {
+				lowerNetwork = "mainnet"
+			}
 			chainId := utils.GetConfig(fmt.Sprintf("constants.chain_id.%s", lowerNetwork))
 			genesisEndpoint, err := utils.GetEndpointURL(lowerNetwork, "genesis")
 			if err != nil {
@@ -775,7 +780,11 @@ func initializeApp(state *RunL1NodeState) tea.Cmd {
 			url = state.initiadEndpoint
 		case string(Mainnet), string(Testnet):
 			var result map[string]interface{}
-			err = utils.MakeGetRequestUsingConfig(strings.ToLower(state.network), "lcd", "/cosmos/base/tendermint/v1beta1/node_info", nil, &result)
+			network := "testnet"
+			if state.network == string(Mainnet) {
+				network = "mainnet"
+			}
+			err = utils.MakeGetRequestUsingConfig(network, "lcd", "/cosmos/base/tendermint/v1beta1/node_info", nil, &result)
 			if err != nil {
 				panic(err)
 			}
@@ -1055,6 +1064,7 @@ const (
 )
 
 func NewExistingDataReplaceSelect(state *RunL1NodeState) *ExistingDataReplaceSelect {
+	// TODO: Paraphrase the question and options
 	return &ExistingDataReplaceSelect{
 		Selector: utils.Selector[SyncConfirmationOption]{
 			Options: []SyncConfirmationOption{
@@ -1082,6 +1092,7 @@ func (m *ExistingDataReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch *selected {
 		case Skip:
 			m.state.replaceExistingData = false
+			// TODO: Terminal state here
 			return m, tea.Quit
 		case ProceedWithSync:
 			m.state.replaceExistingData = true
