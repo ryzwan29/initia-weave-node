@@ -20,6 +20,8 @@ type LaunchState struct {
 	genesisAccounts                  []GenesisAccount
 	preGenesisAccountsResponsesCount int
 	opBridgeSubmissionInterval       string
+	opBridgeOutputFinalizationPeriod string
+	opBridgeBatchSubmissionTarget    string
 }
 
 func NewLaunchState() *LaunchState {

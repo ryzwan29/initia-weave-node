@@ -577,10 +577,9 @@ func (m *OpBridgeSubmissionIntervalInput) Init() tea.Cmd {
 func (m *OpBridgeSubmissionIntervalInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-		// TODO: Continue flow
 		m.state.opBridgeSubmissionInterval = input.Text
 		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Submission Interval"}, input.Text))
-		return m, tea.Quit
+		return NewOpBridgeOutputFinalizationPeriodInput(m.state), nil
 	}
 	m.TextInput = input
 	return m, cmd
@@ -588,4 +587,98 @@ func (m *OpBridgeSubmissionIntervalInput) Update(msg tea.Msg) (tea.Model, tea.Cm
 
 func (m *OpBridgeSubmissionIntervalInput) View() string {
 	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"Submission Interval"}, styles.Question) + m.TextInput.View()
+}
+
+type OpBridgeOutputFinalizationPeriodInput struct {
+	utils.TextInput
+	state    *LaunchState
+	question string
+}
+
+func NewOpBridgeOutputFinalizationPeriodInput(state *LaunchState) *OpBridgeOutputFinalizationPeriodInput {
+	model := &OpBridgeOutputFinalizationPeriodInput{
+		TextInput: utils.NewTextInput(),
+		state:     state,
+		question:  "Please specify OP bridge config: Output Finalization Period (format m, h or d - ex. 1m, 23h, 7d)",
+	}
+	model.WithPlaceholder("Press tab to use “7d”")
+	model.WithDefaultValue("7d")
+	return model
+}
+
+func (m *OpBridgeOutputFinalizationPeriodInput) GetQuestion() string {
+	return m.question
+}
+
+func (m *OpBridgeOutputFinalizationPeriodInput) Init() tea.Cmd {
+	return nil
+}
+
+func (m *OpBridgeOutputFinalizationPeriodInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	input, cmd, done := m.TextInput.Update(msg)
+	if done {
+		m.state.opBridgeOutputFinalizationPeriod = input.Text
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Output Finalization Period"}, input.Text))
+		return NewOpBridgeBatchSubmissionTargetSelect(m.state), nil
+	}
+	m.TextInput = input
+	return m, cmd
+}
+
+func (m *OpBridgeOutputFinalizationPeriodInput) View() string {
+	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"Output Finalization Period"}, styles.Question) + m.TextInput.View()
+}
+
+type OpBridgeBatchSubmissionTargetSelect struct {
+	utils.Selector[OpBridgeBatchSubmissionTargetOption]
+	state    *LaunchState
+	question string
+}
+
+type OpBridgeBatchSubmissionTargetOption string
+
+const (
+	Celestia OpBridgeBatchSubmissionTargetOption = "Celestia"
+	Initia   OpBridgeBatchSubmissionTargetOption = "Initia L1"
+)
+
+func NewOpBridgeBatchSubmissionTargetSelect(state *LaunchState) *OpBridgeBatchSubmissionTargetSelect {
+	return &OpBridgeBatchSubmissionTargetSelect{
+		Selector: utils.Selector[OpBridgeBatchSubmissionTargetOption]{
+			Options: []OpBridgeBatchSubmissionTargetOption{
+				Celestia,
+				Initia,
+			},
+		},
+		state:    state,
+		question: "Which OP bridge config: Batch Submission Target would you like to select?",
+	}
+}
+
+func (m *OpBridgeBatchSubmissionTargetSelect) GetQuestion() string {
+	return m.question
+}
+
+func (m *OpBridgeBatchSubmissionTargetSelect) Init() tea.Cmd {
+	return nil
+}
+
+func (m *OpBridgeBatchSubmissionTargetSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	selected, cmd := m.Select(msg)
+	if selected != nil {
+		m.state.opBridgeBatchSubmissionTarget = string(*selected)
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"Batch Submission Target"}, string(*selected)))
+		// TODO: Continue flow
+		return m, tea.Quit
+	}
+
+	return m, cmd
+}
+
+func (m *OpBridgeBatchSubmissionTargetSelect) View() string {
+	return m.state.weave.Render() + styles.RenderPrompt(
+		m.GetQuestion(),
+		[]string{"Batch Submission Target"},
+		styles.Question,
+	) + m.Selector.View()
 }
