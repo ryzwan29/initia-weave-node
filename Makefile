@@ -36,6 +36,7 @@ install: check_version
 	go install -ldflags "$(LDFLAGS)" .
 
 test: check_version
+	go clean -testcache
 	go test -v ./...
 
 # Release process
