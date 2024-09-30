@@ -247,3 +247,10 @@ func ValidateExactString(expect string) func(s string) error {
 		return nil
 	}
 }
+
+func ValidateEmptyString(s string) error {
+	if s == "" {
+		return fmt.Errorf("cannot be empty string")
+	}
+	return nil
+}

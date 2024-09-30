@@ -302,6 +302,7 @@ func NewRunL1NodeMonikerInput(state *RunL1NodeState) *RunL1NodeMonikerInput {
 		question:  "Please specify the moniker",
 	}
 	model.WithPlaceholder("Enter moniker")
+	model.WithValidatorFn(utils.ValidateEmptyString)
 	return model
 }
 

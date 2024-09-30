@@ -62,11 +62,13 @@ func TestRunL1NodeMonikerInput_Update(t *testing.T) {
 	}
 
 	model := NewRunL1NodeMonikerInput(mockState)
+	m, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	assert.IsType(t, m, &RunL1NodeMonikerInput{})
 
 	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("Node1")})
 	assert.Equal(t, "Node1", model.TextInput.Text)
 
-	m, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m, _ = model.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	assert.Equal(t, "Node1", mockState.moniker)
 	assert.IsType(t, m, &MinGasPriceInput{})
 }

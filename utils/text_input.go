@@ -22,6 +22,7 @@ func NewTextInput() TextInput {
 		Cursor:       0,
 		Placeholder:  "<todo: Jennie revisit placeholder>",
 		ValidationFn: NoOps,
+		IsEntered:    false,
 	}
 }
 
@@ -128,8 +129,14 @@ func moveToNextWord(text string, cursor int) int {
 func (ti TextInput) View() string {
 	var beforeCursor, cursorChar, afterCursor string
 	bottomText := styles.Text("Press Enter to submit or Ctrl+C to quit.", styles.Gray)
+	feedback := ""
+	if ti.IsEntered {
+		if err := ti.ValidationFn(ti.Text); err != nil {
+			feedback = styles.RenderError(err)
+		}
+	}
 	if len(ti.Text) == 0 {
-		return "\n" + styles.Text("> ", styles.Cyan) + styles.Text(ti.Placeholder, styles.Gray) + styles.Cursor(" ") + "\n\n" + bottomText
+		return fmt.Sprintf("\n%s %s\n\n%s%s", styles.Text(">", styles.Cyan), styles.Text(ti.Placeholder, styles.Gray), feedback, bottomText)
 	} else if ti.Cursor < len(ti.Text) {
 		// Cursor is within the text
 		beforeCursor = styles.Text(ti.Text[:ti.Cursor], styles.White)
@@ -139,13 +146,6 @@ func (ti TextInput) View() string {
 		// Cursor is at the end of the text
 		beforeCursor = styles.Text(ti.Text, styles.White)
 		cursorChar = styles.Cursor(" ")
-	}
-
-	feedback := ""
-	if ti.IsEntered {
-		if err := ti.ValidationFn(ti.Text); err != nil {
-			feedback = styles.RenderError(err)
-		}
 	}
 
 	// Compose the full view string
