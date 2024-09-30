@@ -1092,8 +1092,7 @@ func (m *ExistingDataReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch *selected {
 		case Skip:
 			m.state.replaceExistingData = false
-			// TODO: Terminal state here
-			return m, tea.Quit
+			return NewTerminalState(m.state), tea.Quit
 		case ProceedWithSync:
 			m.state.replaceExistingData = true
 			// TODO: do the deletion confirmation
