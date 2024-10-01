@@ -7,6 +7,10 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+var (
+	HiddenMnemonicText = Text("*Mnemonic has been entered and is now hidden for security purposes.*", Ivory)
+)
+
 func DefaultText(text string) string {
 	return Text(text, White)
 }
@@ -42,6 +46,24 @@ func BoldText(text string, color HexColor) string {
 	texts := strings.Split(text, "\n")
 	for idx, t := range texts {
 		styledText += SetBoldColor(t, color)
+		if idx != len(texts)-1 {
+			styledText += "\n"
+		}
+	}
+	return styledText
+}
+
+func SetBoldUnderlineColor(text string, color HexColor) string {
+	style := lipgloss.NewStyle().Bold(true).Underline(true).Foreground(lipgloss.Color(color))
+	return style.Render(text)
+}
+
+func BoldUnderlineText(text string, color HexColor) string {
+	styledText := ""
+
+	texts := strings.Split(text, "\n")
+	for idx, t := range texts {
+		styledText += SetBoldUnderlineColor(t, color)
 		if idx != len(texts)-1 {
 			styledText += "\n"
 		}

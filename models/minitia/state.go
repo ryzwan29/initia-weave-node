@@ -19,9 +19,30 @@ type LaunchState struct {
 	moniker                          string
 	genesisAccounts                  []GenesisAccount
 	preGenesisAccountsResponsesCount int
+
 	opBridgeSubmissionInterval       string
 	opBridgeOutputFinalizationPeriod string
 	opBridgeBatchSubmissionTarget    string
+
+	systemKeyOperatorMnemonic        string
+	systemKeyBridgeExecutorMnemonic  string
+	systemKeyOutputSubmitterMnemonic string
+	systemKeyBatchSubmitterMnemonic  string
+	systemKeyChallengerMnemonic      string
+
+	systemKeyL1OperatorBalance        string
+	systemKeyL1BridgeExecutorBalance  string
+	systemKeyL1OutputSubmitterBalance string
+	systemKeyL1BatchSubmitterBalance  string
+	systemKeyL1ChallengerBalance      string
+
+	systemKeyL2OperatorBalance        string
+	systemKeyL2BridgeExecutorBalance  string
+	systemKeyL2OutputSubmitterBalance string
+	systemKeyL2BatchSubmitterBalance  string
+	systemKeyL2ChallengerBalance      string
+
+	gasStationExist bool
 }
 
 func NewLaunchState() *LaunchState {

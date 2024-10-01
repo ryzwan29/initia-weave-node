@@ -89,7 +89,7 @@ func (m *GasStationMnemonicInput) Init() tea.Cmd {
 func (m *GasStationMnemonicInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-		m.previousResponse += styles.RenderPreviousResponse(styles.DotsSeparator, "Please set up a Gas Station account", []string{"Gas Station account"}, "*Mnemonic has been entered and is now hidden for security purposes.*")
+		m.previousResponse += styles.RenderPreviousResponse(styles.DotsSeparator, "Please set up a Gas Station account", []string{"Gas Station account"}, styles.HiddenMnemonicText)
 		model := NewWeaveAppInitialization(m.previousResponse, input.Text)
 		return model, model.Init()
 	}

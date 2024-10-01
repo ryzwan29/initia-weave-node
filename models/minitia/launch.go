@@ -668,8 +668,7 @@ func (m *OpBridgeBatchSubmissionTargetSelect) Update(msg tea.Msg) (tea.Model, te
 	if selected != nil {
 		m.state.opBridgeBatchSubmissionTarget = string(*selected)
 		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"Batch Submission Target"}, string(*selected)))
-		// TODO: Continue flow
-		return m, tea.Quit
+		return NewSystemKeysSelect(m.state), nil
 	}
 
 	return m, cmd
@@ -681,4 +680,757 @@ func (m *OpBridgeBatchSubmissionTargetSelect) View() string {
 		[]string{"Batch Submission Target"},
 		styles.Question,
 	) + m.Selector.View()
+}
+
+type SystemKeysSelect struct {
+	utils.Selector[SystemKeysOption]
+	state    *LaunchState
+	question string
+}
+
+type SystemKeysOption string
+
+const (
+	Generate SystemKeysOption = "Generate new system keys"
+	Import   SystemKeysOption = "Import existing keys"
+)
+
+func NewSystemKeysSelect(state *LaunchState) *SystemKeysSelect {
+	return &SystemKeysSelect{
+		Selector: utils.Selector[SystemKeysOption]{
+			Options: []SystemKeysOption{
+				Generate,
+				Import,
+			},
+		},
+		state:    state,
+		question: "Please select an option for the system keys",
+	}
+}
+
+func (m *SystemKeysSelect) GetQuestion() string {
+	return m.question
+}
+
+func (m *SystemKeysSelect) Init() tea.Cmd {
+	return nil
+}
+
+func (m *SystemKeysSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	selected, cmd := m.Select(msg)
+	if selected != nil {
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"the system keys"}, string(*selected)))
+		switch *selected {
+		case Generate:
+			// TODO: Continue flow
+			return m, tea.Quit
+		case Import:
+			return NewSystemKeyOperatorMnemonicInput(m.state), nil
+		}
+	}
+
+	return m, cmd
+}
+
+func (m *SystemKeysSelect) View() string {
+	return m.state.weave.Render() + "\n" +
+		styles.RenderPrompt(
+			"System keys are required for each of the following roles:\nOperator, Bridge Executor, Output Submitter, Batch Submitter, Challenger",
+			[]string{"System keys"},
+			styles.Information,
+		) + "\n" +
+		styles.RenderPrompt(
+			m.GetQuestion(),
+			[]string{"the system keys"},
+			styles.Question,
+		) + m.Selector.View()
+}
+
+type SystemKeyOperatorMnemonicInput struct {
+	utils.TextInput
+	state    *LaunchState
+	question string
+}
+
+func NewSystemKeyOperatorMnemonicInput(state *LaunchState) *SystemKeyOperatorMnemonicInput {
+	model := &SystemKeyOperatorMnemonicInput{
+		TextInput: utils.NewTextInput(),
+		state:     state,
+		question:  "Please add mnemonic for Operator",
+	}
+	model.WithPlaceholder("Enter the mnemonic")
+	return model
+}
+
+func (m *SystemKeyOperatorMnemonicInput) GetQuestion() string {
+	return m.question
+}
+
+func (m *SystemKeyOperatorMnemonicInput) Init() tea.Cmd {
+	return nil
+}
+
+func (m *SystemKeyOperatorMnemonicInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	input, cmd, done := m.TextInput.Update(msg)
+	if done {
+		m.state.systemKeyOperatorMnemonic = input.Text
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Operator"}, styles.HiddenMnemonicText))
+		return NewSystemKeyBridgeExecutorMnemonicInput(m.state), nil
+	}
+	m.TextInput = input
+	return m, cmd
+}
+
+func (m *SystemKeyOperatorMnemonicInput) View() string {
+	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"Operator"}, styles.Question) + m.TextInput.View()
+}
+
+type SystemKeyBridgeExecutorMnemonicInput struct {
+	utils.TextInput
+	state    *LaunchState
+	question string
+}
+
+func NewSystemKeyBridgeExecutorMnemonicInput(state *LaunchState) *SystemKeyBridgeExecutorMnemonicInput {
+	model := &SystemKeyBridgeExecutorMnemonicInput{
+		TextInput: utils.NewTextInput(),
+		state:     state,
+		question:  "Please add mnemonic for Bridge Executor",
+	}
+	model.WithPlaceholder("Enter the mnemonic")
+	return model
+}
+
+func (m *SystemKeyBridgeExecutorMnemonicInput) GetQuestion() string {
+	return m.question
+}
+
+func (m *SystemKeyBridgeExecutorMnemonicInput) Init() tea.Cmd {
+	return nil
+}
+
+func (m *SystemKeyBridgeExecutorMnemonicInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	input, cmd, done := m.TextInput.Update(msg)
+	if done {
+		m.state.systemKeyBridgeExecutorMnemonic = input.Text
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Bridge Executor"}, styles.HiddenMnemonicText))
+		return NewSystemKeyOutputSubmitterMnemonicInput(m.state), nil
+	}
+	m.TextInput = input
+	return m, cmd
+}
+
+func (m *SystemKeyBridgeExecutorMnemonicInput) View() string {
+	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"Bridge Executor"}, styles.Question) + m.TextInput.View()
+}
+
+type SystemKeyOutputSubmitterMnemonicInput struct {
+	utils.TextInput
+	state    *LaunchState
+	question string
+}
+
+func NewSystemKeyOutputSubmitterMnemonicInput(state *LaunchState) *SystemKeyOutputSubmitterMnemonicInput {
+	model := &SystemKeyOutputSubmitterMnemonicInput{
+		TextInput: utils.NewTextInput(),
+		state:     state,
+		question:  "Please add mnemonic for Output Submitter",
+	}
+	model.WithPlaceholder("Enter the mnemonic")
+	return model
+}
+
+func (m *SystemKeyOutputSubmitterMnemonicInput) GetQuestion() string {
+	return m.question
+}
+
+func (m *SystemKeyOutputSubmitterMnemonicInput) Init() tea.Cmd {
+	return nil
+}
+
+func (m *SystemKeyOutputSubmitterMnemonicInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	input, cmd, done := m.TextInput.Update(msg)
+	if done {
+		m.state.systemKeyOutputSubmitterMnemonic = input.Text
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Output Submitter"}, styles.HiddenMnemonicText))
+		return NewSystemKeyBatchSubmitterMnemonicInput(m.state), nil
+	}
+	m.TextInput = input
+	return m, cmd
+}
+
+func (m *SystemKeyOutputSubmitterMnemonicInput) View() string {
+	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"Output Submitter"}, styles.Question) + m.TextInput.View()
+}
+
+type SystemKeyBatchSubmitterMnemonicInput struct {
+	utils.TextInput
+	state    *LaunchState
+	question string
+}
+
+func NewSystemKeyBatchSubmitterMnemonicInput(state *LaunchState) *SystemKeyBatchSubmitterMnemonicInput {
+	model := &SystemKeyBatchSubmitterMnemonicInput{
+		TextInput: utils.NewTextInput(),
+		state:     state,
+		question:  "Please add mnemonic for Batch Submitter",
+	}
+	model.WithPlaceholder("Enter the mnemonic")
+	return model
+}
+
+func (m *SystemKeyBatchSubmitterMnemonicInput) GetQuestion() string {
+	return m.question
+}
+
+func (m *SystemKeyBatchSubmitterMnemonicInput) Init() tea.Cmd {
+	return nil
+}
+
+func (m *SystemKeyBatchSubmitterMnemonicInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	input, cmd, done := m.TextInput.Update(msg)
+	if done {
+		m.state.systemKeyBatchSubmitterMnemonic = input.Text
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Batch Submitter"}, styles.HiddenMnemonicText))
+		return NewSystemKeyChallengerMnemonicInput(m.state), nil
+	}
+	m.TextInput = input
+	return m, cmd
+}
+
+func (m *SystemKeyBatchSubmitterMnemonicInput) View() string {
+	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"Batch Submitter"}, styles.Question) + m.TextInput.View()
+}
+
+type SystemKeyChallengerMnemonicInput struct {
+	utils.TextInput
+	state    *LaunchState
+	question string
+}
+
+func NewSystemKeyChallengerMnemonicInput(state *LaunchState) *SystemKeyChallengerMnemonicInput {
+	model := &SystemKeyChallengerMnemonicInput{
+		TextInput: utils.NewTextInput(),
+		state:     state,
+		question:  "Please add mnemonic for Challenger",
+	}
+	model.WithPlaceholder("Enter the mnemonic")
+	return model
+}
+
+func (m *SystemKeyChallengerMnemonicInput) GetQuestion() string {
+	return m.question
+}
+
+func (m *SystemKeyChallengerMnemonicInput) Init() tea.Cmd {
+	return nil
+}
+
+func (m *SystemKeyChallengerMnemonicInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	input, cmd, done := m.TextInput.Update(msg)
+	if done {
+		m.state.systemKeyBatchSubmitterMnemonic = input.Text
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Challenger"}, styles.HiddenMnemonicText))
+		model := NewExistingGasStationChecker(m.state)
+		return model, model.Init()
+	}
+	m.TextInput = input
+	return m, cmd
+}
+
+func (m *SystemKeyChallengerMnemonicInput) View() string {
+	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"Challenger"}, styles.Question) + m.TextInput.View()
+}
+
+type ExistingGasStationChecker struct {
+	state   *LaunchState
+	loading utils.Loading
+}
+
+func NewExistingGasStationChecker(state *LaunchState) *ExistingGasStationChecker {
+	return &ExistingGasStationChecker{
+		state:   state,
+		loading: utils.NewLoading("Checking for Gas Station account...", WaitExistingGasStationChecker(state)),
+	}
+}
+
+func (m *ExistingGasStationChecker) Init() tea.Cmd {
+	return m.loading.Init()
+}
+
+func WaitExistingGasStationChecker(state *LaunchState) tea.Cmd {
+	return func() tea.Msg {
+		time.Sleep(1500 * time.Millisecond)
+		if utils.IsFirstTimeSetup() {
+			state.gasStationExist = false
+			return utils.EndLoading{}
+		} else {
+			state.gasStationExist = true
+			return utils.EndLoading{}
+		}
+	}
+}
+
+func (m *ExistingGasStationChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	loader, cmd := m.loading.Update(msg)
+	m.loading = loader
+	if m.loading.Completing {
+		if !m.state.gasStationExist {
+			return NewGasStationMnemonicInput(m.state), nil
+		} else {
+			return NewSystemKeyL1OperatorBalanceInput(m.state), nil
+		}
+	}
+	return m, cmd
+}
+
+func (m *ExistingGasStationChecker) View() string {
+	return m.state.weave.Render() + "\n" + m.loading.View()
+}
+
+type GasStationMnemonicInput struct {
+	utils.TextInput
+	state    *LaunchState
+	question string
+}
+
+func NewGasStationMnemonicInput(state *LaunchState) *GasStationMnemonicInput {
+	model := &GasStationMnemonicInput{
+		TextInput: utils.NewTextInput(),
+		state:     state,
+		question:  fmt.Sprintf("Please set up a Gas Station account %s\n%s", styles.Text("(The account that will hold the funds required by the OPinit-bots or relayer to send transactions)", styles.Gray), styles.BoldText("Weave will not send any transactions without your confirmation.", styles.Yellow)),
+	}
+	model.WithPlaceholder("Enter the mnemonic")
+	return model
+}
+
+func (m *GasStationMnemonicInput) GetQuestion() string {
+	return m.question
+}
+
+func (m *GasStationMnemonicInput) Init() tea.Cmd {
+	return nil
+}
+
+func (m *GasStationMnemonicInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	input, cmd, done := m.TextInput.Update(msg)
+	if done {
+		// TODO: Validate mnemonic & handle error
+		err := utils.SetConfig("common.gas_station_mnemonic", input.Text)
+		if err != nil {
+			panic(err)
+		}
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, "Please set up a Gas Station account", []string{"Gas Station account"}, styles.HiddenMnemonicText))
+		return NewSystemKeyL1OperatorBalanceInput(m.state), nil
+	}
+	m.TextInput = input
+	return m, cmd
+}
+
+func (m *GasStationMnemonicInput) View() string {
+	return m.state.weave.Render() + "\n" +
+		styles.RenderPrompt(fmt.Sprintf("%s %s", styles.BoldUnderlineText("Please note that", styles.Yellow), styles.Text("you will need to set up a Gas Station account to fund the following accounts in order to run the weave minitia launch command:\n  • Operator\n  • Bridge Executor\n  • Output Submitter\n  • Batch Submitter\n  • Challenger", styles.Yellow)), []string{}, styles.Information) + "\n" +
+		styles.RenderPrompt(m.GetQuestion(), []string{"Gas Station account"}, styles.Question) + m.TextInput.View()
+}
+
+type SystemKeyL1OperatorBalanceInput struct {
+	utils.TextInput
+	state    *LaunchState
+	question string
+}
+
+func NewSystemKeyL1OperatorBalanceInput(state *LaunchState) *SystemKeyL1OperatorBalanceInput {
+	model := &SystemKeyL1OperatorBalanceInput{
+		TextInput: utils.NewTextInput(),
+		state:     state,
+		question:  "Please specify initial balance for Operator on L1 (uinit)",
+	}
+	model.WithPlaceholder("Enter the balance")
+	return model
+}
+
+func (m *SystemKeyL1OperatorBalanceInput) GetQuestion() string {
+	return m.question
+}
+
+func (m *SystemKeyL1OperatorBalanceInput) Init() tea.Cmd {
+	return nil
+}
+
+func (m *SystemKeyL1OperatorBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	input, cmd, done := m.TextInput.Update(msg)
+	if done {
+		m.state.systemKeyL1OperatorBalance = input.Text
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Operator", "L1"}, input.Text))
+		return NewSystemKeyL1BridgeExecutorBalanceInput(m.state), nil
+	}
+	m.TextInput = input
+	return m, cmd
+}
+
+func (m *SystemKeyL1OperatorBalanceInput) View() string {
+	return m.state.weave.Render() + "\n" +
+		styles.RenderPrompt("Please fund the following accounts on L1:\n  • Operator\n  • Bridge Executor\n  • Output Submitter\n  • Batch Submitter\n  • Challenger", []string{"L1"}, styles.Information) + "\n" +
+		styles.RenderPrompt(m.GetQuestion(), []string{"Operator", "L1"}, styles.Question) + m.TextInput.View()
+}
+
+type SystemKeyL1BridgeExecutorBalanceInput struct {
+	utils.TextInput
+	state    *LaunchState
+	question string
+}
+
+func NewSystemKeyL1BridgeExecutorBalanceInput(state *LaunchState) *SystemKeyL1BridgeExecutorBalanceInput {
+	model := &SystemKeyL1BridgeExecutorBalanceInput{
+		TextInput: utils.NewTextInput(),
+		state:     state,
+		question:  "Please specify initial balance for Bridge Executor on L1 (uinit)",
+	}
+	model.WithPlaceholder("Enter the balance")
+	return model
+}
+
+func (m *SystemKeyL1BridgeExecutorBalanceInput) GetQuestion() string {
+	return m.question
+}
+
+func (m *SystemKeyL1BridgeExecutorBalanceInput) Init() tea.Cmd {
+	return nil
+}
+
+func (m *SystemKeyL1BridgeExecutorBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	input, cmd, done := m.TextInput.Update(msg)
+	if done {
+		m.state.systemKeyL1BridgeExecutorBalance = input.Text
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Bridge Executor", "L1"}, input.Text))
+		return NewSystemKeyL1OutputSubmitterBalanceInput(m.state), nil
+	}
+	m.TextInput = input
+	return m, cmd
+}
+
+func (m *SystemKeyL1BridgeExecutorBalanceInput) View() string {
+	return m.state.weave.Render() +
+		styles.RenderPrompt(m.GetQuestion(), []string{"Bridge Executor", "L1"}, styles.Question) + m.TextInput.View()
+}
+
+type SystemKeyL1OutputSubmitterBalanceInput struct {
+	utils.TextInput
+	state    *LaunchState
+	question string
+}
+
+func NewSystemKeyL1OutputSubmitterBalanceInput(state *LaunchState) *SystemKeyL1OutputSubmitterBalanceInput {
+	model := &SystemKeyL1OutputSubmitterBalanceInput{
+		TextInput: utils.NewTextInput(),
+		state:     state,
+		question:  "Please specify initial balance for Output Submitter on L1 (uinit)",
+	}
+	model.WithPlaceholder("Enter the balance")
+	return model
+}
+
+func (m *SystemKeyL1OutputSubmitterBalanceInput) GetQuestion() string {
+	return m.question
+}
+
+func (m *SystemKeyL1OutputSubmitterBalanceInput) Init() tea.Cmd {
+	return nil
+}
+
+func (m *SystemKeyL1OutputSubmitterBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	input, cmd, done := m.TextInput.Update(msg)
+	if done {
+		m.state.systemKeyL1OutputSubmitterBalance = input.Text
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Output Submitter", "L1"}, input.Text))
+		return NewSystemKeyL1BatchSubmitterBalanceInput(m.state), nil
+	}
+	m.TextInput = input
+	return m, cmd
+}
+
+func (m *SystemKeyL1OutputSubmitterBalanceInput) View() string {
+	return m.state.weave.Render() +
+		styles.RenderPrompt(m.GetQuestion(), []string{"Output Submitter", "L1"}, styles.Question) + m.TextInput.View()
+}
+
+type SystemKeyL1BatchSubmitterBalanceInput struct {
+	utils.TextInput
+	state    *LaunchState
+	question string
+}
+
+func NewSystemKeyL1BatchSubmitterBalanceInput(state *LaunchState) *SystemKeyL1BatchSubmitterBalanceInput {
+	model := &SystemKeyL1BatchSubmitterBalanceInput{
+		TextInput: utils.NewTextInput(),
+		state:     state,
+		question:  "Please specify initial balance for Batch Submitter on L1 (uinit)",
+	}
+	model.WithPlaceholder("Enter the balance")
+	return model
+}
+
+func (m *SystemKeyL1BatchSubmitterBalanceInput) GetQuestion() string {
+	return m.question
+}
+
+func (m *SystemKeyL1BatchSubmitterBalanceInput) Init() tea.Cmd {
+	return nil
+}
+
+func (m *SystemKeyL1BatchSubmitterBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	input, cmd, done := m.TextInput.Update(msg)
+	if done {
+		m.state.systemKeyL1BatchSubmitterBalance = input.Text
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Batch Submitter", "L1"}, input.Text))
+		return NewSystemKeyL1ChallengerBalanceInput(m.state), nil
+	}
+	m.TextInput = input
+	return m, cmd
+}
+
+func (m *SystemKeyL1BatchSubmitterBalanceInput) View() string {
+	return m.state.weave.Render() +
+		styles.RenderPrompt(m.GetQuestion(), []string{"Batch Submitter", "L1"}, styles.Question) + m.TextInput.View()
+}
+
+type SystemKeyL1ChallengerBalanceInput struct {
+	utils.TextInput
+	state    *LaunchState
+	question string
+}
+
+func NewSystemKeyL1ChallengerBalanceInput(state *LaunchState) *SystemKeyL1ChallengerBalanceInput {
+	model := &SystemKeyL1ChallengerBalanceInput{
+		TextInput: utils.NewTextInput(),
+		state:     state,
+		question:  "Please specify initial balance for Challenger on L1 (uinit)",
+	}
+	model.WithPlaceholder("Enter the balance")
+	return model
+}
+
+func (m *SystemKeyL1ChallengerBalanceInput) GetQuestion() string {
+	return m.question
+}
+
+func (m *SystemKeyL1ChallengerBalanceInput) Init() tea.Cmd {
+	return nil
+}
+
+func (m *SystemKeyL1ChallengerBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	input, cmd, done := m.TextInput.Update(msg)
+	if done {
+		m.state.systemKeyL1ChallengerBalance = input.Text
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Challenger", "L1"}, input.Text))
+		return NewSystemKeyL2OperatorBalanceInput(m.state), nil
+	}
+	m.TextInput = input
+	return m, cmd
+}
+
+func (m *SystemKeyL1ChallengerBalanceInput) View() string {
+	return m.state.weave.Render() +
+		styles.RenderPrompt(m.GetQuestion(), []string{"Challenger", "L1"}, styles.Question) + m.TextInput.View()
+}
+
+type SystemKeyL2OperatorBalanceInput struct {
+	utils.TextInput
+	state    *LaunchState
+	question string
+}
+
+func NewSystemKeyL2OperatorBalanceInput(state *LaunchState) *SystemKeyL2OperatorBalanceInput {
+	model := &SystemKeyL2OperatorBalanceInput{
+		TextInput: utils.NewTextInput(),
+		state:     state,
+		question:  fmt.Sprintf("Please specify initial balance for Operator on L2 (%s)", state.gasDenom),
+	}
+	model.WithPlaceholder("Enter the balance")
+	return model
+}
+
+func (m *SystemKeyL2OperatorBalanceInput) GetQuestion() string {
+	return m.question
+}
+
+func (m *SystemKeyL2OperatorBalanceInput) Init() tea.Cmd {
+	return nil
+}
+
+func (m *SystemKeyL2OperatorBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	input, cmd, done := m.TextInput.Update(msg)
+	if done {
+		m.state.systemKeyL2OperatorBalance = input.Text
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Operator", "L2"}, input.Text))
+		return NewSystemKeyL2BridgeExecutorBalanceInput(m.state), nil
+	}
+	m.TextInput = input
+	return m, cmd
+}
+
+func (m *SystemKeyL2OperatorBalanceInput) View() string {
+	return m.state.weave.Render() + "\n" +
+		styles.RenderPrompt(fmt.Sprintf("Please fund the following accounts on L2:\n  • Operator\n  • Bridge Executor\n  • Output Submitter %[1]s\n  • Batch Submitter %[1]s\n  • Challenger %[1]s", styles.Text("(Optional)", styles.Gray)), []string{"L2"}, styles.Information) + "\n" +
+		styles.RenderPrompt(m.GetQuestion(), []string{"Operator", "L2"}, styles.Question) + m.TextInput.View()
+}
+
+type SystemKeyL2BridgeExecutorBalanceInput struct {
+	utils.TextInput
+	state    *LaunchState
+	question string
+}
+
+func NewSystemKeyL2BridgeExecutorBalanceInput(state *LaunchState) *SystemKeyL2BridgeExecutorBalanceInput {
+	model := &SystemKeyL2BridgeExecutorBalanceInput{
+		TextInput: utils.NewTextInput(),
+		state:     state,
+		question:  fmt.Sprintf("Please specify initial balance for Bridge Executor on L2 (%s)", state.gasDenom),
+	}
+	model.WithPlaceholder("Enter the balance")
+	return model
+}
+
+func (m *SystemKeyL2BridgeExecutorBalanceInput) GetQuestion() string {
+	return m.question
+}
+
+func (m *SystemKeyL2BridgeExecutorBalanceInput) Init() tea.Cmd {
+	return nil
+}
+
+func (m *SystemKeyL2BridgeExecutorBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	input, cmd, done := m.TextInput.Update(msg)
+	if done {
+		m.state.systemKeyL2BridgeExecutorBalance = input.Text
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Bridge Executor", "L2"}, input.Text))
+		return NewSystemKeyL2OutputSubmitterBalanceInput(m.state), nil
+	}
+	m.TextInput = input
+	return m, cmd
+}
+
+func (m *SystemKeyL2BridgeExecutorBalanceInput) View() string {
+	return m.state.weave.Render() +
+		styles.RenderPrompt(m.GetQuestion(), []string{"Bridge Executor", "L2"}, styles.Question) + m.TextInput.View()
+}
+
+type SystemKeyL2OutputSubmitterBalanceInput struct {
+	utils.TextInput
+	state    *LaunchState
+	question string
+}
+
+func NewSystemKeyL2OutputSubmitterBalanceInput(state *LaunchState) *SystemKeyL2OutputSubmitterBalanceInput {
+	model := &SystemKeyL2OutputSubmitterBalanceInput{
+		TextInput: utils.NewTextInput(),
+		state:     state,
+		question:  fmt.Sprintf("Please specify initial balance for Output Submitter on L2 (%s)", state.gasDenom),
+	}
+	model.WithPlaceholder("Enter the balance")
+	return model
+}
+
+func (m *SystemKeyL2OutputSubmitterBalanceInput) GetQuestion() string {
+	return m.question
+}
+
+func (m *SystemKeyL2OutputSubmitterBalanceInput) Init() tea.Cmd {
+	return nil
+}
+
+func (m *SystemKeyL2OutputSubmitterBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	input, cmd, done := m.TextInput.Update(msg)
+	if done {
+		m.state.systemKeyL2OutputSubmitterBalance = input.Text
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Output Submitter", "L2"}, input.Text))
+		return NewSystemKeyL2BatchSubmitterBalanceInput(m.state), nil
+	}
+	m.TextInput = input
+	return m, cmd
+}
+
+func (m *SystemKeyL2OutputSubmitterBalanceInput) View() string {
+	return m.state.weave.Render() +
+		styles.RenderPrompt(m.GetQuestion(), []string{"Output Submitter", "L2"}, styles.Question) + m.TextInput.View()
+}
+
+type SystemKeyL2BatchSubmitterBalanceInput struct {
+	utils.TextInput
+	state    *LaunchState
+	question string
+}
+
+func NewSystemKeyL2BatchSubmitterBalanceInput(state *LaunchState) *SystemKeyL2BatchSubmitterBalanceInput {
+	model := &SystemKeyL2BatchSubmitterBalanceInput{
+		TextInput: utils.NewTextInput(),
+		state:     state,
+		question:  fmt.Sprintf("Please specify initial balance for Batch Submitter on L2 (%s)", state.gasDenom),
+	}
+	model.WithPlaceholder("Enter the balance")
+	return model
+}
+
+func (m *SystemKeyL2BatchSubmitterBalanceInput) GetQuestion() string {
+	return m.question
+}
+
+func (m *SystemKeyL2BatchSubmitterBalanceInput) Init() tea.Cmd {
+	return nil
+}
+
+func (m *SystemKeyL2BatchSubmitterBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	input, cmd, done := m.TextInput.Update(msg)
+	if done {
+		m.state.systemKeyL2BatchSubmitterBalance = input.Text
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Batch Submitter", "L2"}, input.Text))
+		return NewSystemKeyL2ChallengerBalanceInput(m.state), nil
+	}
+	m.TextInput = input
+	return m, cmd
+}
+
+func (m *SystemKeyL2BatchSubmitterBalanceInput) View() string {
+	return m.state.weave.Render() +
+		styles.RenderPrompt(m.GetQuestion(), []string{"Batch Submitter", "L2"}, styles.Question) + m.TextInput.View()
+}
+
+type SystemKeyL2ChallengerBalanceInput struct {
+	utils.TextInput
+	state    *LaunchState
+	question string
+}
+
+func NewSystemKeyL2ChallengerBalanceInput(state *LaunchState) *SystemKeyL2ChallengerBalanceInput {
+	model := &SystemKeyL2ChallengerBalanceInput{
+		TextInput: utils.NewTextInput(),
+		state:     state,
+		question:  fmt.Sprintf("Please specify initial balance for Challenger on L2 (%s)", state.gasDenom),
+	}
+	model.WithPlaceholder("Enter the balance")
+	return model
+}
+
+func (m *SystemKeyL2ChallengerBalanceInput) GetQuestion() string {
+	return m.question
+}
+
+func (m *SystemKeyL2ChallengerBalanceInput) Init() tea.Cmd {
+	return nil
+}
+
+func (m *SystemKeyL2ChallengerBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	input, cmd, done := m.TextInput.Update(msg)
+	if done {
+		m.state.systemKeyL2ChallengerBalance = input.Text
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Challenger", "L2"}, input.Text))
+		return m, tea.Quit
+	}
+	m.TextInput = input
+	return m, cmd
+}
+
+func (m *SystemKeyL2ChallengerBalanceInput) View() string {
+	return m.state.weave.Render() +
+		styles.RenderPrompt(m.GetQuestion(), []string{"Challenger", "L2"}, styles.Question) + m.TextInput.View()
 }
