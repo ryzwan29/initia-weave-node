@@ -8,17 +8,16 @@ type GenesisAccount struct {
 }
 
 type LaunchState struct {
-	weave                            types.WeaveState
-	existingMinitiaApp               bool
-	l1Network                        string
-	vmType                           string
-	minitiadVersion                  string
-	minitiadEndpoint                 string
-	chainId                          string
-	gasDenom                         string
-	moniker                          string
-	genesisAccounts                  []GenesisAccount
-	preGenesisAccountsResponsesCount int
+	weave              types.WeaveState
+	existingMinitiaApp bool
+	l1Network          string
+	vmType             string
+	minitiadVersion    string
+	minitiadEndpoint   string
+	chainId            string
+	gasDenom           string
+	moniker            string
+	genesisAccounts    []GenesisAccount
 
 	opBridgeSubmissionInterval       string
 	opBridgeOutputFinalizationPeriod string
@@ -43,6 +42,10 @@ type LaunchState struct {
 	systemKeyL2ChallengerBalance      string
 
 	gasStationExist bool
+
+	preGenesisAccountsResponsesCount int
+	preL1BalancesResponsesCount      int
+	preL2BalancesResponsesCount      int
 }
 
 func NewLaunchState() *LaunchState {

@@ -30,3 +30,13 @@ func (w *WeaveState) PopPreviousResponse() {
 func (w *WeaveState) PushPreviousResponse(s string) {
 	w.PreviousResponse = append(w.PreviousResponse, s)
 }
+
+// PopPreviousResponseAtIndex Experimental, use it with care.
+func (w *WeaveState) PopPreviousResponseAtIndex(index int) {
+	l := len(w.PreviousResponse)
+	if index < 0 || index >= l {
+		return
+	}
+
+	w.PreviousResponse = append(w.PreviousResponse[:index], w.PreviousResponse[index+1:]...)
+}

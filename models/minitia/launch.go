@@ -1040,6 +1040,7 @@ type SystemKeyL1OperatorBalanceInput struct {
 }
 
 func NewSystemKeyL1OperatorBalanceInput(state *LaunchState) *SystemKeyL1OperatorBalanceInput {
+	state.preL1BalancesResponsesCount = len(state.weave.PreviousResponse)
 	model := &SystemKeyL1OperatorBalanceInput{
 		TextInput: utils.NewTextInput(),
 		state:     state,
@@ -1061,6 +1062,7 @@ func (m *SystemKeyL1OperatorBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cm
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
 		m.state.systemKeyL1OperatorBalance = input.Text
+		m.state.weave.PushPreviousResponse(fmt.Sprintf("\n%s\n", styles.RenderPrompt("Please fund the following accounts on L1:\n  • Operator\n  • Bridge Executor\n  • Output Submitter\n  • Batch Submitter\n  • Challenger\n", []string{"L1"}, styles.Information)))
 		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Operator", "L1"}, input.Text))
 		return NewSystemKeyL1BridgeExecutorBalanceInput(m.state), nil
 	}
@@ -1222,6 +1224,7 @@ func (m *SystemKeyL1ChallengerBalanceInput) Update(msg tea.Msg) (tea.Model, tea.
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
 		m.state.systemKeyL1ChallengerBalance = input.Text
+		m.state.weave.PopPreviousResponseAtIndex(m.state.preL1BalancesResponsesCount)
 		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Challenger", "L1"}, input.Text))
 		return NewSystemKeyL2OperatorBalanceInput(m.state), nil
 	}
@@ -1241,6 +1244,7 @@ type SystemKeyL2OperatorBalanceInput struct {
 }
 
 func NewSystemKeyL2OperatorBalanceInput(state *LaunchState) *SystemKeyL2OperatorBalanceInput {
+	state.preL2BalancesResponsesCount = len(state.weave.PreviousResponse)
 	model := &SystemKeyL2OperatorBalanceInput{
 		TextInput: utils.NewTextInput(),
 		state:     state,
@@ -1262,6 +1266,7 @@ func (m *SystemKeyL2OperatorBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cm
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
 		m.state.systemKeyL2OperatorBalance = input.Text
+		m.state.weave.PushPreviousResponse(fmt.Sprintf("\n%s\n", styles.RenderPrompt(fmt.Sprintf("Please fund the following accounts on L2:\n  • Operator\n  • Bridge Executor\n  • Output Submitter %[1]s\n  • Batch Submitter %[1]s\n  • Challenger %[1]s\n", styles.Text("(Optional)", styles.Gray)), []string{"L2"}, styles.Information)))
 		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Operator", "L2"}, input.Text))
 		return NewSystemKeyL2BridgeExecutorBalanceInput(m.state), nil
 	}
@@ -1327,7 +1332,7 @@ func NewSystemKeyL2OutputSubmitterBalanceInput(state *LaunchState) *SystemKeyL2O
 		state:     state,
 		question:  fmt.Sprintf("Please specify initial balance for Output Submitter on L2 (%s)", state.gasDenom),
 	}
-	model.WithPlaceholder("Enter the balance")
+	model.WithPlaceholder("Enter the balance (Press Enter to skip)")
 	return model
 }
 
@@ -1367,7 +1372,7 @@ func NewSystemKeyL2BatchSubmitterBalanceInput(state *LaunchState) *SystemKeyL2Ba
 		state:     state,
 		question:  fmt.Sprintf("Please specify initial balance for Batch Submitter on L2 (%s)", state.gasDenom),
 	}
-	model.WithPlaceholder("Enter the balance")
+	model.WithPlaceholder("Enter the balance (Press Enter to skip)")
 	return model
 }
 
@@ -1407,7 +1412,7 @@ func NewSystemKeyL2ChallengerBalanceInput(state *LaunchState) *SystemKeyL2Challe
 		state:     state,
 		question:  fmt.Sprintf("Please specify initial balance for Challenger on L2 (%s)", state.gasDenom),
 	}
-	model.WithPlaceholder("Enter the balance")
+	model.WithPlaceholder("Enter the balance (Press Enter to skip)")
 	return model
 }
 
@@ -1423,6 +1428,7 @@ func (m *SystemKeyL2ChallengerBalanceInput) Update(msg tea.Msg) (tea.Model, tea.
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
 		m.state.systemKeyL2ChallengerBalance = input.Text
+		m.state.weave.PopPreviousResponseAtIndex(m.state.preL2BalancesResponsesCount)
 		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Challenger", "L2"}, input.Text))
 		return m, tea.Quit
 	}
