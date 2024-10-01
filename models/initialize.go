@@ -5,7 +5,6 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/initia-labs/weave/models/weaveinit"
 	"github.com/initia-labs/weave/styles"
 	"github.com/initia-labs/weave/utils"
 )
@@ -19,6 +18,7 @@ func InitHeader() string {
 
 type ExistingWeaveChecker struct {
 	utils.Selector[ExistingWeaveOption]
+	skipToModel tea.Model
 }
 
 type ExistingWeaveOption string
@@ -28,7 +28,7 @@ const (
 	No  ExistingWeaveOption = "No"
 )
 
-func NewExistingAppChecker() *ExistingWeaveChecker {
+func NewExistingAppChecker(skipToModel tea.Model) *ExistingWeaveChecker {
 	return &ExistingWeaveChecker{
 		Selector: utils.Selector[ExistingWeaveOption]{
 			Options: []ExistingWeaveOption{
@@ -36,6 +36,7 @@ func NewExistingAppChecker() *ExistingWeaveChecker {
 				No,
 			},
 		},
+		skipToModel: skipToModel,
 	}
 }
 
@@ -51,7 +52,7 @@ func (m *ExistingWeaveChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			view := styles.RenderPreviousResponse(styles.ArrowSeparator, "Would you like to set up a Gas Station account", []string{"Gas Station account"}, string(*selected))
 			return NewGasStationMnemonicInput(view), nil
 		case No:
-			return weaveinit.NewWeaveInit(), nil
+			return m.skipToModel, m.skipToModel.Init()
 		}
 	}
 	return m, cmd
