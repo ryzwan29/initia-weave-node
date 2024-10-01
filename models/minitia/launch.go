@@ -691,7 +691,7 @@ type SystemKeysSelect struct {
 type SystemKeysOption string
 
 const (
-	Generate SystemKeysOption = "Generate new system keys"
+	Generate SystemKeysOption = "Generate new system keys (Will be done at the end of the flow)"
 	Import   SystemKeysOption = "Import existing keys"
 )
 
@@ -722,8 +722,9 @@ func (m *SystemKeysSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"the system keys"}, string(*selected)))
 		switch *selected {
 		case Generate:
-			// TODO: Continue flow
-			return m, tea.Quit
+			m.state.generateKeys = true
+			model := NewExistingGasStationChecker(m.state)
+			return model, model.Init()
 		case Import:
 			return NewSystemKeyOperatorMnemonicInput(m.state), nil
 		}
@@ -1430,6 +1431,7 @@ func (m *SystemKeyL2ChallengerBalanceInput) Update(msg tea.Msg) (tea.Model, tea.
 		m.state.systemKeyL2ChallengerBalance = input.Text
 		m.state.weave.PopPreviousResponseAtIndex(m.state.preL2BalancesResponsesCount)
 		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Challenger", "L2"}, input.Text))
+		// TODO: Continue with minitiad launch-ing
 		return m, tea.Quit
 	}
 	m.TextInput = input

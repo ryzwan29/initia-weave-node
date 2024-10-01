@@ -23,6 +23,7 @@ type LaunchState struct {
 	opBridgeOutputFinalizationPeriod string
 	opBridgeBatchSubmissionTarget    string
 
+	generateKeys                     bool
 	systemKeyOperatorMnemonic        string
 	systemKeyBridgeExecutorMnemonic  string
 	systemKeyOutputSubmitterMnemonic string
