@@ -1431,6 +1431,11 @@ func (m *SystemKeyL2ChallengerBalanceInput) Update(msg tea.Msg) (tea.Model, tea.
 		m.state.systemKeyL2ChallengerBalance = input.Text
 		m.state.weave.PopPreviousResponseAtIndex(m.state.preL2BalancesResponsesCount)
 		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Challenger", "L2"}, input.Text))
+
+		if m.state.generateKeys {
+			model := NewGenerateSystemKeysLoading(m.state)
+			return model, model.Init()
+		}
 		// TODO: Continue with minitiad launch-ing
 		return m, tea.Quit
 	}
@@ -1441,4 +1446,79 @@ func (m *SystemKeyL2ChallengerBalanceInput) Update(msg tea.Msg) (tea.Model, tea.
 func (m *SystemKeyL2ChallengerBalanceInput) View() string {
 	return m.state.weave.Render() +
 		styles.RenderPrompt(m.GetQuestion(), []string{"Challenger", "L2"}, styles.Question) + m.TextInput.View()
+}
+
+type GenerateSystemKeysLoading struct {
+	state   *LaunchState
+	loading utils.Loading
+}
+
+func NewGenerateSystemKeysLoading(state *LaunchState) *GenerateSystemKeysLoading {
+	return &GenerateSystemKeysLoading{
+		state:   state,
+		loading: utils.NewLoading("Generating new system keys...", generateSystemKeys(state)),
+	}
+}
+
+func (m *GenerateSystemKeysLoading) Init() tea.Cmd {
+	return m.loading.Init()
+}
+
+func generateSystemKeys(state *LaunchState) tea.Cmd {
+	return func() tea.Msg {
+		// TODO: App name as a const
+		// TODO: Refactor this so it looks better :)
+		res, err := utils.AddOrReplace("minitiad", "Operator")
+		if err != nil {
+			return utils.EndLoading{}
+		}
+		operatorKey := utils.MustUnmarshalKeyInfo(res)
+		state.systemKeyOperatorMnemonic = operatorKey.Mnemonic
+
+		res, err = utils.AddOrReplace("minitiad", "BridgeExecutor")
+		if err != nil {
+			return utils.EndLoading{}
+		}
+		bridgeExecutorKey := utils.MustUnmarshalKeyInfo(res)
+		state.systemKeyBridgeExecutorMnemonic = bridgeExecutorKey.Mnemonic
+
+		res, err = utils.AddOrReplace("minitiad", "OutputSubmitter")
+		if err != nil {
+			return utils.EndLoading{}
+		}
+		outputSubmitterKey := utils.MustUnmarshalKeyInfo(res)
+		state.systemKeyOutputSubmitterMnemonic = outputSubmitterKey.Mnemonic
+
+		res, err = utils.AddOrReplace("minitiad", "BatchSubmitter")
+		if err != nil {
+			return utils.EndLoading{}
+		}
+		batchSubmitterKey := utils.MustUnmarshalKeyInfo(res)
+		state.systemKeyBatchSubmitterMnemonic = batchSubmitterKey.Mnemonic
+
+		res, err = utils.AddOrReplace("minitiad", "Challenger")
+		if err != nil {
+			return utils.EndLoading{}
+		}
+		challengerKey := utils.MustUnmarshalKeyInfo(res)
+		state.systemKeyChallengerMnemonic = challengerKey.Mnemonic
+
+		time.Sleep(1500 * time.Millisecond)
+
+		return utils.EndLoading{}
+	}
+}
+
+func (m *GenerateSystemKeysLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	loader, cmd := m.loading.Update(msg)
+	m.loading = loader
+	if m.loading.Completing {
+		// TODO: Continue with minitiad launch-ing
+		return m, tea.Quit
+	}
+	return m, cmd
+}
+
+func (m *GenerateSystemKeysLoading) View() string {
+	return m.state.weave.Render() + "\n" + m.loading.View()
 }

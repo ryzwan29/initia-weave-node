@@ -2,14 +2,32 @@ package utils
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"os/exec"
 )
 
+type KeyInfo struct {
+	Name     string `json:"name"`
+	Type     string `json:"type"`
+	Address  string `json:"address"`
+	PubKey   string `json:"pubkey"`
+	Mnemonic string `json:"mnemonic"`
+}
+
+func MustUnmarshalKeyInfo(rawJson string) KeyInfo {
+	var account KeyInfo
+	err := json.Unmarshal([]byte(rawJson), &account)
+	if err != nil {
+		panic(fmt.Sprintf("failed to unmarshal JSON: %v", err))
+	}
+	return account
+}
+
 // AddOrReplace adds or replaces a key using `initiad keys add <keyname> --keyring-backend test` with 'y' confirmation
 func AddOrReplace(appName, keyname string) (string, error) {
 	// Command to add the key: echo 'y' | initiad keys add <keyname> --keyring-backend test
-	cmd := exec.Command(appName, "keys", "add", keyname, "--keyring-backend", "test")
+	cmd := exec.Command(appName, "keys", "add", keyname, "--keyring-backend", "test", "--output", "json")
 
 	// Simulate pressing 'y' for confirmation
 	cmd.Stdin = bytes.NewBufferString("y\n")
