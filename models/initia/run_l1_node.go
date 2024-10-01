@@ -841,7 +841,7 @@ func initializeApp(state *RunL1NodeState) tea.Cmd {
 
 		initiaConfigPath := filepath.Join(userHome, utils.InitiaConfigDirectory)
 
-		if state.replaceExistingApp {
+		if state.replaceExistingApp || !state.existingApp {
 			if err := utils.UpdateTomlValue(filepath.Join(initiaConfigPath, "config.toml"), "moniker", state.moniker); err != nil {
 				panic(fmt.Sprintf("failed to update moniker: %v", err))
 			}
