@@ -1436,8 +1436,8 @@ func (m *SystemKeyL2ChallengerBalanceInput) Update(msg tea.Msg) (tea.Model, tea.
 			model := NewGenerateSystemKeysLoading(m.state)
 			return model, model.Init()
 		}
-		// TODO: Continue with minitiad launch-ing
-		return m, tea.Quit
+		model := NewLaunchingNewMinitiaLoading(m.state)
+		return model, model.Init()
 	}
 	m.TextInput = input
 	return m, cmd
@@ -1466,37 +1466,35 @@ func (m *GenerateSystemKeysLoading) Init() tea.Cmd {
 
 func generateSystemKeys(state *LaunchState) tea.Cmd {
 	return func() tea.Msg {
-		// TODO: App name as a const
-		// TODO: Refactor this so it looks better :)
-		res, err := utils.AddOrReplace("minitiad", "Operator")
+		res, err := utils.AddOrReplace(AppName, OperatorKeyName)
 		if err != nil {
 			return utils.EndLoading{}
 		}
 		operatorKey := utils.MustUnmarshalKeyInfo(res)
 		state.systemKeyOperatorMnemonic = operatorKey.Mnemonic
 
-		res, err = utils.AddOrReplace("minitiad", "BridgeExecutor")
+		res, err = utils.AddOrReplace(AppName, BridgeExecutorKeyName)
 		if err != nil {
 			return utils.EndLoading{}
 		}
 		bridgeExecutorKey := utils.MustUnmarshalKeyInfo(res)
 		state.systemKeyBridgeExecutorMnemonic = bridgeExecutorKey.Mnemonic
 
-		res, err = utils.AddOrReplace("minitiad", "OutputSubmitter")
+		res, err = utils.AddOrReplace(AppName, OutputSubmitterKeyName)
 		if err != nil {
 			return utils.EndLoading{}
 		}
 		outputSubmitterKey := utils.MustUnmarshalKeyInfo(res)
 		state.systemKeyOutputSubmitterMnemonic = outputSubmitterKey.Mnemonic
 
-		res, err = utils.AddOrReplace("minitiad", "BatchSubmitter")
+		res, err = utils.AddOrReplace(AppName, BatchSubmitterKeyName)
 		if err != nil {
 			return utils.EndLoading{}
 		}
 		batchSubmitterKey := utils.MustUnmarshalKeyInfo(res)
 		state.systemKeyBatchSubmitterMnemonic = batchSubmitterKey.Mnemonic
 
-		res, err = utils.AddOrReplace("minitiad", "Challenger")
+		res, err = utils.AddOrReplace(AppName, ChallengerKeyName)
 		if err != nil {
 			return utils.EndLoading{}
 		}
@@ -1513,12 +1511,107 @@ func (m *GenerateSystemKeysLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	loader, cmd := m.loading.Update(msg)
 	m.loading = loader
 	if m.loading.Completing {
-		// TODO: Continue with minitiad launch-ing
-		return m, tea.Quit
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "System keys have been successfully generated.", []string{}, ""))
+		return NewSystemKeysMnemonicDisplayInput(m.state), nil
 	}
 	return m, cmd
 }
 
 func (m *GenerateSystemKeysLoading) View() string {
+	return m.state.weave.Render() + "\n" + m.loading.View()
+}
+
+type SystemKeysMnemonicDisplayInput struct {
+	utils.TextInput
+	state    *LaunchState
+	question string
+}
+
+func NewSystemKeysMnemonicDisplayInput(state *LaunchState) *SystemKeysMnemonicDisplayInput {
+	model := &SystemKeysMnemonicDisplayInput{
+		TextInput: utils.NewTextInput(),
+		state:     state,
+		question:  "Please type `continue` to proceed after you have securely stored the mnemonic.",
+	}
+	model.WithPlaceholder("Type `continue` to continue, Ctrl+C to quit.")
+	model.WithValidatorFn(utils.ValidateExactString("continue"))
+	return model
+}
+
+func (m *SystemKeysMnemonicDisplayInput) GetQuestion() string {
+	return m.question
+}
+
+func (m *SystemKeysMnemonicDisplayInput) Init() tea.Cmd {
+	return nil
+}
+
+func (m *SystemKeysMnemonicDisplayInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	input, cmd, done := m.TextInput.Update(msg)
+	if done {
+		model := NewLaunchingNewMinitiaLoading(m.state)
+		return model, model.Init()
+	}
+	m.TextInput = input
+	return m, cmd
+}
+
+func (m *SystemKeysMnemonicDisplayInput) View() string {
+	var mnemonicText string
+	mnemonicText += renderMnemonic("Operator", m.state.systemKeyOperatorMnemonic)
+	mnemonicText += renderMnemonic("Bridge Executor", m.state.systemKeyBridgeExecutorMnemonic)
+	mnemonicText += renderMnemonic("Output Submitter", m.state.systemKeyOutputSubmitterMnemonic)
+	mnemonicText += renderMnemonic("Batch Submitter", m.state.systemKeyBatchSubmitterMnemonic)
+	mnemonicText += renderMnemonic("Challenger", m.state.systemKeyChallengerMnemonic)
+
+	return m.state.weave.Render() + "\n" +
+		styles.BoldUnderlineText("Important", styles.Yellow) + "\n" +
+		styles.Text("Write down these mnemonic phrases and store them in a safe place. \nIt is the only way to recover your system keys.", styles.Yellow) + "\n\n" +
+		mnemonicText + styles.RenderPrompt(m.GetQuestion(), []string{"`continue`"}, styles.Question) + m.TextInput.View()
+}
+
+func renderMnemonic(keyName, mnemonic string) string {
+	return styles.BoldText("Key Name: ", styles.Ivory) + keyName + "\n" +
+		styles.BoldText("Mnemonic:", styles.Ivory) + "\n" + mnemonic + "\n\n"
+}
+
+type LaunchingNewMinitiaLoading struct {
+	state   *LaunchState
+	loading utils.Loading
+}
+
+func NewLaunchingNewMinitiaLoading(state *LaunchState) *LaunchingNewMinitiaLoading {
+	return &LaunchingNewMinitiaLoading{
+		state:   state,
+		loading: utils.NewLoading("Launching new Minitia...", launchingMinitia(state)),
+	}
+}
+
+func (m *LaunchingNewMinitiaLoading) Init() tea.Cmd {
+	return m.loading.Init()
+}
+
+func launchingMinitia(state *LaunchState) tea.Cmd {
+	return func() tea.Msg {
+		// TODO: Implement this
+		time.Sleep(1500 * time.Millisecond)
+
+		return utils.EndLoading{}
+	}
+}
+
+func (m *LaunchingNewMinitiaLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	loader, cmd := m.loading.Update(msg)
+	m.loading = loader
+	if m.loading.Completing {
+		// TODO: Paraphrase this or maybe add a terminal state
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "New minitia has been launched.", []string{}, ""))
+		return m, tea.Quit
+	}
+	return m, cmd
+}
+
+func (m *LaunchingNewMinitiaLoading) View() string {
+	// TODO: Terminal state
 	return m.state.weave.Render() + "\n" + m.loading.View()
 }
