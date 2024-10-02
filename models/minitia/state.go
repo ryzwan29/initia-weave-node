@@ -2,22 +2,19 @@ package minitia
 
 import "github.com/initia-labs/weave/types"
 
-type GenesisAccount struct {
-	address string
-	balance string
-}
-
 type LaunchState struct {
 	weave              types.WeaveState
 	existingMinitiaApp bool
-	l1Network          string
+	l1ChainId          string
+	l1RPC              string
 	vmType             string
 	minitiadVersion    string
 	minitiadEndpoint   string
 	chainId            string
 	gasDenom           string
 	moniker            string
-	genesisAccounts    []GenesisAccount
+	enableOracle       bool
+	genesisAccounts    GenesisAccounts
 
 	opBridgeSubmissionInterval       string
 	opBridgeOutputFinalizationPeriod string
@@ -29,6 +26,12 @@ type LaunchState struct {
 	systemKeyOutputSubmitterMnemonic string
 	systemKeyBatchSubmitterMnemonic  string
 	systemKeyChallengerMnemonic      string
+
+	systemKeyOperatorAddress        string
+	systemKeyBridgeExecutorAddress  string
+	systemKeyOutputSubmitterAddress string
+	systemKeyBatchSubmitterAddress  string
+	systemKeyChallengerAddress      string
 
 	systemKeyL1OperatorBalance        string
 	systemKeyL1BridgeExecutorBalance  string
@@ -54,4 +57,30 @@ func NewLaunchState() *LaunchState {
 	return &LaunchState{
 		weave: types.NewWeaveState(),
 	}
+}
+
+func (ls *LaunchState) FinalizeGenesisAccounts() {
+	ls.genesisAccounts = append(
+		ls.genesisAccounts,
+		GenesisAccount{
+			Address: ls.systemKeyOperatorAddress,
+			Coins:   ls.systemKeyL2OperatorBalance,
+		},
+		GenesisAccount{
+			Address: ls.systemKeyBridgeExecutorAddress,
+			Coins:   ls.systemKeyL2BridgeExecutorBalance,
+		},
+		GenesisAccount{
+			Address: ls.systemKeyOutputSubmitterAddress,
+			Coins:   ls.systemKeyL2OutputSubmitterBalance,
+		},
+		GenesisAccount{
+			Address: ls.systemKeyBatchSubmitterAddress,
+			Coins:   ls.systemKeyL2BatchSubmitterBalance,
+		},
+		GenesisAccount{
+			Address: ls.systemKeyChallengerAddress,
+			Coins:   ls.systemKeyL2ChallengerBalance,
+		},
+	)
 }

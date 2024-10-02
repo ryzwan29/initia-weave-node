@@ -8,4 +8,6 @@ const (
 	OutputSubmitterKeyName string = "weave.OutputSubmitter"
 	BatchSubmitterKeyName  string = "weave.BatchSubmitter"
 	ChallengerKeyName      string = "weave.Challenger"
+
+	DefaultL1GasPrices string = "0.015uinit"
 )

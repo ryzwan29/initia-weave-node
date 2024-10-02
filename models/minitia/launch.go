@@ -1,6 +1,7 @@
 package minitia
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -8,7 +9,6 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
-
 	"github.com/initia-labs/weave/styles"
 	"github.com/initia-labs/weave/utils"
 )
@@ -149,7 +149,9 @@ func (m *NetworkSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	selected, cmd := m.Select(msg)
 	if selected != nil {
 		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"Initia L1 network"}, string(*selected)))
-		m.state.l1Network = string(*selected)
+		network := utils.TransformFirstWordUpperCase(string(*selected))
+		m.state.l1ChainId = utils.GetConfig(fmt.Sprintf("constants.chain_id.%s", network)).(string)
+		m.state.l1RPC = utils.GetConfig(fmt.Sprintf("constants.endpoints.%s.rpc", network)).(string)
 		return NewVMTypeSelect(m.state), nil
 	}
 
@@ -390,7 +392,7 @@ func NewOpBridgeSubmissionIntervalInput(state *LaunchState) *OpBridgeSubmissionI
 	model := &OpBridgeSubmissionIntervalInput{
 		TextInput: utils.NewTextInput(),
 		state:     state,
-		question:  "Please specify OP bridge config: Submission Interval (format m, h or d - ex. 1m, 23h, 7d)",
+		question:  "Please specify OP bridge config: Submission Interval (format s, m or h - ex. 30s, 5m, 12h)",
 	}
 	model.WithPlaceholder("Press tab to use “1m”")
 	model.WithDefaultValue("1m")
@@ -430,10 +432,10 @@ func NewOpBridgeOutputFinalizationPeriodInput(state *LaunchState) *OpBridgeOutpu
 	model := &OpBridgeOutputFinalizationPeriodInput{
 		TextInput: utils.NewTextInput(),
 		state:     state,
-		question:  "Please specify OP bridge config: Output Finalization Period (format m, h or d - ex. 1m, 23h, 7d)",
+		question:  "Please specify OP bridge config: Output Finalization Period (format s, m or h - ex. 30s, 5m, 12h)",
 	}
-	model.WithPlaceholder("Press tab to use “7d”")
-	model.WithDefaultValue("7d")
+	model.WithPlaceholder("Press tab to use “24h”")
+	model.WithDefaultValue("24h")
 	return model
 }
 
@@ -497,9 +499,9 @@ func (m *OpBridgeBatchSubmissionTargetSelect) Init() tea.Cmd {
 func (m *OpBridgeBatchSubmissionTargetSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	selected, cmd := m.Select(msg)
 	if selected != nil {
-		m.state.opBridgeBatchSubmissionTarget = string(*selected)
+		m.state.opBridgeBatchSubmissionTarget = utils.TransformFirstWordUpperCase(string(*selected))
 		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"Batch Submission Target"}, string(*selected)))
-		return NewSystemKeysSelect(m.state), nil
+		return NewOracleEnableSelect(m.state), nil
 	}
 
 	return m, cmd
@@ -509,6 +511,61 @@ func (m *OpBridgeBatchSubmissionTargetSelect) View() string {
 	return m.state.weave.Render() + styles.RenderPrompt(
 		m.GetQuestion(),
 		[]string{"Batch Submission Target"},
+		styles.Question,
+	) + m.Selector.View()
+}
+
+type OracleEnableSelect struct {
+	utils.Selector[OracleEnableOption]
+	state    *LaunchState
+	question string
+}
+
+type OracleEnableOption string
+
+const (
+	Enable  OracleEnableOption = "Enable"
+	Disable OracleEnableOption = "Disable"
+)
+
+func NewOracleEnableSelect(state *LaunchState) *OracleEnableSelect {
+	return &OracleEnableSelect{
+		Selector: utils.Selector[OracleEnableOption]{
+			Options: []OracleEnableOption{
+				Enable,
+				Disable,
+			},
+		},
+		state:    state,
+		question: "Would you like to enable the oracle?",
+	}
+}
+
+func (m *OracleEnableSelect) GetQuestion() string {
+	return m.question
+}
+
+func (m *OracleEnableSelect) Init() tea.Cmd {
+	return nil
+}
+
+func (m *OracleEnableSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	selected, cmd := m.Select(msg)
+	if selected != nil {
+		if *selected == Enable {
+			m.state.enableOracle = true
+		}
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"oracle"}, string(*selected)))
+		return NewSystemKeysSelect(m.state), nil
+	}
+
+	return m, cmd
+}
+
+func (m *OracleEnableSelect) View() string {
+	return m.state.weave.Render() + styles.RenderPrompt(
+		m.GetQuestion(),
+		[]string{"oracle"},
 		styles.Question,
 	) + m.Selector.View()
 }
@@ -896,6 +953,7 @@ func (m *SystemKeyL1OperatorBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cm
 		m.state.systemKeyL1OperatorBalance = input.Text
 		m.state.weave.PushPreviousResponse(fmt.Sprintf("\n%s\n", styles.RenderPrompt("Please fund the following accounts on L1:\n  • Operator\n  • Bridge Executor\n  • Output Submitter\n  • Batch Submitter\n  • Challenger\n", []string{"L1"}, styles.Information)))
 		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Operator", "L1"}, input.Text))
+		// TODO: Send to gas station tx bank send confirmation model?
 		return NewSystemKeyL1BridgeExecutorBalanceInput(m.state), nil
 	}
 	m.TextInput = input
@@ -1333,7 +1391,7 @@ func (m *AddGenesisAccountsSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, question, []string{highlight}, string(Yes)))
 				currentResponse := "  List of the Genesis Accounts\n"
 				for _, account := range m.state.genesisAccounts {
-					currentResponse += styles.Text(fmt.Sprintf("  %s\tInitial Balance: %s\n", account.address, account.balance), styles.Gray)
+					currentResponse += styles.Text(fmt.Sprintf("  %s\tInitial Balance: %s\n", account.Address, account.Coins), styles.Gray)
 				}
 				m.state.weave.PushPreviousResponse(currentResponse)
 			} else {
@@ -1429,8 +1487,8 @@ func (m *GenesisAccountsBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
 		m.state.genesisAccounts = append(m.state.genesisAccounts, GenesisAccount{
-			address: m.address,
-			balance: input.Text,
+			Address: m.address,
+			Coins:   input.Text,
 		})
 		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{m.address}, input.Text))
 		return NewAddGenesisAccountsSelect(true, m.state), nil
@@ -1510,6 +1568,7 @@ func (m *DownloadMinitiaBinaryLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) 
 			model := NewGenerateSystemKeysLoading(m.state)
 			return model, model.Init()
 		}
+		// TODO: Should be else and recover keys
 		model := NewLaunchingNewMinitiaLoading(m.state)
 		return model, model.Init()
 	}
@@ -1546,38 +1605,70 @@ func generateSystemKeys(state *LaunchState) tea.Cmd {
 
 		res, err := utils.AddOrReplace(minitiaBinary, OperatorKeyName)
 		if err != nil {
-			return utils.EndLoading{}
+			return utils.ErrorLoading{Err: err}
 		}
 		operatorKey := utils.MustUnmarshalKeyInfo(res)
 		state.systemKeyOperatorMnemonic = operatorKey.Mnemonic
+		state.systemKeyOperatorAddress = operatorKey.Address
 
 		res, err = utils.AddOrReplace(minitiaBinary, BridgeExecutorKeyName)
 		if err != nil {
-			return utils.EndLoading{}
+			return utils.ErrorLoading{Err: err}
 		}
 		bridgeExecutorKey := utils.MustUnmarshalKeyInfo(res)
 		state.systemKeyBridgeExecutorMnemonic = bridgeExecutorKey.Mnemonic
+		state.systemKeyBridgeExecutorAddress = bridgeExecutorKey.Address
 
 		res, err = utils.AddOrReplace(minitiaBinary, OutputSubmitterKeyName)
 		if err != nil {
-			return utils.EndLoading{}
+			return utils.ErrorLoading{Err: err}
 		}
 		outputSubmitterKey := utils.MustUnmarshalKeyInfo(res)
 		state.systemKeyOutputSubmitterMnemonic = outputSubmitterKey.Mnemonic
+		state.systemKeyOutputSubmitterAddress = outputSubmitterKey.Address
 
 		res, err = utils.AddOrReplace(minitiaBinary, BatchSubmitterKeyName)
 		if err != nil {
-			return utils.EndLoading{}
+			return utils.ErrorLoading{Err: err}
 		}
 		batchSubmitterKey := utils.MustUnmarshalKeyInfo(res)
 		state.systemKeyBatchSubmitterMnemonic = batchSubmitterKey.Mnemonic
+		state.systemKeyBatchSubmitterAddress = batchSubmitterKey.Address
 
 		res, err = utils.AddOrReplace(minitiaBinary, ChallengerKeyName)
 		if err != nil {
-			return utils.EndLoading{}
+			return utils.ErrorLoading{Err: err}
 		}
 		challengerKey := utils.MustUnmarshalKeyInfo(res)
 		state.systemKeyChallengerMnemonic = challengerKey.Mnemonic
+		state.systemKeyChallengerAddress = challengerKey.Address
+
+		state.FinalizeGenesisAccounts()
+
+		err = utils.DeleteKey(minitiaBinary, OperatorKeyName)
+		if err != nil {
+			return utils.ErrorLoading{Err: err}
+		}
+
+		err = utils.DeleteKey(minitiaBinary, BridgeExecutorKeyName)
+		if err != nil {
+			return utils.ErrorLoading{Err: err}
+		}
+
+		err = utils.DeleteKey(minitiaBinary, OutputSubmitterKeyName)
+		if err != nil {
+			return utils.ErrorLoading{Err: err}
+		}
+
+		err = utils.DeleteKey(minitiaBinary, BatchSubmitterKeyName)
+		if err != nil {
+			return utils.ErrorLoading{Err: err}
+		}
+
+		err = utils.DeleteKey(minitiaBinary, ChallengerKeyName)
+		if err != nil {
+			return utils.ErrorLoading{Err: err}
+		}
 
 		time.Sleep(1500 * time.Millisecond)
 
@@ -1671,7 +1762,73 @@ func (m *LaunchingNewMinitiaLoading) Init() tea.Cmd {
 
 func launchingMinitia(state *LaunchState) tea.Cmd {
 	return func() tea.Msg {
-		// TODO: Implement this
+		userHome, err := os.UserHomeDir()
+		if err != nil {
+			panic(fmt.Sprintf("failed to get user home directory: %v", err))
+		}
+
+		config := &Config{
+			L1Config: &L1Config{
+				ChainID:   state.l1ChainId,
+				RpcUrl:    state.l1RPC,
+				GasPrices: DefaultL1GasPrices,
+			},
+			L2Config: &L2Config{
+				ChainID: state.chainId,
+				Denom:   state.gasDenom,
+				Moniker: state.moniker,
+			},
+			OpBridge: &OpBridge{
+				OutputSubmissionInterval:    state.opBridgeSubmissionInterval,
+				OutputFinalizationPeriod:    state.opBridgeOutputFinalizationPeriod,
+				OutputSubmissionStartHeight: 1,
+				BatchSubmissionTarget:       state.opBridgeBatchSubmissionTarget,
+				EnableOracle:                state.enableOracle,
+			},
+			SystemKeys: &SystemKeys{
+				Validator: NewSystemAccount(
+					state.systemKeyOperatorMnemonic,
+					state.systemKeyOperatorAddress,
+					state.systemKeyL1OperatorBalance,
+					state.systemKeyL2OperatorBalance,
+				),
+				BridgeExecutor: NewSystemAccount(
+					state.systemKeyBridgeExecutorMnemonic,
+					state.systemKeyBridgeExecutorAddress,
+					state.systemKeyL1BridgeExecutorBalance,
+					state.systemKeyL2BridgeExecutorBalance,
+				),
+				OutputSubmitter: NewSystemAccount(
+					state.systemKeyOutputSubmitterMnemonic,
+					state.systemKeyOutputSubmitterAddress,
+					state.systemKeyL1OutputSubmitterBalance,
+					state.systemKeyL2OutputSubmitterBalance,
+				),
+				BatchSubmitter: NewSystemAccount(
+					state.systemKeyBatchSubmitterMnemonic,
+					state.systemKeyBatchSubmitterAddress,
+					state.systemKeyL1BatchSubmitterBalance,
+					state.systemKeyL2BatchSubmitterBalance,
+				),
+				Challenger: NewSystemAccount(
+					state.systemKeyChallengerMnemonic,
+					state.systemKeyChallengerAddress,
+					state.systemKeyL1ChallengerBalance,
+					state.systemKeyL2ChallengerBalance,
+				),
+			},
+			GenesisAccounts: &state.genesisAccounts,
+		}
+
+		configBz, err := json.MarshalIndent(config, "", " ")
+		if err != nil {
+			return utils.ErrorLoading{Err: err}
+		}
+
+		if err = os.WriteFile(filepath.Join(userHome, utils.WeaveDataDirectory, LaunchConfigFilename), configBz, 0600); err != nil {
+			return utils.ErrorLoading{Err: err}
+		}
+
 		time.Sleep(1500 * time.Millisecond)
 
 		return utils.EndLoading{}
