@@ -1469,7 +1469,7 @@ func downloadMinitiaApp(state *LaunchState) tea.Cmd {
 		weaveDataPath := filepath.Join(userHome, utils.WeaveDataDirectory)
 		tarballPath := filepath.Join(weaveDataPath, "minitia.tar.gz")
 		extractedPath := filepath.Join(weaveDataPath, fmt.Sprintf("mini%s@%s", strings.ToLower(state.vmType), state.minitiadVersion))
-		binaryPath := filepath.Join(extractedPath, "minitiad")
+		binaryPath := filepath.Join(extractedPath, AppName)
 
 		if _, err := os.Stat(binaryPath); os.IsNotExist(err) {
 			if _, err := os.Stat(extractedPath); os.IsNotExist(err) {
@@ -1539,35 +1539,41 @@ func (m *GenerateSystemKeysLoading) Init() tea.Cmd {
 
 func generateSystemKeys(state *LaunchState) tea.Cmd {
 	return func() tea.Msg {
-		res, err := utils.AddOrReplace(AppName, OperatorKeyName)
+		userHome, err := os.UserHomeDir()
+		if err != nil {
+			panic(fmt.Sprintf("failed to get user home directory: %v", err))
+		}
+		minitiaBinary := filepath.Join(userHome, utils.WeaveDataDirectory, fmt.Sprintf("mini%s@%s", strings.ToLower(state.vmType), state.minitiadVersion), AppName)
+
+		res, err := utils.AddOrReplace(minitiaBinary, OperatorKeyName)
 		if err != nil {
 			return utils.EndLoading{}
 		}
 		operatorKey := utils.MustUnmarshalKeyInfo(res)
 		state.systemKeyOperatorMnemonic = operatorKey.Mnemonic
 
-		res, err = utils.AddOrReplace(AppName, BridgeExecutorKeyName)
+		res, err = utils.AddOrReplace(minitiaBinary, BridgeExecutorKeyName)
 		if err != nil {
 			return utils.EndLoading{}
 		}
 		bridgeExecutorKey := utils.MustUnmarshalKeyInfo(res)
 		state.systemKeyBridgeExecutorMnemonic = bridgeExecutorKey.Mnemonic
 
-		res, err = utils.AddOrReplace(AppName, OutputSubmitterKeyName)
+		res, err = utils.AddOrReplace(minitiaBinary, OutputSubmitterKeyName)
 		if err != nil {
 			return utils.EndLoading{}
 		}
 		outputSubmitterKey := utils.MustUnmarshalKeyInfo(res)
 		state.systemKeyOutputSubmitterMnemonic = outputSubmitterKey.Mnemonic
 
-		res, err = utils.AddOrReplace(AppName, BatchSubmitterKeyName)
+		res, err = utils.AddOrReplace(minitiaBinary, BatchSubmitterKeyName)
 		if err != nil {
 			return utils.EndLoading{}
 		}
 		batchSubmitterKey := utils.MustUnmarshalKeyInfo(res)
 		state.systemKeyBatchSubmitterMnemonic = batchSubmitterKey.Mnemonic
 
-		res, err = utils.AddOrReplace(AppName, ChallengerKeyName)
+		res, err = utils.AddOrReplace(minitiaBinary, ChallengerKeyName)
 		if err != nil {
 			return utils.EndLoading{}
 		}
