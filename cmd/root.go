@@ -33,5 +33,8 @@ func Execute() error {
 		rootCmd.AddCommand(MinitiaCommand())
 	}
 
+	if flags.IsEnabled(flags.OPInitBots) {
+		rootCmd.AddCommand(OPInitBotsCommand())
+	}
 	return rootCmd.ExecuteContext(context.Background())
 }
