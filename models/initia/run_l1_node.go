@@ -748,22 +748,6 @@ func getBinaryPath(extractedPath string, version string) string {
 	}
 }
 
-// Set environment variables for the library paths based on the OS
-func setLibraryPaths(binaryDir string) {
-	switch runtime.GOOS {
-	case "darwin":
-		if err := os.Setenv("DYLD_LIBRARY_PATH", binaryDir); err != nil {
-			panic(fmt.Sprint("failed to set DYLD_LIBRARY_PATH", err))
-		}
-	case "linux":
-		if err := os.Setenv("LD_LIBRARY_PATH", binaryDir); err != nil {
-			panic(fmt.Sprint("failed to set LD_LIBRARY_PATH", err))
-		}
-	default:
-		panic(fmt.Sprint("unsupported OS for setting library paths", fmt.Errorf(runtime.GOOS)))
-	}
-}
-
 func initializeApp(state *RunL1NodeState) tea.Cmd {
 	return func() tea.Msg {
 		userHome, err := os.UserHomeDir()
@@ -829,7 +813,7 @@ func initializeApp(state *RunL1NodeState) tea.Cmd {
 			}
 		}
 
-		setLibraryPaths(filepath.Dir(binaryPath))
+		utils.SetLibraryPaths(filepath.Dir(binaryPath))
 
 		initiaHome := filepath.Join(userHome, utils.InitiaDirectory)
 		if _, err := os.Stat(initiaHome); os.IsNotExist(err) {

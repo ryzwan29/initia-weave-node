@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 )
 
 // FileOrFolderExists checks if a file or folder exists at the given path.
@@ -93,4 +94,19 @@ func ExtractTarGz(src string, dest string) error {
 		}
 	}
 	return nil
+}
+
+func SetLibraryPaths(binaryDir string) {
+	switch runtime.GOOS {
+	case "darwin":
+		if err := os.Setenv("DYLD_LIBRARY_PATH", binaryDir); err != nil {
+			panic(fmt.Sprint("failed to set DYLD_LIBRARY_PATH", err))
+		}
+	case "linux":
+		if err := os.Setenv("LD_LIBRARY_PATH", binaryDir); err != nil {
+			panic(fmt.Sprint("failed to set LD_LIBRARY_PATH", err))
+		}
+	default:
+		panic(fmt.Sprint("unsupported OS for setting library paths", fmt.Errorf(runtime.GOOS)))
+	}
 }

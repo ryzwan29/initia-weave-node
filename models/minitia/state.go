@@ -42,7 +42,8 @@ type LaunchState struct {
 	systemKeyL2BatchSubmitterBalance  string
 	systemKeyL2ChallengerBalance      string
 
-	gasStationExist bool
+	gasStationExist     bool
+	downloadedNewBinary bool
 
 	preGenesisAccountsResponsesCount int
 	preL1BalancesResponsesCount      int

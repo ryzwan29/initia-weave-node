@@ -1432,11 +1432,7 @@ func (m *SystemKeyL2ChallengerBalanceInput) Update(msg tea.Msg) (tea.Model, tea.
 		m.state.weave.PopPreviousResponseAtIndex(m.state.preL2BalancesResponsesCount)
 		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Challenger", "L2"}, input.Text))
 
-		if m.state.generateKeys {
-			model := NewGenerateSystemKeysLoading(m.state)
-			return model, model.Init()
-		}
-		model := NewLaunchingNewMinitiaLoading(m.state)
+		model := NewDownloadMinitiaBinaryLoading(m.state)
 		return model, model.Init()
 	}
 	m.TextInput = input
@@ -1446,6 +1442,83 @@ func (m *SystemKeyL2ChallengerBalanceInput) Update(msg tea.Msg) (tea.Model, tea.
 func (m *SystemKeyL2ChallengerBalanceInput) View() string {
 	return m.state.weave.Render() +
 		styles.RenderPrompt(m.GetQuestion(), []string{"Challenger", "L2"}, styles.Question) + m.TextInput.View()
+}
+
+type DownloadMinitiaBinaryLoading struct {
+	state   *LaunchState
+	loading utils.Loading
+}
+
+func NewDownloadMinitiaBinaryLoading(state *LaunchState) *DownloadMinitiaBinaryLoading {
+	return &DownloadMinitiaBinaryLoading{
+		state:   state,
+		loading: utils.NewLoading(fmt.Sprintf("Downloading Mini%s binary <%s>", strings.ToLower(state.vmType), state.minitiadVersion), downloadMinitiaApp(state)),
+	}
+}
+
+func (m *DownloadMinitiaBinaryLoading) Init() tea.Cmd {
+	return m.loading.Init()
+}
+
+func downloadMinitiaApp(state *LaunchState) tea.Cmd {
+	return func() tea.Msg {
+		userHome, err := os.UserHomeDir()
+		if err != nil {
+			panic(fmt.Sprintf("failed to get user home directory: %v", err))
+		}
+		weaveDataPath := filepath.Join(userHome, utils.WeaveDataDirectory)
+		tarballPath := filepath.Join(weaveDataPath, "minitia.tar.gz")
+		extractedPath := filepath.Join(weaveDataPath, fmt.Sprintf("mini%s@%s", strings.ToLower(state.vmType), state.minitiadVersion))
+		binaryPath := filepath.Join(extractedPath, "minitiad")
+
+		if _, err := os.Stat(binaryPath); os.IsNotExist(err) {
+			if _, err := os.Stat(extractedPath); os.IsNotExist(err) {
+				err := os.MkdirAll(extractedPath, os.ModePerm)
+				if err != nil {
+					panic(fmt.Sprintf("failed to create weave data directory: %v", err))
+				}
+			}
+
+			if err = utils.DownloadAndExtractTarGz(state.minitiadEndpoint, tarballPath, extractedPath); err != nil {
+				panic(fmt.Sprintf("failed to download and extract binary: %v", err))
+			}
+
+			err = os.Chmod(binaryPath, 0755)
+			if err != nil {
+				panic(fmt.Sprintf("failed to set permissions for binary: %v", err))
+			}
+
+			state.downloadedNewBinary = true
+		}
+
+		if state.vmType == string(Move) || state.vmType == string(Wasm) {
+			utils.SetLibraryPaths(filepath.Dir(binaryPath))
+		}
+
+		return utils.EndLoading{}
+	}
+}
+
+func (m *DownloadMinitiaBinaryLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	loader, cmd := m.loading.Update(msg)
+	m.loading = loader
+	if m.loading.Completing {
+		if m.state.downloadedNewBinary {
+			m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, fmt.Sprintf("Mini%s binary has been successfully downloaded.", strings.ToLower(m.state.vmType)), []string{}, ""))
+		}
+
+		if m.state.generateKeys {
+			model := NewGenerateSystemKeysLoading(m.state)
+			return model, model.Init()
+		}
+		model := NewLaunchingNewMinitiaLoading(m.state)
+		return model, model.Init()
+	}
+	return m, cmd
+}
+
+func (m *DownloadMinitiaBinaryLoading) View() string {
+	return m.state.weave.Render() + "\n" + m.loading.View()
 }
 
 type GenerateSystemKeysLoading struct {
