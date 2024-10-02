@@ -10,7 +10,15 @@ import (
 
 func TestSetupBotCheckbox_KeyNavigationAndSelection(t *testing.T) {
 	// Step 1: Initialize state and SetupBotCheckbox
-	state := NewOPInitBotsState()
+	state := &OPInitBotsState{
+		BotInfos: []BotInfo{
+			{BotName: "TestBot", IsGenerateKey: false, IsSetup: false},
+			{BotName: "TestBot", IsGenerateKey: false, IsSetup: false},
+			{BotName: "TestBot", IsGenerateKey: false, IsSetup: false},
+			{BotName: "TestBot", IsGenerateKey: false, IsSetup: false},
+		},
+	}
+
 	setupBotCheckbox := NewSetupBotCheckbox(state)
 
 	// Step 2: Simulate navigating and selecting bots
