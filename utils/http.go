@@ -69,16 +69,16 @@ func makeGetRequest(baseURL, additionalPath string, params map[string]string, re
 	return nil
 }
 
-type InitiaRelease struct {
+type BinaryRelease struct {
 	TagName string `json:"tag_name"`
 	Assets  []struct {
 		BrowserDownloadURL string `json:"browser_download_url"`
 	} `json:"assets"`
 }
 
-type InitiaVersionWithDownloadURL map[string]string
+type BinaryVersionWithDownloadURL map[string]string
 
-func ListInitiaReleases(url string) InitiaVersionWithDownloadURL {
+func ListBinaryReleases(url string) BinaryVersionWithDownloadURL {
 	goos := runtime.GOOS
 	goarch := runtime.GOARCH
 
@@ -115,13 +115,14 @@ func ListInitiaReleases(url string) InitiaVersionWithDownloadURL {
 		panic(fmt.Errorf("failed to read response body: %v", err))
 	}
 
-	var releases []InitiaRelease
+	var releases []BinaryRelease
 	if err := json.Unmarshal(body, &releases); err != nil {
 		panic(fmt.Errorf("failed to unmarshal JSON: %v", err))
 	}
 
 	searchString := fmt.Sprintf("%s_%s.tar.gz", os, arch)
-	versions := make(InitiaVersionWithDownloadURL)
+
+	versions := make(BinaryVersionWithDownloadURL)
 
 	for _, release := range releases {
 		for _, asset := range release.Assets {
@@ -135,7 +136,7 @@ func ListInitiaReleases(url string) InitiaVersionWithDownloadURL {
 }
 
 // sortVersions sorts the versions based on semantic versioning, including pre-release handling
-func SortVersions(versions InitiaVersionWithDownloadURL) []string {
+func SortVersions(versions BinaryVersionWithDownloadURL) []string {
 	var versionTags []string
 	for tag := range versions {
 		versionTags = append(versionTags, tag)
@@ -181,7 +182,7 @@ func compareSemVer(v1, v2 string) bool {
 	return v1Pre > v2Pre
 }
 
-// splitVersion separates the main version (e.g., "0.4.11") from the pre-release (e.g., "initiation.1")
+// splitVersion separates the main version (e.g., "0.4.11") from the pre-release (e.g., "Binarytion.1")
 func splitVersion(version string) (mainVersion, preRelease string) {
 	if strings.Contains(version, "-") {
 		parts := strings.SplitN(version, "-", 2)

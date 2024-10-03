@@ -91,12 +91,12 @@ func (m *RunL1NodeNetworkSelect) View() string {
 type RunL1NodeVersionSelect struct {
 	utils.Selector[string]
 	state    *RunL1NodeState
-	versions utils.InitiaVersionWithDownloadURL
+	versions utils.BinaryVersionWithDownloadURL
 	question string
 }
 
 func NewRunL1NodeVersionSelect(state *RunL1NodeState) *RunL1NodeVersionSelect {
-	versions := utils.ListInitiaReleases("https://api.github.com/repos/initia-labs/initia/releases")
+	versions := utils.ListBinaryReleases("https://api.github.com/repos/initia-labs/initia/releases")
 	return &RunL1NodeVersionSelect{
 		Selector: utils.Selector[string]{
 			Options: utils.SortVersions(versions),

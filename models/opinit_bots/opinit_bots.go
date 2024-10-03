@@ -10,6 +10,91 @@ import (
 	"github.com/initia-labs/weave/utils"
 )
 
+type OPInitBotVersionSelector struct {
+	utils.Selector[string]
+	state    *OPInitBotsState
+	question string
+	versions utils.BinaryVersionWithDownloadURL
+}
+
+func NewOPInitBotVersionSelector(state *OPInitBotsState, versions utils.BinaryVersionWithDownloadURL) *OPInitBotVersionSelector {
+	return &OPInitBotVersionSelector{
+		Selector: utils.Selector[string]{
+			Options: utils.SortVersions(versions),
+		},
+		state:    state,
+		question: "Which OPInit bots version would you like to use?",
+	}
+}
+
+func (m *OPInitBotVersionSelector) GetQuestion() string {
+	return m.question
+}
+
+func (m *OPInitBotVersionSelector) Init() tea.Cmd {
+	return nil
+}
+
+func (m *OPInitBotVersionSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	selected, cmd := m.Select(msg)
+	if selected != nil {
+		m.state.OPInitBotEndpoint = *selected
+		m.state.OPInitBotVersion = m.versions[*selected]
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"OPInit bots"}, *selected))
+		return NewSetupOPInitBotKeySelector(m.state), nil
+	}
+
+	return m, cmd
+}
+
+func (m *OPInitBotVersionSelector) View() string {
+	return styles.RenderPrompt(m.GetQuestion(), []string{"OPInit bots"}, styles.Question) + m.Selector.View()
+}
+
+type SetupOPInitBotKeySelector struct {
+	utils.Selector[string]
+	state    *OPInitBotsState
+	question string
+}
+
+func NewSetupOPInitBotKeySelector(state *OPInitBotsState) *SetupOPInitBotKeySelector {
+	return &SetupOPInitBotKeySelector{
+		state: state,
+		Selector: utils.Selector[string]{
+			Options: []string{
+				"Yes",
+				"No",
+			},
+		},
+		question: "Would you like to set up OPInit bot keys?",
+	}
+}
+
+func (m *SetupOPInitBotKeySelector) GetQuestion() string {
+	return m.question
+}
+
+func (m *SetupOPInitBotKeySelector) Init() tea.Cmd {
+	return nil
+}
+
+func (m *SetupOPInitBotKeySelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	selected, cmd := m.Select(msg)
+	if selected != nil {
+		switch *selected {
+		case "Yes":
+			return NewSetupBotCheckbox(m.state), nil
+		case "No":
+			return NewSetupOPInitBots(m.state), nil
+		}
+	}
+	return m, cmd
+}
+
+func (m *SetupOPInitBotKeySelector) View() string {
+	return styles.RenderPrompt(m.GetQuestion(), []string{}, styles.Question) + m.Selector.View()
+}
+
 func NextUpdateOpinitBotKey(state *OPInitBotsState) (tea.Model, tea.Cmd) {
 	for idx := 0; idx < len(state.BotInfos); idx++ {
 		if state.BotInfos[idx].IsSetup {

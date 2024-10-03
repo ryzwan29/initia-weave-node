@@ -225,12 +225,12 @@ func (m *VMTypeSelect) View() string {
 type VersionSelect struct {
 	utils.Selector[string]
 	state    *LaunchState
-	versions utils.InitiaVersionWithDownloadURL
+	versions utils.BinaryVersionWithDownloadURL
 	question string
 }
 
 func NewRunL1NodeVersionSelect(state *LaunchState) *VersionSelect {
-	versions := utils.ListInitiaReleases(fmt.Sprintf("https://api.github.com/repos/initia-labs/mini%s/releases", strings.ToLower(state.vmType)))
+	versions := utils.ListBinaryReleases(fmt.Sprintf("https://api.github.com/repos/initia-labs/mini%s/releases", strings.ToLower(state.vmType)))
 	return &VersionSelect{
 		Selector: utils.Selector[string]{
 			Options: utils.SortVersions(versions),

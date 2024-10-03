@@ -77,7 +77,7 @@ func TestRunL1NodeVersionSelect(t *testing.T) {
 	mockState := &RunL1NodeState{
 		moniker: "",
 	}
-	versions := make(utils.InitiaVersionWithDownloadURL)
+	versions := make(utils.BinaryVersionWithDownloadURL)
 	versions["v0.0.1"] = "url1"
 	versions["v0.0.2"] = "url2"
 
