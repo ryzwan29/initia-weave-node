@@ -208,7 +208,7 @@ func (m *VMTypeSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if selected != nil {
 		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"VM type"}, string(*selected)))
 		m.state.vmType = string(*selected)
-		return NewRunL1NodeVersionSelect(m.state), nil
+		return NewVersionSelect(m.state), nil
 	}
 
 	return m, cmd
@@ -229,7 +229,7 @@ type VersionSelect struct {
 	question string
 }
 
-func NewRunL1NodeVersionSelect(state *LaunchState) *VersionSelect {
+func NewVersionSelect(state *LaunchState) *VersionSelect {
 	versions := utils.ListBinaryReleases(fmt.Sprintf("https://api.github.com/repos/initia-labs/mini%s/releases", strings.ToLower(state.vmType)))
 	return &VersionSelect{
 		Selector: utils.Selector[string]{
@@ -1569,8 +1569,7 @@ func (m *DownloadMinitiaBinaryLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) 
 			return model, model.Init()
 		}
 		// TODO: Should be else and recover keys
-		model := NewLaunchingNewMinitiaLoading(m.state)
-		return model, model.Init()
+		return NewFundGasStationConfirmationInput(m.state), nil
 	}
 	return m, cmd
 }
@@ -1718,8 +1717,7 @@ func (m *SystemKeysMnemonicDisplayInput) Init() tea.Cmd {
 func (m *SystemKeysMnemonicDisplayInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-		model := NewLaunchingNewMinitiaLoading(m.state)
-		return model, model.Init()
+		return NewFundGasStationConfirmationInput(m.state), nil
 	}
 	m.TextInput = input
 	return m, cmd
@@ -1742,6 +1740,64 @@ func (m *SystemKeysMnemonicDisplayInput) View() string {
 func renderMnemonic(keyName, mnemonic string) string {
 	return styles.BoldText("Key Name: ", styles.Ivory) + keyName + "\n" +
 		styles.BoldText("Mnemonic:", styles.Ivory) + "\n" + mnemonic + "\n\n"
+}
+
+type FundGasStationConfirmationInput struct {
+	utils.TextInput
+	state    *LaunchState
+	question string
+}
+
+func NewFundGasStationConfirmationInput(state *LaunchState) *FundGasStationConfirmationInput {
+	model := &FundGasStationConfirmationInput{
+		TextInput: utils.NewTextInput(),
+		state:     state,
+		question:  "Confirm to proceed with signing and broadcasting the following transactions? [y]:",
+	}
+	model.WithPlaceholder("Type `y` to confirm")
+	model.WithValidatorFn(utils.ValidateExactString("y"))
+	return model
+}
+
+func (m *FundGasStationConfirmationInput) GetQuestion() string {
+	return m.question
+}
+
+func (m *FundGasStationConfirmationInput) Init() tea.Cmd {
+	return nil
+}
+
+func (m *FundGasStationConfirmationInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	input, cmd, done := m.TextInput.Update(msg)
+	if done {
+		model := NewLaunchingNewMinitiaLoading(m.state)
+		return model, model.Init()
+	}
+	m.TextInput = input
+	return m, cmd
+}
+
+func (m *FundGasStationConfirmationInput) View() string {
+	formatSendMsg := func(coins, keyName, address string) string {
+		return fmt.Sprintf(
+			"> Send %s to %s %s\n",
+			styles.BoldText(coins, styles.Ivory),
+			styles.BoldText(keyName, styles.Ivory),
+			styles.Text(fmt.Sprintf("(%s)", address), styles.Gray))
+	}
+	return m.state.weave.Render() + "\n" +
+		styles.Text("i ", styles.Yellow) +
+		styles.RenderPrompt(
+			styles.BoldUnderlineText("Weave will now broadcast the following transaction", styles.Yellow),
+			[]string{}, styles.Empty,
+		) + "\n\n" +
+		"Sending tokens from the Gas Station account on L1 ⛽️\n" +
+		formatSendMsg(m.state.systemKeyL1OperatorBalance, "Operator on L1", m.state.systemKeyOperatorAddress) +
+		formatSendMsg(m.state.systemKeyL1BridgeExecutorBalance, "Bridge Executor on L1", m.state.systemKeyBridgeExecutorAddress) +
+		formatSendMsg(m.state.systemKeyL1OutputSubmitterBalance, "Output Submitter on L1", m.state.systemKeyOutputSubmitterAddress) +
+		formatSendMsg(m.state.systemKeyL1BatchSubmitterBalance, "Batch Submitter on L1", m.state.systemKeyBatchSubmitterAddress) +
+		formatSendMsg(m.state.systemKeyL1ChallengerBalance, "Challenger on L1", m.state.systemKeyChallengerAddress) +
+		styles.RenderPrompt(m.GetQuestion(), []string{"`continue`"}, styles.Question) + m.TextInput.View()
 }
 
 type LaunchingNewMinitiaLoading struct {

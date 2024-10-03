@@ -74,7 +74,7 @@ func RecoverKeyFromMnemonic(appName, keyname, mnemonic string) (string, error) {
 	inputBuffer.WriteString(mnemonic + "\n")
 
 	// Command to recover (or replace) the key: initiad keys add <keyname> --recover --keyring-backend test
-	cmd := exec.Command(appName, "keys", "add", keyname, "--recover", "--keyring-backend", "test")
+	cmd := exec.Command(appName, "keys", "add", keyname, "--recover", "--keyring-backend", "test", "--output", "json")
 
 	// Pass the combined confirmation and mnemonic as input to the command
 	cmd.Stdin = &inputBuffer

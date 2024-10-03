@@ -15,4 +15,6 @@ const (
 	RunL1NodeLinuxServiceName  = "initia"
 
 	MinitiaDirectory = ".minitia"
+
+	WeaveGasStationKeyName = "weave.GasStation"
 )

@@ -110,3 +110,27 @@ func SetLibraryPaths(binaryDir string) {
 		panic(fmt.Sprint("unsupported OS for setting library paths", fmt.Errorf(runtime.GOOS)))
 	}
 }
+
+func WriteFile(path, content string) error {
+	file, err := os.Create(path)
+	if err != nil {
+		return fmt.Errorf("failed to create or open file: %v", err)
+	}
+	defer file.Close()
+
+	_, err = file.WriteString(content)
+	if err != nil {
+		return fmt.Errorf("failed to write content to file: %v", err)
+	}
+
+	return nil
+}
+
+func DeleteFile(path string) error {
+	err := os.Remove(path)
+	if err != nil {
+		return fmt.Errorf("failed to delete file: %v", err)
+	}
+
+	return nil
+}

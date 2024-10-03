@@ -9,5 +9,7 @@ const (
 	BatchSubmitterKeyName  string = "weave.BatchSubmitter"
 	ChallengerKeyName      string = "weave.Challenger"
 
+	TmpTxFilename string = "weave.minitia.tx.json"
+
 	DefaultL1GasPrices string = "0.015uinit"
 )

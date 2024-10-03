@@ -49,6 +49,11 @@ release:
 	git push origin $(release_version)
 	gh release create $(release_version) --title "$(release_version)" --notes "Release notes for version $(release_version)"
 
+# Development purpose
+local: build
+	clear
+	./build/weave minitia launch
+
 # Catch-all target
 %:
 	@:
