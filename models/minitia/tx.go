@@ -10,14 +10,14 @@ import (
 )
 
 type L1SystemKeys struct {
-	Operator        GenesisAccount
-	BridgeExecutor  GenesisAccount
-	OutputSubmitter GenesisAccount
-	BatchSubmitter  GenesisAccount
-	Challenger      GenesisAccount
+	Operator        *GenesisAccount
+	BridgeExecutor  *GenesisAccount
+	OutputSubmitter *GenesisAccount
+	BatchSubmitter  *GenesisAccount
+	Challenger      *GenesisAccount
 }
 
-func NewL1SystemKeys(operator, bridgeExecutor, outputSubmitter, batchSubmitter, challenger GenesisAccount) *L1SystemKeys {
+func NewL1SystemKeys(operator, bridgeExecutor, outputSubmitter, batchSubmitter, challenger *GenesisAccount) *L1SystemKeys {
 	return &L1SystemKeys{
 		Operator:        operator,
 		BridgeExecutor:  bridgeExecutor,
@@ -31,7 +31,7 @@ func (lsk *L1SystemKeys) FundAccountsWithGasStation(appName, rpc, chainId string
 	gasStationMnemonic := utils.GetConfig("common.gas_station_mnemonic").(string)
 	rawKey, err := utils.RecoverKeyFromMnemonic(appName, utils.WeaveGasStationKeyName, gasStationMnemonic)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to recover gas station key: %v", err)
 	}
 	defer utils.DeleteKey(appName, utils.WeaveGasStationKeyName)
 
@@ -52,25 +52,25 @@ func (lsk *L1SystemKeys) FundAccountsWithGasStation(appName, rpc, chainId string
 	)
 	userHome, err := os.UserHomeDir()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get user home: %v", err)
 	}
 	rawTxPath := filepath.Join(userHome, utils.WeaveDataDirectory, TmpTxFilename)
 	if err = utils.WriteFile(rawTxPath, rawTxContent); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to write raw tx file: %v", err)
 	}
 	defer utils.DeleteFile(rawTxPath)
 
-	signCmd := exec.Command(appName, "tx", "sign", rawTxPath, "--from", gasStationKey.Name, "--node", rpc,
+	signCmd := exec.Command(appName, "tx", "sign", rawTxPath, "--from", utils.WeaveGasStationKeyName, "--node", rpc,
 		"--chain-id", chainId, "--keyring-backend", "test", "--output-document", rawTxPath)
 	err = signCmd.Run()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to sign transaction: %v", err)
 	}
 
-	broadcastCmd := exec.Command(appName, "tx", "broadcast", rawTxPath, "--node", rpc)
+	broadcastCmd := exec.Command(appName, "tx", "broadcast", rawTxPath, "--node", rpc, "--output", "json")
 	broadcastRes, err := broadcastCmd.CombinedOutput()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to broadcast transaction: %v", err)
 	}
 
 	var txResponse utils.CliTxResponse
@@ -153,10 +153,10 @@ const FundMinitiaAccountsTxInterface = `
       "amount":[
         {
           "denom":"uinit",
-          "amount":"7500"
+          "amount":"12000"
         }
       ],
-      "gas_limit":"500000",
+      "gas_limit":"800000",
       "payer":"",
       "granter":""
     },

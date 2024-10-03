@@ -9,19 +9,19 @@ import (
 const DefaultGasAdjustment = "1.4"
 
 type CliTxResponse struct {
-	Height    string `json:"height"`
-	TxHash    string `json:"txhash"`
-	Codespace string `json:"codespace"`
-	Code      string `json:"code"`
-	Data      string `json:"data"`
-	RawLog    string `json:"raw_log"`
-	Logs      string `json:"logs"`
-	Info      string `json:"info"`
-	GasWanted string `json:"gas_wanted"`
-	GasUsed   string `json:"gas_used"`
-	Tx        string `json:"tx"`
-	Timestamp string `json:"timestamp"`
-	Events    string `json:"events"`
+	Height    string         `json:"height"`
+	TxHash    string         `json:"txhash"`
+	Codespace string         `json:"codespace"`
+	Code      int            `json:"code"`
+	Data      string         `json:"data"`
+	RawLog    string         `json:"raw_log"`
+	Logs      *[]interface{} `json:"logs"`
+	Info      string         `json:"info"`
+	GasWanted string         `json:"gas_wanted"`
+	GasUsed   string         `json:"gas_used"`
+	Tx        *[]interface{} `json:"tx"`
+	Timestamp string         `json:"timestamp"`
+	Events    *[]interface{} `json:"events"`
 }
 
 type TxExecutor struct {

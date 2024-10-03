@@ -230,7 +230,8 @@ type VersionSelect struct {
 }
 
 func NewVersionSelect(state *LaunchState) *VersionSelect {
-	versions := utils.ListBinaryReleases(fmt.Sprintf("https://api.github.com/repos/initia-labs/mini%s/releases", strings.ToLower(state.vmType)))
+	//versions := utils.ListBinaryReleases(fmt.Sprintf("https://api.github.com/repos/initia-labs/mini%s/releases", strings.ToLower(state.vmType)))
+	versions := utils.BinaryVersionWithDownloadURL(map[string]string{"v0.5.2": "https://github.com/initia-labs/minievm/releases/download/v0.5.2/minievm_v0.5.2_Darwin_aarch64.tar.gz"})
 	return &VersionSelect{
 		Selector: utils.Selector[string]{
 			Options: utils.SortVersions(versions),
@@ -953,7 +954,6 @@ func (m *SystemKeyL1OperatorBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cm
 		m.state.systemKeyL1OperatorBalance = input.Text
 		m.state.weave.PushPreviousResponse(fmt.Sprintf("\n%s\n", styles.RenderPrompt("Please fund the following accounts on L1:\n  • Operator\n  • Bridge Executor\n  • Output Submitter\n  • Batch Submitter\n  • Challenger\n", []string{"L1"}, styles.Information)))
 		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Operator", "L1"}, input.Text))
-		// TODO: Send to gas station tx bank send confirmation model?
 		return NewSystemKeyL1BridgeExecutorBalanceInput(m.state), nil
 	}
 	m.TextInput = input
@@ -1519,6 +1519,7 @@ func (m *DownloadMinitiaBinaryLoading) Init() tea.Cmd {
 
 func downloadMinitiaApp(state *LaunchState) tea.Cmd {
 	return func() tea.Msg {
+		// TODO: minitiad init here first
 		userHome, err := os.UserHomeDir()
 		if err != nil {
 			panic(fmt.Sprintf("failed to get user home directory: %v", err))
@@ -1527,6 +1528,7 @@ func downloadMinitiaApp(state *LaunchState) tea.Cmd {
 		tarballPath := filepath.Join(weaveDataPath, "minitia.tar.gz")
 		extractedPath := filepath.Join(weaveDataPath, fmt.Sprintf("mini%s@%s", strings.ToLower(state.vmType), state.minitiadVersion))
 		binaryPath := filepath.Join(extractedPath, AppName)
+		state.binaryPath = binaryPath
 
 		if _, err := os.Stat(binaryPath); os.IsNotExist(err) {
 			if _, err := os.Stat(extractedPath); os.IsNotExist(err) {
@@ -1596,13 +1598,8 @@ func (m *GenerateSystemKeysLoading) Init() tea.Cmd {
 
 func generateSystemKeys(state *LaunchState) tea.Cmd {
 	return func() tea.Msg {
-		userHome, err := os.UserHomeDir()
-		if err != nil {
-			panic(fmt.Sprintf("failed to get user home directory: %v", err))
-		}
-		minitiaBinary := filepath.Join(userHome, utils.WeaveDataDirectory, fmt.Sprintf("mini%s@%s", strings.ToLower(state.vmType), state.minitiadVersion), AppName)
-
-		res, err := utils.AddOrReplace(minitiaBinary, OperatorKeyName)
+		// TODO: Defer delete
+		res, err := utils.AddOrReplace(state.binaryPath, OperatorKeyName)
 		if err != nil {
 			return utils.ErrorLoading{Err: err}
 		}
@@ -1610,7 +1607,7 @@ func generateSystemKeys(state *LaunchState) tea.Cmd {
 		state.systemKeyOperatorMnemonic = operatorKey.Mnemonic
 		state.systemKeyOperatorAddress = operatorKey.Address
 
-		res, err = utils.AddOrReplace(minitiaBinary, BridgeExecutorKeyName)
+		res, err = utils.AddOrReplace(state.binaryPath, BridgeExecutorKeyName)
 		if err != nil {
 			return utils.ErrorLoading{Err: err}
 		}
@@ -1618,7 +1615,7 @@ func generateSystemKeys(state *LaunchState) tea.Cmd {
 		state.systemKeyBridgeExecutorMnemonic = bridgeExecutorKey.Mnemonic
 		state.systemKeyBridgeExecutorAddress = bridgeExecutorKey.Address
 
-		res, err = utils.AddOrReplace(minitiaBinary, OutputSubmitterKeyName)
+		res, err = utils.AddOrReplace(state.binaryPath, OutputSubmitterKeyName)
 		if err != nil {
 			return utils.ErrorLoading{Err: err}
 		}
@@ -1626,7 +1623,7 @@ func generateSystemKeys(state *LaunchState) tea.Cmd {
 		state.systemKeyOutputSubmitterMnemonic = outputSubmitterKey.Mnemonic
 		state.systemKeyOutputSubmitterAddress = outputSubmitterKey.Address
 
-		res, err = utils.AddOrReplace(minitiaBinary, BatchSubmitterKeyName)
+		res, err = utils.AddOrReplace(state.binaryPath, BatchSubmitterKeyName)
 		if err != nil {
 			return utils.ErrorLoading{Err: err}
 		}
@@ -1634,7 +1631,7 @@ func generateSystemKeys(state *LaunchState) tea.Cmd {
 		state.systemKeyBatchSubmitterMnemonic = batchSubmitterKey.Mnemonic
 		state.systemKeyBatchSubmitterAddress = batchSubmitterKey.Address
 
-		res, err = utils.AddOrReplace(minitiaBinary, ChallengerKeyName)
+		res, err = utils.AddOrReplace(state.binaryPath, ChallengerKeyName)
 		if err != nil {
 			return utils.ErrorLoading{Err: err}
 		}
@@ -1644,27 +1641,27 @@ func generateSystemKeys(state *LaunchState) tea.Cmd {
 
 		state.FinalizeGenesisAccounts()
 
-		err = utils.DeleteKey(minitiaBinary, OperatorKeyName)
+		err = utils.DeleteKey(state.binaryPath, OperatorKeyName)
 		if err != nil {
 			return utils.ErrorLoading{Err: err}
 		}
 
-		err = utils.DeleteKey(minitiaBinary, BridgeExecutorKeyName)
+		err = utils.DeleteKey(state.binaryPath, BridgeExecutorKeyName)
 		if err != nil {
 			return utils.ErrorLoading{Err: err}
 		}
 
-		err = utils.DeleteKey(minitiaBinary, OutputSubmitterKeyName)
+		err = utils.DeleteKey(state.binaryPath, OutputSubmitterKeyName)
 		if err != nil {
 			return utils.ErrorLoading{Err: err}
 		}
 
-		err = utils.DeleteKey(minitiaBinary, BatchSubmitterKeyName)
+		err = utils.DeleteKey(state.binaryPath, BatchSubmitterKeyName)
 		if err != nil {
 			return utils.ErrorLoading{Err: err}
 		}
 
-		err = utils.DeleteKey(minitiaBinary, ChallengerKeyName)
+		err = utils.DeleteKey(state.binaryPath, ChallengerKeyName)
 		if err != nil {
 			return utils.ErrorLoading{Err: err}
 		}
@@ -1770,7 +1767,7 @@ func (m *FundGasStationConfirmationInput) Init() tea.Cmd {
 func (m *FundGasStationConfirmationInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-		model := NewLaunchingNewMinitiaLoading(m.state)
+		model := NewFundGasStationBroadcastLoading(m.state)
 		return model, model.Init()
 	}
 	m.TextInput = input
@@ -1781,7 +1778,7 @@ func (m *FundGasStationConfirmationInput) View() string {
 	formatSendMsg := func(coins, keyName, address string) string {
 		return fmt.Sprintf(
 			"> Send %s to %s %s\n",
-			styles.BoldText(coins, styles.Ivory),
+			fmt.Sprintf("%suinit", styles.BoldText(coins, styles.Ivory)),
 			styles.BoldText(keyName, styles.Ivory),
 			styles.Text(fmt.Sprintf("(%s)", address), styles.Gray))
 	}
@@ -1798,6 +1795,72 @@ func (m *FundGasStationConfirmationInput) View() string {
 		formatSendMsg(m.state.systemKeyL1BatchSubmitterBalance, "Batch Submitter on L1", m.state.systemKeyBatchSubmitterAddress) +
 		formatSendMsg(m.state.systemKeyL1ChallengerBalance, "Challenger on L1", m.state.systemKeyChallengerAddress) +
 		styles.RenderPrompt(m.GetQuestion(), []string{"`continue`"}, styles.Question) + m.TextInput.View()
+}
+
+type FundGasStationBroadcastLoading struct {
+	state   *LaunchState
+	loading utils.Loading
+}
+
+func NewFundGasStationBroadcastLoading(state *LaunchState) *FundGasStationBroadcastLoading {
+	return &FundGasStationBroadcastLoading{
+		state:   state,
+		loading: utils.NewLoading("Broadcasting transactions...", broadcastFundingFromGasStation(state)),
+	}
+}
+
+func (m *FundGasStationBroadcastLoading) Init() tea.Cmd {
+	return m.loading.Init()
+}
+
+func broadcastFundingFromGasStation(state *LaunchState) tea.Cmd {
+	return func() tea.Msg {
+		txResult, err := NewL1SystemKeys(
+			&GenesisAccount{
+				Address: state.systemKeyOperatorAddress,
+				Coins:   state.systemKeyL1OperatorBalance,
+			},
+			&GenesisAccount{
+				Address: state.systemKeyBridgeExecutorAddress,
+				Coins:   state.systemKeyL1BridgeExecutorBalance,
+			},
+			&GenesisAccount{
+				Address: state.systemKeyOutputSubmitterAddress,
+				Coins:   state.systemKeyL1OutputSubmitterBalance,
+			},
+			&GenesisAccount{
+				Address: state.systemKeyBatchSubmitterAddress,
+				Coins:   state.systemKeyL1BatchSubmitterBalance,
+			},
+			&GenesisAccount{
+				Address: state.systemKeyChallengerAddress,
+				Coins:   state.systemKeyL1ChallengerBalance,
+			},
+		).FundAccountsWithGasStation(state.binaryPath, state.l1RPC, state.l1ChainId)
+		if err != nil {
+			panic(err)
+		}
+
+		state.systemKeyL1FundingTxHash = txResult.TxHash
+		time.Sleep(1500 * time.Millisecond)
+
+		return utils.EndLoading{}
+	}
+}
+
+func (m *FundGasStationBroadcastLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	loader, cmd := m.loading.Update(msg)
+	m.loading = loader
+	if m.loading.Completing {
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, "System keys on L1 funded via Gas Station, with Tx Hash", []string{}, m.state.systemKeyL1FundingTxHash))
+		model := NewLaunchingNewMinitiaLoading(m.state)
+		return model, model.Init()
+	}
+	return m, cmd
+}
+
+func (m *FundGasStationBroadcastLoading) View() string {
+	return m.state.weave.Render() + "\n" + m.loading.View()
 }
 
 type LaunchingNewMinitiaLoading struct {
@@ -1818,6 +1881,7 @@ func (m *LaunchingNewMinitiaLoading) Init() tea.Cmd {
 
 func launchingMinitia(state *LaunchState) tea.Cmd {
 	return func() tea.Msg {
+		// TODO: Delete previously init-ed .minitia
 		userHome, err := os.UserHomeDir()
 		if err != nil {
 			panic(fmt.Sprintf("failed to get user home directory: %v", err))
@@ -1878,11 +1942,11 @@ func launchingMinitia(state *LaunchState) tea.Cmd {
 
 		configBz, err := json.MarshalIndent(config, "", " ")
 		if err != nil {
-			return utils.ErrorLoading{Err: err}
+			panic(err)
 		}
 
 		if err = os.WriteFile(filepath.Join(userHome, utils.WeaveDataDirectory, LaunchConfigFilename), configBz, 0600); err != nil {
-			return utils.ErrorLoading{Err: err}
+			panic(err)
 		}
 
 		time.Sleep(1500 * time.Millisecond)

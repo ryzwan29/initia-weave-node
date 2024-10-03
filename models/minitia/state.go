@@ -38,6 +38,7 @@ type LaunchState struct {
 	systemKeyL1OutputSubmitterBalance string
 	systemKeyL1BatchSubmitterBalance  string
 	systemKeyL1ChallengerBalance      string
+	systemKeyL1FundingTxHash          string
 
 	systemKeyL2OperatorBalance        string
 	systemKeyL2BridgeExecutorBalance  string
@@ -51,6 +52,8 @@ type LaunchState struct {
 	preGenesisAccountsResponsesCount int
 	preL1BalancesResponsesCount      int
 	preL2BalancesResponsesCount      int
+
+	binaryPath string
 }
 
 func NewLaunchState() *LaunchState {
