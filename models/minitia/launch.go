@@ -11,6 +11,7 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
+
 	"github.com/initia-labs/weave/styles"
 	"github.com/initia-labs/weave/utils"
 )
@@ -23,7 +24,7 @@ type ExistingMinitiaChecker struct {
 func NewExistingMinitiaChecker(state *LaunchState) *ExistingMinitiaChecker {
 	return &ExistingMinitiaChecker{
 		state:   state,
-		loading: utils.NewLoading("Checking for an existing Minitia app...", WaitExistingMinitiaChecker(state)),
+		loading: utils.NewLoading("Checking for an existing Minitia app...", waitExistingMinitiaChecker(state)),
 	}
 }
 
@@ -31,9 +32,8 @@ func (m *ExistingMinitiaChecker) Init() tea.Cmd {
 	return m.loading.Init()
 }
 
-func WaitExistingMinitiaChecker(state *LaunchState) tea.Cmd {
+func waitExistingMinitiaChecker(state *LaunchState) tea.Cmd {
 	return func() tea.Msg {
-		// TODO: Investigate why this pops up everytime
 		homeDir, err := os.UserHomeDir()
 		if err != nil {
 			fmt.Printf("[error] Failed to get user home directory: %v\n", err)
@@ -99,7 +99,13 @@ func (m *DeleteExistingMinitiaInput) Init() tea.Cmd {
 func (m *DeleteExistingMinitiaInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-		// TODO: Delete .minitia folder
+		userHome, err := os.UserHomeDir()
+		if err != nil {
+			panic(fmt.Sprintf("failed to get user home directory: %v", err))
+		}
+		if err = utils.DeleteDirectory(filepath.Join(userHome, utils.MinitiaDirectory)); err != nil {
+			panic(fmt.Sprintf("failed to delete .minitia: %v", err))
+		}
 		return NewNetworkSelect(m.state), nil
 	}
 	m.TextInput = input
@@ -233,8 +239,7 @@ type VersionSelect struct {
 }
 
 func NewVersionSelect(state *LaunchState) *VersionSelect {
-	//versions := utils.ListBinaryReleases(fmt.Sprintf("https://api.github.com/repos/initia-labs/mini%s/releases", strings.ToLower(state.vmType)))
-	versions := utils.BinaryVersionWithDownloadURL(map[string]string{"v0.5.2": "https://github.com/initia-labs/minievm/releases/download/v0.5.2/minievm_v0.5.2_Darwin_aarch64.tar.gz"})
+	versions := utils.ListBinaryReleases(fmt.Sprintf("https://api.github.com/repos/initia-labs/mini%s/releases", strings.ToLower(state.vmType)))
 	return &VersionSelect{
 		Selector: utils.Selector[string]{
 			Options: utils.SortVersions(versions),
@@ -939,7 +944,8 @@ func NewSystemKeyL1OperatorBalanceInput(state *LaunchState) *SystemKeyL1Operator
 		state:     state,
 		question:  "Please specify initial balance for Operator on L1 (uinit)",
 	}
-	model.WithPlaceholder("Enter the balance")
+	model.WithPlaceholder("Enter the amount")
+	model.WithValidatorFn(utils.IsValidInteger)
 	return model
 }
 
@@ -982,6 +988,7 @@ func NewSystemKeyL1BridgeExecutorBalanceInput(state *LaunchState) *SystemKeyL1Br
 		question:  "Please specify initial balance for Bridge Executor on L1 (uinit)",
 	}
 	model.WithPlaceholder("Enter the balance")
+	model.WithValidatorFn(utils.IsValidInteger)
 	return model
 }
 
@@ -1022,6 +1029,7 @@ func NewSystemKeyL1OutputSubmitterBalanceInput(state *LaunchState) *SystemKeyL1O
 		question:  "Please specify initial balance for Output Submitter on L1 (uinit)",
 	}
 	model.WithPlaceholder("Enter the balance")
+	model.WithValidatorFn(utils.IsValidInteger)
 	return model
 }
 
@@ -1062,6 +1070,7 @@ func NewSystemKeyL1BatchSubmitterBalanceInput(state *LaunchState) *SystemKeyL1Ba
 		question:  "Please specify initial balance for Batch Submitter on L1 (uinit)",
 	}
 	model.WithPlaceholder("Enter the balance")
+	model.WithValidatorFn(utils.IsValidInteger)
 	return model
 }
 
@@ -1102,6 +1111,7 @@ func NewSystemKeyL1ChallengerBalanceInput(state *LaunchState) *SystemKeyL1Challe
 		question:  "Please specify initial balance for Challenger on L1 (uinit)",
 	}
 	model.WithPlaceholder("Enter the balance")
+	model.WithValidatorFn(utils.IsValidInteger)
 	return model
 }
 
@@ -1144,6 +1154,7 @@ func NewSystemKeyL2OperatorBalanceInput(state *LaunchState) *SystemKeyL2Operator
 		question:  fmt.Sprintf("Please specify initial balance for Operator on L2 (%s)", state.gasDenom),
 	}
 	model.WithPlaceholder("Enter the balance")
+	model.WithValidatorFn(utils.IsValidInteger)
 	return model
 }
 
@@ -1158,8 +1169,7 @@ func (m *SystemKeyL2OperatorBalanceInput) Init() tea.Cmd {
 func (m *SystemKeyL2OperatorBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-		// TODO: Input only amount, append denom here first
-		m.state.systemKeyL2OperatorBalance = input.Text
+		m.state.systemKeyL2OperatorBalance = fmt.Sprintf("%s%s", input.Text, m.state.gasDenom)
 		m.state.weave.PushPreviousResponse(fmt.Sprintf("\n%s\n", styles.RenderPrompt(fmt.Sprintf("Please fund the following accounts on L2:\n  • Operator\n  • Bridge Executor\n  • Output Submitter %[1]s\n  • Batch Submitter %[1]s\n  • Challenger %[1]s\n", styles.Text("(Optional)", styles.Gray)), []string{"L2"}, styles.Information)))
 		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Operator", "L2"}, input.Text))
 		return NewSystemKeyL2BridgeExecutorBalanceInput(m.state), nil
@@ -1187,6 +1197,7 @@ func NewSystemKeyL2BridgeExecutorBalanceInput(state *LaunchState) *SystemKeyL2Br
 		question:  fmt.Sprintf("Please specify initial balance for Bridge Executor on L2 (%s)", state.gasDenom),
 	}
 	model.WithPlaceholder("Enter the balance")
+	model.WithValidatorFn(utils.IsValidInteger)
 	return model
 }
 
@@ -1201,7 +1212,7 @@ func (m *SystemKeyL2BridgeExecutorBalanceInput) Init() tea.Cmd {
 func (m *SystemKeyL2BridgeExecutorBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-		m.state.systemKeyL2BridgeExecutorBalance = input.Text
+		m.state.systemKeyL2BridgeExecutorBalance = fmt.Sprintf("%s%s", input.Text, m.state.gasDenom)
 		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Bridge Executor", "L2"}, input.Text))
 		return NewSystemKeyL2OutputSubmitterBalanceInput(m.state), nil
 	}
@@ -1227,6 +1238,7 @@ func NewSystemKeyL2OutputSubmitterBalanceInput(state *LaunchState) *SystemKeyL2O
 		question:  fmt.Sprintf("Please specify initial balance for Output Submitter on L2 (%s)", state.gasDenom),
 	}
 	model.WithPlaceholder("Enter the balance (Press Enter to skip)")
+	model.WithValidatorFn(utils.IsValidInteger)
 	return model
 }
 
@@ -1241,7 +1253,7 @@ func (m *SystemKeyL2OutputSubmitterBalanceInput) Init() tea.Cmd {
 func (m *SystemKeyL2OutputSubmitterBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-		m.state.systemKeyL2OutputSubmitterBalance = input.Text
+		m.state.systemKeyL2OutputSubmitterBalance = fmt.Sprintf("%s%s", input.Text, m.state.gasDenom)
 		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Output Submitter", "L2"}, input.Text))
 		return NewSystemKeyL2BatchSubmitterBalanceInput(m.state), nil
 	}
@@ -1267,6 +1279,7 @@ func NewSystemKeyL2BatchSubmitterBalanceInput(state *LaunchState) *SystemKeyL2Ba
 		question:  fmt.Sprintf("Please specify initial balance for Batch Submitter on L2 (%s)", state.gasDenom),
 	}
 	model.WithPlaceholder("Enter the balance (Press Enter to skip)")
+	model.WithValidatorFn(utils.IsValidInteger)
 	return model
 }
 
@@ -1281,7 +1294,7 @@ func (m *SystemKeyL2BatchSubmitterBalanceInput) Init() tea.Cmd {
 func (m *SystemKeyL2BatchSubmitterBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-		m.state.systemKeyL2BatchSubmitterBalance = input.Text
+		m.state.systemKeyL2BatchSubmitterBalance = fmt.Sprintf("%s%s", input.Text, m.state.gasDenom)
 		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Batch Submitter", "L2"}, input.Text))
 		return NewSystemKeyL2ChallengerBalanceInput(m.state), nil
 	}
@@ -1307,6 +1320,7 @@ func NewSystemKeyL2ChallengerBalanceInput(state *LaunchState) *SystemKeyL2Challe
 		question:  fmt.Sprintf("Please specify initial balance for Challenger on L2 (%s)", state.gasDenom),
 	}
 	model.WithPlaceholder("Enter the balance (Press Enter to skip)")
+	model.WithValidatorFn(utils.IsValidInteger)
 	return model
 }
 
@@ -1321,7 +1335,7 @@ func (m *SystemKeyL2ChallengerBalanceInput) Init() tea.Cmd {
 func (m *SystemKeyL2ChallengerBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-		m.state.systemKeyL2ChallengerBalance = input.Text
+		m.state.systemKeyL2ChallengerBalance = fmt.Sprintf("%s%s", input.Text, m.state.gasDenom)
 		m.state.weave.PopPreviousResponseAtIndex(m.state.preL2BalancesResponsesCount)
 		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Challenger", "L2"}, input.Text))
 		return NewAddGenesisAccountsSelect(false, m.state), nil
@@ -1874,8 +1888,13 @@ type LaunchingNewMinitiaLoading struct {
 
 func NewLaunchingNewMinitiaLoading(state *LaunchState) *LaunchingNewMinitiaLoading {
 	return &LaunchingNewMinitiaLoading{
-		state:   state,
-		loading: utils.NewLoading("Running `minitiad launch` with the specified config...", launchingMinitia(state)),
+		state: state,
+		loading: utils.NewLoading(
+			styles.RenderPrompt(
+				"Running `minitiad launch` with the specified config...",
+				[]string{"`minitiad launch`"},
+				styles.Empty,
+			), launchingMinitia(state)),
 	}
 }
 

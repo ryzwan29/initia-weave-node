@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/initia-labs/weave/bip39"
@@ -251,6 +252,13 @@ func ValidateExactString(expect string) func(s string) error {
 func ValidateEmptyString(s string) error {
 	if s == "" {
 		return fmt.Errorf("cannot be empty string")
+	}
+	return nil
+}
+
+func IsValidInteger(s string) error {
+	if _, err := strconv.Atoi(s); err != nil {
+		return fmt.Errorf("amount must be an integer")
 	}
 	return nil
 }

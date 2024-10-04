@@ -134,3 +134,11 @@ func DeleteFile(path string) error {
 
 	return nil
 }
+
+func DeleteDirectory(path string) error {
+	err := os.RemoveAll(path)
+	if err != nil {
+		return fmt.Errorf("failed to delete directory: %v", err)
+	}
+	return nil
+}
