@@ -53,6 +53,8 @@ type LaunchState struct {
 	preL1BalancesResponsesCount      int
 	preL2BalancesResponsesCount      int
 
+	minitiadLaunchStreamingLogs []string
+
 	binaryPath string
 }
 

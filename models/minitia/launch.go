@@ -1,9 +1,11 @@
 package minitia
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -31,6 +33,7 @@ func (m *ExistingMinitiaChecker) Init() tea.Cmd {
 
 func WaitExistingMinitiaChecker(state *LaunchState) tea.Cmd {
 	return func() tea.Msg {
+		// TODO: Investigate why this pops up everytime
 		homeDir, err := os.UserHomeDir()
 		if err != nil {
 			fmt.Printf("[error] Failed to get user home directory: %v\n", err)
@@ -1155,6 +1158,7 @@ func (m *SystemKeyL2OperatorBalanceInput) Init() tea.Cmd {
 func (m *SystemKeyL2OperatorBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
+		// TODO: Input only amount, append denom here first
 		m.state.systemKeyL2OperatorBalance = input.Text
 		m.state.weave.PushPreviousResponse(fmt.Sprintf("\n%s\n", styles.RenderPrompt(fmt.Sprintf("Please fund the following accounts on L2:\n  • Operator\n  • Bridge Executor\n  • Output Submitter %[1]s\n  • Batch Submitter %[1]s\n  • Challenger %[1]s\n", styles.Text("(Optional)", styles.Gray)), []string{"L2"}, styles.Information)))
 		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Operator", "L2"}, input.Text))
@@ -1778,7 +1782,7 @@ func (m *FundGasStationConfirmationInput) View() string {
 	formatSendMsg := func(coins, keyName, address string) string {
 		return fmt.Sprintf(
 			"> Send %s to %s %s\n",
-			fmt.Sprintf("%suinit", styles.BoldText(coins, styles.Ivory)),
+			styles.BoldText(coins+"uinit", styles.Ivory),
 			styles.BoldText(keyName, styles.Ivory),
 			styles.Text(fmt.Sprintf("(%s)", address), styles.Gray))
 	}
@@ -1871,7 +1875,7 @@ type LaunchingNewMinitiaLoading struct {
 func NewLaunchingNewMinitiaLoading(state *LaunchState) *LaunchingNewMinitiaLoading {
 	return &LaunchingNewMinitiaLoading{
 		state:   state,
-		loading: utils.NewLoading("Launching new Minitia...", launchingMinitia(state)),
+		loading: utils.NewLoading("Running `minitiad launch` with the specified config...", launchingMinitia(state)),
 	}
 }
 
@@ -1881,7 +1885,6 @@ func (m *LaunchingNewMinitiaLoading) Init() tea.Cmd {
 
 func launchingMinitia(state *LaunchState) tea.Cmd {
 	return func() tea.Msg {
-		// TODO: Delete previously init-ed .minitia
 		userHome, err := os.UserHomeDir()
 		if err != nil {
 			panic(fmt.Sprintf("failed to get user home directory: %v", err))
@@ -1942,14 +1945,51 @@ func launchingMinitia(state *LaunchState) tea.Cmd {
 
 		configBz, err := json.MarshalIndent(config, "", " ")
 		if err != nil {
-			panic(err)
+			panic(fmt.Errorf("failed to marshal config: %v", err))
 		}
 
-		if err = os.WriteFile(filepath.Join(userHome, utils.WeaveDataDirectory, LaunchConfigFilename), configBz, 0600); err != nil {
-			panic(err)
+		configFilePath := filepath.Join(userHome, utils.WeaveDataDirectory, LaunchConfigFilename)
+		if err = os.WriteFile(configFilePath, configBz, 0600); err != nil {
+			panic(fmt.Errorf("failed to write config file: %v", err))
 		}
 
-		time.Sleep(1500 * time.Millisecond)
+		launchCmd := exec.Command(state.binaryPath, "launch", "--with-config", configFilePath)
+
+		stdout, err := launchCmd.StdoutPipe()
+		if err != nil {
+			panic(fmt.Errorf("failed to capture stdout: %v", err))
+		}
+		stderr, err := launchCmd.StderrPipe()
+		if err != nil {
+			panic(fmt.Errorf("failed to capture stderr: %v", err))
+		}
+
+		if err = launchCmd.Start(); err != nil {
+			panic(fmt.Errorf("failed to start command: %v", err))
+		}
+
+		go func() {
+			scanner := bufio.NewScanner(stdout)
+			for scanner.Scan() {
+				line := scanner.Text()
+				state.minitiadLaunchStreamingLogs = append(state.minitiadLaunchStreamingLogs, line)
+			}
+		}()
+
+		go func() {
+			scanner := bufio.NewScanner(stderr)
+			for scanner.Scan() {
+				line := scanner.Text()
+				state.minitiadLaunchStreamingLogs = append(state.minitiadLaunchStreamingLogs, line)
+			}
+		}()
+
+		if err = launchCmd.Wait(); err != nil {
+			if err != nil {
+				state.minitiadLaunchStreamingLogs = append(state.minitiadLaunchStreamingLogs, fmt.Sprintf("Launch command finished with error: %v", err))
+				panic(fmt.Errorf("command execution failed: %v", err))
+			}
+		}
 
 		return utils.EndLoading{}
 	}
@@ -1959,7 +1999,8 @@ func (m *LaunchingNewMinitiaLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	loader, cmd := m.loading.Update(msg)
 	m.loading = loader
 	if m.loading.Completing {
-		// TODO: Paraphrase this or maybe add a terminal state
+		// TODO: Fix buggy logs here
+		m.state.minitiadLaunchStreamingLogs = []string{}
 		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "New minitia has been launched.", []string{}, ""))
 		return m, tea.Quit
 	}
@@ -1967,6 +2008,5 @@ func (m *LaunchingNewMinitiaLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *LaunchingNewMinitiaLoading) View() string {
-	// TODO: Terminal state
-	return m.state.weave.Render() + "\n" + m.loading.View()
+	return m.state.weave.Render() + "\n" + m.loading.View() + "\n" + strings.Join(m.state.minitiadLaunchStreamingLogs, "\n")
 }
