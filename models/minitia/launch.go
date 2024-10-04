@@ -1450,6 +1450,7 @@ func NewGenesisAccountsAddressInput(state *LaunchState) *GenesisAccountsAddressI
 		question:  "Please specify genesis account address",
 	}
 	model.WithPlaceholder("Enter the address")
+	model.WithValidatorFn(utils.IsValidAddress)
 	return model
 }
 
@@ -1490,7 +1491,7 @@ func NewGenesisAccountsBalanceInput(address string, state *LaunchState) *Genesis
 		question:  fmt.Sprintf("Please specify initial balance for %s (%s)", address, state.gasDenom),
 	}
 	model.WithPlaceholder("Enter the desired balance")
-	// TODO: Maybe Coin validate here
+	model.WithValidatorFn(utils.IsValidInteger)
 	return model
 }
 
@@ -1507,7 +1508,7 @@ func (m *GenesisAccountsBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if done {
 		m.state.genesisAccounts = append(m.state.genesisAccounts, GenesisAccount{
 			Address: m.address,
-			Coins:   input.Text,
+			Coins:   fmt.Sprintf("%s%s", input.Text, m.state.gasDenom),
 		})
 		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{m.address}, input.Text))
 		return NewAddGenesisAccountsSelect(true, m.state), nil
@@ -1538,7 +1539,6 @@ func (m *DownloadMinitiaBinaryLoading) Init() tea.Cmd {
 
 func downloadMinitiaApp(state *LaunchState) tea.Cmd {
 	return func() tea.Msg {
-		// TODO: minitiad init here first
 		userHome, err := os.UserHomeDir()
 		if err != nil {
 			panic(fmt.Sprintf("failed to get user home directory: %v", err))
@@ -1617,8 +1617,8 @@ func (m *GenerateSystemKeysLoading) Init() tea.Cmd {
 
 func generateSystemKeys(state *LaunchState) tea.Cmd {
 	return func() tea.Msg {
-		// TODO: Defer delete
 		res, err := utils.AddOrReplace(state.binaryPath, OperatorKeyName)
+		defer utils.MustDeleteKey(state.binaryPath, OperatorKeyName)
 		if err != nil {
 			return utils.ErrorLoading{Err: err}
 		}
@@ -1627,6 +1627,7 @@ func generateSystemKeys(state *LaunchState) tea.Cmd {
 		state.systemKeyOperatorAddress = operatorKey.Address
 
 		res, err = utils.AddOrReplace(state.binaryPath, BridgeExecutorKeyName)
+		defer utils.MustDeleteKey(state.binaryPath, BridgeExecutorKeyName)
 		if err != nil {
 			return utils.ErrorLoading{Err: err}
 		}
@@ -1635,6 +1636,7 @@ func generateSystemKeys(state *LaunchState) tea.Cmd {
 		state.systemKeyBridgeExecutorAddress = bridgeExecutorKey.Address
 
 		res, err = utils.AddOrReplace(state.binaryPath, OutputSubmitterKeyName)
+		defer utils.MustDeleteKey(state.binaryPath, OutputSubmitterKeyName)
 		if err != nil {
 			return utils.ErrorLoading{Err: err}
 		}
@@ -1644,6 +1646,7 @@ func generateSystemKeys(state *LaunchState) tea.Cmd {
 
 		// TODO: If user chose Celestia as a DA, Generate Celestia key
 		res, err = utils.AddOrReplace(state.binaryPath, BatchSubmitterKeyName)
+		defer utils.MustDeleteKey(state.binaryPath, BatchSubmitterKeyName)
 		if err != nil {
 			return utils.ErrorLoading{Err: err}
 		}
@@ -1652,6 +1655,7 @@ func generateSystemKeys(state *LaunchState) tea.Cmd {
 		state.systemKeyBatchSubmitterAddress = batchSubmitterKey.Address
 
 		res, err = utils.AddOrReplace(state.binaryPath, ChallengerKeyName)
+		defer utils.MustDeleteKey(state.binaryPath, ChallengerKeyName)
 		if err != nil {
 			return utils.ErrorLoading{Err: err}
 		}
@@ -1660,31 +1664,6 @@ func generateSystemKeys(state *LaunchState) tea.Cmd {
 		state.systemKeyChallengerAddress = challengerKey.Address
 
 		state.FinalizeGenesisAccounts()
-
-		err = utils.DeleteKey(state.binaryPath, OperatorKeyName)
-		if err != nil {
-			return utils.ErrorLoading{Err: err}
-		}
-
-		err = utils.DeleteKey(state.binaryPath, BridgeExecutorKeyName)
-		if err != nil {
-			return utils.ErrorLoading{Err: err}
-		}
-
-		err = utils.DeleteKey(state.binaryPath, OutputSubmitterKeyName)
-		if err != nil {
-			return utils.ErrorLoading{Err: err}
-		}
-
-		err = utils.DeleteKey(state.binaryPath, BatchSubmitterKeyName)
-		if err != nil {
-			return utils.ErrorLoading{Err: err}
-		}
-
-		err = utils.DeleteKey(state.binaryPath, ChallengerKeyName)
-		if err != nil {
-			return utils.ErrorLoading{Err: err}
-		}
 
 		time.Sleep(1500 * time.Millisecond)
 

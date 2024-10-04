@@ -262,3 +262,13 @@ func IsValidInteger(s string) error {
 	}
 	return nil
 }
+
+func IsValidAddress(s string) error {
+	initBech32Regex := `^init1(?:[a-z0-9]{38}|[a-z0-9]{58})$`
+	re := regexp.MustCompile(initBech32Regex)
+
+	if !re.MatchString(s) {
+		return errors.New("invalid address format")
+	}
+	return nil
+}

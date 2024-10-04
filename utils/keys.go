@@ -41,9 +41,11 @@ func AddOrReplace(appName, keyname string) (string, error) {
 	return string(outputBytes), nil
 }
 
-func DeleteKey(appName, keyname string) error {
+func MustDeleteKey(appName, keyname string) {
 	cmd := exec.Command(appName, "keys", "delete", keyname, "--keyring-backend", "test", "-y")
-	return cmd.Run()
+	if err := cmd.Run(); err != nil {
+		panic(err)
+	}
 }
 
 // KeyExists checks if a key with the given keyName exists using `initiad keys show`

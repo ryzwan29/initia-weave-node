@@ -33,7 +33,7 @@ func (lsk *L1SystemKeys) FundAccountsWithGasStation(appName, rpc, chainId string
 	if err != nil {
 		return nil, fmt.Errorf("failed to recover gas station key: %v", err)
 	}
-	defer utils.DeleteKey(appName, utils.WeaveGasStationKeyName)
+	defer utils.MustDeleteKey(appName, utils.WeaveGasStationKeyName)
 
 	gasStationKey := utils.MustUnmarshalKeyInfo(rawKey)
 	rawTxContent := fmt.Sprintf(
