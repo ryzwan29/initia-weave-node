@@ -678,6 +678,7 @@ func (m *SystemKeyOperatorMnemonicInput) Init() tea.Cmd {
 func (m *SystemKeyOperatorMnemonicInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
+		// TODO: Check if duplicate
 		m.state.systemKeyOperatorMnemonic = input.Text
 		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Operator"}, styles.HiddenMnemonicText))
 		return NewSystemKeyBridgeExecutorMnemonicInput(m.state), nil
@@ -838,7 +839,7 @@ func (m *SystemKeyChallengerMnemonicInput) Init() tea.Cmd {
 func (m *SystemKeyChallengerMnemonicInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-		m.state.systemKeyBatchSubmitterMnemonic = input.Text
+		m.state.systemKeyChallengerMnemonic = input.Text
 		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Challenger"}, styles.HiddenMnemonicText))
 		model := NewExistingGasStationChecker(m.state)
 		return model, model.Init()
@@ -1594,13 +1595,8 @@ func (m *DownloadMinitiaBinaryLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) 
 		if m.state.downloadedNewBinary {
 			m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, fmt.Sprintf("Mini%s binary has been successfully downloaded.", strings.ToLower(m.state.vmType)), []string{}, ""))
 		}
-
-		if m.state.generateKeys {
-			model := NewGenerateSystemKeysLoading(m.state)
-			return model, model.Init()
-		}
-		// TODO: Should be else and recover keys
-		return NewFundGasStationConfirmationInput(m.state), nil
+		model := NewGenerateOrRecoverSystemKeysLoading(m.state)
+		return model, model.Init()
 	}
 	return m, cmd
 }
@@ -1609,89 +1605,82 @@ func (m *DownloadMinitiaBinaryLoading) View() string {
 	return m.state.weave.Render() + "\n" + m.loading.View()
 }
 
-type GenerateSystemKeysLoading struct {
+type GenerateOrRecoverSystemKeysLoading struct {
 	state   *LaunchState
 	loading utils.Loading
 }
 
-func NewGenerateSystemKeysLoading(state *LaunchState) *GenerateSystemKeysLoading {
-	return &GenerateSystemKeysLoading{
+func NewGenerateOrRecoverSystemKeysLoading(state *LaunchState) *GenerateOrRecoverSystemKeysLoading {
+	var loadingText string
+	if state.generateKeys {
+		loadingText = "Generating new system keys..."
+	} else {
+		loadingText = "Recovering system keys..."
+	}
+	return &GenerateOrRecoverSystemKeysLoading{
 		state:   state,
-		loading: utils.NewLoading("Generating new system keys...", generateSystemKeys(state)),
+		loading: utils.NewLoading(loadingText, generateOrRecoverSystemKeys(state)),
 	}
 }
 
-func (m *GenerateSystemKeysLoading) Init() tea.Cmd {
+func (m *GenerateOrRecoverSystemKeysLoading) Init() tea.Cmd {
 	return m.loading.Init()
 }
 
-func generateSystemKeys(state *LaunchState) tea.Cmd {
+func generateOrRecoverSystemKeys(state *LaunchState) tea.Cmd {
 	return func() tea.Msg {
-		res, err := utils.AddOrReplace(state.binaryPath, OperatorKeyName)
-		defer utils.MustDeleteKey(state.binaryPath, OperatorKeyName)
-		if err != nil {
-			return utils.ErrorLoading{Err: err}
-		}
-		operatorKey := utils.MustUnmarshalKeyInfo(res)
-		state.systemKeyOperatorMnemonic = operatorKey.Mnemonic
-		state.systemKeyOperatorAddress = operatorKey.Address
-
-		res, err = utils.AddOrReplace(state.binaryPath, BridgeExecutorKeyName)
-		defer utils.MustDeleteKey(state.binaryPath, BridgeExecutorKeyName)
-		if err != nil {
-			return utils.ErrorLoading{Err: err}
-		}
-		bridgeExecutorKey := utils.MustUnmarshalKeyInfo(res)
-		state.systemKeyBridgeExecutorMnemonic = bridgeExecutorKey.Mnemonic
-		state.systemKeyBridgeExecutorAddress = bridgeExecutorKey.Address
-
-		res, err = utils.AddOrReplace(state.binaryPath, OutputSubmitterKeyName)
-		defer utils.MustDeleteKey(state.binaryPath, OutputSubmitterKeyName)
-		if err != nil {
-			return utils.ErrorLoading{Err: err}
-		}
-		outputSubmitterKey := utils.MustUnmarshalKeyInfo(res)
-		state.systemKeyOutputSubmitterMnemonic = outputSubmitterKey.Mnemonic
-		state.systemKeyOutputSubmitterAddress = outputSubmitterKey.Address
-
 		// TODO: If user chose Celestia as a DA, Generate Celestia key
-		res, err = utils.AddOrReplace(state.binaryPath, BatchSubmitterKeyName)
-		defer utils.MustDeleteKey(state.binaryPath, BatchSubmitterKeyName)
-		if err != nil {
-			return utils.ErrorLoading{Err: err}
-		}
-		batchSubmitterKey := utils.MustUnmarshalKeyInfo(res)
-		state.systemKeyBatchSubmitterMnemonic = batchSubmitterKey.Mnemonic
-		state.systemKeyBatchSubmitterAddress = batchSubmitterKey.Address
+		if state.generateKeys {
+			operatorKey := utils.MustGenerateNewKeyInfo(state.binaryPath, OperatorKeyName)
+			state.systemKeyOperatorMnemonic = operatorKey.Mnemonic
+			state.systemKeyOperatorAddress = operatorKey.Address
 
-		res, err = utils.AddOrReplace(state.binaryPath, ChallengerKeyName)
-		defer utils.MustDeleteKey(state.binaryPath, ChallengerKeyName)
-		if err != nil {
-			return utils.ErrorLoading{Err: err}
+			bridgeExecutorKey := utils.MustGenerateNewKeyInfo(state.binaryPath, BridgeExecutorKeyName)
+			state.systemKeyBridgeExecutorMnemonic = bridgeExecutorKey.Mnemonic
+			state.systemKeyBridgeExecutorAddress = bridgeExecutorKey.Address
+
+			outputSubmitterKey := utils.MustGenerateNewKeyInfo(state.binaryPath, OutputSubmitterKeyName)
+			state.systemKeyOutputSubmitterMnemonic = outputSubmitterKey.Mnemonic
+			state.systemKeyOutputSubmitterAddress = outputSubmitterKey.Address
+
+			batchSubmitterKey := utils.MustGenerateNewKeyInfo(state.binaryPath, BatchSubmitterKeyName)
+			state.systemKeyBatchSubmitterMnemonic = batchSubmitterKey.Mnemonic
+			state.systemKeyBatchSubmitterAddress = batchSubmitterKey.Address
+
+			challengerKey := utils.MustGenerateNewKeyInfo(state.binaryPath, ChallengerKeyName)
+			state.systemKeyChallengerMnemonic = challengerKey.Mnemonic
+			state.systemKeyChallengerAddress = challengerKey.Address
+		} else {
+			state.systemKeyOperatorAddress = utils.MustGetAddressFromMnemonic(state.binaryPath, state.systemKeyOperatorMnemonic)
+			state.systemKeyBridgeExecutorAddress = utils.MustGetAddressFromMnemonic(state.binaryPath, state.systemKeyBridgeExecutorMnemonic)
+			state.systemKeyOutputSubmitterAddress = utils.MustGetAddressFromMnemonic(state.binaryPath, state.systemKeyOutputSubmitterMnemonic)
+			state.systemKeyBatchSubmitterAddress = utils.MustGetAddressFromMnemonic(state.binaryPath, state.systemKeyBatchSubmitterMnemonic)
+			state.systemKeyChallengerAddress = utils.MustGetAddressFromMnemonic(state.binaryPath, state.systemKeyChallengerMnemonic)
 		}
-		challengerKey := utils.MustUnmarshalKeyInfo(res)
-		state.systemKeyChallengerMnemonic = challengerKey.Mnemonic
-		state.systemKeyChallengerAddress = challengerKey.Address
 
 		state.FinalizeGenesisAccounts()
-
 		time.Sleep(1500 * time.Millisecond)
 
 		return utils.EndLoading{}
 	}
 }
 
-func (m *GenerateSystemKeysLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m *GenerateOrRecoverSystemKeysLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	loader, cmd := m.loading.Update(msg)
 	m.loading = loader
 	if m.loading.Completing {
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "System keys have been successfully generated.", []string{}, ""))
-		return NewSystemKeysMnemonicDisplayInput(m.state), nil
+		if m.state.generateKeys {
+			m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "System keys have been successfully generated.", []string{}, ""))
+			return NewSystemKeysMnemonicDisplayInput(m.state), nil
+		} else {
+			m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "System keys have been successfully recovered.", []string{}, ""))
+			return NewFundGasStationConfirmationInput(m.state), nil
+		}
 	}
 	return m, cmd
 }
 
-func (m *GenerateSystemKeysLoading) View() string {
+func (m *GenerateOrRecoverSystemKeysLoading) View() string {
 	return m.state.weave.Render() + "\n" + m.loading.View()
 }
 

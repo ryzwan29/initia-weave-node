@@ -41,9 +41,21 @@ func AddOrReplace(appName, keyname string) (string, error) {
 	return string(outputBytes), nil
 }
 
-func MustDeleteKey(appName, keyname string) {
+func MustAddOrReplaceKey(appName, keyname string) string {
+	rawKey, err := AddOrReplace(appName, keyname)
+	if err != nil {
+		panic(err)
+	}
+	return rawKey
+}
+
+func DeleteKey(appName, keyname string) error {
 	cmd := exec.Command(appName, "keys", "delete", keyname, "--keyring-backend", "test", "-y")
-	if err := cmd.Run(); err != nil {
+	return cmd.Run()
+}
+
+func MustDeleteKey(appName, keyname string) {
+	if err := DeleteKey(appName, keyname); err != nil {
 		panic(err)
 	}
 }
@@ -89,4 +101,26 @@ func RecoverKeyFromMnemonic(appName, keyname, mnemonic string) (string, error) {
 
 	// Return the command output if successful
 	return string(outputBytes), nil
+}
+
+func MustRecoverKeyFromMnemonic(appName, keyname, mnemonic string) string {
+	rawKey, err := RecoverKeyFromMnemonic(appName, keyname, mnemonic)
+	if err != nil {
+		panic(err)
+	}
+	return rawKey
+}
+
+func MustGenerateNewKeyInfo(appName, keyname string) KeyInfo {
+	rawKey := MustAddOrReplaceKey(appName, keyname)
+	MustDeleteKey(appName, keyname)
+	return MustUnmarshalKeyInfo(rawKey)
+}
+
+func MustGetAddressFromMnemonic(appName, mnemonic string) string {
+	keyname := "weave.DummyKey"
+	rawKey := MustRecoverKeyFromMnemonic(appName, keyname, mnemonic)
+	MustDeleteKey(appName, keyname)
+	key := MustUnmarshalKeyInfo(rawKey)
+	return key.Address
 }
