@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -1641,6 +1642,7 @@ func generateSystemKeys(state *LaunchState) tea.Cmd {
 		state.systemKeyOutputSubmitterMnemonic = outputSubmitterKey.Mnemonic
 		state.systemKeyOutputSubmitterAddress = outputSubmitterKey.Address
 
+		// TODO: If user chose Celestia as a DA, Generate Celestia key
 		res, err = utils.AddOrReplace(state.binaryPath, BatchSubmitterKeyName)
 		if err != nil {
 			return utils.ErrorLoading{Err: err}
@@ -1902,6 +1904,13 @@ func (m *LaunchingNewMinitiaLoading) Init() tea.Cmd {
 	return m.loading.Init()
 }
 
+var timestampRegex = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z`)
+var initPrefixRegex = regexp.MustCompile(`^init1`)
+
+func isJSONLog(line string) bool {
+	return timestampRegex.MatchString(line) || initPrefixRegex.MatchString(line)
+}
+
 func launchingMinitia(state *LaunchState) tea.Cmd {
 	return func() tea.Msg {
 		userHome, err := os.UserHomeDir()
@@ -1991,7 +2000,9 @@ func launchingMinitia(state *LaunchState) tea.Cmd {
 			scanner := bufio.NewScanner(stdout)
 			for scanner.Scan() {
 				line := scanner.Text()
-				state.minitiadLaunchStreamingLogs = append(state.minitiadLaunchStreamingLogs, line)
+				if !isJSONLog(line) {
+					state.minitiadLaunchStreamingLogs = append(state.minitiadLaunchStreamingLogs, line)
+				}
 			}
 		}()
 
@@ -1999,7 +2010,9 @@ func launchingMinitia(state *LaunchState) tea.Cmd {
 			scanner := bufio.NewScanner(stderr)
 			for scanner.Scan() {
 				line := scanner.Text()
-				state.minitiadLaunchStreamingLogs = append(state.minitiadLaunchStreamingLogs, line)
+				if !isJSONLog(line) {
+					state.minitiadLaunchStreamingLogs = append(state.minitiadLaunchStreamingLogs, line)
+				}
 			}
 		}()
 
@@ -2018,14 +2031,35 @@ func (m *LaunchingNewMinitiaLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	loader, cmd := m.loading.Update(msg)
 	m.loading = loader
 	if m.loading.Completing {
-		// TODO: Fix buggy logs here
 		m.state.minitiadLaunchStreamingLogs = []string{}
 		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "New minitia has been launched.", []string{}, ""))
-		return m, tea.Quit
+		return NewTerminalState(m.state), tea.Quit
 	}
 	return m, cmd
 }
 
 func (m *LaunchingNewMinitiaLoading) View() string {
 	return m.state.weave.Render() + "\n" + m.loading.View() + "\n" + strings.Join(m.state.minitiadLaunchStreamingLogs, "\n")
+}
+
+type TerminalState struct {
+	state *LaunchState
+}
+
+func NewTerminalState(state *LaunchState) *TerminalState {
+	return &TerminalState{
+		state: state,
+	}
+}
+
+func (m *TerminalState) Init() tea.Cmd {
+	return nil
+}
+
+func (m *TerminalState) Update(_ tea.Msg) (tea.Model, tea.Cmd) {
+	return m, nil
+}
+
+func (m *TerminalState) View() string {
+	return m.state.weave.Render()
 }
