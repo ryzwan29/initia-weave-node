@@ -900,6 +900,7 @@ func NewGasStationMnemonicInput(state *LaunchState) *GasStationMnemonicInput {
 		question:  fmt.Sprintf("Please set up a Gas Station account %s\n%s", styles.Text("(The account that will hold the funds required by the OPinit-bots or relayer to send transactions)", styles.Gray), styles.BoldText("Weave will not send any transactions without your confirmation.", styles.Yellow)),
 	}
 	model.WithPlaceholder("Enter the mnemonic")
+	model.WithValidatorFn(utils.ValidateMnemonic)
 	return model
 }
 
@@ -914,7 +915,6 @@ func (m *GasStationMnemonicInput) Init() tea.Cmd {
 func (m *GasStationMnemonicInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-		// TODO: Validate mnemonic & handle error
 		err := utils.SetConfig("common.gas_station_mnemonic", input.Text)
 		if err != nil {
 			panic(err)
