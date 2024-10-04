@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/initia-labs/weave/bip39"
 )
@@ -269,6 +270,25 @@ func IsValidAddress(s string) error {
 
 	if !re.MatchString(s) {
 		return errors.New("invalid address format")
+	}
+	return nil
+}
+
+func ValidateNonEmptyAndLengthString(display string, maxLen int) func(s string) error {
+	return func(s string) error {
+		if s == "" {
+			return fmt.Errorf("%s cannot be empty", display)
+		}
+		if len(s) > maxLen {
+			return fmt.Errorf("%s is too long (max: %d)", display, maxLen)
+		}
+		return nil
+	}
+}
+
+func IsValidTimestamp(s string) error {
+	if _, err := time.ParseDuration(s); err != nil {
+		return fmt.Errorf("invalid time format")
 	}
 	return nil
 }

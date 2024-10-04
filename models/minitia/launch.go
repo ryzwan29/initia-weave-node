@@ -288,6 +288,7 @@ func NewChainIdInput(state *LaunchState) *ChainIdInput {
 		question:  "Please specify the L2 chain id",
 	}
 	model.WithPlaceholder("Enter in alphanumeric format")
+	model.WithValidatorFn(utils.ValidateNonEmptyAndLengthString("Chain id", MaxChainIDLength))
 	return model
 }
 
@@ -327,6 +328,7 @@ func NewGasDenomInput(state *LaunchState) *GasDenomInput {
 		question:  "Please specify the L2 Gas Token Denom",
 	}
 	model.WithPlaceholder("Enter the denom")
+	model.WithValidatorFn(utils.ValidateDenom)
 	return model
 }
 
@@ -366,6 +368,7 @@ func NewMonikerInput(state *LaunchState) *MonikerInput {
 		question:  "Please specify the moniker",
 	}
 	model.WithPlaceholder("Enter the moniker")
+	model.WithValidatorFn(utils.ValidateNonEmptyAndLengthString("Moniker", MaxMonikerLength))
 	return model
 }
 
@@ -406,6 +409,7 @@ func NewOpBridgeSubmissionIntervalInput(state *LaunchState) *OpBridgeSubmissionI
 	}
 	model.WithPlaceholder("Press tab to use “1m”")
 	model.WithDefaultValue("1m")
+	model.WithValidatorFn(utils.IsValidTimestamp)
 	return model
 }
 
@@ -446,6 +450,7 @@ func NewOpBridgeOutputFinalizationPeriodInput(state *LaunchState) *OpBridgeOutpu
 	}
 	model.WithPlaceholder("Press tab to use “24h”")
 	model.WithDefaultValue("24h")
+	model.WithValidatorFn(utils.IsValidTimestamp)
 	return model
 }
 
@@ -658,6 +663,7 @@ func NewSystemKeyOperatorMnemonicInput(state *LaunchState) *SystemKeyOperatorMne
 		question:  "Please add mnemonic for Operator",
 	}
 	model.WithPlaceholder("Enter the mnemonic")
+	model.WithValidatorFn(utils.ValidateMnemonic)
 	return model
 }
 
@@ -697,6 +703,7 @@ func NewSystemKeyBridgeExecutorMnemonicInput(state *LaunchState) *SystemKeyBridg
 		question:  "Please add mnemonic for Bridge Executor",
 	}
 	model.WithPlaceholder("Enter the mnemonic")
+	model.WithValidatorFn(utils.ValidateMnemonic)
 	return model
 }
 
@@ -736,6 +743,7 @@ func NewSystemKeyOutputSubmitterMnemonicInput(state *LaunchState) *SystemKeyOutp
 		question:  "Please add mnemonic for Output Submitter",
 	}
 	model.WithPlaceholder("Enter the mnemonic")
+	model.WithValidatorFn(utils.ValidateMnemonic)
 	return model
 }
 
@@ -775,6 +783,7 @@ func NewSystemKeyBatchSubmitterMnemonicInput(state *LaunchState) *SystemKeyBatch
 		question:  "Please add mnemonic for Batch Submitter",
 	}
 	model.WithPlaceholder("Enter the mnemonic")
+	model.WithValidatorFn(utils.ValidateMnemonic)
 	return model
 }
 
@@ -814,6 +823,7 @@ func NewSystemKeyChallengerMnemonicInput(state *LaunchState) *SystemKeyChallenge
 		question:  "Please add mnemonic for Challenger",
 	}
 	model.WithPlaceholder("Enter the mnemonic")
+	model.WithValidatorFn(utils.ValidateMnemonic)
 	return model
 }
 
