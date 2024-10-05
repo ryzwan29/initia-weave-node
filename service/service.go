@@ -13,7 +13,7 @@ const (
 )
 
 type Service interface {
-	Log() error
+	Log(n int) error
 	Start() error
 	Stop() error
 	Restart() error

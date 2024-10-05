@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strconv"
 )
 
 type Systemd struct {
@@ -18,10 +19,10 @@ func (j *Systemd) GetServiceName() string {
 	return string(j.commandName) + ".service"
 }
 
-func (j *Systemd) Log() error {
+func (j *Systemd) Log(n int) error {
 	fmt.Printf("Streaming logs from systemd %s\n", j.GetServiceName())
 
-	cmd := exec.Command("journalctl", "-f", "-u", j.GetServiceName())
+	cmd := exec.Command("journalctl", "-f", "-u", j.GetServiceName(), "-n", strconv.Itoa(n))
 
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

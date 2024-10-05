@@ -130,13 +130,20 @@ func initiaLogCommand() *cobra.Command {
 		Use:   "log",
 		Short: "Stream the logs of the initiad full node application.",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			n, err := cmd.Flags().GetInt(FlagN)
+			if err != nil {
+				return err
+			}
+
 			s, err := service.NewService(service.Initia)
 			if err != nil {
 				return err
 			}
-			return s.Log()
+			return s.Log(n)
 		},
 	}
+
+	logCmd.Flags().IntP(FlagN, FlagN, 100, "previous log lines to show")
 
 	return logCmd
 }

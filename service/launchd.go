@@ -14,10 +14,6 @@ import (
 	"github.com/initia-labs/weave/utils"
 )
 
-const (
-	PreviousLogLines = 100
-)
-
 type Launchd struct {
 	commandName CommandName
 }
@@ -52,13 +48,13 @@ func (j *Launchd) Restart() error {
 	return nil
 }
 
-func (j *Launchd) Log() error {
+func (j *Launchd) Log(n int) error {
 	fmt.Printf("Streaming logs from launchd %s\n", j.GetServiceName())
-	return j.streamLogsFromFiles()
+	return j.streamLogsFromFiles(n)
 }
 
 // streamLogsFromFiles streams logs from file-based logs
-func (j *Launchd) streamLogsFromFiles() error {
+func (j *Launchd) streamLogsFromFiles(n int) error {
 	userHome, err := os.UserHomeDir()
 	if err != nil {
 		return fmt.Errorf("failed to get user home directory: %v", err)
@@ -70,8 +66,8 @@ func (j *Launchd) streamLogsFromFiles() error {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 
-	go j.tailLogFile(logFilePathOut, os.Stdout)
-	go j.tailLogFile(logFilePathErr, os.Stderr)
+	go j.tailLogFile(logFilePathOut, os.Stdout, n)
+	go j.tailLogFile(logFilePathErr, os.Stderr, n)
 
 	<-sigChan
 
@@ -79,7 +75,7 @@ func (j *Launchd) streamLogsFromFiles() error {
 	return nil
 }
 
-func (j *Launchd) tailLogFile(filePath string, output io.Writer) {
+func (j *Launchd) tailLogFile(filePath string, output io.Writer, maxLogLines int) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		fmt.Printf("error opening log file %s: %v\n", filePath, err)
@@ -92,7 +88,7 @@ func (j *Launchd) tailLogFile(filePath string, output io.Writer) {
 
 	for scanner.Scan() {
 		lines = append(lines, scanner.Text())
-		if len(lines) > PreviousLogLines {
+		if len(lines) > maxLogLines {
 			lines = lines[1:]
 		}
 	}

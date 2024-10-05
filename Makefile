@@ -52,7 +52,7 @@ release:
 # Development purpose
 local: build
 	clear
-	./build/weave minitia launch
+	./build/weave initia init
 
 # Catch-all target
 %:
