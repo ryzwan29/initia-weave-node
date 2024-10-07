@@ -10,10 +10,10 @@ type BotName string
 
 // Create constants for the BotNames
 const (
-	BridgeExecutor  BotName = "bridge executor"
-	OutputSubmitter BotName = "output submitter"
-	BatchSubmitter  BotName = "batch submitter"
-	Challenger      BotName = "challenger"
+	BridgeExecutor  BotName = "Bridge Executor"
+	OutputSubmitter BotName = "Output Submitter"
+	BatchSubmitter  BotName = "Batch Submitter"
+	Challenger      BotName = "Challenger"
 )
 
 // Define a custom type for bot key names
@@ -21,10 +21,10 @@ type BotKeyName string
 
 // Create constants for the bot key names
 const (
-	BridgeExecutorKeyName  = "weave-bridge-executor"
-	OutputSubmitterKeyName = "weave-output-submitter"
-	BatchSubmitterKeyName  = "weave-batch-submitter"
-	ChallengerKeyName      = "weave-challenger"
+	BridgeExecutorKeyName  = "weave_bridge_executor"
+	OutputSubmitterKeyName = "weave_output_submitter"
+	BatchSubmitterKeyName  = "weave_batch_submitter"
+	ChallengerKeyName      = "weave_challenger"
 )
 
 // Create a slice of BotName to hold all bot names
@@ -81,10 +81,10 @@ var BotInfos = []BotInfo{
 // CheckIfKeysExist checks the output of `initiad keys list` and sets IsNotExist for missing keys
 func CheckIfKeysExist(botInfos []BotInfo) []BotInfo {
 	// Run the `initiad keys list --keyring-backend test` command
-	cmd := exec.Command("initiad", "keys", "list", "--keyring-backend", "test")
+	cmd := exec.Command("opinitd", "keys", "list", "weave-dummy")
 	outputBytes, err := cmd.Output()
 	if err != nil {
-		panic("Error running `initiad keys list --keyring-backend test`: " + err.Error())
+		panic("Error running `opinitd keys list weave-dummy`: " + err.Error())
 	}
 	output := string(outputBytes)
 
@@ -94,6 +94,5 @@ func CheckIfKeysExist(botInfos []BotInfo) []BotInfo {
 			botInfos[i].IsNotExist = true
 		}
 	}
-
 	return botInfos
 }

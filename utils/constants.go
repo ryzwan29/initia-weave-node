@@ -14,7 +14,7 @@ const (
 	RunL1NodeDarwinServiceName = "com.initia.daemon"
 	RunL1NodeLinuxServiceName  = "initia"
 
-	MinitiaDirectory = ".minitia"
-
-	WeaveGasStationKeyName = "weave.GasStation"
+	WeaveGasStationKeyName    = "weave.GasStation"
+	MinitiaDirectory          = ".minitia"
+	MinitiaArtifactsDirectory = MinitiaDirectory + "/artifacts"
 )

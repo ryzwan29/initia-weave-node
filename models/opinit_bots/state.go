@@ -4,9 +4,10 @@ import "github.com/initia-labs/weave/types"
 
 type OPInitBotsState struct {
 	BotInfos             []BotInfo
-	SetupOpinitResponses []string
+	SetupOpinitResponses map[BotName]string
 	OPInitBotVersion     string
 	OPInitBotEndpoint    string
+	MinitiaConfig        *types.MinitiaConfig
 	weave                types.WeaveState
 }
 
@@ -14,7 +15,8 @@ type OPInitBotsState struct {
 func NewOPInitBotsState() *OPInitBotsState {
 	return &OPInitBotsState{
 		BotInfos:             CheckIfKeysExist(BotInfos),
-		SetupOpinitResponses: make([]string, 0),
+		SetupOpinitResponses: make(map[BotName]string),
 		weave:                types.NewWeaveState(),
+		MinitiaConfig:        nil,
 	}
 }
