@@ -340,6 +340,7 @@ func NewRecoverFromMnemonic(state *OPInitBotsState, idx int) *RecoverFromMnemoni
 		question:  fmt.Sprintf("Please add mnemonic for new %s", state.BotInfos[idx].BotName),
 		idx:       idx,
 	}
+	model.WithValidatorFn(utils.ValidateMnemonic)
 	model.WithPlaceholder("Enter in your mnemonic")
 	return model
 }
@@ -355,9 +356,9 @@ func (m *RecoverFromMnemonic) Init() tea.Cmd {
 func (m *RecoverFromMnemonic) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-		m.state.BotInfos[m.idx].Mnemonic = input.Text
+		m.state.BotInfos[m.idx].Mnemonic = strings.Trim(input.Text, "\n")
 		m.state.BotInfos[m.idx].IsSetup = false
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, input.Text))
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, styles.HiddenMnemonicText))
 		if m.state.BotInfos[m.idx].BotName == BatchSubmitter {
 			return NewDALayerSelector(m.state, m.idx), nil
 		}
@@ -532,6 +533,7 @@ func WaitSetupOPInitBots(state *OPInitBotsState) tea.Cmd {
 			if info.Mnemonic != "" {
 				res, err := utils.OPInitRecoverKeyFromMnemonic(binaryPath, info.KeyName, info.Mnemonic, info.DALayer == string(CelestiaLayerOption))
 				if err != nil {
+					panic(err)
 					return utils.ErrorLoading{Err: err}
 				}
 				state.SetupOpinitResponses[info.BotName] = res
@@ -540,6 +542,7 @@ func WaitSetupOPInitBots(state *OPInitBotsState) tea.Cmd {
 			if info.IsGenerateKey {
 				res, err := utils.OPInitAddOrReplace(binaryPath, info.KeyName, info.DALayer == string(CelestiaLayerOption))
 				if err != nil {
+					panic(err)
 					return utils.ErrorLoading{Err: err}
 
 				}

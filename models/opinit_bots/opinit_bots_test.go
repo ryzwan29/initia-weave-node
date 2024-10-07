@@ -102,7 +102,7 @@ func TestRecoverFromMnemonicUpdate(t *testing.T) {
 	recoverModel := NewRecoverFromMnemonic(state, 0)
 
 	// Simulate user entering mnemonic
-	mnemonicInput := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("test mnemonic")}
+	mnemonicInput := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("shadow dove chaos charge glove inflict used ladder fringe spring unusual adjust ancient flower onion dynamic suit install erosion syrup slush story rib color")}
 	recoverModel.Update(mnemonicInput)
 
 	// Simulate pressing enter to submit the mnemonic
@@ -110,7 +110,7 @@ func TestRecoverFromMnemonicUpdate(t *testing.T) {
 	model, _ := recoverModel.Update(doneInput)
 
 	// Assert that the state has been updated with the mnemonic and setup is false
-	assert.Equal(t, "test mnemonic", state.BotInfos[0].Mnemonic, "Expected mnemonic to be updated in state")
+	assert.Equal(t, "shadow dove chaos charge glove inflict used ladder fringe spring unusual adjust ancient flower onion dynamic suit install erosion syrup slush story rib color", state.BotInfos[0].Mnemonic, "Expected mnemonic to be updated in state")
 	assert.Equal(t, false, state.BotInfos[0].IsSetup, "Expected setup to be marked as false")
 
 	// Assert that NextUpdateOpinitBotKey returns NewSetupOPInitBots because all bots are now set up
@@ -129,7 +129,7 @@ func TestRecoverFromMnemonicUpdate(t *testing.T) {
 	model, _ = recoverModel.Update(doneInput)
 
 	// Assert that the state has been updated with the mnemonic and setup is false
-	assert.Equal(t, "test mnemonic", state.BotInfos[0].Mnemonic, "Expected mnemonic to be updated in state")
+	assert.Equal(t, "shadow dove chaos charge glove inflict used ladder fringe spring unusual adjust ancient flower onion dynamic suit install erosion syrup slush story rib color", state.BotInfos[0].Mnemonic, "Expected mnemonic to be updated in state")
 	assert.Equal(t, false, state.BotInfos[0].IsSetup, "Expected setup to be marked as false")
 
 	// Assert that NextUpdateOpinitBotKey returns a new RecoverKeySelector since the second bot needs to be set up
