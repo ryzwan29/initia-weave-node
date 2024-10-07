@@ -38,7 +38,9 @@ func OPInitBotsKeysSetupCommand() *cobra.Command {
 		Short: "Setup keys for OPInit bots",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			versions := utils.ListBinaryReleases("https://api.github.com/repos/initia-labs/opinit-bots/releases")
-			_, err := tea.NewProgram(opinit_bots.NewOPInitBotVersionSelector(opinit_bots.NewOPInitBotsState(), versions)).Run()
+			// TODO: default path
+			currentVersion, err := utils.GetBinaryVersion("opinitd")
+			_, err = tea.NewProgram(opinit_bots.NewOPInitBotVersionSelector(opinit_bots.NewOPInitBotsState(), versions, currentVersion)).Run()
 			return err
 		},
 	}

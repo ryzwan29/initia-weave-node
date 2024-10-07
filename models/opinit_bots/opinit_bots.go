@@ -17,20 +17,18 @@ import (
 )
 
 type OPInitBotVersionSelector struct {
-	utils.Selector[string]
+	utils.VersionSelector
 	state    *OPInitBotsState
 	question string
 	versions utils.BinaryVersionWithDownloadURL
 }
 
-func NewOPInitBotVersionSelector(state *OPInitBotsState, versions utils.BinaryVersionWithDownloadURL) *OPInitBotVersionSelector {
+func NewOPInitBotVersionSelector(state *OPInitBotsState, versions utils.BinaryVersionWithDownloadURL, currentVersion string) *OPInitBotVersionSelector {
 	return &OPInitBotVersionSelector{
-		Selector: utils.Selector[string]{
-			Options: utils.SortVersions(versions),
-		},
-		state:    state,
-		versions: versions,
-		question: "Which OPInit bots version would you like to use?",
+		VersionSelector: utils.NewVersionSelector(versions, currentVersion),
+		state:           state,
+		versions:        versions,
+		question:        "Which OPInit bots version would you like to use?",
 	}
 }
 
@@ -47,7 +45,7 @@ func (m *OPInitBotVersionSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if selected != nil {
 		m.state.OPInitBotEndpoint = m.versions[*selected]
 		m.state.OPInitBotVersion = *selected
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"OPInit bots"}, *selected))
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"OPInit bots"}, *selected))
 		return NewSetupOPInitBotKeySelector(m.state), nil
 	}
 
@@ -55,7 +53,7 @@ func (m *OPInitBotVersionSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *OPInitBotVersionSelector) View() string {
-	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"OPInit bots"}, styles.Question) + m.Selector.View()
+	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"OPInit bots"}, styles.Question) + m.VersionSelector.View()
 }
 
 type SetupOPInitBotKeySelector struct {
@@ -506,7 +504,9 @@ func WaitSetupOPInitBots(state *OPInitBotsState) tea.Cmd {
 
 		binaryPath := filepath.Join(userHome, utils.WeaveDataDirectory, fmt.Sprintf("opinitd@%s", version), "opinitd")
 		extractedPath := filepath.Join(weaveDataPath, fmt.Sprintf("opinitd@%s", version))
+
 		if _, err := os.Stat(binaryPath); os.IsNotExist(err) {
+
 			if _, err := os.Stat(extractedPath); os.IsNotExist(err) {
 				err := os.MkdirAll(extractedPath, os.ModePerm)
 				if err != nil {
@@ -522,9 +522,10 @@ func WaitSetupOPInitBots(state *OPInitBotsState) tea.Cmd {
 				panic(fmt.Sprintf("failed to set permissions for binary: %v", err))
 			}
 		}
+
 		for _, info := range state.BotInfos {
 			if info.Mnemonic != "" {
-				res, err := utils.OPInitRecoverKeyFromMnemonic("opinitd", info.KeyName, info.Mnemonic, info.DALayer == string(CelestiaLayerOption))
+				res, err := utils.OPInitRecoverKeyFromMnemonic(binaryPath, info.KeyName, info.Mnemonic, info.DALayer == string(CelestiaLayerOption))
 				if err != nil {
 					return utils.ErrorLoading{Err: err}
 				}
@@ -532,7 +533,7 @@ func WaitSetupOPInitBots(state *OPInitBotsState) tea.Cmd {
 				continue
 			}
 			if info.IsGenerateKey {
-				res, err := utils.OPInitAddOrReplace("opinitd", info.KeyName, info.DALayer == string(CelestiaLayerOption))
+				res, err := utils.OPInitAddOrReplace(binaryPath, info.KeyName, info.DALayer == string(CelestiaLayerOption))
 				if err != nil {
 					return utils.ErrorLoading{Err: err}
 

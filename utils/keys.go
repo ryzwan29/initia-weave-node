@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os/exec"
+	"strings"
 )
 
 type KeyInfo struct {
@@ -62,13 +63,7 @@ func MustDeleteKey(appName, keyname string) {
 
 // KeyExists checks if a key with the given keyName exists using `initiad keys show`
 func KeyExists(appName, keyname string) bool {
-	var cmd *exec.Cmd
-	// Command to show the key: initiad keys show <keyname> --keyring-backend test
-	if appName != "opinitd" {
-		cmd = exec.Command(appName, "keys", "show", keyname, "--keyring-backend", "test")
-	} else {
-		cmd = exec.Command(appName, "keys", "show", "weave-dummy", keyname)
-	}
+	cmd := exec.Command(appName, "keys", "show", keyname, "--keyring-backend", "test")
 	// Run the command and capture the output or error
 	err := cmd.Run()
 	return err == nil
@@ -133,7 +128,7 @@ func MustGetAddressFromMnemonic(appName, mnemonic string) string {
 // If the key already exists, it will replace the key and confirm with 'y' before adding the mnemonic
 func OPInitRecoverKeyFromMnemonic(appName, keyname, mnemonic string, isCelestia bool) (string, error) {
 	// Check if the key already exists
-	exists := KeyExists(appName, keyname)
+	exists := OPInitKeyExist(appName, keyname)
 
 	var cmd *exec.Cmd
 	var inputBuffer bytes.Buffer
@@ -169,10 +164,17 @@ func OPInitRecoverKeyFromMnemonic(appName, keyname, mnemonic string, isCelestia 
 	return string(outputBytes), nil
 }
 
+func OPInitKeyExist(appName, keyname string) bool {
+	cmd := exec.Command(appName, "keys", "show", "weave-dummy", keyname)
+	// Run the command and capture the output or error
+	err := cmd.Run()
+	return err == nil
+}
+
 // AddOrReplace adds or replaces a key using `initiad keys add <keyname> --keyring-backend test` with 'y' confirmation
 func OPInitAddOrReplace(appName, keyname string, isCelestia bool) (string, error) {
 	// Check if the key already exists
-	exists := KeyExists(appName, keyname)
+	exists := OPInitKeyExist(appName, keyname)
 	var cmd *exec.Cmd
 	var inputBuffer bytes.Buffer
 	if exists {
@@ -203,4 +205,19 @@ func OPInitAddOrReplace(appName, keyname string, isCelestia bool) (string, error
 	}
 
 	return string(outputBytes), nil
+}
+
+func GetBinaryVersion(appName string) (string, error) {
+	var cmd *exec.Cmd
+	var inputBuffer bytes.Buffer
+	// Simulate pressing 'y' for confirmation
+	inputBuffer.WriteString("y\n")
+	cmd = exec.Command(appName, "version")
+	// Run the command and capture the output
+	outputBytes, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("failed to get binary version of %s: %v, output: %s", appName, err, string(outputBytes))
+	}
+
+	return strings.Trim(string(outputBytes), "\n"), nil
 }

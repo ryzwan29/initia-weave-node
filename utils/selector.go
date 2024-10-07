@@ -43,3 +43,35 @@ func (s *Selector[T]) View() string {
 
 	return view + styles.Text("\nPress Enter to select, press Ctrl+C or q to quit.\n", styles.Gray)
 }
+
+type VersionSelector struct {
+	Selector[string]
+	currentVersion string
+}
+
+func NewVersionSelector(versions BinaryVersionWithDownloadURL, currentVersion string) VersionSelector {
+	return VersionSelector{
+		Selector: Selector[string]{
+			Options: SortVersions(versions),
+		},
+		currentVersion: currentVersion,
+	}
+}
+
+func (v *VersionSelector) View() string {
+	view := "\n\n"
+	for i, option := range v.Options {
+		if i == v.Cursor {
+			view += styles.SelectorCursor + styles.BoldText(fmt.Sprintf("%v", option), styles.White)
+			if option == v.currentVersion {
+				view += styles.BoldText(" (your current version)", styles.White)
+			}
+			view += "\n"
+		} else {
+			view += "  " + styles.Text(fmt.Sprintf("%v", option), styles.Ivory) + "\n"
+		}
+
+	}
+
+	return view + styles.Text("\nPress Enter to select, press Ctrl+C or q to quit.\n", styles.Gray)
+}

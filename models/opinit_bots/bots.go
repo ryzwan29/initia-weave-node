@@ -84,7 +84,7 @@ func CheckIfKeysExist(botInfos []BotInfo) []BotInfo {
 	cmd := exec.Command("opinitd", "keys", "list", "weave-dummy")
 	outputBytes, err := cmd.Output()
 	if err != nil {
-		panic("Error running `opinitd keys list weave-dummy`: " + err.Error())
+		return botInfos
 	}
 	output := string(outputBytes)
 
