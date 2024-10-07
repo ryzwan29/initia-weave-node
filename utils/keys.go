@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 )
 
@@ -77,8 +79,6 @@ func RecoverKeyFromMnemonic(appName, keyname, mnemonic string) (string, error) {
 
 	var inputBuffer bytes.Buffer
 	if exists {
-		// If the key exists, print a message about replacing it and add 'y' confirmation
-		fmt.Printf("Key %s already exists, replacing it...\n", keyname)
 		// Simulate pressing 'y' for confirmation
 		inputBuffer.WriteString("y\n")
 	}
@@ -220,4 +220,54 @@ func GetBinaryVersion(appName string) (string, error) {
 	}
 
 	return strings.Trim(string(outputBytes), "\n"), nil
+}
+
+// SetSymlink sets a symbolic link in the parent directory pointing to the target binary.
+func SetSymlink(targetPath string) error {
+	// Resolve absolute path for clarity
+	absTargetPath, err := filepath.Abs(targetPath)
+	if err != nil {
+		return fmt.Errorf("failed to get absolute path of target: %v", err)
+	}
+
+	// Extract the base name of the target binary to create the symlink name automatically
+	// Example: if the target is "~/.weave/data/opinitd@v0.1.0-test/opinitd", the symlink name will be "opinitd".
+	binaryName := filepath.Base(absTargetPath)
+
+	// Define the symlink path in the parent directory of the versioned directory
+	symlinkPath := filepath.Join(filepath.Dir(filepath.Dir(absTargetPath)), binaryName)
+
+	// Check if the symlink or file already exists
+	if fileInfo, err := os.Lstat(symlinkPath); err == nil {
+		// If the path exists and is a symlink
+		if fileInfo.Mode()&os.ModeSymlink != 0 {
+			existingTarget, err := os.Readlink(symlinkPath)
+			if err != nil {
+				return fmt.Errorf("failed to read existing symlink: %v", err)
+			}
+			// If the symlink points to a different target, remove it
+			if existingTarget != absTargetPath {
+				if err := os.Remove(symlinkPath); err != nil {
+					return fmt.Errorf("failed to remove existing symlink: %v", err)
+				}
+			} else {
+				return nil
+			}
+		} else {
+			// If the path is not a symlink (file or directory), remove it
+			if err := os.Remove(symlinkPath); err != nil {
+				return fmt.Errorf("failed to remove existing file or directory: %v", err)
+			}
+		}
+	} else if !os.IsNotExist(err) {
+		// If there's an error other than "not exist", return it
+		return fmt.Errorf("failed to check existing file or directory: %v", err)
+	}
+
+	// Create the symlink
+	if err := os.Symlink(absTargetPath, symlinkPath); err != nil {
+		return fmt.Errorf("failed to create symlink: %v", err)
+	}
+
+	return nil
 }

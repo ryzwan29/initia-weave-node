@@ -539,7 +539,6 @@ func WaitExistingGenesisChecker(state *RunL1NodeState) tea.Cmd {
 	return func() tea.Msg {
 		homeDir, err := os.UserHomeDir()
 		if err != nil {
-			fmt.Printf("[error] Failed to get user home directory: %v\n", err)
 			return utils.ErrorLoading{Err: err}
 		}
 		initiaConfigPath := filepath.Join(homeDir, utils.InitiaConfigDirectory)
@@ -994,7 +993,6 @@ func WaitExistingDataChecker(state *RunL1NodeState) tea.Cmd {
 	return func() tea.Msg {
 		homeDir, err := os.UserHomeDir()
 		if err != nil {
-			fmt.Printf("[error] Failed to get user home directory: %v\n", err)
 			return utils.ErrorLoading{Err: err}
 		}
 

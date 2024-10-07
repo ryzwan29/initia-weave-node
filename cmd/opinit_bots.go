@@ -1,6 +1,9 @@
 package cmd
 
 import (
+	"os"
+	"path/filepath"
+
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 
@@ -38,8 +41,12 @@ func OPInitBotsKeysSetupCommand() *cobra.Command {
 		Short: "Setup keys for OPInit bots",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			versions := utils.ListBinaryReleases("https://api.github.com/repos/initia-labs/opinit-bots/releases")
-			// TODO: default path
-			currentVersion, err := utils.GetBinaryVersion("opinitd")
+			userHome, err := os.UserHomeDir()
+			if err != nil {
+				panic(err)
+			}
+			binaryPath := filepath.Join(userHome, utils.WeaveDataDirectory, "opinitd")
+			currentVersion, _ := utils.GetBinaryVersion(binaryPath)
 			_, err = tea.NewProgram(opinit_bots.NewOPInitBotVersionSelector(opinit_bots.NewOPInitBotsState(), versions, currentVersion)).Run()
 			return err
 		},

@@ -53,7 +53,7 @@ func (m *OPInitBotVersionSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *OPInitBotVersionSelector) View() string {
-	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"OPInit bots"}, styles.Question) + m.VersionSelector.View()
+	return styles.RenderPrompt(m.GetQuestion(), []string{"OPInit bots"}, styles.Question) + m.VersionSelector.View()
 }
 
 type SetupOPInitBotKeySelector struct {
@@ -521,6 +521,11 @@ func WaitSetupOPInitBots(state *OPInitBotsState) tea.Cmd {
 			if err != nil {
 				panic(fmt.Sprintf("failed to set permissions for binary: %v", err))
 			}
+		}
+
+		err = utils.SetSymlink(binaryPath)
+		if err != nil {
+			panic(err)
 		}
 
 		for _, info := range state.BotInfos {
