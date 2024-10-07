@@ -524,7 +524,6 @@ func WaitSetupOPInitBots(state *OPInitBotsState) tea.Cmd {
 		}
 		for _, info := range state.BotInfos {
 			if info.Mnemonic != "" {
-				// TODO: recover celestia
 				res, err := utils.OPInitRecoverKeyFromMnemonic("opinitd", info.KeyName, info.Mnemonic, info.DALayer == string(CelestiaLayerOption))
 				if err != nil {
 					return utils.ErrorLoading{Err: err}
