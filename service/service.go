@@ -13,6 +13,7 @@ const (
 )
 
 type Service interface {
+	Create(binaryVersion string) error
 	Log(n int) error
 	Start() error
 	Stop() error
@@ -22,9 +23,9 @@ type Service interface {
 func NewService(commandName CommandName) (Service, error) {
 	switch runtime.GOOS {
 	case "linux":
-		return NewSystemd(Initia), nil
+		return NewSystemd(commandName), nil
 	case "darwin":
-		return NewLaunchd(Initia), nil
+		return NewLaunchd(commandName), nil
 	default:
 		return nil, fmt.Errorf("unsupported OS: %s", runtime.GOOS)
 	}

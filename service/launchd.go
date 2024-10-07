@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -22,8 +23,61 @@ func NewLaunchd(commandName CommandName) *Launchd {
 	return &Launchd{commandName: commandName}
 }
 
+func (j *Launchd) GetCommandName() string {
+	return string(j.commandName)
+}
+
 func (j *Launchd) GetServiceName() string {
-	return "com." + string(j.commandName) + ".daemon"
+	return fmt.Sprintf("com.%sd.daemon", string(j.commandName))
+}
+
+func (j *Launchd) GetAppHome() string {
+	switch j.commandName {
+	case Initia:
+		return utils.InitiaDirectory
+	case Minitia:
+		return utils.MinitiaDirectory
+	}
+	panic("unsupported app")
+}
+
+func (j *Launchd) Create(binaryVersion string) error {
+	userHome, err := os.UserHomeDir()
+	if err != nil {
+		return fmt.Errorf("failed to get user home directory: %v", err)
+	}
+
+	weaveDataPath := filepath.Join(userHome, utils.WeaveDataDirectory)
+	weaveLogPath := filepath.Join(userHome, utils.WeaveLogDirectory)
+	binaryName := fmt.Sprintf("%sd", j.GetCommandName())
+	binaryPath := filepath.Join(weaveDataPath, binaryVersion)
+	appHome := filepath.Join(userHome, j.GetAppHome())
+	if err = os.Setenv("DYLD_LIBRARY_PATH", binaryPath); err != nil {
+		panic(fmt.Errorf("failed to set DYLD_LIBRARY_PATH: %v", err))
+	}
+	if err = os.Setenv("HOME", userHome); err != nil {
+		panic(fmt.Errorf("failed to set HOME: %v", err))
+	}
+
+	cmd := exec.Command("tee", filepath.Join(userHome, fmt.Sprintf("Library/LaunchAgents/%s.plist", j.GetServiceName())))
+	template := DarwinTemplateMap[j.commandName]
+	cmd.Stdin = strings.NewReader(fmt.Sprintf(string(template), binaryName, binaryPath, appHome, userHome, weaveLogPath))
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to create service: %v", err)
+	}
+	return j.loadService()
+}
+
+func (j *Launchd) loadService() error {
+	userHome, err := os.UserHomeDir()
+	if err != nil {
+		return fmt.Errorf("failed to get user home directory: %v", err)
+	}
+	loadCmd := exec.Command("launchctl", "load", filepath.Join(userHome, fmt.Sprintf("Library/LaunchAgents/%s.plist", j.GetServiceName())))
+	if err := loadCmd.Run(); err != nil {
+		return fmt.Errorf("failed to load service: %v", err)
+	}
+	return nil
 }
 
 func (j *Launchd) Start() error {
@@ -60,8 +114,8 @@ func (j *Launchd) streamLogsFromFiles(n int) error {
 		return fmt.Errorf("failed to get user home directory: %v", err)
 	}
 
-	logFilePathOut := filepath.Join(userHome, utils.WeaveLogDirectory, "initia.stdout.log")
-	logFilePathErr := filepath.Join(userHome, utils.WeaveLogDirectory, "initia.stderr.log")
+	logFilePathOut := filepath.Join(userHome, utils.WeaveLogDirectory, fmt.Sprintf("%sd.stdout.log", j.GetCommandName()))
+	logFilePathErr := filepath.Join(userHome, utils.WeaveLogDirectory, fmt.Sprintf("%sd.stderr.log", j.GetCommandName()))
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)

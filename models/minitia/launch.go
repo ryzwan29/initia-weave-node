@@ -13,6 +13,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/initia-labs/weave/service"
 	"github.com/initia-labs/weave/styles"
 	"github.com/initia-labs/weave/utils"
 )
@@ -1720,11 +1721,11 @@ func (m *SystemKeysMnemonicDisplayInput) Update(msg tea.Msg) (tea.Model, tea.Cmd
 
 func (m *SystemKeysMnemonicDisplayInput) View() string {
 	var mnemonicText string
-	mnemonicText += renderMnemonic("Operator", m.state.systemKeyOperatorMnemonic)
-	mnemonicText += renderMnemonic("Bridge Executor", m.state.systemKeyBridgeExecutorMnemonic)
-	mnemonicText += renderMnemonic("Output Submitter", m.state.systemKeyOutputSubmitterMnemonic)
-	mnemonicText += renderMnemonic("Batch Submitter", m.state.systemKeyBatchSubmitterMnemonic)
-	mnemonicText += renderMnemonic("Challenger", m.state.systemKeyChallengerMnemonic)
+	mnemonicText += renderMnemonic("Operator", m.state.systemKeyOperatorAddress, m.state.systemKeyOperatorMnemonic)
+	mnemonicText += renderMnemonic("Bridge Executor", m.state.systemKeyBridgeExecutorAddress, m.state.systemKeyBridgeExecutorMnemonic)
+	mnemonicText += renderMnemonic("Output Submitter", m.state.systemKeyOutputSubmitterAddress, m.state.systemKeyOutputSubmitterMnemonic)
+	mnemonicText += renderMnemonic("Batch Submitter", m.state.systemKeyBatchSubmitterAddress, m.state.systemKeyBatchSubmitterMnemonic)
+	mnemonicText += renderMnemonic("Challenger", m.state.systemKeyChallengerAddress, m.state.systemKeyChallengerMnemonic)
 
 	return m.state.weave.Render() + "\n" +
 		styles.BoldUnderlineText("Important", styles.Yellow) + "\n" +
@@ -1732,8 +1733,9 @@ func (m *SystemKeysMnemonicDisplayInput) View() string {
 		mnemonicText + styles.RenderPrompt(m.GetQuestion(), []string{"`continue`"}, styles.Question) + m.TextInput.View()
 }
 
-func renderMnemonic(keyName, mnemonic string) string {
+func renderMnemonic(keyName, address, mnemonic string) string {
 	return styles.BoldText("Key Name: ", styles.Ivory) + keyName + "\n" +
+		styles.BoldText("Address: ", styles.Ivory) + address + "\n" +
 		styles.BoldText("Mnemonic:", styles.Ivory) + "\n" + mnemonic + "\n\n"
 }
 
@@ -1999,6 +2001,15 @@ func launchingMinitia(state *LaunchState) tea.Cmd {
 				state.minitiadLaunchStreamingLogs = append(state.minitiadLaunchStreamingLogs, fmt.Sprintf("Launch command finished with error: %v", err))
 				panic(fmt.Errorf("command execution failed: %v", err))
 			}
+		}
+
+		srv, err := service.NewService(service.Minitia)
+		if err != nil {
+			panic(fmt.Sprintf("failed to initialize service: %v", err))
+		}
+
+		if err = srv.Create(fmt.Sprintf("mini%s@%s", strings.ToLower(state.vmType), state.minitiadVersion)); err != nil {
+			panic(fmt.Sprintf("failed to create service: %v", err))
 		}
 
 		return utils.EndLoading{}
