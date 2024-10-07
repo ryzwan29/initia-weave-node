@@ -399,6 +399,7 @@ func (m *SetupOPInitBots) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *SetupOPInitBots) View() string {
 	if m.loading.Completing {
+		// Handle WaitSetupOPInitBots err
 		if len(m.state.SetupOpinitResponses) > 0 {
 			mnemonicText := ""
 			for botName, res := range m.state.SetupOpinitResponses {
@@ -533,7 +534,6 @@ func WaitSetupOPInitBots(state *OPInitBotsState) tea.Cmd {
 			if info.Mnemonic != "" {
 				res, err := utils.OPInitRecoverKeyFromMnemonic(binaryPath, info.KeyName, info.Mnemonic, info.DALayer == string(CelestiaLayerOption))
 				if err != nil {
-					panic(err)
 					return utils.ErrorLoading{Err: err}
 				}
 				state.SetupOpinitResponses[info.BotName] = res
@@ -542,7 +542,6 @@ func WaitSetupOPInitBots(state *OPInitBotsState) tea.Cmd {
 			if info.IsGenerateKey {
 				res, err := utils.OPInitAddOrReplace(binaryPath, info.KeyName, info.DALayer == string(CelestiaLayerOption))
 				if err != nil {
-					panic(err)
 					return utils.ErrorLoading{Err: err}
 
 				}
