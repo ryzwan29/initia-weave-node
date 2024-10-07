@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 	"time"
 
@@ -1558,7 +1559,16 @@ func downloadMinitiaApp(state *LaunchState) tea.Cmd {
 		weaveDataPath := filepath.Join(userHome, utils.WeaveDataDirectory)
 		tarballPath := filepath.Join(weaveDataPath, "minitia.tar.gz")
 		extractedPath := filepath.Join(weaveDataPath, fmt.Sprintf("mini%s@%s", strings.ToLower(state.vmType), state.minitiadVersion))
-		binaryPath := filepath.Join(extractedPath, AppName)
+
+		var binaryPath string
+		switch runtime.GOOS {
+		case "linux":
+			binaryPath = filepath.Join(extractedPath, fmt.Sprintf("mini%s_%s", strings.ToLower(state.vmType), state.minitiadVersion), AppName)
+		case "darwin":
+			binaryPath = filepath.Join(extractedPath, AppName)
+		default:
+			panic("unsupported OS")
+		}
 		state.binaryPath = binaryPath
 
 		if _, err := os.Stat(binaryPath); os.IsNotExist(err) {

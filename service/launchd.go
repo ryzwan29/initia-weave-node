@@ -68,6 +68,18 @@ func (j *Launchd) Create(binaryVersion string) error {
 	return j.loadService()
 }
 
+func (j *Launchd) unloadService() error {
+	userHome, err := os.UserHomeDir()
+	if err != nil {
+		return fmt.Errorf("failed to get user home directory: %v", err)
+	}
+	unloadCmd := exec.Command("launchctl", "unload", filepath.Join(userHome, fmt.Sprintf("Library/LaunchAgents/%s.plist", j.GetServiceName())))
+	if err = unloadCmd.Run(); err != nil {
+		return fmt.Errorf("failed to unload service: %v", err)
+	}
+	return nil
+}
+
 func (j *Launchd) loadService() error {
 	userHome, err := os.UserHomeDir()
 	if err != nil {
