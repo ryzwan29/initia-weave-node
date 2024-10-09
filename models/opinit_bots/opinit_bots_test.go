@@ -4,9 +4,157 @@ import (
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/initia-labs/weave/utils"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/initia-labs/weave/types"
+	"github.com/initia-labs/weave/utils"
 )
+
+func TestOPInitBotVersionSelector(t *testing.T) {
+	// Set up test data
+	versions := utils.BinaryVersionWithDownloadURL{
+		"v0.1.0": "https://example.com/v0.1.0",
+		"v0.2.0": "https://example.com/v0.2.0",
+	}
+	currentVersion := "v0.2.0"
+	state := &OPInitBotsState{}
+
+	selector := NewOPInitBotVersionSelector(state, versions, currentVersion)
+
+	// Simulate moving down to select the next version (v0.1.0)
+	selector.Update(tea.KeyMsg{Type: tea.KeyDown})
+	selector.Update(tea.KeyMsg{Type: tea.KeyEnter}) // Press enter to select
+
+	// Assert that the state was updated correctly after the down movement
+	assert.Equal(t, "https://example.com/v0.1.0", state.OPInitBotEndpoint)
+	assert.Equal(t, "v0.1.0", state.OPInitBotVersion)
+
+	// Simulate moving up to go back to the previous version (v0.2.0)
+	selector.Update(tea.KeyMsg{Type: tea.KeyUp})
+	selector.Update(tea.KeyMsg{Type: tea.KeyEnter}) // Press enter to select
+
+	// Assert that the state was updated correctly after the up movement
+	assert.Equal(t, "https://example.com/v0.2.0", state.OPInitBotEndpoint)
+	assert.Equal(t, "v0.2.0", state.OPInitBotVersion)
+}
+
+func TestProcessingMinitiaConfig_Update_WithNavigation(t *testing.T) {
+	// Set up state with mnemonics for all bot names in MinitiaConfig
+	state := &OPInitBotsState{
+		BotInfos: []BotInfo{
+			{BotName: BridgeExecutor, IsNotExist: true},
+			{BotName: OutputSubmitter, IsNotExist: true},
+			{BotName: BatchSubmitter, IsNotExist: true},
+			{BotName: Challenger, IsNotExist: true},
+		},
+		MinitiaConfig: &types.MinitiaConfig{
+			SystemKeys: types.ValidatorKeys{
+				BridgeExecutor:  types.KeyDetails{Mnemonic: "bridge-mnemonic"},
+				OutputSubmitter: types.KeyDetails{Mnemonic: "output-mnemonic"},
+				BatchSubmitter:  types.KeyDetails{Mnemonic: "batch-mnemonic"},
+				Challenger:      types.KeyDetails{Mnemonic: "challenger-mnemonic"},
+			},
+		},
+	}
+	processingConfig := NewProcessingMinitiaConfig(state)
+
+	// Test selecting the "No" option by navigating down
+	processingConfig.Update(tea.KeyMsg{Type: tea.KeyDown})  // Move down to select "No"
+	processingConfig.Update(tea.KeyMsg{Type: tea.KeyEnter}) // Press enter to confirm "No"
+
+	// Assert that the state remains unchanged for the "No" option
+	for _, botInfo := range state.BotInfos {
+		assert.True(t, botInfo.IsNotExist) // It should remain true as "No" was selected
+	}
+
+	// Reset state for the next test
+	state = &OPInitBotsState{
+		BotInfos: []BotInfo{
+			{BotName: BridgeExecutor, IsNotExist: true},
+			{BotName: OutputSubmitter, IsNotExist: true},
+			{BotName: BatchSubmitter, IsNotExist: true},
+			{BotName: Challenger, IsNotExist: true},
+		},
+		MinitiaConfig: &types.MinitiaConfig{
+			SystemKeys: types.ValidatorKeys{
+				BridgeExecutor:  types.KeyDetails{Mnemonic: "bridge-mnemonic"},
+				OutputSubmitter: types.KeyDetails{Mnemonic: "output-mnemonic"},
+				BatchSubmitter:  types.KeyDetails{Mnemonic: "batch-mnemonic"},
+				Challenger:      types.KeyDetails{Mnemonic: "challenger-mnemonic"},
+			},
+		},
+	}
+	state.MinitiaConfig.SystemKeys.BridgeExecutor.Mnemonic = "bridge-mnemonic"
+	state.MinitiaConfig.SystemKeys.OutputSubmitter.Mnemonic = "output-mnemonic"
+	state.MinitiaConfig.SystemKeys.BatchSubmitter.Mnemonic = "batch-mnemonic"
+	state.MinitiaConfig.SystemKeys.Challenger.Mnemonic = "challenger-mnemonic"
+
+	processingConfig = NewProcessingMinitiaConfig(state)
+
+	// Test selecting the "Yes" option by navigating up
+	processingConfig.Update(tea.KeyMsg{Type: tea.KeyEnter}) // Press enter to confirm "Yes"
+
+	// Assert that BotInfos have been updated correctly when 'Yes' is selected
+	for _, botInfo := range state.BotInfos {
+		assert.False(t, botInfo.IsNotExist)
+		switch botInfo.BotName {
+		case BridgeExecutor:
+			assert.Equal(t, "bridge-mnemonic", botInfo.Mnemonic)
+		case OutputSubmitter:
+			assert.Equal(t, "output-mnemonic", botInfo.Mnemonic)
+		case BatchSubmitter:
+			assert.Equal(t, "batch-mnemonic", botInfo.Mnemonic)
+		case Challenger:
+			assert.Equal(t, "challenger-mnemonic", botInfo.Mnemonic)
+		}
+	}
+}
+
+func TestRecoverKeySelector_Update(t *testing.T) {
+	// Set up state with BotInfos and MinitiaConfig
+	state := &OPInitBotsState{
+		BotInfos: []BotInfo{
+			{BotName: BridgeExecutor, IsNotExist: true},
+			{BotName: OutputSubmitter, IsNotExist: true},
+			{BotName: BatchSubmitter, IsNotExist: true},
+			{BotName: Challenger, IsNotExist: true},
+		},
+		MinitiaConfig: &types.MinitiaConfig{
+			SystemKeys: types.ValidatorKeys{
+				BridgeExecutor:  types.KeyDetails{Mnemonic: "bridge-mnemonic"},
+				OutputSubmitter: types.KeyDetails{Mnemonic: "output-mnemonic"},
+				BatchSubmitter:  types.KeyDetails{Mnemonic: "batch-mnemonic"},
+				Challenger:      types.KeyDetails{Mnemonic: "challenger-mnemonic"},
+			},
+		},
+	}
+
+	// Test the "Generate new system key" option
+	recoverKeySelector := NewRecoverKeySelector(state, 2) // idx 2 corresponds to BatchSubmitter
+
+	// Simulate pressing Enter for the "Generate new system key" option (default option)
+	recoverKeySelector.Update(tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Assert that the state is updated correctly for "Generate new system key"
+	assert.True(t, state.BotInfos[2].IsGenerateKey)
+	assert.False(t, state.BotInfos[2].IsSetup)
+
+	// Reset state for the next test
+	state.BotInfos[2].IsGenerateKey = false
+	state.BotInfos[2].IsSetup = false
+
+	// Test the "Import existing key" option
+	recoverKeySelector = NewRecoverKeySelector(state, 2) // idx 2 corresponds to BatchSubmitter
+
+	// Simulate navigating down to "Import existing key"
+	recoverKeySelector.Update(tea.KeyMsg{Type: tea.KeyDown})
+	recoverKeySelector.Update(tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Assert that the next model is NewRecoverFromMnemonic based on the selection
+	nextModel, _ := recoverKeySelector.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	_, isNewRecoverFromMnemonic := nextModel.(*RecoverFromMnemonic)
+	assert.True(t, isNewRecoverFromMnemonic, "Expected NewRecoverFromMnemonic model")
+}
 
 func TestSetupBotCheckbox_KeyNavigationAndSelection(t *testing.T) {
 	// Step 1: Initialize state and SetupBotCheckbox
