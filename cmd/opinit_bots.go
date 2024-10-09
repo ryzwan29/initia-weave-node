@@ -19,18 +19,8 @@ func OPInitBotsCommand() *cobra.Command {
 		SuggestionsMinimumDistance: 2,
 	}
 
-	cmd.AddCommand(OPInitBotsKeysCommand())
-
-	return cmd
-}
-
-func OPInitBotsKeysCommand() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "keys",
-		Short: "OPInit bots keys subcommands",
-	}
-
 	cmd.AddCommand(OPInitBotsKeysSetupCommand())
+	cmd.AddCommand(OPInitBotsInitCommand())
 
 	return cmd
 }
@@ -48,6 +38,18 @@ func OPInitBotsKeysSetupCommand() *cobra.Command {
 			binaryPath := filepath.Join(userHome, utils.WeaveDataDirectory, "opinitd")
 			currentVersion, _ := utils.GetBinaryVersion(binaryPath)
 			_, err = tea.NewProgram(opinit_bots.NewOPInitBotVersionSelector(opinit_bots.NewOPInitBotsState(), versions, currentVersion)).Run()
+			return err
+		},
+	}
+	return cmd
+}
+
+func OPInitBotsInitCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "init",
+		Short: "init for OPInit bots",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			_, err := tea.NewProgram(opinit_bots.NewOPInitBotInitSelector(opinit_bots.NewOPInitBotsState())).Run()
 			return err
 		},
 	}
