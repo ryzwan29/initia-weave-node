@@ -30,7 +30,7 @@ type OpBridge struct {
 	OutputFinalizationPeriod    string `json:"output_finalization_period,omitempty"`
 	OutputSubmissionStartHeight uint64 `json:"output_submission_start_height,omitempty"`
 	BatchSubmissionTarget       string `json:"batch_submission_target"`
-	EnableOracle                bool   `json:"enable_oracle,omitempty"`
+	EnableOracle                bool   `json:"enable_oracle"`
 }
 
 type SystemAccount struct {
@@ -39,16 +39,11 @@ type SystemAccount struct {
 	Mnemonic  string `json:"mnemonic,omitempty"`
 }
 
-func NewSystemAccount(mnemonic, address, l1Balance, l2Balance string) *SystemAccount {
+func NewSystemAccount(mnemonic, address string) *SystemAccount {
 	account := &SystemAccount{
-		Mnemonic: mnemonic,
-	}
-
-	if l1Balance != "" {
-		account.L1Address = address
-	}
-	if l2Balance != "" {
-		account.L2Address = address
+		Mnemonic:  mnemonic,
+		L1Address: address,
+		L2Address: address,
 	}
 
 	return account

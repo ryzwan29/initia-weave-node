@@ -449,8 +449,8 @@ func NewOpBridgeOutputFinalizationPeriodInput(state *LaunchState) *OpBridgeOutpu
 		state:     state,
 		question:  "Please specify OP bridge config: Output Finalization Period (format s, m or h - ex. 30s, 5m, 12h)",
 	}
-	model.WithPlaceholder("Press tab to use “24h”")
-	model.WithDefaultValue("24h")
+	model.WithPlaceholder("Press tab to use “168h” (7 days)")
+	model.WithDefaultValue("168h")
 	model.WithValidatorFn(utils.IsValidTimestamp)
 	return model
 }
@@ -570,6 +570,8 @@ func (m *OracleEnableSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if selected != nil {
 		if *selected == Enable {
 			m.state.enableOracle = true
+		} else {
+			m.state.enableOracle = false
 		}
 		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"oracle"}, string(*selected)))
 		return NewSystemKeysSelect(m.state), nil
@@ -1251,7 +1253,6 @@ func NewSystemKeyL2OutputSubmitterBalanceInput(state *LaunchState) *SystemKeyL2O
 		question:  fmt.Sprintf("Please specify initial balance for Output Submitter on L2 (%s)", state.gasDenom),
 	}
 	model.WithPlaceholder("Enter the balance (Press Enter to skip)")
-	model.WithValidatorFn(utils.IsValidInteger)
 	return model
 }
 
@@ -1266,8 +1267,15 @@ func (m *SystemKeyL2OutputSubmitterBalanceInput) Init() tea.Cmd {
 func (m *SystemKeyL2OutputSubmitterBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-		m.state.systemKeyL2OutputSubmitterBalance = fmt.Sprintf("%s%s", input.Text, m.state.gasDenom)
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Output Submitter", "L2"}, input.Text))
+		var text string
+		if input.Text == "" {
+			m.state.systemKeyL2OutputSubmitterBalance = ""
+			text = "None"
+		} else {
+			m.state.systemKeyL2OutputSubmitterBalance = fmt.Sprintf("%s%s", input.Text, m.state.gasDenom)
+			text = input.Text
+		}
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Output Submitter", "L2"}, text))
 		return NewSystemKeyL2BatchSubmitterBalanceInput(m.state), nil
 	}
 	m.TextInput = input
@@ -1292,7 +1300,6 @@ func NewSystemKeyL2BatchSubmitterBalanceInput(state *LaunchState) *SystemKeyL2Ba
 		question:  fmt.Sprintf("Please specify initial balance for Batch Submitter on L2 (%s)", state.gasDenom),
 	}
 	model.WithPlaceholder("Enter the balance (Press Enter to skip)")
-	model.WithValidatorFn(utils.IsValidInteger)
 	return model
 }
 
@@ -1307,8 +1314,15 @@ func (m *SystemKeyL2BatchSubmitterBalanceInput) Init() tea.Cmd {
 func (m *SystemKeyL2BatchSubmitterBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-		m.state.systemKeyL2BatchSubmitterBalance = fmt.Sprintf("%s%s", input.Text, m.state.gasDenom)
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Batch Submitter", "L2"}, input.Text))
+		var text string
+		if input.Text == "" {
+			m.state.systemKeyL2BatchSubmitterBalance = ""
+			text = "None"
+		} else {
+			m.state.systemKeyL2BatchSubmitterBalance = fmt.Sprintf("%s%s", input.Text, m.state.gasDenom)
+			text = input.Text
+		}
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Batch Submitter", "L2"}, text))
 		return NewSystemKeyL2ChallengerBalanceInput(m.state), nil
 	}
 	m.TextInput = input
@@ -1333,7 +1347,6 @@ func NewSystemKeyL2ChallengerBalanceInput(state *LaunchState) *SystemKeyL2Challe
 		question:  fmt.Sprintf("Please specify initial balance for Challenger on L2 (%s)", state.gasDenom),
 	}
 	model.WithPlaceholder("Enter the balance (Press Enter to skip)")
-	model.WithValidatorFn(utils.IsValidInteger)
 	return model
 }
 
@@ -1348,9 +1361,16 @@ func (m *SystemKeyL2ChallengerBalanceInput) Init() tea.Cmd {
 func (m *SystemKeyL2ChallengerBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-		m.state.systemKeyL2ChallengerBalance = fmt.Sprintf("%s%s", input.Text, m.state.gasDenom)
+		var text string
+		if input.Text == "" {
+			m.state.systemKeyL2ChallengerBalance = ""
+			text = "None"
+		} else {
+			m.state.systemKeyL2ChallengerBalance = fmt.Sprintf("%s%s", input.Text, m.state.gasDenom)
+			text = input.Text
+		}
 		m.state.weave.PopPreviousResponseAtIndex(m.state.preL2BalancesResponsesCount)
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Challenger", "L2"}, input.Text))
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Challenger", "L2"}, text))
 		return NewAddGenesisAccountsSelect(false, m.state), nil
 	}
 	m.TextInput = input
@@ -1420,7 +1440,7 @@ func (m *AddGenesisAccountsSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if len(m.state.genesisAccounts) > 0 {
 				m.state.weave.PreviousResponse = m.state.weave.PreviousResponse[:m.state.preGenesisAccountsResponsesCount]
 				m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, question, []string{highlight}, string(Yes)))
-				currentResponse := "  List of the Genesis Accounts\n"
+				currentResponse := "  List of extra Genesis Accounts (excluding OPinit bots)\n"
 				for _, account := range m.state.genesisAccounts {
 					currentResponse += styles.Text(fmt.Sprintf("  %s\tInitial Balance: %s\n", account.Address, account.Coins), styles.Gray)
 				}
@@ -1907,7 +1927,7 @@ func launchingMinitia(state *LaunchState) tea.Cmd {
 			panic(fmt.Sprintf("failed to get user home directory: %v", err))
 		}
 
-		config := &Config{
+		config := &Configg{
 			L1Config: &L1Config{
 				ChainID:   state.l1ChainId,
 				RpcUrl:    state.l1RPC,
@@ -1929,32 +1949,22 @@ func launchingMinitia(state *LaunchState) tea.Cmd {
 				Validator: NewSystemAccount(
 					state.systemKeyOperatorMnemonic,
 					state.systemKeyOperatorAddress,
-					state.systemKeyL1OperatorBalance,
-					state.systemKeyL2OperatorBalance,
 				),
 				BridgeExecutor: NewSystemAccount(
 					state.systemKeyBridgeExecutorMnemonic,
 					state.systemKeyBridgeExecutorAddress,
-					state.systemKeyL1BridgeExecutorBalance,
-					state.systemKeyL2BridgeExecutorBalance,
 				),
 				OutputSubmitter: NewSystemAccount(
 					state.systemKeyOutputSubmitterMnemonic,
 					state.systemKeyOutputSubmitterAddress,
-					state.systemKeyL1OutputSubmitterBalance,
-					state.systemKeyL2OutputSubmitterBalance,
 				),
 				BatchSubmitter: NewSystemAccount(
 					state.systemKeyBatchSubmitterMnemonic,
 					state.systemKeyBatchSubmitterAddress,
-					state.systemKeyL1BatchSubmitterBalance,
-					state.systemKeyL2BatchSubmitterBalance,
 				),
 				Challenger: NewSystemAccount(
 					state.systemKeyChallengerMnemonic,
 					state.systemKeyChallengerAddress,
-					state.systemKeyL1ChallengerBalance,
-					state.systemKeyL2ChallengerBalance,
 				),
 			},
 			GenesisAccounts: &state.genesisAccounts,
@@ -2030,7 +2040,7 @@ func (m *LaunchingNewMinitiaLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.loading = loader
 	if m.loading.Completing {
 		m.state.minitiadLaunchStreamingLogs = []string{}
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "New minitia has been launched.", []string{}, ""))
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "New minitia has been launched. (More details about your Minitia in ~/.minitia/artifacts/artifacts.json & ~/.minitia/artifacts/config.json)", []string{}, ""))
 		return NewTerminalState(m.state), tea.Quit
 	}
 	return m, cmd
