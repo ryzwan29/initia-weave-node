@@ -519,8 +519,8 @@ func TestNewOpBridgeOutputFinalizationPeriodInput(t *testing.T) {
 
 	assert.NotNil(t, input)
 	assert.Equal(t, "Please specify OP bridge config: Output Finalization Period (format s, m or h - ex. 30s, 5m, 12h)", input.GetQuestion())
-	assert.Equal(t, "Press tab to use “24h”", input.TextInput.Placeholder)
-	assert.Equal(t, "24h", input.TextInput.DefaultValue)
+	assert.Equal(t, "Press tab to use “168h” (7 days)", input.TextInput.Placeholder)
+	assert.Equal(t, "168h", input.TextInput.DefaultValue)
 	assert.NotNil(t, input.TextInput.ValidationFn)
 }
 
@@ -554,8 +554,8 @@ func TestOpBridgeOutputFinalizationPeriodInput_View(t *testing.T) {
 
 	view := input.View()
 	assert.Contains(t, view, "Please specify OP bridge config: Output Finalization Period (format s, m or h - ex. 30s, 5m, 12h)", "Expected question prompt in the view")
-	assert.Contains(t, view, "Press tab to use “24h”", "Expected placeholder in the view")
-	assert.Contains(t, view, "24h", "Expected default value in the view")
+	assert.Contains(t, view, "Press tab to use “168h”", "Expected placeholder in the view")
+	assert.Contains(t, view, "168h", "Expected default value in the view")
 }
 
 func TestNewOpBridgeBatchSubmissionTargetSelect(t *testing.T) {
@@ -1543,20 +1543,20 @@ func TestSystemKeyL2OutputSubmitterBalanceInput_Update_Valid(t *testing.T) {
 		styles.DotsSeparator, outputSubmitterInput.GetQuestion(), []string{"Output Submitter", "L2"}, validInput))
 }
 
-func TestSystemKeyL2OutputSubmitterBalanceInput_Update_Invalid(t *testing.T) {
+func TestSystemKeyL2OutputSubmitterBalanceInput_Update_Empty(t *testing.T) {
 	state := &LaunchState{}
 	outputSubmitterInput := NewSystemKeyL2OutputSubmitterBalanceInput(state)
 
-	invalidInput := "nop"
+	invalidInput := ""
 	keyMsg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(invalidInput)}
 	nextModel, _ := outputSubmitterInput.Update(keyMsg)
 
 	enterPress := tea.KeyMsg{Type: tea.KeyEnter}
 	finalModel, cmd := nextModel.Update(enterPress)
 
-	assert.Equal(t, outputSubmitterInput, finalModel)
+	assert.IsType(t, &SystemKeyL2BatchSubmitterBalanceInput{}, finalModel)
 	assert.Nil(t, cmd)
-	assert.NotEqual(t, invalidInput, state.systemKeyL2OutputSubmitterBalance)
+	assert.Equal(t, "", state.systemKeyL2OutputSubmitterBalance)
 }
 
 func TestSystemKeyL2OutputSubmitterBalanceInput_View(t *testing.T) {
@@ -1601,20 +1601,20 @@ func TestSystemKeyL2BatchSubmitterBalanceInput_Update_Valid(t *testing.T) {
 		styles.DotsSeparator, batchSubmitterInput.GetQuestion(), []string{"Batch Submitter", "L2"}, validInput))
 }
 
-func TestSystemKeyL2BatchSubmitterBalanceInput_Update_Invalid(t *testing.T) {
+func TestSystemKeyL2BatchSubmitterBalanceInput_Update_Empty(t *testing.T) {
 	state := &LaunchState{}
 	batchSubmitterInput := NewSystemKeyL2BatchSubmitterBalanceInput(state)
 
-	invalidInput := "invalid"
+	invalidInput := ""
 	keyMsg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(invalidInput)}
 	nextModel, _ := batchSubmitterInput.Update(keyMsg)
 
 	enterPress := tea.KeyMsg{Type: tea.KeyEnter}
 	finalModel, cmd := nextModel.Update(enterPress)
 
-	assert.Equal(t, batchSubmitterInput, finalModel)
+	assert.IsType(t, &SystemKeyL2ChallengerBalanceInput{}, finalModel)
 	assert.Nil(t, cmd)
-	assert.NotEqual(t, invalidInput, state.systemKeyL2BatchSubmitterBalance)
+	assert.Equal(t, "", state.systemKeyL2BatchSubmitterBalance)
 }
 
 func TestSystemKeyL2BatchSubmitterBalanceInput_View(t *testing.T) {
@@ -1659,20 +1659,20 @@ func TestSystemKeyL2ChallengerBalanceInput_Update_Valid(t *testing.T) {
 		styles.DotsSeparator, challengerInput.GetQuestion(), []string{"Challenger", "L2"}, validInput))
 }
 
-func TestSystemKeyL2ChallengerBalanceInput_Update_Invalid(t *testing.T) {
+func TestSystemKeyL2ChallengerBalanceInput_Update_Empty(t *testing.T) {
 	state := &LaunchState{}
 	challengerInput := NewSystemKeyL2ChallengerBalanceInput(state)
 
-	invalidInput := "wrong"
+	invalidInput := ""
 	keyMsg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(invalidInput)}
 	nextModel, _ := challengerInput.Update(keyMsg)
 
 	enterPress := tea.KeyMsg{Type: tea.KeyEnter}
 	finalModel, cmd := nextModel.Update(enterPress)
 
-	assert.Equal(t, challengerInput, finalModel)
+	assert.IsType(t, &AddGenesisAccountsSelect{}, finalModel)
 	assert.Nil(t, cmd)
-	assert.NotEqual(t, invalidInput, state.systemKeyL2ChallengerBalance)
+	assert.Equal(t, "", state.systemKeyL2ChallengerBalance)
 }
 
 func TestSystemKeyL2ChallengerBalanceInput_View(t *testing.T) {
@@ -1865,7 +1865,7 @@ func TestAddGenesisAccountsSelect_Update_NoRecurringWithAccounts(t *testing.T) {
 	assert.NotNil(t, cmd)
 	assert.Len(t, state.weave.PreviousResponse, 2)
 	assert.Contains(t, state.weave.PreviousResponse[0], "Would you like to add genesis accounts?")
-	assert.Contains(t, state.weave.PreviousResponse[1], "List of the Genesis Accounts")
+	assert.Contains(t, state.weave.PreviousResponse[1], "List of extra Genesis Accounts")
 	assert.Contains(t, state.weave.PreviousResponse[1], "address1")
 	assert.Contains(t, state.weave.PreviousResponse[1], "100token")
 	assert.Contains(t, state.weave.PreviousResponse[1], "address2")
