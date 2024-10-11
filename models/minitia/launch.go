@@ -1927,7 +1927,7 @@ func launchingMinitia(state *LaunchState) tea.Cmd {
 			panic(fmt.Sprintf("failed to get user home directory: %v", err))
 		}
 
-		config := &Configg{
+		config := &Config{
 			L1Config: &L1Config{
 				ChainID:   state.l1ChainId,
 				RpcUrl:    state.l1RPC,
