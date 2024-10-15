@@ -24,29 +24,47 @@ type OPInitBotInitSelector struct {
 
 var defaultExecutorFields = []Field{
 	// Version
-	Field{Name: "version", Type: NumberField, Question: "Please specify the version"},
+	{Name: "version", Type: NumberField, Question: "Please specify the version", Placeholder: `Press tab to use "1"`, DefaultValue: "1"},
 
 	// Listen Address
-	Field{Name: "listen_address", Type: StringField, Question: "Please specify the listen_address"},
+	{Name: "listen_address", Type: StringField, Question: "Please specify the listen_address", Placeholder: `Add listen address ex. localhost:3000`},
 
 	// L1 Node Configuration
-	Field{Name: "l1_node.chain_id", Type: StringField, Question: "Please specify the L1 chain_id"},
-	Field{Name: "l1_node.rpc_address", Type: StringField, Question: "Please specify the L1 rpc_address"},
-	Field{Name: "l1_node.gas_price", Type: StringField, Question: "Please specify the L1 gas_price"},
+	{Name: "l1_node.chain_id", Type: StringField, Question: "Please specify the L1 chain_id", Placeholder: "Add alphanumeric"},
+	{Name: "l1_node.rpc_address", Type: StringField, Question: "Please specify the L1 rpc_address", Placeholder: "Add RPC address ex. tcp://localhost:26657"},
+	{Name: "l1_node.gas_price", Type: StringField, Question: "Please specify the L1 gas_price", Placeholder: `Press tab to use "0.15uinit"`, DefaultValue: "0.15uinit"},
 
 	// L2 Node Configuration
-	Field{Name: "l2_node.chain_id", Type: StringField, Question: "Please specify the L2 chain_id"},
-	Field{Name: "l2_node.rpc_address", Type: StringField, Question: "Please specify the L2 rpc_address"},
-	Field{Name: "l2_node.gas_price", Type: StringField, Question: "Please specify the L2 gas_price"},
+	{Name: "l2_node.chain_id", Type: StringField, Question: "Please specify the L2 chain_id", Placeholder: "Add alphanumeric"},
+	{Name: "l2_node.rpc_address", Type: StringField, Question: "Please specify the L2 rpc_address", Placeholder: "Add RPC address ex. tcp://localhost:26657"},
+	{Name: "l2_node.gas_price", Type: StringField, Question: "Please specify the L2 gas_price", Placeholder: `Press tab to use "0.15uinit"`, DefaultValue: "0.15uinit"},
+}
 
-	// // Miscellaneous
-	// {Name: "output_submitter", Type: StringField, Question: "Please specify the output submitter"},
-	// {Name: "bridge_executor", Type: StringField, Question: "Please specify the bridge executor"},
-	// {Name: "max_chunks", Type: NumberField, Question: "Please specify the maximum chunks"},
-	// {Name: "max_chunk_size", Type: NumberField, Question: "Please specify the maximum chunk size"},
-	// {Name: "max_submission_time", Type: NumberField, Question: "Please specify the maximum submission time (in seconds)"},
-	// {Name: "l2_start_height", Type: NumberField, Question: "Please specify the L2 start height"},
-	// {Name: "batch_start_height", Type: NumberField, Question: "Please specify the batch start height"},
+var defaultDALayerFields = []Field{
+	// Version
+	{Name: "l2_start_height", Type: NumberField, Question: "Please specify the l2_start_height"},
+
+	// Listen Address
+	{Name: "batch_start_height", Type: NumberField, Question: "Please specify the batch_start_height"},
+}
+
+var defaultChallengerFields = []Field{
+	// Version
+	{Name: "version", Type: NumberField, Question: "Please specify the version", Placeholder: `Press tab to use "1"`, DefaultValue: "1"},
+
+	// Listen Address
+	{Name: "listen_address", Type: StringField, Question: "Please specify the listen_address", Placeholder: `Add listen address ex. localhost:3000`},
+
+	// L1 Node Configuration
+	{Name: "l1_node.chain_id", Type: StringField, Question: "Please specify the L1 chain_id", Placeholder: "Add alphanumeric"},
+	{Name: "l1_node.rpc_address", Type: StringField, Question: "Please specify the L1 rpc_address", Placeholder: "Add RPC address ex. tcp://localhost:26657"},
+
+	// L2 Node Configuration
+	{Name: "l2_node.chain_id", Type: StringField, Question: "Please specify the L2 chain_id", Placeholder: "Add alphanumeric"},
+	{Name: "l2_node.rpc_address", Type: StringField, Question: "Please specify the L2 rpc_address", Placeholder: "Add RPC address ex. tcp://localhost:26657"},
+
+	// Version
+	{Name: "l2_start_height", Type: NumberField, Question: "Please specify the l2_start_height"},
 }
 
 func NewOPInitBotInitSelector(state *OPInitBotsState) tea.Model {
@@ -129,10 +147,16 @@ func (m *UseCurrentCofigSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		switch *selected {
 		case "use current file":
-			// TODO: load config
-			return NewFieldInputModel(m.state, defaultExecutorFields, NewSetDALayer), cmd
+			m.state.ReplaceBotConfig = false
 		case "replace":
 			m.state.ReplaceBotConfig = true
+			// TODO: load config
+			if m.state.InitExecutorBot {
+				return NewFieldInputModel(m.state, defaultExecutorFields, NewSetDALayer), cmd
+			} else if m.state.InitChallengerBot {
+				return NewFieldInputModel(m.state, defaultChallengerFields, NewStartingInitBot), cmd
+			}
+
 			return m, cmd
 
 		}
@@ -187,6 +211,7 @@ func (m *SetDALayer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if selected != nil {
 		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"DA Layer"}, string(*selected)))
 		m.state.botConfig["da_layer_network"] = string(*selected)
+		return NewFieldInputModel(m.state, defaultDALayerFields, NewStartingInitBot), cmd
 	}
 
 	return m, cmd
@@ -194,4 +219,26 @@ func (m *SetDALayer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *SetDALayer) View() string {
 	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"DA Layer"}, styles.Question) + m.Selector.View()
+}
+
+type StartingInitBot struct {
+	state *OPInitBotsState
+}
+
+func NewStartingInitBot(state *OPInitBotsState) tea.Model {
+	return &StartingInitBot{
+		state: state,
+	}
+}
+
+func (m *StartingInitBot) Init() tea.Cmd {
+	return nil
+}
+
+func (m *StartingInitBot) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	return m, tea.Quit
+}
+
+func (m *StartingInitBot) View() string {
+	return m.state.weave.Render()
 }

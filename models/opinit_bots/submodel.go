@@ -19,9 +19,11 @@ const (
 )
 
 type Field struct {
-	Name     string
-	Type     FieldType
-	Question string
+	Name         string
+	Type         FieldType
+	Question     string
+	Placeholder  string
+	DefaultValue string
 }
 
 type BaseFieldModel struct {
@@ -32,7 +34,8 @@ type BaseFieldModel struct {
 
 func NewBaseFieldModel(state *OPInitBotsState, field Field) BaseFieldModel {
 	textInput := utils.NewTextInput()
-
+	textInput.WithPlaceholder(field.Placeholder)
+	textInput.WithDefaultValue(field.DefaultValue)
 	switch field.Type {
 	case NumberField:
 		textInput.WithValidatorFn(func(input string) error {
