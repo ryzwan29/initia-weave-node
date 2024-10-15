@@ -2001,6 +2001,9 @@ func launchingMinitia(state *LaunchState) tea.Cmd {
 				line := scanner.Text()
 				if !isJSONLog(line) {
 					state.minitiadLaunchStreamingLogs = append(state.minitiadLaunchStreamingLogs, line)
+					if len(state.minitiadLaunchStreamingLogs) > 10 {
+						state.minitiadLaunchStreamingLogs = state.minitiadLaunchStreamingLogs[1:]
+					}
 				}
 			}
 		}()
@@ -2011,6 +2014,9 @@ func launchingMinitia(state *LaunchState) tea.Cmd {
 				line := scanner.Text()
 				if !isJSONLog(line) {
 					state.minitiadLaunchStreamingLogs = append(state.minitiadLaunchStreamingLogs, line)
+					if len(state.minitiadLaunchStreamingLogs) > 10 {
+						state.minitiadLaunchStreamingLogs = state.minitiadLaunchStreamingLogs[1:]
+					}
 				}
 			}
 		}()
@@ -2040,7 +2046,7 @@ func (m *LaunchingNewMinitiaLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.loading = loader
 	if m.loading.Completing {
 		m.state.minitiadLaunchStreamingLogs = []string{}
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "New minitia has been launched. (More details about your Minitia in ~/.minitia/artifacts/artifacts.json & ~/.minitia/artifacts/config.json)", []string{}, ""))
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "New Minitia has been launched. (More details about your Minitia in ~/.minitia/artifacts/artifacts.json & ~/.minitia/artifacts/config.json)", []string{}, ""))
 		return NewTerminalState(m.state), tea.Quit
 	}
 	return m, cmd
