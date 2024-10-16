@@ -205,7 +205,7 @@ func (m *ProcessingMinitiaConfig) View() string {
 
 func NextUpdateOpinitBotKey(state *OPInitBotsState) (tea.Model, tea.Cmd) {
 	for idx := 0; idx < len(state.BotInfos); idx++ {
-		if state.BotInfos[idx].IsSetup {
+		if state.BotInfos[idx].IsSetup && state.BotInfos[idx].IsNotExist {
 			return NewRecoverKeySelector(state, idx), nil
 		}
 	}
