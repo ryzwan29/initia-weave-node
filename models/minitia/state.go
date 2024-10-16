@@ -14,7 +14,7 @@ type LaunchState struct {
 	gasDenom           string
 	moniker            string
 	enableOracle       bool
-	genesisAccounts    GenesisAccounts
+	genesisAccounts    types.GenesisAccounts
 
 	opBridgeSubmissionInterval       string
 	opBridgeOutputFinalizationPeriod string
@@ -67,23 +67,23 @@ func NewLaunchState() *LaunchState {
 func (ls *LaunchState) FinalizeGenesisAccounts() {
 	ls.genesisAccounts = append(
 		ls.genesisAccounts,
-		GenesisAccount{
+		types.GenesisAccount{
 			Address: ls.systemKeyOperatorAddress,
 			Coins:   ls.systemKeyL2OperatorBalance,
 		},
-		GenesisAccount{
+		types.GenesisAccount{
 			Address: ls.systemKeyBridgeExecutorAddress,
 			Coins:   ls.systemKeyL2BridgeExecutorBalance,
 		},
-		GenesisAccount{
+		types.GenesisAccount{
 			Address: ls.systemKeyOutputSubmitterAddress,
 			Coins:   ls.systemKeyL2OutputSubmitterBalance,
 		},
-		GenesisAccount{
+		types.GenesisAccount{
 			Address: ls.systemKeyBatchSubmitterAddress,
 			Coins:   ls.systemKeyL2BatchSubmitterBalance,
 		},
-		GenesisAccount{
+		types.GenesisAccount{
 			Address: ls.systemKeyChallengerAddress,
 			Coins:   ls.systemKeyL2ChallengerBalance,
 		},

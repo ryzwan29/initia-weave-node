@@ -28,7 +28,7 @@ func NewOPInitBotVersionSelector(state *OPInitBotsState, versions utils.BinaryVe
 		VersionSelector: utils.NewVersionSelector(versions, currentVersion),
 		state:           state,
 		versions:        versions,
-		question:        "Which OPInit bots version would you like to use?",
+		question:        "Which OPinit bots version would you like to use?",
 	}
 }
 
@@ -45,7 +45,7 @@ func (m *OPInitBotVersionSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if selected != nil {
 		m.state.OPInitBotEndpoint = m.versions[*selected]
 		m.state.OPInitBotVersion = *selected
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"OPInit bots"}, *selected))
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"OPinit bots version"}, *selected))
 		return NewSetupOPInitBotKeySelector(m.state), nil
 	}
 
@@ -53,7 +53,7 @@ func (m *OPInitBotVersionSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *OPInitBotVersionSelector) View() string {
-	return styles.RenderPrompt(m.GetQuestion(), []string{"OPInit bots"}, styles.Question) + m.VersionSelector.View()
+	return styles.RenderPrompt(m.GetQuestion(), []string{"OPinit bots version"}, styles.Question) + m.VersionSelector.View()
 }
 
 type SetupOPInitBotKeySelector struct {
@@ -71,7 +71,7 @@ func NewSetupOPInitBotKeySelector(state *OPInitBotsState) *SetupOPInitBotKeySele
 				"No",
 			},
 		},
-		question: "Would you like to set up OPInit bot keys?",
+		question: "Would you like to set up OPinit bot keys?",
 	}
 }
 
@@ -88,7 +88,7 @@ func (m *SetupOPInitBotKeySelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if selected != nil {
 		switch *selected {
 		case "Yes":
-			m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"OPInit bot keys"}, *selected))
+			m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"OPinit bot keys"}, *selected))
 
 			// Get user's home directory and construct the config path
 			homeDir, _ := os.UserHomeDir()
@@ -119,7 +119,7 @@ func (m *SetupOPInitBotKeySelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return NewProcessingMinitiaConfig(m.state), nil
 
 		case "No":
-			m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"OPInit bot keys"}, *selected))
+			m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"OPinit bot keys"}, *selected))
 			model := NewSetupOPInitBots(m.state)
 			return model, model.Init()
 		}
@@ -128,7 +128,7 @@ func (m *SetupOPInitBotKeySelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *SetupOPInitBotKeySelector) View() string {
-	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"OPInit bot keys"}, styles.Question) + m.Selector.View()
+	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"OPinit bot keys"}, styles.Question) + m.Selector.View()
 }
 
 type AddMinitiaKeyOption string

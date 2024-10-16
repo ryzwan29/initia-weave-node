@@ -48,11 +48,11 @@ func TestProcessingMinitiaConfig_Update_WithNavigation(t *testing.T) {
 			{BotName: Challenger, IsNotExist: true},
 		},
 		MinitiaConfig: &types.MinitiaConfig{
-			SystemKeys: types.ValidatorKeys{
-				BridgeExecutor:  types.KeyDetails{Mnemonic: "bridge-mnemonic"},
-				OutputSubmitter: types.KeyDetails{Mnemonic: "output-mnemonic"},
-				BatchSubmitter:  types.KeyDetails{Mnemonic: "batch-mnemonic"},
-				Challenger:      types.KeyDetails{Mnemonic: "challenger-mnemonic"},
+			SystemKeys: &types.SystemKeys{
+				BridgeExecutor:  &types.SystemAccount{Mnemonic: "bridge-mnemonic"},
+				OutputSubmitter: &types.SystemAccount{Mnemonic: "output-mnemonic"},
+				BatchSubmitter:  &types.SystemAccount{Mnemonic: "batch-mnemonic"},
+				Challenger:      &types.SystemAccount{Mnemonic: "challenger-mnemonic"},
 			},
 		},
 	}
@@ -76,11 +76,11 @@ func TestProcessingMinitiaConfig_Update_WithNavigation(t *testing.T) {
 			{BotName: Challenger, IsNotExist: true},
 		},
 		MinitiaConfig: &types.MinitiaConfig{
-			SystemKeys: types.ValidatorKeys{
-				BridgeExecutor:  types.KeyDetails{Mnemonic: "bridge-mnemonic"},
-				OutputSubmitter: types.KeyDetails{Mnemonic: "output-mnemonic"},
-				BatchSubmitter:  types.KeyDetails{Mnemonic: "batch-mnemonic"},
-				Challenger:      types.KeyDetails{Mnemonic: "challenger-mnemonic"},
+			SystemKeys: &types.SystemKeys{
+				BridgeExecutor:  &types.SystemAccount{Mnemonic: "bridge-mnemonic"},
+				OutputSubmitter: &types.SystemAccount{Mnemonic: "output-mnemonic"},
+				BatchSubmitter:  &types.SystemAccount{Mnemonic: "batch-mnemonic"},
+				Challenger:      &types.SystemAccount{Mnemonic: "challenger-mnemonic"},
 			},
 		},
 	}
@@ -120,11 +120,11 @@ func TestRecoverKeySelector_Update(t *testing.T) {
 			{BotName: Challenger, IsNotExist: true},
 		},
 		MinitiaConfig: &types.MinitiaConfig{
-			SystemKeys: types.ValidatorKeys{
-				BridgeExecutor:  types.KeyDetails{Mnemonic: "bridge-mnemonic"},
-				OutputSubmitter: types.KeyDetails{Mnemonic: "output-mnemonic"},
-				BatchSubmitter:  types.KeyDetails{Mnemonic: "batch-mnemonic"},
-				Challenger:      types.KeyDetails{Mnemonic: "challenger-mnemonic"},
+			SystemKeys: &types.SystemKeys{
+				BridgeExecutor:  &types.SystemAccount{Mnemonic: "bridge-mnemonic"},
+				OutputSubmitter: &types.SystemAccount{Mnemonic: "output-mnemonic"},
+				BatchSubmitter:  &types.SystemAccount{Mnemonic: "batch-mnemonic"},
+				Challenger:      &types.SystemAccount{Mnemonic: "challenger-mnemonic"},
 			},
 		},
 	}

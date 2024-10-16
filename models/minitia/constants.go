@@ -15,4 +15,6 @@ const (
 
 	MaxMonikerLength int = 70
 	MaxChainIDLength int = 50
+
+	LaunchConfigFilename = "minitia.config.json"
 )

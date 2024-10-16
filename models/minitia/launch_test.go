@@ -1826,7 +1826,7 @@ func TestGenesisAccountsBalanceInput_View(t *testing.T) {
 
 func TestAddGenesisAccountsSelect_Update_RecurringWithAccounts(t *testing.T) {
 	state := &LaunchState{
-		genesisAccounts: []GenesisAccount{
+		genesisAccounts: []types.GenesisAccount{
 			{Address: "address1", Coins: "100token"},
 			{Address: "address2", Coins: "200token"},
 		},
@@ -1847,7 +1847,7 @@ func TestAddGenesisAccountsSelect_Update_RecurringWithAccounts(t *testing.T) {
 
 func TestAddGenesisAccountsSelect_Update_NoRecurringWithAccounts(t *testing.T) {
 	state := &LaunchState{
-		genesisAccounts: []GenesisAccount{
+		genesisAccounts: []types.GenesisAccount{
 			{Address: "address1", Coins: "100token"},
 			{Address: "address2", Coins: "200token"},
 		},

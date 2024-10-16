@@ -1,4 +1,4 @@
-package minitia
+package types
 
 import (
 	"testing"

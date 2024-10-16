@@ -63,15 +63,21 @@ func (v *VersionSelector) View() string {
 	for i, option := range v.Options {
 		if i == v.Cursor {
 			view += styles.SelectorCursor + styles.BoldText(fmt.Sprintf("%v", option), styles.White)
-			if option == v.currentVersion {
-				view += styles.BoldText(" (your current version)", styles.White)
-			}
-			view += "\n"
 		} else {
-			view += "  " + styles.Text(fmt.Sprintf("%v", option), styles.Ivory) + "\n"
+			view += "  " + styles.Text(fmt.Sprintf("%v", option), styles.Ivory)
 		}
 
+		if option == v.currentVersion {
+			currentVersionText := " (your current version)"
+			if i == v.Cursor {
+				view += styles.BoldText(currentVersionText, styles.White)
+			} else {
+				view += styles.Text(currentVersionText, styles.Ivory)
+			}
+		}
+
+		view += "\n"
 	}
 
-	return view + styles.Text("\nPress Enter to select, press Ctrl+C or q to quit.\n", styles.Gray)
+	return view + "\n" + styles.Text("\nPress Enter to select, press Ctrl+C or q to quit.\n", styles.Gray)
 }

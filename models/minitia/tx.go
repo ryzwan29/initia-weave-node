@@ -3,21 +3,23 @@ package minitia
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/initia-labs/weave/utils"
 	"os"
 	"os/exec"
 	"path/filepath"
+
+	"github.com/initia-labs/weave/types"
+	"github.com/initia-labs/weave/utils"
 )
 
 type L1SystemKeys struct {
-	Operator        *GenesisAccount
-	BridgeExecutor  *GenesisAccount
-	OutputSubmitter *GenesisAccount
-	BatchSubmitter  *GenesisAccount
-	Challenger      *GenesisAccount
+	Operator        *types.GenesisAccount
+	BridgeExecutor  *types.GenesisAccount
+	OutputSubmitter *types.GenesisAccount
+	BatchSubmitter  *types.GenesisAccount
+	Challenger      *types.GenesisAccount
 }
 
-func NewL1SystemKeys(operator, bridgeExecutor, outputSubmitter, batchSubmitter, challenger *GenesisAccount) *L1SystemKeys {
+func NewL1SystemKeys(operator, bridgeExecutor, outputSubmitter, batchSubmitter, challenger *types.GenesisAccount) *L1SystemKeys {
 	return &L1SystemKeys{
 		Operator:        operator,
 		BridgeExecutor:  bridgeExecutor,

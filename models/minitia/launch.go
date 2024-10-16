@@ -16,6 +16,7 @@ import (
 
 	"github.com/initia-labs/weave/service"
 	"github.com/initia-labs/weave/styles"
+	"github.com/initia-labs/weave/types"
 	"github.com/initia-labs/weave/utils"
 )
 
@@ -1538,7 +1539,7 @@ func (m *GenesisAccountsBalanceInput) Init() tea.Cmd {
 func (m *GenesisAccountsBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-		m.state.genesisAccounts = append(m.state.genesisAccounts, GenesisAccount{
+		m.state.genesisAccounts = append(m.state.genesisAccounts, types.GenesisAccount{
 			Address: m.address,
 			Coins:   fmt.Sprintf("%s%s", input.Text, m.state.gasDenom),
 		})
@@ -1845,23 +1846,23 @@ func (m *FundGasStationBroadcastLoading) Init() tea.Cmd {
 func broadcastFundingFromGasStation(state *LaunchState) tea.Cmd {
 	return func() tea.Msg {
 		txResult, err := NewL1SystemKeys(
-			&GenesisAccount{
+			&types.GenesisAccount{
 				Address: state.systemKeyOperatorAddress,
 				Coins:   state.systemKeyL1OperatorBalance,
 			},
-			&GenesisAccount{
+			&types.GenesisAccount{
 				Address: state.systemKeyBridgeExecutorAddress,
 				Coins:   state.systemKeyL1BridgeExecutorBalance,
 			},
-			&GenesisAccount{
+			&types.GenesisAccount{
 				Address: state.systemKeyOutputSubmitterAddress,
 				Coins:   state.systemKeyL1OutputSubmitterBalance,
 			},
-			&GenesisAccount{
+			&types.GenesisAccount{
 				Address: state.systemKeyBatchSubmitterAddress,
 				Coins:   state.systemKeyL1BatchSubmitterBalance,
 			},
-			&GenesisAccount{
+			&types.GenesisAccount{
 				Address: state.systemKeyChallengerAddress,
 				Coins:   state.systemKeyL1ChallengerBalance,
 			},
@@ -1927,42 +1928,42 @@ func launchingMinitia(state *LaunchState) tea.Cmd {
 			panic(fmt.Sprintf("failed to get user home directory: %v", err))
 		}
 
-		config := &Config{
-			L1Config: &L1Config{
+		config := &types.MinitiaConfig{
+			L1Config: &types.L1Config{
 				ChainID:   state.l1ChainId,
 				RpcUrl:    state.l1RPC,
 				GasPrices: DefaultL1GasPrices,
 			},
-			L2Config: &L2Config{
+			L2Config: &types.L2Config{
 				ChainID: state.chainId,
 				Denom:   state.gasDenom,
 				Moniker: state.moniker,
 			},
-			OpBridge: &OpBridge{
+			OpBridge: &types.OpBridge{
 				OutputSubmissionInterval:    state.opBridgeSubmissionInterval,
 				OutputFinalizationPeriod:    state.opBridgeOutputFinalizationPeriod,
 				OutputSubmissionStartHeight: 1,
 				BatchSubmissionTarget:       state.opBridgeBatchSubmissionTarget,
 				EnableOracle:                state.enableOracle,
 			},
-			SystemKeys: &SystemKeys{
-				Validator: NewSystemAccount(
+			SystemKeys: &types.SystemKeys{
+				Validator: types.NewSystemAccount(
 					state.systemKeyOperatorMnemonic,
 					state.systemKeyOperatorAddress,
 				),
-				BridgeExecutor: NewSystemAccount(
+				BridgeExecutor: types.NewSystemAccount(
 					state.systemKeyBridgeExecutorMnemonic,
 					state.systemKeyBridgeExecutorAddress,
 				),
-				OutputSubmitter: NewSystemAccount(
+				OutputSubmitter: types.NewSystemAccount(
 					state.systemKeyOutputSubmitterMnemonic,
 					state.systemKeyOutputSubmitterAddress,
 				),
-				BatchSubmitter: NewSystemAccount(
+				BatchSubmitter: types.NewSystemAccount(
 					state.systemKeyBatchSubmitterMnemonic,
 					state.systemKeyBatchSubmitterAddress,
 				),
-				Challenger: NewSystemAccount(
+				Challenger: types.NewSystemAccount(
 					state.systemKeyChallengerMnemonic,
 					state.systemKeyChallengerAddress,
 				),

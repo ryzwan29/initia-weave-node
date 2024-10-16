@@ -52,7 +52,7 @@ release:
 # Development purpose
 local: build
 	clear
-	./build/weave minitia launch
+	./build/weave opinit_bots setup
 
 # Catch-all target
 %:
