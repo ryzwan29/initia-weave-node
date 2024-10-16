@@ -114,6 +114,10 @@ func (m *SetupOPInitBotKeySelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, cmd // handle error, maybe show a message to the user
 			}
 
+			for _, botInfo := range m.state.BotInfos {
+				botInfo.IsNotExist = true
+			}
+
 			// Set the loaded config to a valuable state variable or process it as needed
 			m.state.MinitiaConfig = &minitiaConfig // assuming m.state has a field for storing the config
 			return NewProcessingMinitiaConfig(m.state), nil
