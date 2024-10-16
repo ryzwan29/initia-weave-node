@@ -305,7 +305,7 @@ func (m *RecoverKeySelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if selected != nil {
 		switch *selected {
 		case "Generate new system key":
-			m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, string(*selected)))
+			m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{string(m.state.BotInfos[m.idx].BotName)}, *selected))
 
 			m.state.BotInfos[m.idx].IsGenerateKey = true
 			m.state.BotInfos[m.idx].IsSetup = false
@@ -314,7 +314,7 @@ func (m *RecoverKeySelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return NextUpdateOpinitBotKey(m.state)
 		case "Import existing key " + styles.Text("(you will be prompted to enter your mnemonic)", styles.Gray):
-			m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, "Import existing key"))
+			m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{string(m.state.BotInfos[m.idx].BotName)}, "Import existing key"))
 			return NewRecoverFromMnemonic(m.state, m.idx), nil
 		}
 	}
@@ -358,7 +358,7 @@ func (m *RecoverFromMnemonic) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if done {
 		m.state.BotInfos[m.idx].Mnemonic = strings.Trim(input.Text, "\n")
 		m.state.BotInfos[m.idx].IsSetup = false
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, styles.HiddenMnemonicText))
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{string(m.state.BotInfos[m.idx].BotName)}, styles.HiddenMnemonicText))
 		if m.state.BotInfos[m.idx].BotName == BatchSubmitter {
 			return NewDALayerSelector(m.state, m.idx), nil
 		}
@@ -428,14 +428,15 @@ func renderMnemonic(keyName, address, mnemonic string) string {
 type DALayerOption string
 
 const (
-	InitiaLayerOption   DALayerOption = "initia"
-	CelestiaLayerOption DALayerOption = "celestia"
+	InitiaLayerOption   DALayerOption = "Initia"
+	CelestiaLayerOption DALayerOption = "Celestia"
 )
 
 type DALayerSelector struct {
 	utils.Selector[DALayerOption]
-	state *OPInitBotsState
-	idx   int
+	state    *OPInitBotsState
+	question string
+	idx      int
 }
 
 func NewDALayerSelector(state *OPInitBotsState, idx int) *DALayerSelector {
@@ -446,9 +447,14 @@ func NewDALayerSelector(state *OPInitBotsState, idx int) *DALayerSelector {
 				CelestiaLayerOption,
 			},
 		},
-		state: state,
-		idx:   idx,
+		state:    state,
+		question: "Which DA Layer would you like to use?",
+		idx:      idx,
 	}
+}
+
+func (m *DALayerSelector) GetQuestion() string {
+	return m.question
 }
 
 func (m *DALayerSelector) Init() tea.Cmd {
@@ -459,6 +465,7 @@ func (m *DALayerSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	selected, cmd := m.Select(msg)
 	if selected != nil {
 		m.state.BotInfos[m.idx].DALayer = string(*selected)
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"DA Layer"}, string(*selected)))
 		return NextUpdateOpinitBotKey(m.state)
 	}
 
@@ -466,7 +473,7 @@ func (m *DALayerSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *DALayerSelector) View() string {
-	return m.state.weave.Render() + styles.RenderPrompt("Please select DA layer", []string{}, styles.Question) + "\n" + m.Selector.View()
+	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"DA Layer"}, styles.Question) + "\n" + m.Selector.View()
 }
 
 func getBinaryURL(version, os, arch string) string {
