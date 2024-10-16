@@ -24,6 +24,7 @@ type Field struct {
 	Question     string
 	Placeholder  string
 	DefaultValue string
+	PrefillValue string
 }
 
 type BaseFieldModel struct {
@@ -36,6 +37,7 @@ func NewBaseFieldModel(state *OPInitBotsState, field Field) BaseFieldModel {
 	textInput := utils.NewTextInput()
 	textInput.WithPlaceholder(field.Placeholder)
 	textInput.WithDefaultValue(field.DefaultValue)
+	textInput.WithPrefillValue(field.PrefillValue)
 	switch field.Type {
 	case NumberField:
 		textInput.WithValidatorFn(func(input string) error {

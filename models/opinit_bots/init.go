@@ -1,7 +1,12 @@
 package opinit_bots
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
+	"strconv"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 
@@ -222,23 +227,144 @@ func (m *SetDALayer) View() string {
 }
 
 type StartingInitBot struct {
-	state *OPInitBotsState
+	state   *OPInitBotsState
+	loading utils.Loading
 }
 
 func NewStartingInitBot(state *OPInitBotsState) tea.Model {
 	return &StartingInitBot{
-		state: state,
+		state:   state,
+		loading: utils.NewLoading("Setting up OPinit bot (TODO)...", WaitStartingInitBot(state)),
+	}
+}
+
+func WaitStartingInitBot(state *OPInitBotsState) tea.Cmd {
+	return func() tea.Msg {
+		time.Sleep(1500 * time.Millisecond)
+		configMap := state.botConfig
+		userHome, err := os.UserHomeDir()
+		if err != nil {
+			panic(fmt.Sprintf("failed to get user home directory: %v", err))
+		}
+
+		if state.InitExecutorBot {
+			version, _ := strconv.Atoi(configMap["version"])
+			l2StartHeight, _ := strconv.Atoi(configMap["l2_start_height"])
+			batchStartHeight, _ := strconv.Atoi(configMap["batch_start_height"])
+
+			config := ExecutorConfig{
+				Version:       version,
+				ListenAddress: configMap["listen_address"],
+				L1Node: NodeSettings{
+					ChainID:       configMap["l1_node.chain_id"],
+					RPCAddress:    configMap["l1_node.rpc_address"],
+					Bech32Prefix:  "init",
+					GasPrice:      configMap["l1_node.gas_price"],
+					GasAdjustment: 1.5,
+					TxTimeout:     60,
+				},
+				L2Node: NodeSettings{
+					ChainID:       configMap["l2_node.chain_id"],
+					RPCAddress:    configMap["l2_node.rpc_address"],
+					Bech32Prefix:  "init",
+					GasPrice:      configMap["l2_node.gas_price"],
+					GasAdjustment: 1.5,
+					TxTimeout:     60,
+				},
+				// TODO: revisit da node
+				DANode: NodeSettings{
+					ChainID:       configMap["l2_node.chain_id"],
+					RPCAddress:    configMap["l2_node.rpc_address"],
+					Bech32Prefix:  "init",
+					GasPrice:      configMap["l2_node.gas_price"],
+					GasAdjustment: 1.5,
+					TxTimeout:     60,
+				},
+				OutputSubmitter:       "",
+				BridgeExecutor:        "",
+				BatchSubmitterEnabled: true,
+				MaxChunks:             5000,
+				MaxChunkSize:          300000,
+				MaxSubmissionTime:     3600,
+				L2StartHeight:         l2StartHeight,
+				BatchStartHeight:      batchStartHeight,
+			}
+			configBz, err := json.MarshalIndent(config, "", " ")
+			if err != nil {
+				panic(fmt.Errorf("failed to marshal config: %v", err))
+			}
+
+			configFilePath := filepath.Join(userHome, utils.OPinitDirectory, "executor.json")
+			if err = os.WriteFile(configFilePath, configBz, 0600); err != nil {
+				panic(fmt.Errorf("failed to write config file: %v", err))
+			}
+		} else if state.InitChallengerBot {
+			version, _ := strconv.Atoi(configMap["version"])
+			l2StartHeight, _ := strconv.Atoi(configMap["l2_start_height"])
+			config := ChallengerConfig{
+				Version:       version,
+				ListenAddress: configMap["listen_address"],
+				L1Node: NodeConfig{
+					ChainID:      configMap["l1_node.chain_id"],
+					RPCAddress:   configMap["l1_node.rpc_address"],
+					Bech32Prefix: "init",
+				},
+				L2Node: NodeConfig{
+					ChainID:      configMap["l2_node.chain_id"],
+					RPCAddress:   configMap["l2_node.rpc_address"],
+					Bech32Prefix: "init",
+				},
+				L2StartHeight: l2StartHeight,
+			}
+			configBz, err := json.MarshalIndent(config, "", " ")
+			if err != nil {
+				panic(fmt.Errorf("failed to marshal config: %v", err))
+			}
+
+			configFilePath := filepath.Join(userHome, utils.OPinitDirectory, "challenger.json")
+			if err = os.WriteFile(configFilePath, configBz, 0600); err != nil {
+				panic(fmt.Errorf("failed to write config file: %v", err))
+			}
+		}
+		return utils.EndLoading{}
 	}
 }
 
 func (m *StartingInitBot) Init() tea.Cmd {
-	return nil
+	return m.loading.Init()
 }
 
 func (m *StartingInitBot) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	return m, tea.Quit
+	loader, cmd := m.loading.Update(msg)
+	m.loading = loader
+	if m.loading.Completing {
+		return NewOPinitBotSuccessful(m.state), nil
+	}
+	return m, cmd
 }
 
 func (m *StartingInitBot) View() string {
-	return m.state.weave.Render()
+	return m.state.weave.Render() + m.loading.View()
+}
+
+type OPinitBotSuccessful struct {
+	state *OPInitBotsState
+}
+
+func NewOPinitBotSuccessful(state *OPInitBotsState) *OPinitBotSuccessful {
+	return &OPinitBotSuccessful{
+		state: state,
+	}
+}
+
+func (m *OPinitBotSuccessful) Init() tea.Cmd {
+	return nil
+}
+
+func (m *OPinitBotSuccessful) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	return m, tea.Quit
+}
+
+func (m *OPinitBotSuccessful) View() string {
+	return m.state.weave.Render() + styles.RenderPrompt("OPInit bot setup successful.", []string{}, styles.Completed) + "\n"
 }

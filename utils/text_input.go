@@ -40,6 +40,11 @@ func (ti *TextInput) WithDefaultValue(value string) {
 	ti.DefaultValue = value
 }
 
+func (ti *TextInput) WithPrefillValue(value string) {
+	ti.Text = value
+	ti.Cursor = len(ti.Text)
+}
+
 func (ti TextInput) Update(msg tea.Msg) (TextInput, tea.Cmd, bool) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:

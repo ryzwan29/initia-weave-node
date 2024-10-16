@@ -17,4 +17,6 @@ const (
 	WeaveGasStationKeyName    = "weave.GasStation"
 	MinitiaDirectory          = ".minitia"
 	MinitiaArtifactsDirectory = MinitiaDirectory + "/artifacts"
+
+	OPinitDirectory = ".opinit"
 )
