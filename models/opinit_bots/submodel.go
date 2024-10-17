@@ -25,6 +25,7 @@ type Field struct {
 	Placeholder  string
 	DefaultValue string
 	PrefillValue string
+	ValidateFn   func(string) error
 }
 
 type BaseFieldModel struct {
@@ -38,6 +39,7 @@ func NewBaseFieldModel(state *OPInitBotsState, field Field) BaseFieldModel {
 	textInput.WithPlaceholder(field.Placeholder)
 	textInput.WithDefaultValue(field.DefaultValue)
 	textInput.WithPrefillValue(field.PrefillValue)
+	textInput.WithValidatorFn(field.ValidateFn)
 	switch field.Type {
 	case NumberField:
 		textInput.WithValidatorFn(func(input string) error {

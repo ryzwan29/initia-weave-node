@@ -30,47 +30,47 @@ type OPInitBotInitSelector struct {
 
 var defaultExecutorFields = []Field{
 	// Version
-	{Name: "version", Type: NumberField, Question: "Please specify the version", Placeholder: `Press tab to use "1"`, DefaultValue: "1"},
+	{Name: "version", Type: NumberField, Question: "Please specify the version", Placeholder: `Press tab to use "1"`, DefaultValue: "1", ValidateFn: utils.IsValidInteger},
 
 	// Listen Address
-	{Name: "listen_address", Type: StringField, Question: "Please specify the listen_address", Placeholder: `Add listen address ex. localhost:3000`},
+	{Name: "listen_address", Type: StringField, Question: "Please specify the listen_address", Placeholder: `Add listen address ex. http://localhost:3000`, ValidateFn: utils.ValidateURL},
 
 	// L1 Node Configuration
-	{Name: "l1_node.chain_id", Type: StringField, Question: "Please specify the L1 chain_id", Placeholder: "Add alphanumeric"},
-	{Name: "l1_node.rpc_address", Type: StringField, Question: "Please specify the L1 rpc_address", Placeholder: "Add RPC address ex. tcp://localhost:26657"},
-	{Name: "l1_node.gas_price", Type: StringField, Question: "Please specify the L1 gas_price", Placeholder: `Press tab to use "0.15uinit"`, DefaultValue: "0.15uinit"},
+	{Name: "l1_node.chain_id", Type: StringField, Question: "Please specify the L1 chain_id", Placeholder: "Add alphanumeric", ValidateFn: utils.ValidateEmptyString},
+	{Name: "l1_node.rpc_address", Type: StringField, Question: "Please specify the L1 rpc_address", Placeholder: "Add RPC address ex. tcp://localhost:26657", ValidateFn: utils.ValidateURL},
+	{Name: "l1_node.gas_price", Type: StringField, Question: "Please specify the L1 gas_price", Placeholder: `Press tab to use "0.15uinit"`, DefaultValue: "0.15uinit", ValidateFn: utils.ValidateDecCoin},
 
 	// L2 Node Configuration
-	{Name: "l2_node.chain_id", Type: StringField, Question: "Please specify the L2 chain_id", Placeholder: "Add alphanumeric"},
-	{Name: "l2_node.rpc_address", Type: StringField, Question: "Please specify the L2 rpc_address", Placeholder: "Add RPC address ex. tcp://localhost:26657"},
-	{Name: "l2_node.gas_price", Type: StringField, Question: "Please specify the L2 gas_price", Placeholder: `Press tab to use "0.15uinit"`, DefaultValue: "0.15uinit"},
+	{Name: "l2_node.chain_id", Type: StringField, Question: "Please specify the L2 chain_id", Placeholder: "Add alphanumeric", ValidateFn: utils.ValidateEmptyString},
+	{Name: "l2_node.rpc_address", Type: StringField, Question: "Please specify the L2 rpc_address", Placeholder: "Add RPC address ex. tcp://localhost:26657", ValidateFn: utils.ValidateURL},
+	{Name: "l2_node.gas_price", Type: StringField, Question: "Please specify the L2 gas_price", Placeholder: `Press tab to use "0.15uinit"`, DefaultValue: "0.15uinit", ValidateFn: utils.ValidateDecCoin},
 }
 
 var defaultDALayerFields = []Field{
 	// Version
-	{Name: "l2_start_height", Type: NumberField, Question: "Please specify the l2_start_height"},
+	{Name: "l2_start_height", Type: NumberField, Question: "Please specify the l2_start_height", ValidateFn: utils.IsValidInteger},
 
 	// Listen Address
-	{Name: "batch_start_height", Type: NumberField, Question: "Please specify the batch_start_height"},
+	{Name: "batch_start_height", Type: NumberField, Question: "Please specify the batch_start_height", ValidateFn: utils.IsValidInteger},
 }
 
 var defaultChallengerFields = []Field{
 	// Version
-	{Name: "version", Type: NumberField, Question: "Please specify the version", Placeholder: `Press tab to use "1"`, DefaultValue: "1"},
+	{Name: "version", Type: NumberField, Question: "Please specify the version", Placeholder: `Press tab to use "1"`, DefaultValue: "1", ValidateFn: utils.IsValidInteger},
 
 	// Listen Address
-	{Name: "listen_address", Type: StringField, Question: "Please specify the listen_address", Placeholder: `Add listen address ex. localhost:3000`},
+	{Name: "listen_address", Type: StringField, Question: "Please specify the listen_address", Placeholder: `Add listen address ex. localhost:3000`, ValidateFn: utils.ValidateURL},
 
 	// L1 Node Configuration
-	{Name: "l1_node.chain_id", Type: StringField, Question: "Please specify the L1 chain_id", Placeholder: "Add alphanumeric"},
-	{Name: "l1_node.rpc_address", Type: StringField, Question: "Please specify the L1 rpc_address", Placeholder: "Add RPC address ex. tcp://localhost:26657"},
+	{Name: "l1_node.chain_id", Type: StringField, Question: "Please specify the L1 chain_id", Placeholder: "Add alphanumeric", ValidateFn: utils.ValidateEmptyString},
+	{Name: "l1_node.rpc_address", Type: StringField, Question: "Please specify the L1 rpc_address", Placeholder: "Add RPC address ex. tcp://localhost:26657", ValidateFn: utils.ValidateURL},
 
 	// L2 Node Configuration
-	{Name: "l2_node.chain_id", Type: StringField, Question: "Please specify the L2 chain_id", Placeholder: "Add alphanumeric"},
-	{Name: "l2_node.rpc_address", Type: StringField, Question: "Please specify the L2 rpc_address", Placeholder: "Add RPC address ex. tcp://localhost:26657"},
+	{Name: "l2_node.chain_id", Type: StringField, Question: "Please specify the L2 chain_id", Placeholder: "Add alphanumeric", ValidateFn: utils.ValidateEmptyString},
+	{Name: "l2_node.rpc_address", Type: StringField, Question: "Please specify the L2 rpc_address", Placeholder: "Add RPC address ex. tcp://localhost:26657", ValidateFn: utils.ValidateURL},
 
 	// Version
-	{Name: "l2_start_height", Type: NumberField, Question: "Please specify the l2_start_height"},
+	{Name: "l2_start_height", Type: NumberField, Question: "Please specify the l2_start_height", ValidateFn: utils.IsValidInteger},
 }
 
 func NewOPInitBotInitSelector(state *OPInitBotsState) tea.Model {
