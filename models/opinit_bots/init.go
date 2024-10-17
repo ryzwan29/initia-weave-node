@@ -19,8 +19,8 @@ import (
 type OPInitBotInitOption string
 
 const (
-	Executor_OPInitBotInitOption   OPInitBotInitOption = "Executor"
-	Challenger_OPInitBotInitOption OPInitBotInitOption = "Challenger"
+	ExecutorOPInitBotInitOption   OPInitBotInitOption = "Executor"
+	ChallengerOPInitBotInitOption OPInitBotInitOption = "Challenger"
 )
 
 type OPInitBotInitSelector struct {
@@ -77,7 +77,7 @@ var defaultChallengerFields = []Field{
 func NewOPInitBotInitSelector(state *OPInitBotsState) tea.Model {
 	return &OPInitBotInitSelector{
 		Selector: utils.Selector[OPInitBotInitOption]{
-			Options: []OPInitBotInitOption{Executor_OPInitBotInitOption, Challenger_OPInitBotInitOption},
+			Options: []OPInitBotInitOption{ExecutorOPInitBotInitOption, ChallengerOPInitBotInitOption},
 		},
 		state:    state,
 		question: "Which bot would you like to run?",
@@ -99,7 +99,7 @@ func (m *OPInitBotInitSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		homeDir, _ := os.UserHomeDir()
 
 		switch *selected {
-		case Executor_OPInitBotInitOption:
+		case ExecutorOPInitBotInitOption:
 			m.state.InitExecutorBot = true
 
 			minitiaConfigPath := filepath.Join(homeDir, utils.MinitiaArtifactsDirectory, "config.json")
@@ -128,7 +128,7 @@ func (m *OPInitBotInitSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			executorJsonPath := filepath.Join(homeDir, utils.OPinitDirectory, "executor.json")
 			if utils.FileOrFolderExists(executorJsonPath) {
-				return NewUseCurrentCofigSelector(m.state, "executor"), cmd
+				return NewUseCurrentConfigSelector(m.state, "executor"), cmd
 			}
 
 			if m.state.MinitiaConfig != nil {
@@ -136,14 +136,14 @@ func (m *OPInitBotInitSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 			return NewL1PrefillSelector(m.state), cmd
-		case Challenger_OPInitBotInitOption:
+		case ChallengerOPInitBotInitOption:
 			m.state.InitChallengerBot = true
 
 			m.state.dbPath = filepath.Join(homeDir, utils.OPinitDirectory, "challenger.db")
 			if utils.FileOrFolderExists(m.state.dbPath) {
 				return NewDeleteDBSelector(m.state, "challenger"), cmd
 			}
-			return NewUseCurrentCofigSelector(m.state, "challenger"), cmd
+			return NewUseCurrentConfigSelector(m.state, "challenger"), cmd
 
 		}
 	}
@@ -158,8 +158,8 @@ func (m *OPInitBotInitSelector) View() string {
 type DeleteDBOption string
 
 const (
-	DeleteDBOption_No  = "No"
-	DeleteDBOption_Yes = "Yes, reset"
+	DeleteDBOptionNo  = "No"
+	DeleteDBOptionYes = "Yes, reset"
 )
 
 type DeleteDBSelector struct {
@@ -173,8 +173,8 @@ func NewDeleteDBSelector(state *OPInitBotsState, bot string) *DeleteDBSelector {
 	return &DeleteDBSelector{
 		Selector: utils.Selector[DeleteDBOption]{
 			Options: []DeleteDBOption{
-				DeleteDBOption_No,
-				DeleteDBOption_Yes,
+				DeleteDBOptionNo,
+				DeleteDBOptionYes,
 			},
 		},
 		state:    state,
@@ -197,12 +197,12 @@ func (m *DeleteDBSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, string(*selected)))
 
 		switch *selected {
-		case DeleteDBOption_No:
+		case DeleteDBOptionNo:
 			m.state.isDeleteDB = false
-		case DeleteDBOption_Yes:
+		case DeleteDBOptionYes:
 			m.state.isDeleteDB = true
 		}
-		return NewUseCurrentCofigSelector(m.state, m.bot), cmd
+		return NewUseCurrentConfigSelector(m.state, m.bot), cmd
 
 	}
 
@@ -213,16 +213,16 @@ func (m *DeleteDBSelector) View() string {
 	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{}, styles.Question) + m.Selector.View()
 }
 
-type UseCurrentCofigSelector struct {
+type UseCurrentConfigSelector struct {
 	utils.Selector[string]
 	state      *OPInitBotsState
 	question   string
 	configPath string
 }
 
-func NewUseCurrentCofigSelector(state *OPInitBotsState, bot string) *UseCurrentCofigSelector {
+func NewUseCurrentConfigSelector(state *OPInitBotsState, bot string) *UseCurrentConfigSelector {
 	configPath := fmt.Sprintf(".opinit/%s.json", bot)
-	return &UseCurrentCofigSelector{
+	return &UseCurrentConfigSelector{
 		Selector: utils.Selector[string]{
 			Options: []string{
 				"use current file",
@@ -235,18 +235,18 @@ func NewUseCurrentCofigSelector(state *OPInitBotsState, bot string) *UseCurrentC
 	}
 }
 
-func (m *UseCurrentCofigSelector) GetQuestion() string {
+func (m *UseCurrentConfigSelector) GetQuestion() string {
 	return m.question
 }
 
-func (m *UseCurrentCofigSelector) Init() tea.Cmd {
+func (m *UseCurrentConfigSelector) Init() tea.Cmd {
 	return nil
 }
 
-func (m *UseCurrentCofigSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m *UseCurrentConfigSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	selected, cmd := m.Select(msg)
 	if selected != nil {
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{m.configPath}, string(*selected)))
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{m.configPath}, *selected))
 
 		switch *selected {
 		case "use current file":
@@ -272,15 +272,15 @@ func (m *UseCurrentCofigSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-func (m *UseCurrentCofigSelector) View() string {
+func (m *UseCurrentConfigSelector) View() string {
 	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{m.configPath}, styles.Question) + m.Selector.View()
 }
 
 type PrefillMinitiaConfigOption string
 
 const (
-	PrefillMinitiaConfig_Yes = "Yes, prefill"
-	PrefillMinitiaConfig_No  = "No, skip"
+	PrefillMinitiaConfigYes = "Yes, prefill"
+	PrefillMinitiaConfigNo  = "No, skip"
 )
 
 type PrefillMinitiaConfig struct {
@@ -293,8 +293,8 @@ func NewPrefillMinitiaConfig(state *OPInitBotsState) *PrefillMinitiaConfig {
 	return &PrefillMinitiaConfig{
 		Selector: utils.Selector[PrefillMinitiaConfigOption]{
 			Options: []PrefillMinitiaConfigOption{
-				PrefillMinitiaConfig_Yes,
-				PrefillMinitiaConfig_No,
+				PrefillMinitiaConfigYes,
+				PrefillMinitiaConfigNo,
 			},
 		},
 		state:    state,
@@ -316,7 +316,7 @@ func (m *PrefillMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{".minitia/artifacts/config.json"}, string(*selected)))
 
 		switch *selected {
-		case PrefillMinitiaConfig_Yes:
+		case PrefillMinitiaConfigYes:
 			minitiaConfig := m.state.MinitiaConfig
 			defaultExecutorFields[2].PrefillValue = minitiaConfig.L1Config.ChainID
 			defaultExecutorFields[3].PrefillValue = minitiaConfig.L1Config.RpcUrl
@@ -332,7 +332,7 @@ func (m *PrefillMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return NewFieldInputModel(m.state, defaultChallengerFields, NewStartingInitBot), cmd
 			}
 
-		case PrefillMinitiaConfig_No:
+		case PrefillMinitiaConfigNo:
 			return NewL1PrefillSelector(m.state), cmd
 		}
 
@@ -348,9 +348,9 @@ func (m *PrefillMinitiaConfig) View() string {
 type L1PrefillOption string
 
 var (
-	L1PrefillOption_Mainnet L1PrefillOption = ""
-	L1PrefillOption_Testnet L1PrefillOption = ""
-	L1PrefillOption_Custom  L1PrefillOption = "Custom"
+	L1PrefillOptionMainnet L1PrefillOption = ""
+	L1PrefillOptionTestnet L1PrefillOption = ""
+	L1PrefillOptionCustom  L1PrefillOption = "Custom"
 )
 
 type L1PrefillSelector struct {
@@ -360,14 +360,14 @@ type L1PrefillSelector struct {
 }
 
 func NewL1PrefillSelector(state *OPInitBotsState) *L1PrefillSelector {
-	L1PrefillOption_Mainnet = L1PrefillOption(fmt.Sprintf("Mainnet (%s)", utils.GetConfig("constants.chain_id.mainnet")))
-	L1PrefillOption_Testnet = L1PrefillOption(fmt.Sprintf("Testnet (%s)", utils.GetConfig("constants.chain_id.testnet")))
+	L1PrefillOptionMainnet = L1PrefillOption(fmt.Sprintf("Mainnet (%s)", utils.GetConfig("constants.chain_id.mainnet")))
+	L1PrefillOptionTestnet = L1PrefillOption(fmt.Sprintf("Testnet (%s)", utils.GetConfig("constants.chain_id.testnet")))
 	return &L1PrefillSelector{
 		Selector: utils.Selector[L1PrefillOption]{
 			Options: []L1PrefillOption{
-				L1PrefillOption_Mainnet,
-				L1PrefillOption_Testnet,
-				L1PrefillOption_Custom,
+				L1PrefillOptionMainnet,
+				L1PrefillOptionTestnet,
+				L1PrefillOptionCustom,
 			},
 		},
 		state:    state,
@@ -391,11 +391,11 @@ func (m *L1PrefillSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		var chainId, rpc string
 		switch *selected {
 
-		case L1PrefillOption_Mainnet:
+		case L1PrefillOptionMainnet:
 			chainId = fmt.Sprintf("%s", utils.GetConfig("constants.chain_id.mainnet"))
 			rpc = fmt.Sprintf("%s", utils.GetConfig("constants.endpoints.mainnet.rpc"))
 
-		case L1PrefillOption_Testnet:
+		case L1PrefillOptionTestnet:
 			chainId = fmt.Sprintf("%s", utils.GetConfig("constants.chain_id.testnet"))
 			rpc = fmt.Sprintf("%s", utils.GetConfig("constants.endpoints.testnet.rpc"))
 		}
@@ -654,7 +654,7 @@ func (m *OPinitBotSuccessful) Init() tea.Cmd {
 	return nil
 }
 
-func (m *OPinitBotSuccessful) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m *OPinitBotSuccessful) Update(_ tea.Msg) (tea.Model, tea.Cmd) {
 	return m, tea.Quit
 }
 
