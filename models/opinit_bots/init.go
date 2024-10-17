@@ -34,7 +34,7 @@ var defaultExecutorFields = []Field{
 	{Name: "version", Type: NumberField, Question: "Please specify the version", Placeholder: `Press tab to use "1"`, DefaultValue: "1", ValidateFn: utils.IsValidInteger},
 
 	// Listen Address
-	{Name: "listen_address", Type: StringField, Question: "Please specify the listen_address", Placeholder: `Add listen address ex. http://localhost:3000`, ValidateFn: utils.ValidateURL},
+	{Name: "listen_address", Type: StringField, Question: "Please specify the listen_address", Placeholder: `Add listen address ex. localhost:3000`, ValidateFn: utils.ValidateEmptyString},
 
 	// L1 Node Configuration
 	{Name: "l1_node.chain_id", Type: StringField, Question: "Please specify the L1 chain_id", Placeholder: "Add alphanumeric", ValidateFn: utils.ValidateEmptyString},
@@ -456,8 +456,8 @@ func (m *SetDALayer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case Initia:
 			m.state.botConfig["da.chain_id"] = m.state.botConfig["l1_node.chain_id"]
 			m.state.botConfig["da.rpc_address"] = m.state.botConfig["l1_node.rpc_address"]
-			m.state.botConfig["da.bech32_prefix"] = m.state.botConfig["l1_node.bech32_prefix"]
-			m.state.botConfig["da.gas_price"] = m.state.botConfig["dal1_node.gas_price"]
+			m.state.botConfig["da.bech32_prefix"] = "init"
+			m.state.botConfig["da.gas_price"] = m.state.botConfig["l1_node.gas_price"]
 		case CelestiaMainnet:
 			m.state.botConfig["da.chain_id"] = fmt.Sprintf("%s", utils.GetConfig("constants.da_layer.celestia_mainnet.chain_id"))
 			m.state.botConfig["da.rpc_address"] = fmt.Sprintf("%s", utils.GetConfig("constants.da_layer.celestia_mainnet.rpc"))

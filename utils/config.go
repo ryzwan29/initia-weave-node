@@ -106,13 +106,13 @@ const DefaultConfigTemplate = `
       "celestia_testnet": {
         "chain_id": "mocha-4",
         "rpc": "https://celestia-testnet-rpc.publicnode.com:443",
-        "bech32_prefix": "utia",
+        "bech32_prefix": "celestia",
         "gas_price": "0.02utia"
       },
       "celestia_mainnet": {
         "chain_id": "celestia",
         "rpc": "https://celestia-rpc.mesa.newmetric.xyz",
-        "bech32_prefix": "utia",
+        "bech32_prefix": "celestia",
         "gas_price": "0.02utia"
       }
     }
