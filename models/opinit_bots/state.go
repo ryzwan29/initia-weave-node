@@ -18,6 +18,8 @@ type OPInitBotsState struct {
 	L1RPCAddress         string
 	L1GasPrice           string
 	botConfig            map[string]string
+	dbPath               string
+	isDeleteDB           bool
 }
 
 // Function to initialize OPInitBotsState with all bots in default setup state (false)

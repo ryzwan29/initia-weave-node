@@ -94,15 +94,25 @@ func (m *OPInitBotInitSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	selected, cmd := m.Select(msg)
 	if selected != nil {
 		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"bot"}, string(*selected)))
+		homeDir, _ := os.UserHomeDir()
 
 		switch *selected {
 		case Executor_OPInitBotInitOption:
-			// TODO: detect executor.json
 			m.state.InitExecutorBot = true
+
+			m.state.dbPath = filepath.Join(homeDir, utils.OPinitDirectory, "executor.db")
+			if utils.FileOrFolderExists(m.state.dbPath) {
+				return NewDeleteDBSelector(m.state, "executor"), cmd
+			}
+
 			return NewUseCurrentCofigSelector(m.state, "executor"), cmd
 		case Challenger_OPInitBotInitOption:
-			// TODO: detect challenger.json
 			m.state.InitChallengerBot = true
+
+			m.state.dbPath = filepath.Join(homeDir, utils.OPinitDirectory, "challenger.db")
+			if utils.FileOrFolderExists(m.state.dbPath) {
+				return NewDeleteDBSelector(m.state, "challenger"), cmd
+			}
 			return NewUseCurrentCofigSelector(m.state, "challenger"), cmd
 
 		}
@@ -113,6 +123,64 @@ func (m *OPInitBotInitSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *OPInitBotInitSelector) View() string {
 	return styles.RenderPrompt(m.GetQuestion(), []string{"bot"}, styles.Question) + m.Selector.View()
+}
+
+type DeleteDBOption string
+
+const (
+	DeleteDBOption_No  = "No"
+	DeleteDBOption_Yes = "Yes, reset"
+)
+
+type DeleteDBSelector struct {
+	utils.Selector[DeleteDBOption]
+	state    *OPInitBotsState
+	question string
+	bot      string
+}
+
+func NewDeleteDBSelector(state *OPInitBotsState, bot string) *DeleteDBSelector {
+	return &DeleteDBSelector{
+		Selector: utils.Selector[DeleteDBOption]{
+			Options: []DeleteDBOption{
+				DeleteDBOption_No,
+				DeleteDBOption_Yes,
+			},
+		},
+		state:    state,
+		question: "Would you like to reset the database?",
+		bot:      bot,
+	}
+}
+
+func (m *DeleteDBSelector) GetQuestion() string {
+	return m.question
+}
+
+func (m *DeleteDBSelector) Init() tea.Cmd {
+	return nil
+}
+
+func (m *DeleteDBSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	selected, cmd := m.Select(msg)
+	if selected != nil {
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, string(*selected)))
+
+		switch *selected {
+		case DeleteDBOption_No:
+			m.state.isDeleteDB = false
+		case DeleteDBOption_Yes:
+			m.state.isDeleteDB = true
+		}
+		return NewUseCurrentCofigSelector(m.state, m.bot), cmd
+
+	}
+
+	return m, cmd
+}
+
+func (m *DeleteDBSelector) View() string {
+	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{}, styles.Question) + m.Selector.View()
 }
 
 type UseCurrentCofigSelector struct {
@@ -245,6 +313,13 @@ func WaitStartingInitBot(state *OPInitBotsState) tea.Cmd {
 		userHome, err := os.UserHomeDir()
 		if err != nil {
 			panic(fmt.Sprintf("failed to get user home directory: %v", err))
+		}
+
+		if state.isDeleteDB {
+			err := utils.DeleteFile(state.dbPath)
+			if err != nil {
+				panic(err)
+			}
 		}
 
 		if state.InitExecutorBot {
