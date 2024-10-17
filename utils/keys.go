@@ -130,19 +130,23 @@ func OPInitRecoverKeyFromMnemonic(appName, keyname, mnemonic string, isCelestia 
 	// Check if the key already exists
 	exists := OPInitKeyExist(appName, keyname)
 
+	{
+		var cmd *exec.Cmd
+		var inputBuffer bytes.Buffer
+		if exists {
+			// Simulate pressing 'y' for confirmation
+			inputBuffer.WriteString("y\n")
+			cmd = exec.Command(appName, "keys", "delete", "weave-dummy", keyname)
+			// Run the command and capture the output
+			outputBytes, err := cmd.CombinedOutput()
+			if err != nil {
+				return "", fmt.Errorf("failed to delete key for %s: %v, output: %s", keyname, err, string(outputBytes))
+			}
+
+		}
+	}
 	var cmd *exec.Cmd
 	var inputBuffer bytes.Buffer
-	if exists {
-		// Simulate pressing 'y' for confirmation
-		inputBuffer.WriteString("y\n")
-		cmd = exec.Command(appName, "keys", "delete", "weave-dummy", keyname)
-		// Run the command and capture the output
-		outputBytes, err := cmd.CombinedOutput()
-		if err != nil {
-			return "", fmt.Errorf("failed to delete key for %s: %v, output: %s", keyname, err, string(outputBytes))
-		}
-
-	}
 
 	// Add the mnemonic input after the confirmation (if any)
 	inputBuffer.WriteString(mnemonic + "\n")
@@ -175,19 +179,23 @@ func OPInitKeyExist(appName, keyname string) bool {
 func OPInitAddOrReplace(appName, keyname string, isCelestia bool) (string, error) {
 	// Check if the key already exists
 	exists := OPInitKeyExist(appName, keyname)
-	var cmd *exec.Cmd
-	var inputBuffer bytes.Buffer
-	if exists {
-		// Simulate pressing 'y' for confirmation
-		inputBuffer.WriteString("y\n")
-		cmd = exec.Command(appName, "keys", "delete", "weave-dummy", keyname)
-		// Run the command and capture the output
-		outputBytes, err := cmd.CombinedOutput()
-		if err != nil {
-			return "", fmt.Errorf("failed to delete key for %s: %v, output: %s", keyname, err, string(outputBytes))
-		}
+	{
+		var cmd *exec.Cmd
+		var inputBuffer bytes.Buffer
+		if exists {
+			// Simulate pressing 'y' for confirmation
+			inputBuffer.WriteString("y\n")
+			cmd = exec.Command(appName, "keys", "delete", "weave-dummy", keyname)
+			// Run the command and capture the output
+			outputBytes, err := cmd.CombinedOutput()
+			if err != nil {
+				return "", fmt.Errorf("failed to delete key for %s: %v, output: %s", keyname, err, string(outputBytes))
+			}
 
+		}
 	}
+
+	var cmd *exec.Cmd
 
 	if isCelestia {
 		cmd = exec.Command(appName, "keys", "add", "weave-dummy", keyname, "--bech32", "celestia")

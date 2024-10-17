@@ -178,19 +178,16 @@ func (m *ProcessingMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			for idx := range m.state.BotInfos {
 				botInfo := &m.state.BotInfos[idx]
-
-				if botInfo.IsNotExist {
-					botInfo.IsNotExist = false
-					switch botInfo.BotName {
-					case BridgeExecutor:
-						botInfo.Mnemonic = m.state.MinitiaConfig.SystemKeys.BridgeExecutor.Mnemonic
-					case OutputSubmitter:
-						botInfo.Mnemonic = m.state.MinitiaConfig.SystemKeys.OutputSubmitter.Mnemonic
-					case BatchSubmitter:
-						botInfo.Mnemonic = m.state.MinitiaConfig.SystemKeys.BatchSubmitter.Mnemonic
-					case Challenger:
-						botInfo.Mnemonic = m.state.MinitiaConfig.SystemKeys.Challenger.Mnemonic
-					}
+				botInfo.IsNotExist = false
+				switch botInfo.BotName {
+				case BridgeExecutor:
+					botInfo.Mnemonic = m.state.MinitiaConfig.SystemKeys.BridgeExecutor.Mnemonic
+				case OutputSubmitter:
+					botInfo.Mnemonic = m.state.MinitiaConfig.SystemKeys.OutputSubmitter.Mnemonic
+				case BatchSubmitter:
+					botInfo.Mnemonic = m.state.MinitiaConfig.SystemKeys.BatchSubmitter.Mnemonic
+				case Challenger:
+					botInfo.Mnemonic = m.state.MinitiaConfig.SystemKeys.Challenger.Mnemonic
 				}
 			}
 			return NewSetupBotCheckbox(m.state, true), nil
@@ -319,6 +316,7 @@ func (m *RecoverKeySelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{string(m.state.BotInfos[m.idx].BotName)}, *selected))
 
 			m.state.BotInfos[m.idx].IsGenerateKey = true
+			m.state.BotInfos[m.idx].Mnemonic = ""
 			m.state.BotInfos[m.idx].IsSetup = false
 			if m.state.BotInfos[m.idx].BotName == BatchSubmitter {
 				return NewDALayerSelector(m.state, m.idx), nil
