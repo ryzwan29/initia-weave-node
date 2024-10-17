@@ -281,7 +281,7 @@ func TestRecoverFromMnemonicUpdate(t *testing.T) {
 	assert.Equal(t, false, state.BotInfos[0].IsSetup, "Expected setup to be marked as false")
 
 	// Assert that NextUpdateOpinitBotKey returns a new RecoverKeySelector since the second bot needs to be set up
-	assert.IsType(t, NewSetupOPInitBots(state), model, "Expected NewSetupOPInitBots to be returned for the next bot that needs setup")
+	assert.IsType(t, NewRecoverKeySelector(state, 1), model, "Expected NewRecoverKeySelector to be returned for the next bot that needs setup")
 }
 
 func TestSetupOPInitBots(t *testing.T) {
@@ -325,7 +325,7 @@ func TestDALayerSelectorUpdate(t *testing.T) {
 	assert.Equal(t, string(InitiaLayerOption), state.BotInfos[0].DALayer, "Expected DALayer to be updated to InitiaLayerOption")
 
 	// Assert that the next model is a RecoverKeySelector because we still have bots to set up
-	assert.IsType(t, NewSetupOPInitBots(state), model, "Expected NewSetupOPInitBots model to be returned for the next bot setup")
+	assert.IsType(t, NewRecoverKeySelector(state, 0), model, "Expected NewRecoverKeySelector model to be returned for the next bot setup")
 
 	// Simulate setting up the bot
 	state.BotInfos[0].IsSetup = false // Bot is now set up
@@ -356,9 +356,9 @@ func TestNextUpdateOpinitBotKey_WhenBotsNeedSetup(t *testing.T) {
 	// Call the function
 	model, cmd := NextUpdateOpinitBotKey(state)
 
-	// Assert that a SetupOPInitBots is returned
-	assert.IsType(t, &SetupOPInitBots{}, model, "Expected SetupOPInitBots to be returned")
-	assert.NotNil(t, cmd, "Expected command to be non-nil")
+	// Assert that a RecoverKeySelector is returned
+	assert.IsType(t, &RecoverKeySelector{}, model, "Expected RecoverKeySelector to be returned")
+	assert.Nil(t, cmd, "Expected command to be nil")
 }
 
 func TestNextUpdateOpinitBotKey_WhenAllBotsAreSetUp(t *testing.T) {
@@ -391,9 +391,9 @@ func TestNextUpdateOpinitBotKey_WithMultipleBotsNeedingSetup(t *testing.T) {
 	// Call the function
 	model, cmd := NextUpdateOpinitBotKey(state)
 
-	// Assert that a SetupOPInitBots is returned for the first bot needing setup
-	assert.IsType(t, &SetupOPInitBots{}, model, "Expected SetupOPInitBots to be returned for the first bot needing setup")
-	assert.NotNil(t, cmd, "Expected command to be non-nil")
+	// Assert that a RecoverKeySelector is returned for the first bot needing setup
+	assert.IsType(t, &RecoverKeySelector{}, model, "Expected RecoverKeySelector to be returned for the first bot needing setup")
+	assert.Nil(t, cmd, "Expected command to be nil")
 }
 
 func TestNextUpdateOpinitBotKey_WithMixedSetupStates(t *testing.T) {
@@ -409,7 +409,7 @@ func TestNextUpdateOpinitBotKey_WithMixedSetupStates(t *testing.T) {
 	// Call the function
 	model, cmd := NextUpdateOpinitBotKey(state)
 
-	// Assert that a SetupOPInitBots is returned for the second bot needing setup
-	assert.IsType(t, &SetupOPInitBots{}, model, "Expected SetupOPInitBots to be returned for Bot2 needing setup")
-	assert.NotNil(t, cmd, "Expected command to be non-nil")
+	// Assert that a RecoverKeySelector is returned for the second bot needing setup
+	assert.IsType(t, &RecoverKeySelector{}, model, "Expected RecoverKeySelector to be returned for Bot2 needing setup")
+	assert.Nil(t, cmd, "Expected command to be nil")
 }
