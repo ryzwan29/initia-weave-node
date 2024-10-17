@@ -25,7 +25,7 @@ func (j *Systemd) GetCommandName() string {
 }
 
 func (j *Systemd) GetServiceName() string {
-	return string(j.commandName) + ".service"
+	return j.commandName.MustGetServiceSlug() + ".service"
 }
 
 func (j *Systemd) Create(binaryVersion string) error {
@@ -40,12 +40,12 @@ func (j *Systemd) Create(binaryVersion string) error {
 	}
 
 	weaveDataPath := filepath.Join(userHome, utils.WeaveDataDirectory)
-	binaryName := fmt.Sprintf("%sd", j.GetCommandName())
+	binaryName := j.commandName.MustGetBinaryName()
 	binaryPath := filepath.Join(weaveDataPath, binaryVersion, strings.ReplaceAll(binaryVersion, "@", "_"))
 
 	cmd := exec.Command("sudo", "tee", fmt.Sprintf("/etc/systemd/system/%s", j.GetServiceName()))
 	template := LinuxTemplateMap[j.commandName]
-	cmd.Stdin = strings.NewReader(fmt.Sprintf(string(template), binaryName, currentUser.Username, binaryPath))
+	cmd.Stdin = strings.NewReader(fmt.Sprintf(string(template), binaryName, currentUser.Username, binaryPath, j.GetServiceName()))
 	if err = cmd.Run(); err != nil {
 		return fmt.Errorf("failed to create service: %v", err)
 	}

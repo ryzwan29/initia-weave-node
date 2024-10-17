@@ -5,13 +5,6 @@ import (
 	"runtime"
 )
 
-type CommandName string
-
-const (
-	Initia  CommandName = "initia"
-	Minitia CommandName = "minitia"
-)
-
 type Service interface {
 	Create(binaryVersion string) error
 	Log(n int) error

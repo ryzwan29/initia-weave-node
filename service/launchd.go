@@ -28,7 +28,7 @@ func (j *Launchd) GetCommandName() string {
 }
 
 func (j *Launchd) GetServiceName() string {
-	return fmt.Sprintf("com.%sd.daemon", string(j.commandName))
+	return fmt.Sprintf("com.%s.daemon", j.commandName.MustGetServiceSlug())
 }
 
 func (j *Launchd) GetAppHome() string {
@@ -37,6 +37,10 @@ func (j *Launchd) GetAppHome() string {
 		return utils.InitiaDirectory
 	case Minitia:
 		return utils.MinitiaDirectory
+	case OPinitExecutor:
+		return utils.OPinitDirectory
+	case OPinitChallenger:
+		return utils.OPinitDirectory
 	}
 	panic("unsupported app")
 }
@@ -49,7 +53,7 @@ func (j *Launchd) Create(binaryVersion string) error {
 
 	weaveDataPath := filepath.Join(userHome, utils.WeaveDataDirectory)
 	weaveLogPath := filepath.Join(userHome, utils.WeaveLogDirectory)
-	binaryName := fmt.Sprintf("%sd", j.GetCommandName())
+	binaryName := j.commandName.MustGetBinaryName()
 	binaryPath := filepath.Join(weaveDataPath, binaryVersion)
 	appHome := filepath.Join(userHome, j.GetAppHome())
 	if err = os.Setenv("DYLD_LIBRARY_PATH", binaryPath); err != nil {
@@ -59,9 +63,16 @@ func (j *Launchd) Create(binaryVersion string) error {
 		panic(fmt.Errorf("failed to set HOME: %v", err))
 	}
 
-	cmd := exec.Command("tee", filepath.Join(userHome, fmt.Sprintf("Library/LaunchAgents/%s.plist", j.GetServiceName())))
+	plistPath := filepath.Join(userHome, fmt.Sprintf("Library/LaunchAgents/%s.plist", j.GetServiceName()))
+	if utils.FileOrFolderExists(plistPath) {
+		err = utils.DeleteFile(plistPath)
+		if err != nil {
+			panic(err)
+		}
+	}
+	cmd := exec.Command("tee", plistPath)
 	template := DarwinTemplateMap[j.commandName]
-	cmd.Stdin = strings.NewReader(fmt.Sprintf(string(template), binaryName, binaryPath, appHome, userHome, weaveLogPath))
+	cmd.Stdin = strings.NewReader(fmt.Sprintf(string(template), binaryName, binaryPath, appHome, userHome, weaveLogPath, j.GetCommandName()))
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to create service: %v", err)
 	}
@@ -126,8 +137,8 @@ func (j *Launchd) streamLogsFromFiles(n int) error {
 		return fmt.Errorf("failed to get user home directory: %v", err)
 	}
 
-	logFilePathOut := filepath.Join(userHome, utils.WeaveLogDirectory, fmt.Sprintf("%sd.stdout.log", j.GetCommandName()))
-	logFilePathErr := filepath.Join(userHome, utils.WeaveLogDirectory, fmt.Sprintf("%sd.stderr.log", j.GetCommandName()))
+	logFilePathOut := filepath.Join(userHome, utils.WeaveLogDirectory, fmt.Sprintf("%s.stdout.log", j.commandName.MustGetServiceSlug()))
+	logFilePathErr := filepath.Join(userHome, utils.WeaveLogDirectory, fmt.Sprintf("%s.stderr.log", j.commandName.MustGetServiceSlug()))
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
