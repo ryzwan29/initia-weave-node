@@ -101,6 +101,20 @@ const DefaultConfigTemplate = `
 				"lcd": "https://lcd.initiation-2.initia.xyz",
 				"genesis": "https://storage.googleapis.com/initia-binaries/genesis.json"
 			}
+		},
+		"da_layer": {
+			"celestia_mainnet": {
+				"chain_id": "mocha-4",
+				"rpc": "https://celestia-testnet-rpc.publicnode.com:443",
+				"bech32_prefix": "utia",
+				"gas_price": "0.02utia"
+			},
+			"celestia_testnet": {
+				"chain_id": "celestia",
+				"rpc": "https://celestia-rpc.mesa.newmetric.xyz",
+				"bech32_prefix": "utia",
+				"gas_price": "0.02utia"
+			}
 		}
 	}
 }

@@ -189,7 +189,7 @@ func (m *ProcessingMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					if strings.HasPrefix(m.state.MinitiaConfig.SystemKeys.BatchSubmitter.L1Address, "initia") {
 						botInfo.DALayer = string(InitiaLayerOption)
 					} else {
-						botInfo.DALayer = string(CelestiaLayerOption)
+						botInfo.DALayer = string(CelestiaMainnet)
 
 					}
 				case Challenger:
@@ -443,8 +443,9 @@ func renderMnemonic(keyName, address, mnemonic string) string {
 type DALayerOption string
 
 const (
-	InitiaLayerOption   DALayerOption = "Initia"
-	CelestiaLayerOption DALayerOption = "Celestia"
+	InitiaLayerOption          DALayerOption = "Initia"
+	CelestiaMainnetLayerOption DALayerOption = "Celestia Mainnet"
+	CelestiaTestnetLayerOption DALayerOption = "Celestia Testnet"
 )
 
 type DALayerSelector struct {
@@ -459,7 +460,8 @@ func NewDALayerSelector(state *OPInitBotsState, idx int) *DALayerSelector {
 		Selector: utils.Selector[DALayerOption]{
 			Options: []DALayerOption{
 				InitiaLayerOption,
-				CelestiaLayerOption,
+				CelestiaMainnetLayerOption,
+				CelestiaTestnetLayerOption,
 			},
 		},
 		state:    state,
@@ -554,7 +556,7 @@ func WaitSetupOPInitBots(state *OPInitBotsState) tea.Cmd {
 
 		for _, info := range state.BotInfos {
 			if info.Mnemonic != "" {
-				res, err := utils.OPInitRecoverKeyFromMnemonic(binaryPath, info.KeyName, info.Mnemonic, info.DALayer == string(CelestiaLayerOption))
+				res, err := utils.OPInitRecoverKeyFromMnemonic(binaryPath, info.KeyName, info.Mnemonic, info.DALayer == string(CelestiaTestnetLayerOption) || info.DALayer == string(CelestiaTestnetLayerOption))
 				if err != nil {
 					return utils.ErrorLoading{Err: err}
 				}
@@ -562,7 +564,7 @@ func WaitSetupOPInitBots(state *OPInitBotsState) tea.Cmd {
 				continue
 			}
 			if info.IsGenerateKey {
-				res, err := utils.OPInitAddOrReplace(binaryPath, info.KeyName, info.DALayer == string(CelestiaLayerOption))
+				res, err := utils.OPInitAddOrReplace(binaryPath, info.KeyName, info.DALayer == string(CelestiaTestnetLayerOption) || info.DALayer == string(CelestiaTestnetLayerOption))
 				if err != nil {
 					return utils.ErrorLoading{Err: err}
 

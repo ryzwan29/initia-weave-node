@@ -11,6 +11,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/initia-labs/weave/styles"
+	"github.com/initia-labs/weave/types"
 	"github.com/initia-labs/weave/utils"
 )
 
@@ -217,12 +218,36 @@ func (m *UseCurrentCofigSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	selected, cmd := m.Select(msg)
 	if selected != nil {
 		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{m.configPath}, string(*selected)))
+		// Get user's home directory and construct the config path
+		homeDir, _ := os.UserHomeDir()
+		minitiaConfigPath := filepath.Join(homeDir, utils.MinitiaArtifactsDirectory, "config.json")
+
+		// Check if the config file exists
+		if utils.FileOrFolderExists(minitiaConfigPath) {
+			// Load the config if found
+			configData, err := os.ReadFile(minitiaConfigPath)
+			if err != nil {
+				panic(err)
+			}
+
+			var minitiaConfig types.MinitiaConfig
+			err = json.Unmarshal(configData, &minitiaConfig)
+			if err != nil {
+				panic(err)
+			}
+
+			m.state.MinitiaConfig = &minitiaConfig // assuming m.state has a field for storing the config
+		}
 
 		switch *selected {
 		case "use current file":
 			m.state.ReplaceBotConfig = false
+			return m, tea.Quit
 		case "replace":
 			m.state.ReplaceBotConfig = true
+			if m.state.MinitiaConfig != nil {
+				return NewPrefillMinitiaConfig(m.state), cmd
+			}
 			// TODO: load config
 			if m.state.InitExecutorBot {
 				return NewFieldInputModel(m.state, defaultExecutorFields, NewSetDALayer), cmd
@@ -240,6 +265,72 @@ func (m *UseCurrentCofigSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *UseCurrentCofigSelector) View() string {
 	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{m.configPath}, styles.Question) + m.Selector.View()
+}
+
+type PrefillMinitiaConfigOption string
+
+const (
+	PrefillMinitiaConfig_Yes = "Yes, prefill"
+	PrefillMinitiaConfig_No  = "No, skip"
+)
+
+type PrefillMinitiaConfig struct {
+	utils.Selector[PrefillMinitiaConfigOption]
+	state    *OPInitBotsState
+	question string
+}
+
+func NewPrefillMinitiaConfig(state *OPInitBotsState) *PrefillMinitiaConfig {
+	return &PrefillMinitiaConfig{
+		Selector: utils.Selector[PrefillMinitiaConfigOption]{
+			Options: []PrefillMinitiaConfigOption{
+				PrefillMinitiaConfig_Yes,
+				PrefillMinitiaConfig_No,
+			},
+		},
+		state:    state,
+		question: "Existing .minitia/artifacts/config.json detected. Would you like to use the data in this file to pre-fill some fields?",
+	}
+}
+
+func (m *PrefillMinitiaConfig) GetQuestion() string {
+	return m.question
+}
+
+func (m *PrefillMinitiaConfig) Init() tea.Cmd {
+	return nil
+}
+
+func (m *PrefillMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	selected, cmd := m.Select(msg)
+	if selected != nil {
+		switch *selected {
+		case PrefillMinitiaConfig_Yes:
+			minitiaConfig := m.state.MinitiaConfig
+			defaultExecutorFields[2].PrefillValue = minitiaConfig.L1Config.ChainID
+			defaultExecutorFields[3].PrefillValue = minitiaConfig.L1Config.RpcUrl
+			defaultExecutorFields[4].PrefillValue = minitiaConfig.L1Config.GasPrices
+			defaultExecutorFields[5].PrefillValue = minitiaConfig.L2Config.ChainID
+
+			defaultChallengerFields[2].PrefillValue = minitiaConfig.L1Config.ChainID
+			defaultChallengerFields[3].PrefillValue = minitiaConfig.L1Config.RpcUrl
+			defaultChallengerFields[4].PrefillValue = minitiaConfig.L2Config.ChainID
+
+		}
+
+		if m.state.InitExecutorBot {
+			return NewFieldInputModel(m.state, defaultExecutorFields, NewSetDALayer), cmd
+		} else if m.state.InitChallengerBot {
+			return NewFieldInputModel(m.state, defaultChallengerFields, NewStartingInitBot), cmd
+		}
+
+	}
+
+	return m, cmd
+}
+
+func (m *PrefillMinitiaConfig) View() string {
+	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{".minitia/artifacts/config.json"}, styles.Question) + m.Selector.View()
 }
 
 type DALayerNetwork string
@@ -283,7 +374,24 @@ func (m *SetDALayer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	selected, cmd := m.Select(msg)
 	if selected != nil {
 		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"DA Layer"}, string(*selected)))
-		m.state.botConfig["da_layer_network"] = string(*selected)
+		// m.state.botConfig["da_layer_network"] = string(*selected)
+		switch *selected {
+		case Initia:
+			m.state.botConfig["da.chain_id"] = m.state.botConfig["l1_node.chain_id"]
+			m.state.botConfig["da.rpc_address"] = m.state.botConfig["l1_node.rpc_address"]
+			m.state.botConfig["da.bech32_prefix"] = m.state.botConfig["l1_node.bech32_prefix"]
+			m.state.botConfig["da.gas_price"] = m.state.botConfig["dal1_node.gas_price"]
+		case CelestiaMainnet:
+			m.state.botConfig["da.chain_id"] = fmt.Sprintf("%s", utils.GetConfig("constants.da_layer.celestia_mainnet.chain_id"))
+			m.state.botConfig["da.rpc_address"] = fmt.Sprintf("%s", utils.GetConfig("constants.da_layer.celestia_mainnet.rpc"))
+			m.state.botConfig["da.bech32_prefix"] = fmt.Sprintf("%s", utils.GetConfig("constants.da_layer.celestia_mainnet.bech32_prefix"))
+			m.state.botConfig["da.gas_price"] = fmt.Sprintf("%s", utils.GetConfig("constants.da_layer.celestia_mainnet.gas_price"))
+		case CelestiaTestnet:
+			m.state.botConfig["da.chain_id"] = fmt.Sprintf("%s", utils.GetConfig("constants.da_layer.celestia_testnet.chain_id"))
+			m.state.botConfig["da.rpc_address"] = fmt.Sprintf("%s", utils.GetConfig("constants.da_layer.celestia_testnet.rpc"))
+			m.state.botConfig["da.bech32_prefix"] = fmt.Sprintf("%s", utils.GetConfig("constants.da_layer.celestia_testnet.bech32_prefix"))
+			m.state.botConfig["da.gas_price"] = fmt.Sprintf("%s", utils.GetConfig("constants.da_layer.celestia_testnet.gas_price"))
+		}
 		return NewFieldInputModel(m.state, defaultDALayerFields, NewStartingInitBot), cmd
 	}
 
@@ -300,9 +408,15 @@ type StartingInitBot struct {
 }
 
 func NewStartingInitBot(state *OPInitBotsState) tea.Model {
+	var bot string
+	if state.InitExecutorBot {
+		bot = "executor"
+	} else {
+		bot = "challenger"
+	}
 	return &StartingInitBot{
 		state:   state,
-		loading: utils.NewLoading("Setting up OPinit bot (TODO)...", WaitStartingInitBot(state)),
+		loading: utils.NewLoading(fmt.Sprintf("Setting up OPinit bot %s...", bot), WaitStartingInitBot(state)),
 	}
 }
 
@@ -316,7 +430,7 @@ func WaitStartingInitBot(state *OPInitBotsState) tea.Cmd {
 		}
 
 		if state.isDeleteDB {
-			err := utils.DeleteFile(state.dbPath)
+			err := utils.DeleteDirectory(state.dbPath)
 			if err != nil {
 				panic(err)
 			}
@@ -346,12 +460,11 @@ func WaitStartingInitBot(state *OPInitBotsState) tea.Cmd {
 					GasAdjustment: 1.5,
 					TxTimeout:     60,
 				},
-				// TODO: revisit da node
 				DANode: NodeSettings{
-					ChainID:       configMap["l2_node.chain_id"],
-					RPCAddress:    configMap["l2_node.rpc_address"],
-					Bech32Prefix:  "init",
-					GasPrice:      configMap["l2_node.gas_price"],
+					ChainID:       configMap["da.chain_id"],
+					RPCAddress:    configMap["da.rpc_address"],
+					Bech32Prefix:  configMap["da.bech32_prefix"],
+					GasPrice:      configMap["da.gas_price"],
 					GasAdjustment: 1.5,
 					TxTimeout:     60,
 				},
