@@ -186,6 +186,12 @@ func (m *ProcessingMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					botInfo.Mnemonic = m.state.MinitiaConfig.SystemKeys.OutputSubmitter.Mnemonic
 				case BatchSubmitter:
 					botInfo.Mnemonic = m.state.MinitiaConfig.SystemKeys.BatchSubmitter.Mnemonic
+					if strings.HasPrefix(m.state.MinitiaConfig.SystemKeys.BatchSubmitter.L1Address, "initia") {
+						botInfo.DALayer = string(InitiaLayerOption)
+					} else {
+						botInfo.DALayer = string(CelestiaLayerOption)
+
+					}
 				case Challenger:
 					botInfo.Mnemonic = m.state.MinitiaConfig.SystemKeys.Challenger.Mnemonic
 				}
