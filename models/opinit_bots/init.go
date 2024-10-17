@@ -315,8 +315,84 @@ func (m *PrefillMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			defaultChallengerFields[2].PrefillValue = minitiaConfig.L1Config.ChainID
 			defaultChallengerFields[3].PrefillValue = minitiaConfig.L1Config.RpcUrl
 			defaultChallengerFields[4].PrefillValue = minitiaConfig.L2Config.ChainID
+			if m.state.InitExecutorBot {
+				return NewFieldInputModel(m.state, defaultExecutorFields, NewSetDALayer), cmd
+			} else if m.state.InitChallengerBot {
+				return NewFieldInputModel(m.state, defaultChallengerFields, NewStartingInitBot), cmd
+			}
 
+		case PrefillMinitiaConfig_No:
+			return NewL1PrefillSelector(m.state), cmd
 		}
+
+	}
+
+	return m, cmd
+}
+
+func (m *PrefillMinitiaConfig) View() string {
+	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{".minitia/artifacts/config.json"}, styles.Question) + m.Selector.View()
+}
+
+type L1PrefillOption string
+
+var (
+	L1PrefillOption_Mainnet L1PrefillOption = ""
+	L1PrefillOption_Testnet L1PrefillOption = ""
+	L1PrefillOption_Custom  L1PrefillOption = "Custom"
+)
+
+type L1PrefillSelector struct {
+	utils.Selector[L1PrefillOption]
+	state    *OPInitBotsState
+	question string
+}
+
+func NewL1PrefillSelector(state *OPInitBotsState) *L1PrefillSelector {
+	L1PrefillOption_Mainnet = L1PrefillOption(fmt.Sprintf("Mainnet (%s)", utils.GetConfig("constants.chain_id.mainnet")))
+	L1PrefillOption_Testnet = L1PrefillOption(fmt.Sprintf("Testnet (%s)", utils.GetConfig("constants.chain_id.testnet")))
+	return &L1PrefillSelector{
+		Selector: utils.Selector[L1PrefillOption]{
+			Options: []L1PrefillOption{
+				L1PrefillOption_Mainnet,
+				L1PrefillOption_Testnet,
+				L1PrefillOption_Custom,
+			},
+		},
+		state:    state,
+		question: "Which L1 would you like your Minitia to connect to?",
+	}
+}
+
+func (m *L1PrefillSelector) GetQuestion() string {
+	return m.question
+}
+
+func (m *L1PrefillSelector) Init() tea.Cmd {
+	return nil
+}
+
+func (m *L1PrefillSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	selected, cmd := m.Select(msg)
+	if selected != nil {
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"L1"}, string(*selected)))
+
+		var chainId, rpc string
+		switch *selected {
+
+		case L1PrefillOption_Mainnet:
+			chainId = fmt.Sprintf("%s", utils.GetConfig("constants.chain_id.mainnet"))
+			rpc = fmt.Sprintf("%s", utils.GetConfig("constants.endpoints.mainnet.rpc"))
+
+		case L1PrefillOption_Testnet:
+			chainId = fmt.Sprintf("%s", utils.GetConfig("constants.chain_id.testnet"))
+			rpc = fmt.Sprintf("%s", utils.GetConfig("constants.endpoints.testnet.rpc"))
+		}
+		defaultExecutorFields[2].PrefillValue = chainId
+		defaultExecutorFields[3].PrefillValue = rpc
+
+		defaultChallengerFields[2].PrefillValue = chainId
+		defaultChallengerFields[3].PrefillValue = rpc
 
 		if m.state.InitExecutorBot {
 			return NewFieldInputModel(m.state, defaultExecutorFields, NewSetDALayer), cmd
@@ -329,8 +405,8 @@ func (m *PrefillMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-func (m *PrefillMinitiaConfig) View() string {
-	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{".minitia/artifacts/config.json"}, styles.Question) + m.Selector.View()
+func (m *L1PrefillSelector) View() string {
+	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"L1"}, styles.Question) + m.Selector.View()
 }
 
 type DALayerNetwork string

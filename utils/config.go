@@ -85,37 +85,37 @@ func IsFirstTimeSetup() bool {
 
 const DefaultConfigTemplate = `
 {
-	"constants": {
-		"chain_id": {
-			"mainnet": "initia-1",
-			"testnet": "initiation-2"
-		},
-		"endpoints": {
-			"mainnet": {
-				"rpc": "https://rpc.initia.xyz:443",
-				"lcd": "https://lcd.initia.xyz",
-				"genesis": "https://initia.s3.ap-southeast-1.amazonaws.com/initia-1/genesis.json"
-			},
-			"testnet": {
-				"rpc": "https://rpc.initiation-2.initia.xyz:443",
-				"lcd": "https://lcd.initiation-2.initia.xyz",
-				"genesis": "https://storage.googleapis.com/initia-binaries/genesis.json"
-			}
-		},
-		"da_layer": {
-			"celestia_mainnet": {
-				"chain_id": "mocha-4",
-				"rpc": "https://celestia-testnet-rpc.publicnode.com:443",
-				"bech32_prefix": "utia",
-				"gas_price": "0.02utia"
-			},
-			"celestia_testnet": {
-				"chain_id": "celestia",
-				"rpc": "https://celestia-rpc.mesa.newmetric.xyz",
-				"bech32_prefix": "utia",
-				"gas_price": "0.02utia"
-			}
-		}
-	}
+  "constants": {
+    "chain_id": {
+      "mainnet": "initia-1",
+      "testnet": "initiation-2"
+    },
+    "endpoints": {
+      "mainnet": {
+        "rpc": "https://rpc.initia.xyz:443",
+        "lcd": "https://lcd.initia.xyz",
+        "genesis": "https://initia.s3.ap-southeast-1.amazonaws.com/initia-1/genesis.json"
+      },
+      "testnet": {
+        "rpc": "https://rpc.initiation-2.initia.xyz:443",
+        "lcd": "https://lcd.initiation-2.initia.xyz",
+        "genesis": "https://storage.googleapis.com/initia-binaries/genesis.json"
+      }
+    },
+    "da_layer": {
+      "celestia_testnet": {
+        "chain_id": "mocha-4",
+        "rpc": "https://celestia-testnet-rpc.publicnode.com:443",
+        "bech32_prefix": "utia",
+        "gas_price": "0.02utia"
+      },
+      "celestia_mainnet": {
+        "chain_id": "celestia",
+        "rpc": "https://celestia-rpc.mesa.newmetric.xyz",
+        "bech32_prefix": "utia",
+        "gas_price": "0.02utia"
+      }
+    }
+  }
 }
 `
