@@ -60,7 +60,7 @@ var defaultChallengerFields = []Field{
 	{Name: "version", Type: NumberField, Question: "Please specify the version", Placeholder: `Press tab to use "1"`, DefaultValue: "1", ValidateFn: utils.IsValidInteger},
 
 	// Listen Address
-	{Name: "listen_address", Type: StringField, Question: "Please specify the listen_address", Placeholder: `Add listen address ex. localhost:3000`, ValidateFn: utils.ValidateURL},
+	{Name: "listen_address", Type: StringField, Question: "Please specify the listen_address", Placeholder: `Add listen address ex. localhost:3000`, ValidateFn: utils.ValidateEmptyString},
 
 	// L1 Node Configuration
 	{Name: "l1_node.chain_id", Type: StringField, Question: "Please specify the L1 chain_id", Placeholder: "Add alphanumeric", ValidateFn: utils.ValidateEmptyString},
@@ -102,12 +102,40 @@ func (m *OPInitBotInitSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case Executor_OPInitBotInitOption:
 			m.state.InitExecutorBot = true
 
+			minitiaConfigPath := filepath.Join(homeDir, utils.MinitiaArtifactsDirectory, "config.json")
+
+			// Check if the config file exists
+			if utils.FileOrFolderExists(minitiaConfigPath) {
+				// Load the config if found
+				configData, err := os.ReadFile(minitiaConfigPath)
+				if err != nil {
+					panic(err)
+				}
+
+				var minitiaConfig types.MinitiaConfig
+				err = json.Unmarshal(configData, &minitiaConfig)
+				if err != nil {
+					panic(err)
+				}
+
+				m.state.MinitiaConfig = &minitiaConfig // assuming m.state has a field for storing the config
+			}
+
 			m.state.dbPath = filepath.Join(homeDir, utils.OPinitDirectory, "executor.db")
 			if utils.FileOrFolderExists(m.state.dbPath) {
 				return NewDeleteDBSelector(m.state, "executor"), cmd
 			}
 
-			return NewUseCurrentCofigSelector(m.state, "executor"), cmd
+			executorJsonPath := filepath.Join(homeDir, utils.OPinitDirectory, "executor.json")
+			if utils.FileOrFolderExists(executorJsonPath) {
+				return NewUseCurrentCofigSelector(m.state, "executor"), cmd
+			}
+
+			if m.state.MinitiaConfig != nil {
+				return NewPrefillMinitiaConfig(m.state), cmd
+			}
+
+			return NewL1PrefillSelector(m.state), cmd
 		case Challenger_OPInitBotInitOption:
 			m.state.InitChallengerBot = true
 
@@ -219,26 +247,6 @@ func (m *UseCurrentCofigSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	selected, cmd := m.Select(msg)
 	if selected != nil {
 		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{m.configPath}, string(*selected)))
-		// Get user's home directory and construct the config path
-		homeDir, _ := os.UserHomeDir()
-		minitiaConfigPath := filepath.Join(homeDir, utils.MinitiaArtifactsDirectory, "config.json")
-
-		// Check if the config file exists
-		if utils.FileOrFolderExists(minitiaConfigPath) {
-			// Load the config if found
-			configData, err := os.ReadFile(minitiaConfigPath)
-			if err != nil {
-				panic(err)
-			}
-
-			var minitiaConfig types.MinitiaConfig
-			err = json.Unmarshal(configData, &minitiaConfig)
-			if err != nil {
-				panic(err)
-			}
-
-			m.state.MinitiaConfig = &minitiaConfig // assuming m.state has a field for storing the config
-		}
 
 		switch *selected {
 		case "use current file":
@@ -305,6 +313,8 @@ func (m *PrefillMinitiaConfig) Init() tea.Cmd {
 func (m *PrefillMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	selected, cmd := m.Select(msg)
 	if selected != nil {
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{".minitia/artifacts/config.json"}, string(*selected)))
+
 		switch *selected {
 		case PrefillMinitiaConfig_Yes:
 			minitiaConfig := m.state.MinitiaConfig
