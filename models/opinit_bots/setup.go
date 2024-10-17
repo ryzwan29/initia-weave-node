@@ -555,8 +555,9 @@ func WaitSetupOPInitBots(state *OPInitBotsState) tea.Cmd {
 		}
 
 		for _, info := range state.BotInfos {
+			isCeletia := info.DALayer == string(CelestiaTestnetLayerOption) || info.DALayer == string(CelestiaMainnetLayerOption)
 			if info.Mnemonic != "" {
-				res, err := utils.OPInitRecoverKeyFromMnemonic(binaryPath, info.KeyName, info.Mnemonic, info.DALayer == string(CelestiaTestnetLayerOption) || info.DALayer == string(CelestiaTestnetLayerOption))
+				res, err := utils.OPInitRecoverKeyFromMnemonic(binaryPath, info.KeyName, info.Mnemonic, isCeletia)
 				if err != nil {
 					return utils.ErrorLoading{Err: err}
 				}
@@ -564,7 +565,7 @@ func WaitSetupOPInitBots(state *OPInitBotsState) tea.Cmd {
 				continue
 			}
 			if info.IsGenerateKey {
-				res, err := utils.OPInitAddOrReplace(binaryPath, info.KeyName, info.DALayer == string(CelestiaTestnetLayerOption) || info.DALayer == string(CelestiaTestnetLayerOption))
+				res, err := utils.OPInitAddOrReplace(binaryPath, info.KeyName, isCeletia)
 				if err != nil {
 					return utils.ErrorLoading{Err: err}
 
