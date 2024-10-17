@@ -233,10 +233,17 @@ func NewSetupBotCheckbox(state *OPInitBotsState, addKeyRing bool) *SetupBotCheck
 		}
 	}
 
+	var question string
+	if addKeyRing {
+		question = "Which bots would you like to override? (The ones that remain unselected will be imported from ~/.minitia/artifacts/config.json.)"
+	} else {
+		question = "Which bots would you like to set?"
+	}
+
 	return &SetupBotCheckbox{
 		CheckBox: *utils.NewCheckBox(checkBlock),
 		state:    state,
-		question: "Which bots would you like to set?",
+		question: question,
 	}
 }
 
@@ -252,7 +259,7 @@ func (m *SetupBotCheckbox) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	cb, cmd, done := m.Select(msg)
 	if done {
 		empty := true
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, cb.GetSelectedString()))
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"bots", "set", "override", "~/.minitia/artifacts/config.json"}, cb.GetSelectedString()))
 
 		for idx, isSelected := range cb.Selected {
 			if isSelected {
@@ -272,7 +279,7 @@ func (m *SetupBotCheckbox) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *SetupBotCheckbox) View() string {
-	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{}, styles.Question) + "\n" + m.CheckBox.View()
+	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"bots", "set", "override", "~/.minitia/artifacts/config.json"}, styles.Question) + "\n" + m.CheckBox.View()
 }
 
 type RecoverKeySelector struct {
