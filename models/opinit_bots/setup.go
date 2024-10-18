@@ -528,7 +528,7 @@ func WaitSetupOPInitBots(state *OPInitBotsState) tea.Cmd {
 		goarch := runtime.GOARCH
 		url := getBinaryURL(version, goos, goarch)
 
-		binaryPath := filepath.Join(userHome, utils.WeaveDataDirectory, fmt.Sprintf("opinitd@%s", version), "opinitd")
+		binaryPath := filepath.Join(userHome, utils.WeaveDataDirectory, fmt.Sprintf("opinitd@%s", version), AppName)
 		extractedPath := filepath.Join(weaveDataPath, fmt.Sprintf("opinitd@%s", version))
 
 		if _, err := os.Stat(binaryPath); os.IsNotExist(err) {

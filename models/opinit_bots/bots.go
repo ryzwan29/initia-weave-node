@@ -81,7 +81,7 @@ var BotInfos = []BotInfo{
 // CheckIfKeysExist checks the output of `initiad keys list` and sets IsNotExist for missing keys
 func CheckIfKeysExist(botInfos []BotInfo) []BotInfo {
 	// Run the `initiad keys list --keyring-backend test` command
-	cmd := exec.Command("opinitd", "keys", "list", "weave-dummy")
+	cmd := exec.Command(AppName, "keys", "list", "weave-dummy")
 	outputBytes, err := cmd.Output()
 	if err != nil {
 		return botInfos

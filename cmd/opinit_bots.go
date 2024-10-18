@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -46,6 +47,7 @@ func OPInitBotsCommand() *cobra.Command {
 	cmd.AddCommand(OPInitBotsStopCommand())
 	cmd.AddCommand(OPInitBotsRestartCommand())
 	cmd.AddCommand(OPInitBotsLogCommand())
+	cmd.AddCommand(OPInitBotsResetCommand())
 
 	return cmd
 }
@@ -56,7 +58,7 @@ func Setup() error {
 	if err != nil {
 		panic(err)
 	}
-	binaryPath := filepath.Join(userHome, utils.WeaveDataDirectory, "opinitd")
+	binaryPath := filepath.Join(userHome, utils.WeaveDataDirectory)
 	currentVersion, _ := utils.GetBinaryVersion(binaryPath)
 	_, err = tea.NewProgram(opinit_bots.NewOPInitBotVersionSelector(opinit_bots.NewOPInitBotsState(), versions, currentVersion)).Run()
 	return err
@@ -82,7 +84,7 @@ func OPInitBotsInitCommand() *cobra.Command {
 			if err != nil {
 				panic(err)
 			}
-			binaryPath := filepath.Join(userHome, utils.WeaveDataDirectory, "opinitd")
+			binaryPath := filepath.Join(userHome, utils.WeaveDataDirectory, opinit_bots.AppName)
 			_, err = utils.GetBinaryVersion(binaryPath)
 			if err != nil {
 				Setup()
@@ -199,4 +201,35 @@ Valid options are [executor, challenger] eg. weave opinit-bots logs executor`,
 	logCmd.Flags().IntP(FlagN, FlagN, 100, "previous log lines to show")
 
 	return logCmd
+}
+
+func OPInitBotsResetCommand() *cobra.Command {
+	resetCmd := &cobra.Command{
+		Use:   "reset [bot-name]",
+		Short: "Reset a OPinit bot's database",
+		Long: `Reset a OPinit bot's database. The only argument required is the desired bot name.
+Valid options are [executor, challenger] eg. weave opinit-bots reset challenger`,
+		Args: ValidateOPinitBotNameArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			userHome, err := os.UserHomeDir()
+			if err != nil {
+				panic(err)
+			}
+			binaryPath := filepath.Join(userHome, utils.WeaveDataDirectory, opinit_bots.AppName)
+			_, err = utils.GetBinaryVersion(binaryPath)
+			if err != nil {
+				panic("error getting the opinitd binary")
+			}
+
+			botName := args[0]
+			execCmd := exec.Command(binaryPath, "reset-db", botName)
+			if err = execCmd.Run(); err != nil {
+				return fmt.Errorf("failed to reset-db: %v", err)
+			}
+			fmt.Println(fmt.Sprintf("Reset the OPinit %[1]s bot database successfully.", botName))
+			return nil
+		},
+	}
+
+	return resetCmd
 }
