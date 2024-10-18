@@ -580,11 +580,20 @@ func WaitStartingInitBot(state *OPInitBotsState) tea.Cmd {
 			panic(err)
 		}
 
-		if !state.ReplaceBotConfig {
-			return utils.EndLoading{}
-		}
-
 		if state.InitExecutorBot {
+			srv, err := service.NewService(service.OPinitExecutor)
+			if err != nil {
+				panic(fmt.Sprintf("failed to initialize service: %v", err))
+			}
+
+			if err = srv.Create(""); err != nil {
+				panic(fmt.Sprintf("failed to create service: %v", err))
+			}
+
+			if !state.ReplaceBotConfig {
+				return utils.EndLoading{}
+			}
+
 			version, _ := strconv.Atoi(configMap["version"])
 			l2StartHeight, _ := strconv.Atoi(configMap["l2_start_height"])
 			batchStartHeight, _ := strconv.Atoi(configMap["batch_start_height"])
@@ -634,8 +643,8 @@ func WaitStartingInitBot(state *OPInitBotsState) tea.Cmd {
 			if err = os.WriteFile(configFilePath, configBz, 0600); err != nil {
 				panic(fmt.Errorf("failed to write config file: %v", err))
 			}
-
-			srv, err := service.NewService(service.OPinitExecutor)
+		} else if state.InitChallengerBot {
+			srv, err := service.NewService(service.OPinitChallenger)
 			if err != nil {
 				panic(fmt.Sprintf("failed to initialize service: %v", err))
 			}
@@ -643,7 +652,11 @@ func WaitStartingInitBot(state *OPInitBotsState) tea.Cmd {
 			if err = srv.Create(""); err != nil {
 				panic(fmt.Sprintf("failed to create service: %v", err))
 			}
-		} else if state.InitChallengerBot {
+
+			if !state.ReplaceBotConfig {
+				return utils.EndLoading{}
+			}
+
 			version, _ := strconv.Atoi(configMap["version"])
 			l2StartHeight, _ := strconv.Atoi(configMap["l2_start_height"])
 			config := ChallengerConfig{
@@ -669,15 +682,6 @@ func WaitStartingInitBot(state *OPInitBotsState) tea.Cmd {
 			configFilePath := filepath.Join(userHome, utils.OPinitDirectory, "challenger.json")
 			if err = os.WriteFile(configFilePath, configBz, 0600); err != nil {
 				panic(fmt.Errorf("failed to write config file: %v", err))
-			}
-
-			srv, err := service.NewService(service.OPinitChallenger)
-			if err != nil {
-				panic(fmt.Sprintf("failed to initialize service: %v", err))
-			}
-
-			if err = srv.Create(""); err != nil {
-				panic(fmt.Sprintf("failed to create service: %v", err))
 			}
 		}
 		return utils.EndLoading{}
