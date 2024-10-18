@@ -20,6 +20,7 @@ type OPInitBotsState struct {
 	botConfig            map[string]string
 	dbPath               string
 	isDeleteDB           bool
+	useCurrentConfig     bool
 }
 
 // Function to initialize OPInitBotsState with all bots in default setup state (false)

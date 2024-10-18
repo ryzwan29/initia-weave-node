@@ -93,6 +93,15 @@ func (m *OPInitBotInitSelector) Init() tea.Cmd {
 	return nil
 }
 
+type BotConfigChainId struct {
+	L1Node struct {
+		ChainID string `json:"chain_id"`
+	} `json:"l1_node"`
+	L2Node struct {
+		ChainID string `json:"chain_id"`
+	} `json:"l2_node"`
+}
+
 func (m *OPInitBotInitSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	selected, cmd := m.Select(msg)
 	if selected != nil {
@@ -129,6 +138,19 @@ func (m *OPInitBotInitSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			executorJsonPath := filepath.Join(homeDir, utils.OPinitDirectory, "executor.json")
 			if utils.FileOrFolderExists(executorJsonPath) {
+				file, err := os.ReadFile(executorJsonPath)
+				if err != nil {
+					panic(err)
+				}
+
+				var botConfigChainId BotConfigChainId
+
+				err = json.Unmarshal(file, &botConfigChainId)
+				if err != nil {
+					panic(err)
+				}
+				m.state.botConfig["l1_node.chain_id"] = botConfigChainId.L1Node.ChainID
+				m.state.botConfig["l2_node.chain_id"] = botConfigChainId.L2Node.ChainID
 				return NewUseCurrentConfigSelector(m.state, "executor"), cmd
 			}
 
@@ -144,8 +166,29 @@ func (m *OPInitBotInitSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if utils.FileOrFolderExists(m.state.dbPath) {
 				return NewDeleteDBSelector(m.state, "challenger"), cmd
 			}
-			return NewUseCurrentConfigSelector(m.state, "challenger"), cmd
 
+			challengerJsonPath := filepath.Join(homeDir, utils.OPinitDirectory, "challenger.json")
+			if utils.FileOrFolderExists(challengerJsonPath) {
+				file, err := os.ReadFile(challengerJsonPath)
+				if err != nil {
+					panic(err)
+				}
+
+				var botConfigChainId BotConfigChainId
+
+				err = json.Unmarshal(file, &botConfigChainId)
+				if err != nil {
+					panic(err)
+				}
+				m.state.botConfig["l1_node.chain_id"] = botConfigChainId.L1Node.ChainID
+				m.state.botConfig["l2_node.chain_id"] = botConfigChainId.L2Node.ChainID
+				return NewUseCurrentConfigSelector(m.state, "executor"), cmd
+			}
+
+			if m.state.MinitiaConfig != nil {
+				return NewPrefillMinitiaConfig(m.state), cmd
+			}
+			return NewL1PrefillSelector(m.state), cmd
 		}
 	}
 
@@ -252,13 +295,14 @@ func (m *UseCurrentConfigSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch *selected {
 		case "use current file":
 			m.state.ReplaceBotConfig = false
-			return m, tea.Quit
+
+			model := NewStartingInitBot(m.state)
+			return model, model.Init()
 		case "replace":
 			m.state.ReplaceBotConfig = true
 			if m.state.MinitiaConfig != nil {
 				return NewPrefillMinitiaConfig(m.state), cmd
 			}
-			// TODO: load config
 			if m.state.InitExecutorBot {
 				return NewFieldInputModel(m.state, defaultExecutorFields, NewSetDALayer), cmd
 			} else if m.state.InitChallengerBot {
@@ -462,7 +506,6 @@ func (m *SetDALayer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	selected, cmd := m.Select(msg)
 	if selected != nil {
 		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"DA Layer"}, string(*selected)))
-		// m.state.botConfig["da_layer_network"] = string(*selected)
 		switch *selected {
 		case Initia:
 			m.state.botConfig["da.chain_id"] = m.state.botConfig["l1_node.chain_id"]
@@ -535,6 +578,10 @@ func WaitStartingInitBot(state *OPInitBotsState) tea.Cmd {
 		err = utils.CopyDirectory(weaveDummyKeyPath, l2KeyPath)
 		if err != nil {
 			panic(err)
+		}
+
+		if !state.ReplaceBotConfig {
+			return utils.EndLoading{}
 		}
 
 		if state.InitExecutorBot {
