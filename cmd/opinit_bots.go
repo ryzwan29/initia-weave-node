@@ -50,20 +50,24 @@ func OPInitBotsCommand() *cobra.Command {
 	return cmd
 }
 
+func Setup() error {
+	versions := utils.ListBinaryReleases("https://api.github.com/repos/initia-labs/opinit-bots/releases")
+	userHome, err := os.UserHomeDir()
+	if err != nil {
+		panic(err)
+	}
+	binaryPath := filepath.Join(userHome, utils.WeaveDataDirectory, "opinitd")
+	currentVersion, _ := utils.GetBinaryVersion(binaryPath)
+	_, err = tea.NewProgram(opinit_bots.NewOPInitBotVersionSelector(opinit_bots.NewOPInitBotsState(), versions, currentVersion)).Run()
+	return err
+}
+
 func OPInitBotsKeysSetupCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "setup",
 		Short: "Setup keys for OPInit bots",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			versions := utils.ListBinaryReleases("https://api.github.com/repos/initia-labs/opinit-bots/releases")
-			userHome, err := os.UserHomeDir()
-			if err != nil {
-				panic(err)
-			}
-			binaryPath := filepath.Join(userHome, utils.WeaveDataDirectory, "opinitd")
-			currentVersion, _ := utils.GetBinaryVersion(binaryPath)
-			_, err = tea.NewProgram(opinit_bots.NewOPInitBotVersionSelector(opinit_bots.NewOPInitBotsState(), versions, currentVersion)).Run()
-			return err
+			return Setup()
 		},
 	}
 	return cmd
@@ -74,7 +78,16 @@ func OPInitBotsInitCommand() *cobra.Command {
 		Use:   "init",
 		Short: "Init OPInit bots",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			_, err := tea.NewProgram(opinit_bots.NewOPInitBotInitSelector(opinit_bots.NewOPInitBotsState())).Run()
+			userHome, err := os.UserHomeDir()
+			if err != nil {
+				panic(err)
+			}
+			binaryPath := filepath.Join(userHome, utils.WeaveDataDirectory, "opinitd")
+			_, err = utils.GetBinaryVersion(binaryPath)
+			if err != nil {
+				Setup()
+			}
+			_, err = tea.NewProgram(opinit_bots.NewOPInitBotInitSelector(opinit_bots.NewOPInitBotsState())).Run()
 			return err
 		},
 	}
