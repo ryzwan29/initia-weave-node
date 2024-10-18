@@ -23,6 +23,16 @@ func contains(slice []string, item string) bool {
 	return false
 }
 
+func ValidateOPinitOptionalBotNameArgs(cmd *cobra.Command, args []string) error {
+	if len(args) > 1 {
+		return fmt.Errorf("expected zero or one argument, got %d", len(args))
+	}
+	if len(args) == 1 && !contains([]string{"executor", "challenger"}, args[0]) {
+		return fmt.Errorf("invalid bot name '%s'. Valid options are: [executor, challenger]", args[0])
+	}
+	return nil
+}
+
 func ValidateOPinitBotNameArgs(cmd *cobra.Command, args []string) error {
 	if len(args) != 1 {
 		return fmt.Errorf("expected exactly one argument, got %d", len(args))
@@ -77,8 +87,12 @@ func OPInitBotsKeysSetupCommand() *cobra.Command {
 
 func OPInitBotsInitCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "init",
-		Short: "Init OPInit bots",
+		Use:   "init [bot-name]",
+		Short: "Init OPinit bots",
+		Long: `Initialize the OPinit bot. The argument is optional, as you will be prompted to select a bot if no bot name is provided.
+Alternatively, you can skip by specifying the bot name as an argument. Valid options are [executor, challenger] eg. weave opinit-bots init executor
+ `,
+		Args: ValidateOPinitOptionalBotNameArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			userHome, err := os.UserHomeDir()
 			if err != nil {
@@ -89,8 +103,23 @@ func OPInitBotsInitCommand() *cobra.Command {
 			if err != nil {
 				Setup()
 			}
-			_, err = tea.NewProgram(opinit_bots.NewOPInitBotInitSelector(opinit_bots.NewOPInitBotsState())).Run()
-			return err
+
+			if len(args) == 1 {
+				botName := args[0]
+				switch botName {
+				case "executor":
+					_, err = tea.NewProgram(opinit_bots.OPInitBotInitSelectExecutor(opinit_bots.NewOPInitBotsState())).Run()
+					return err
+				case "challenger":
+					_, err = tea.NewProgram(opinit_bots.OPInitBotInitSelectChallenger(opinit_bots.NewOPInitBotsState())).Run()
+					return err
+				default:
+					return fmt.Errorf("invalid bot name")
+				}
+			} else {
+				_, err = tea.NewProgram(opinit_bots.NewOPInitBotInitSelector(opinit_bots.NewOPInitBotsState())).Run()
+				return err
+			}
 		},
 	}
 	return cmd

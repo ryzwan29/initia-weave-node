@@ -102,94 +102,103 @@ type BotConfigChainId struct {
 	} `json:"l2_node"`
 }
 
+func OPInitBotInitSelectExecutor(state *OPInitBotsState) tea.Model {
+	homeDir, _ := os.UserHomeDir()
+	state.InitExecutorBot = true
+	minitiaConfigPath := filepath.Join(homeDir, utils.MinitiaArtifactsDirectory, "config.json")
+
+	if utils.FileOrFolderExists(minitiaConfigPath) {
+		configData, err := os.ReadFile(minitiaConfigPath)
+		if err != nil {
+			panic(err)
+		}
+
+		var minitiaConfig types.MinitiaConfig
+		err = json.Unmarshal(configData, &minitiaConfig)
+		if err != nil {
+			panic(err)
+		}
+
+		state.MinitiaConfig = &minitiaConfig
+	}
+
+	state.dbPath = filepath.Join(homeDir, utils.OPinitDirectory, "executor.db")
+	if utils.FileOrFolderExists(state.dbPath) {
+		return NewDeleteDBSelector(state, "executor")
+	}
+
+	executorJsonPath := filepath.Join(homeDir, utils.OPinitDirectory, "executor.json")
+	if utils.FileOrFolderExists(executorJsonPath) {
+		file, err := os.ReadFile(executorJsonPath)
+		if err != nil {
+			panic(err)
+		}
+
+		var botConfigChainId BotConfigChainId
+
+		err = json.Unmarshal(file, &botConfigChainId)
+		if err != nil {
+			panic(err)
+		}
+		state.botConfig["l1_node.chain_id"] = botConfigChainId.L1Node.ChainID
+		state.botConfig["l2_node.chain_id"] = botConfigChainId.L2Node.ChainID
+		return NewUseCurrentConfigSelector(state, "executor")
+	}
+
+	if state.MinitiaConfig != nil {
+		return NewPrefillMinitiaConfig(state)
+	}
+
+	return NewL1PrefillSelector(state)
+}
+
+func OPInitBotInitSelectChallenger(state *OPInitBotsState) tea.Model {
+	homeDir, _ := os.UserHomeDir()
+	state.InitChallengerBot = true
+
+	state.dbPath = filepath.Join(homeDir, utils.OPinitDirectory, "challenger.db")
+	if utils.FileOrFolderExists(state.dbPath) {
+		return NewDeleteDBSelector(state, "challenger")
+	}
+
+	challengerJsonPath := filepath.Join(homeDir, utils.OPinitDirectory, "challenger.json")
+	if utils.FileOrFolderExists(challengerJsonPath) {
+		file, err := os.ReadFile(challengerJsonPath)
+		if err != nil {
+			panic(err)
+		}
+
+		var botConfigChainId BotConfigChainId
+
+		err = json.Unmarshal(file, &botConfigChainId)
+		if err != nil {
+			panic(err)
+		}
+		state.botConfig["l1_node.chain_id"] = botConfigChainId.L1Node.ChainID
+		state.botConfig["l2_node.chain_id"] = botConfigChainId.L2Node.ChainID
+		return NewUseCurrentConfigSelector(state, "executor")
+	}
+
+	if state.MinitiaConfig != nil {
+		return NewPrefillMinitiaConfig(state)
+	}
+	return NewL1PrefillSelector(state)
+}
+
 func (m *OPInitBotInitSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	selected, cmd := m.Select(msg)
 	if selected != nil {
 		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"bot"}, string(*selected)))
-		homeDir, _ := os.UserHomeDir()
 
+		var nextModel tea.Model
 		switch *selected {
 		case ExecutorOPInitBotInitOption:
-			m.state.InitExecutorBot = true
-
-			minitiaConfigPath := filepath.Join(homeDir, utils.MinitiaArtifactsDirectory, "config.json")
-
-			// Check if the config file exists
-			if utils.FileOrFolderExists(minitiaConfigPath) {
-				// Load the config if found
-				configData, err := os.ReadFile(minitiaConfigPath)
-				if err != nil {
-					panic(err)
-				}
-
-				var minitiaConfig types.MinitiaConfig
-				err = json.Unmarshal(configData, &minitiaConfig)
-				if err != nil {
-					panic(err)
-				}
-
-				m.state.MinitiaConfig = &minitiaConfig // assuming m.state has a field for storing the config
-			}
-
-			m.state.dbPath = filepath.Join(homeDir, utils.OPinitDirectory, "executor.db")
-			if utils.FileOrFolderExists(m.state.dbPath) {
-				return NewDeleteDBSelector(m.state, "executor"), cmd
-			}
-
-			executorJsonPath := filepath.Join(homeDir, utils.OPinitDirectory, "executor.json")
-			if utils.FileOrFolderExists(executorJsonPath) {
-				file, err := os.ReadFile(executorJsonPath)
-				if err != nil {
-					panic(err)
-				}
-
-				var botConfigChainId BotConfigChainId
-
-				err = json.Unmarshal(file, &botConfigChainId)
-				if err != nil {
-					panic(err)
-				}
-				m.state.botConfig["l1_node.chain_id"] = botConfigChainId.L1Node.ChainID
-				m.state.botConfig["l2_node.chain_id"] = botConfigChainId.L2Node.ChainID
-				return NewUseCurrentConfigSelector(m.state, "executor"), cmd
-			}
-
-			if m.state.MinitiaConfig != nil {
-				return NewPrefillMinitiaConfig(m.state), cmd
-			}
-
-			return NewL1PrefillSelector(m.state), cmd
+			nextModel = OPInitBotInitSelectExecutor(m.state)
 		case ChallengerOPInitBotInitOption:
-			m.state.InitChallengerBot = true
-
-			m.state.dbPath = filepath.Join(homeDir, utils.OPinitDirectory, "challenger.db")
-			if utils.FileOrFolderExists(m.state.dbPath) {
-				return NewDeleteDBSelector(m.state, "challenger"), cmd
-			}
-
-			challengerJsonPath := filepath.Join(homeDir, utils.OPinitDirectory, "challenger.json")
-			if utils.FileOrFolderExists(challengerJsonPath) {
-				file, err := os.ReadFile(challengerJsonPath)
-				if err != nil {
-					panic(err)
-				}
-
-				var botConfigChainId BotConfigChainId
-
-				err = json.Unmarshal(file, &botConfigChainId)
-				if err != nil {
-					panic(err)
-				}
-				m.state.botConfig["l1_node.chain_id"] = botConfigChainId.L1Node.ChainID
-				m.state.botConfig["l2_node.chain_id"] = botConfigChainId.L2Node.ChainID
-				return NewUseCurrentConfigSelector(m.state, "executor"), cmd
-			}
-
-			if m.state.MinitiaConfig != nil {
-				return NewPrefillMinitiaConfig(m.state), cmd
-			}
-			return NewL1PrefillSelector(m.state), cmd
+			nextModel = OPInitBotInitSelectChallenger(m.state)
 		}
+
+		return nextModel, cmd
 	}
 
 	return m, cmd
