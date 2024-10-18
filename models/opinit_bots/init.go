@@ -3,11 +3,12 @@ package opinit_bots
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/initia-labs/weave/service"
 	"os"
 	"path/filepath"
 	"strconv"
 	"time"
+
+	"github.com/initia-labs/weave/service"
 
 	tea "github.com/charmbracelet/bubbletea"
 
@@ -521,6 +522,19 @@ func WaitStartingInitBot(state *OPInitBotsState) tea.Cmd {
 			if err != nil {
 				panic(err)
 			}
+		}
+
+		weaveDummyKeyPath := filepath.Join(userHome, utils.OPinitDirectory, "weave-dummy")
+		l1KeyPath := filepath.Join(userHome, utils.OPinitDirectory, configMap["l1_node.chain_id"])
+		l2KeyPath := filepath.Join(userHome, utils.OPinitDirectory, configMap["l2_node.chain_id"])
+
+		err = utils.CopyDirectory(weaveDummyKeyPath, l1KeyPath)
+		if err != nil {
+			panic(err)
+		}
+		err = utils.CopyDirectory(weaveDummyKeyPath, l2KeyPath)
+		if err != nil {
+			panic(err)
 		}
 
 		if state.InitExecutorBot {

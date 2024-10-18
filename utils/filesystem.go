@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 )
@@ -139,6 +140,16 @@ func DeleteDirectory(path string) error {
 	err := os.RemoveAll(path)
 	if err != nil {
 		return fmt.Errorf("failed to delete directory: %v", err)
+	}
+	return nil
+}
+
+// CopyDirectory uses the `cp -r` command to copy files or directories from src to des.
+func CopyDirectory(src, des string) error {
+	cmd := exec.Command("cp", "-r", src, des)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("could not run cp command: %v, output: %s", err, string(output))
 	}
 	return nil
 }
