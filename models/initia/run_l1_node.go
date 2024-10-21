@@ -2,6 +2,7 @@ package initia
 
 import (
 	"fmt"
+	"github.com/initia-labs/weave/service"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -856,7 +857,12 @@ func initializeApp(state *RunL1NodeState) tea.Cmd {
 			}
 		}
 
-		if err = utils.CreateService(utils.GetRunL1NodeServiceName(), utils.GetRunL1NodeServiceContent(state.initiadVersion)); err != nil {
+		srv, err := service.NewService(service.Initia)
+		if err != nil {
+			panic(fmt.Sprintf("failed to initialize service: %v", err))
+		}
+
+		if err = srv.Create(fmt.Sprintf("initia@%s", state.initiadVersion)); err != nil {
 			panic(fmt.Sprintf("failed to create service: %v", err))
 		}
 
