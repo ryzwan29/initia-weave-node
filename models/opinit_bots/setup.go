@@ -443,9 +443,8 @@ func renderMnemonic(keyName, address, mnemonic string) string {
 type DALayerOption string
 
 const (
-	InitiaLayerOption          DALayerOption = "Initia"
-	CelestiaMainnetLayerOption DALayerOption = "Celestia Mainnet"
-	CelestiaTestnetLayerOption DALayerOption = "Celestia Testnet"
+	InitiaLayerOption   DALayerOption = "Initia"
+	CelestiaLayerOption DALayerOption = "Celestia"
 )
 
 type DALayerSelector struct {
@@ -460,8 +459,7 @@ func NewDALayerSelector(state *OPInitBotsState, idx int) *DALayerSelector {
 		Selector: utils.Selector[DALayerOption]{
 			Options: []DALayerOption{
 				InitiaLayerOption,
-				CelestiaMainnetLayerOption,
-				CelestiaTestnetLayerOption,
+				CelestiaLayerOption,
 			},
 		},
 		state:    state,
@@ -555,9 +553,8 @@ func WaitSetupOPInitBots(state *OPInitBotsState) tea.Cmd {
 		}
 
 		for _, info := range state.BotInfos {
-			isCelestia := info.DALayer == string(CelestiaTestnetLayerOption) || info.DALayer == string(CelestiaMainnetLayerOption)
 			if info.Mnemonic != "" {
-				res, err := utils.OPInitRecoverKeyFromMnemonic(binaryPath, info.KeyName, info.Mnemonic, isCelestia)
+				res, err := utils.OPInitRecoverKeyFromMnemonic(binaryPath, info.KeyName, info.Mnemonic, info.DALayer == string(CelestiaLayerOption))
 				if err != nil {
 					return utils.ErrorLoading{Err: err}
 				}
@@ -565,7 +562,7 @@ func WaitSetupOPInitBots(state *OPInitBotsState) tea.Cmd {
 				continue
 			}
 			if info.IsGenerateKey {
-				res, err := utils.OPInitAddOrReplace(binaryPath, info.KeyName, isCelestia)
+				res, err := utils.OPInitAddOrReplace(binaryPath, info.KeyName, info.DALayer == string(CelestiaLayerOption))
 				if err != nil {
 					return utils.ErrorLoading{Err: err}
 
