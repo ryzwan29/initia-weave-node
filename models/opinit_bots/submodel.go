@@ -56,12 +56,12 @@ func NewBaseFieldModel(state *OPInitBotsState, field Field) BaseFieldModel {
 	}
 }
 
-// Common Init method for all field models
+// Init is a common Init method for all field models
 func (m *BaseFieldModel) Init() tea.Cmd {
 	return nil
 }
 
-// Common View method for all field models
+// View is a common View method for all field models
 func (m *BaseFieldModel) View() string {
 	s := strings.Split(m.field.Name, ".")
 	return styles.RenderPrompt(m.field.Question, []string{s[len(s)-1], "L1", "L2"}, styles.Question) + m.TextInput.View()

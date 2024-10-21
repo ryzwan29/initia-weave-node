@@ -22,7 +22,7 @@ type OPInitBotsState struct {
 	isDeleteDB           bool
 }
 
-// Function to initialize OPInitBotsState with all bots in default setup state (false)
+// NewOPInitBotsState is a function to initialize OPInitBotsState with all bots in default setup state (false)
 func NewOPInitBotsState() *OPInitBotsState {
 	return &OPInitBotsState{
 		BotInfos:             CheckIfKeysExist(BotInfos),

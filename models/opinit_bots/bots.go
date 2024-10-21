@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-// Define a custom type for the bot names
+// BotName defines a custom type for the bot names
 type BotName string
 
 // Create constants for the BotNames
@@ -16,7 +16,7 @@ const (
 	Challenger      BotName = "Challenger"
 )
 
-// Define a custom type for bot key names
+// BotKeyName defines a custom type for bot key names
 type BotKeyName string
 
 // Create constants for the bot key names
@@ -27,7 +27,7 @@ const (
 	ChallengerKeyName      = "weave_challenger"
 )
 
-// Create a slice of BotName to hold all bot names
+// BotNames to hold all bot names
 var BotNames = []BotName{
 	BridgeExecutor,
 	OutputSubmitter,
@@ -46,7 +46,7 @@ type BotInfo struct {
 	DALayer       string
 }
 
-// Create a slice of BotInfo for all bots with key names filled in
+// BotInfos for all bots with key names filled in
 var BotInfos = []BotInfo{
 	{
 		BotName:    BridgeExecutor,
@@ -80,7 +80,6 @@ var BotInfos = []BotInfo{
 
 // CheckIfKeysExist checks the output of `initiad keys list` and sets IsNotExist for missing keys
 func CheckIfKeysExist(botInfos []BotInfo) []BotInfo {
-	// Run the `initiad keys list --keyring-backend test` command
 	cmd := exec.Command(AppName, "keys", "list", "weave-dummy")
 	outputBytes, err := cmd.Output()
 	if err != nil {

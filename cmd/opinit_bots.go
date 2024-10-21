@@ -23,7 +23,7 @@ func contains(slice []string, item string) bool {
 	return false
 }
 
-func ValidateOPinitOptionalBotNameArgs(cmd *cobra.Command, args []string) error {
+func ValidateOPinitOptionalBotNameArgs(_ *cobra.Command, args []string) error {
 	if len(args) > 1 {
 		return fmt.Errorf("expected zero or one argument, got %d", len(args))
 	}
@@ -33,7 +33,7 @@ func ValidateOPinitOptionalBotNameArgs(cmd *cobra.Command, args []string) error 
 	return nil
 }
 
-func ValidateOPinitBotNameArgs(cmd *cobra.Command, args []string) error {
+func ValidateOPinitBotNameArgs(_ *cobra.Command, args []string) error {
 	if len(args) != 1 {
 		return fmt.Errorf("expected exactly one argument, got %d", len(args))
 	}

@@ -138,8 +138,8 @@ func (m *SetupOPInitBotKeySelector) View() string {
 type AddMinitiaKeyOption string
 
 const (
-	Yes_AddMinitiaKeyOption AddMinitiaKeyOption = "Yes, use detected keys"
-	No_AddMinitiaKeyOption  AddMinitiaKeyOption = "No, skip"
+	YesAddMinitiaKeyOption AddMinitiaKeyOption = "Yes, use detected keys"
+	NoAddMinitiaKeyOption  AddMinitiaKeyOption = "No, skip"
 )
 
 type ProcessingMinitiaConfig struct {
@@ -152,8 +152,8 @@ func NewProcessingMinitiaConfig(state *OPInitBotsState) *ProcessingMinitiaConfig
 	return &ProcessingMinitiaConfig{
 		Selector: utils.Selector[AddMinitiaKeyOption]{
 			Options: []AddMinitiaKeyOption{
-				Yes_AddMinitiaKeyOption,
-				No_AddMinitiaKeyOption,
+				YesAddMinitiaKeyOption,
+				NoAddMinitiaKeyOption,
 			},
 		},
 		state:    state,
@@ -173,7 +173,7 @@ func (m *ProcessingMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	selected, cmd := m.Select(msg)
 	if selected != nil {
 		switch *selected {
-		case Yes_AddMinitiaKeyOption:
+		case YesAddMinitiaKeyOption:
 			m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{".minitia/artifacts/config.json"}, string(*selected)))
 
 			for idx := range m.state.BotInfos {
@@ -197,7 +197,7 @@ func (m *ProcessingMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 			return NewSetupBotCheckbox(m.state, true), nil
-		case No_AddMinitiaKeyOption:
+		case NoAddMinitiaKeyOption:
 			m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{".minitia/artifacts/config.json"}, string(*selected)))
 			return NewSetupBotCheckbox(m.state, false), nil
 
@@ -543,7 +543,7 @@ func WaitSetupOPInitBots(state *OPInitBotsState) tea.Cmd {
 			if err = utils.DownloadAndExtractTarGz(url, tarballPath, extractedPath); err != nil {
 				panic(fmt.Sprintf("failed to download and extract binary: %v", err))
 			}
-			err = os.Chmod(binaryPath, 0755) // 0755 ensures read, write, execute permissions for the owner, and read-execute for group/others
+			err = os.Chmod(binaryPath, 0755) // 0755 ensuring read, write, execute permissions for the owner, and read-execute for group/others
 			if err != nil {
 				panic(fmt.Sprintf("failed to set permissions for binary: %v", err))
 			}
@@ -555,9 +555,9 @@ func WaitSetupOPInitBots(state *OPInitBotsState) tea.Cmd {
 		}
 
 		for _, info := range state.BotInfos {
-			isCeletia := info.DALayer == string(CelestiaTestnetLayerOption) || info.DALayer == string(CelestiaMainnetLayerOption)
+			isCelestia := info.DALayer == string(CelestiaTestnetLayerOption) || info.DALayer == string(CelestiaMainnetLayerOption)
 			if info.Mnemonic != "" {
-				res, err := utils.OPInitRecoverKeyFromMnemonic(binaryPath, info.KeyName, info.Mnemonic, isCeletia)
+				res, err := utils.OPInitRecoverKeyFromMnemonic(binaryPath, info.KeyName, info.Mnemonic, isCelestia)
 				if err != nil {
 					return utils.ErrorLoading{Err: err}
 				}
@@ -565,7 +565,7 @@ func WaitSetupOPInitBots(state *OPInitBotsState) tea.Cmd {
 				continue
 			}
 			if info.IsGenerateKey {
-				res, err := utils.OPInitAddOrReplace(binaryPath, info.KeyName, isCeletia)
+				res, err := utils.OPInitAddOrReplace(binaryPath, info.KeyName, isCelestia)
 				if err != nil {
 					return utils.ErrorLoading{Err: err}
 

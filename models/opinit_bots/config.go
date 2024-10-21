@@ -14,7 +14,6 @@ type ChallengerConfig struct {
 	L2StartHeight int        `json:"l2_start_height"`
 }
 
-// Renaming NodeConfig to something more descriptive, such as NodeSettings, NodeConfiguration, or similar
 type NodeSettings struct {
 	ChainID       string  `json:"chain_id"`
 	Bech32Prefix  string  `json:"bech32_prefix"`
