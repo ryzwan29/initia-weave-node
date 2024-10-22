@@ -840,6 +840,10 @@ func initializeApp(state *RunL1NodeState) tea.Cmd {
 			if err := utils.UpdateTomlValue(filepath.Join(initiaConfigPath, "app.toml"), "api.enable", strconv.FormatBool(state.enableLCD)); err != nil {
 				panic(fmt.Sprintf("failed to update api enable: %v", err))
 			}
+
+			if err := utils.UpdateTomlValue(filepath.Join(initiaConfigPath, "app.toml"), "api.swagger", strconv.FormatBool(state.enableLCD)); err != nil {
+				panic(fmt.Sprintf("failed to update api swagger: %v", err))
+			}
 		}
 
 		if state.genesisEndpoint != "" {
@@ -1057,7 +1061,7 @@ func NewExistingDataReplaceSelect(state *RunL1NodeState) *ExistingDataReplaceSel
 			},
 		},
 		state:    state,
-		question: fmt.Sprintf("Existing %s detected. By sycing, the existing data will be replaced. Would you want to proceed ?", utils.InitiaDataDirectory),
+		question: fmt.Sprintf("Existing %s detected. By syncing, the existing data will be replaced. Would you want to proceed ?", utils.InitiaDataDirectory),
 	}
 }
 
