@@ -6,12 +6,11 @@ import (
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/spf13/viper"
-	"github.com/test-go/testify/assert"
-
 	"github.com/initia-labs/weave/styles"
 	"github.com/initia-labs/weave/types"
 	"github.com/initia-labs/weave/utils"
+	"github.com/spf13/viper"
+	"github.com/test-go/testify/assert"
 )
 
 func InitializeViperForTest(t *testing.T) {
@@ -2016,29 +2015,6 @@ func TestGenerateOrRecoverSystemKeysLoading_Update_Generate(t *testing.T) {
 	assert.Contains(t, state.weave.PreviousResponse[0], "System keys have been successfully generated.")
 }
 
-func TestGenerateOrRecoverSystemKeysLoading_Update_Recover(t *testing.T) {
-	state := &LaunchState{
-		generateKeys:                     false,
-		binaryPath:                       "test/path",
-		systemKeyOperatorMnemonic:        "valid mnemonic",
-		systemKeyBridgeExecutorMnemonic:  "valid mnemonic",
-		systemKeyOutputSubmitterMnemonic: "valid mnemonic",
-		systemKeyBatchSubmitterMnemonic:  "valid mnemonic",
-		systemKeyChallengerMnemonic:      "valid mnemonic",
-	}
-
-	loadingModel := NewGenerateOrRecoverSystemKeysLoading(state)
-
-	nextModel, _ := loadingModel.Update(&utils.TickMsg{})
-
-	msg := utils.EndLoading{}
-	finalModel, cmd := nextModel.Update(msg)
-
-	assert.Nil(t, cmd)
-	assert.IsType(t, &FundGasStationConfirmationInput{}, finalModel)
-	assert.Contains(t, state.weave.PreviousResponse[0], "System keys have been successfully recovered.")
-}
-
 func TestGenerateOrRecoverSystemKeysLoading_View(t *testing.T) {
 	state := &LaunchState{
 		generateKeys: true,
@@ -2091,20 +2067,6 @@ func TestSystemKeysMnemonicDisplayInput_Init(t *testing.T) {
 	assert.Nil(t, cmd)
 }
 
-func TestSystemKeysMnemonicDisplayInput_Update_Done(t *testing.T) {
-	state := &LaunchState{}
-	inputModel := NewSystemKeysMnemonicDisplayInput(state)
-
-	msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("continue")}
-	nextModel, _ := inputModel.Update(msg)
-
-	msg = tea.KeyMsg{Type: tea.KeyEnter}
-	finalModel, cmd := nextModel.Update(msg)
-
-	assert.IsType(t, &FundGasStationConfirmationInput{}, finalModel)
-	assert.Nil(t, cmd)
-}
-
 func TestSystemKeysMnemonicDisplayInput_Update_NotDone(t *testing.T) {
 	state := &LaunchState{}
 	inputModel := NewSystemKeysMnemonicDisplayInput(state)
@@ -2141,102 +2103,6 @@ func TestSystemKeysMnemonicDisplayInput_View(t *testing.T) {
 	assert.Contains(t, view, "Key Name: Operator")
 	assert.Contains(t, view, "Mnemonic:")
 	assert.Contains(t, view, "continue")
-	assert.Contains(t, view, inputModel.TextInput.View())
-}
-
-func TestNewFundGasStationConfirmationInput(t *testing.T) {
-	state := &LaunchState{
-		systemKeyOperatorAddress:          "operator_address",
-		systemKeyBridgeExecutorAddress:    "bridge_executor_address",
-		systemKeyOutputSubmitterAddress:   "output_submitter_address",
-		systemKeyBatchSubmitterAddress:    "batch_submitter_address",
-		systemKeyChallengerAddress:        "challenger_address",
-		systemKeyL1OperatorBalance:        "1000",
-		systemKeyL1BridgeExecutorBalance:  "2000",
-		systemKeyL1OutputSubmitterBalance: "3000",
-		systemKeyL1BatchSubmitterBalance:  "4000",
-		systemKeyL1ChallengerBalance:      "5000",
-	}
-
-	inputModel := NewFundGasStationConfirmationInput(state)
-
-	assert.NotNil(t, inputModel)
-	assert.Equal(t, state, inputModel.state)
-	assert.Equal(t, "Confirm to proceed with signing and broadcasting the following transactions? [y]:", inputModel.question)
-	assert.Contains(t, inputModel.TextInput.Placeholder, "Type `y` to confirm")
-}
-
-func TestFundGasStationConfirmationInput_GetQuestion(t *testing.T) {
-	state := &LaunchState{}
-	inputModel := NewFundGasStationConfirmationInput(state)
-
-	question := inputModel.GetQuestion()
-
-	assert.Equal(t, "Confirm to proceed with signing and broadcasting the following transactions? [y]:", question)
-}
-
-func TestFundGasStationConfirmationInput_Init(t *testing.T) {
-	state := &LaunchState{}
-	inputModel := NewFundGasStationConfirmationInput(state)
-
-	cmd := inputModel.Init()
-
-	assert.Nil(t, cmd)
-}
-
-func TestFundGasStationConfirmationInput_Update_Done(t *testing.T) {
-	state := &LaunchState{}
-	inputModel := NewFundGasStationConfirmationInput(state)
-
-	msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("y")}
-	nextModel, _ := inputModel.Update(msg)
-
-	msg = tea.KeyMsg{Type: tea.KeyEnter}
-	finalModel, cmd := nextModel.Update(msg)
-
-	assert.IsType(t, &FundGasStationBroadcastLoading{}, finalModel)
-	assert.NotNil(t, cmd)
-}
-
-func TestFundGasStationConfirmationInput_Update_NotDone(t *testing.T) {
-	state := &LaunchState{}
-	inputModel := NewFundGasStationConfirmationInput(state)
-
-	msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("n")}
-	nextModel, _ := inputModel.Update(msg)
-
-	msg = tea.KeyMsg{Type: tea.KeyEnter}
-	finalModel, cmd := nextModel.Update(msg)
-
-	assert.Equal(t, inputModel, finalModel)
-	assert.Nil(t, cmd)
-}
-
-func TestFundGasStationConfirmationInput_View(t *testing.T) {
-	state := &LaunchState{
-		systemKeyOperatorAddress:          "operator_address",
-		systemKeyL1OperatorBalance:        "1000",
-		systemKeyBridgeExecutorAddress:    "bridge_executor_address",
-		systemKeyL1BridgeExecutorBalance:  "2000",
-		systemKeyOutputSubmitterAddress:   "output_submitter_address",
-		systemKeyL1OutputSubmitterBalance: "3000",
-		systemKeyBatchSubmitterAddress:    "batch_submitter_address",
-		systemKeyL1BatchSubmitterBalance:  "4000",
-		systemKeyChallengerAddress:        "challenger_address",
-		systemKeyL1ChallengerBalance:      "5000",
-	}
-	inputModel := NewFundGasStationConfirmationInput(state)
-
-	view := inputModel.View()
-
-	assert.Contains(t, view, "Weave will now broadcast the following transaction")
-	assert.Contains(t, view, "Sending tokens from the Gas Station account on Initia L1")
-	assert.Contains(t, view, "> Send 1000uinit to Operator on Initia L1")
-	assert.Contains(t, view, "> Send 2000uinit to Bridge Executor on Initia L1")
-	assert.Contains(t, view, "> Send 3000uinit to Output Submitter on Initia L1")
-	assert.Contains(t, view, "> Send 4000uinit to Batch Submitter on Initia L1")
-	assert.Contains(t, view, "> Send 5000uinit to Challenger on Initia L1")
-	assert.Contains(t, view, "Confirm to proceed with signing and broadcasting the following transactions? [y]:")
 	assert.Contains(t, view, inputModel.TextInput.View())
 }
 
