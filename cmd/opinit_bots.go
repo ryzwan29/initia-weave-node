@@ -68,7 +68,7 @@ func Setup() error {
 	if err != nil {
 		panic(err)
 	}
-	binaryPath := filepath.Join(userHome, utils.WeaveDataDirectory)
+	binaryPath := filepath.Join(userHome, utils.WeaveDataDirectory, "opinitd")
 	currentVersion, _ := utils.GetBinaryVersion(binaryPath)
 	_, err = tea.NewProgram(opinit_bots.NewOPInitBotVersionSelector(opinit_bots.NewOPInitBotsState(), versions, currentVersion)).Run()
 	return err
