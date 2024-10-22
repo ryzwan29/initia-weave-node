@@ -1909,15 +1909,20 @@ func renderMnemonic(keyName, address, mnemonic string) string {
 
 type FundGasStationConfirmationInput struct {
 	utils.TextInput
-	state    *LaunchState
-	question string
+	state                     *LaunchState
+	initiaGasStationAddress   string
+	celestiaGasStationAddress string
+	question                  string
 }
 
 func NewFundGasStationConfirmationInput(state *LaunchState) *FundGasStationConfirmationInput {
+	gasStationMnemonic := utils.GetConfig("common.gas_station_mnemonic").(string)
 	model := &FundGasStationConfirmationInput{
-		TextInput: utils.NewTextInput(),
-		state:     state,
-		question:  "Confirm to proceed with signing and broadcasting the following transactions? [y]:",
+		TextInput:                 utils.NewTextInput(),
+		state:                     state,
+		initiaGasStationAddress:   utils.MustGetAddressFromMnemonic(state.binaryPath, gasStationMnemonic),
+		celestiaGasStationAddress: utils.MustGetAddressFromMnemonic(state.celestiaBinaryPath, gasStationMnemonic),
+		question:                  "Confirm to proceed with signing and broadcasting the following transactions? [y]:",
 	}
 	model.WithPlaceholder("Type `y` to confirm")
 	model.WithValidatorFn(utils.ValidateExactString("y"))
@@ -1959,7 +1964,7 @@ func (m *FundGasStationConfirmationInput) View() string {
 		false: formatSendMsg(m.state.systemKeyL1BatchSubmitterBalance, "uinit", "Batch Submitter on Initia L1", m.state.systemKeyBatchSubmitterAddress),
 	}
 	celestiaText := map[bool]string{
-		true:  fmt.Sprintf("\nSending tokens from the Gas Station account on Celestia Testnet ⛽️\n%s", formatSendMsg(m.state.systemKeyL1BatchSubmitterBalance, "utia", "Batch Submitter on Celestia Testnet", m.state.systemKeyBatchSubmitterAddress)),
+		true:  fmt.Sprintf("\nSending tokens from the Gas Station account on Celestia Testnet %s ⛽️\n%s", styles.Text(fmt.Sprintf("(%s)", m.celestiaGasStationAddress), styles.Gray), formatSendMsg(m.state.systemKeyL1BatchSubmitterBalance, "utia", "Batch Submitter on Celestia Testnet", m.state.systemKeyBatchSubmitterAddress)),
 		false: "",
 	}
 	return m.state.weave.Render() + "\n" +
@@ -1968,7 +1973,7 @@ func (m *FundGasStationConfirmationInput) View() string {
 			styles.BoldUnderlineText(headerText[m.state.batchSubmissionIsCelestia], styles.Yellow),
 			[]string{}, styles.Empty,
 		) + "\n\n" +
-		"Sending tokens from the Gas Station account on Initia L1 ⛽️\n" +
+		fmt.Sprintf("Sending tokens from the Gas Station account on Initia L1 %s ⛽️\n", styles.Text(fmt.Sprintf("(%s)", m.initiaGasStationAddress), styles.Gray)) +
 		formatSendMsg(m.state.systemKeyL1OperatorBalance, "uinit", "Operator on Initia L1", m.state.systemKeyOperatorAddress) +
 		formatSendMsg(m.state.systemKeyL1BridgeExecutorBalance, "uinit", "Bridge Executor on Initia L1", m.state.systemKeyBridgeExecutorAddress) +
 		formatSendMsg(m.state.systemKeyL1OutputSubmitterBalance, "uinit", "Output Submitter on Initia L1", m.state.systemKeyOutputSubmitterAddress) +
