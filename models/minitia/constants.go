@@ -17,4 +17,6 @@ const (
 	MaxChainIDLength int = 50
 
 	LaunchConfigFilename = "minitia.config.json"
+
+	CelestiaAppName string = "celestia-appd"
 )

@@ -35,11 +35,19 @@ type SystemAccount struct {
 	Mnemonic  string `json:"mnemonic,omitempty"`
 }
 
-func NewSystemAccount(mnemonic, address string) *SystemAccount {
+func NewSystemAccount(mnemonic string, addresses ...string) *SystemAccount {
+	if len(addresses) < 1 || len(addresses) > 2 {
+		panic("NewSystemAccount requires 2 or 3 parameters: mnemonic and 1 or 2 addresses")
+	}
+
 	account := &SystemAccount{
 		Mnemonic:  mnemonic,
-		L1Address: address,
-		L2Address: address,
+		L1Address: addresses[0],
+		L2Address: addresses[0],
+	}
+
+	if len(addresses) == 2 {
+		account.L2Address = addresses[1]
 	}
 
 	return account

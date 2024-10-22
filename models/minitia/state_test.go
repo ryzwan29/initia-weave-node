@@ -8,6 +8,7 @@ import (
 
 func TestFinalizeGenesisAccounts(t *testing.T) {
 	launchState := NewLaunchState()
+	launchState.batchSubmissionIsCelestia = false
 
 	// Set up test data for system keys and balances
 	launchState.systemKeyOperatorAddress = "operator-address"
@@ -37,9 +38,9 @@ func TestFinalizeGenesisAccounts(t *testing.T) {
 	assert.Equal(t, "output-submitter-address", launchState.genesisAccounts[2].Address)
 	assert.Equal(t, "300output", launchState.genesisAccounts[2].Coins)
 
-	assert.Equal(t, "batch-submitter-address", launchState.genesisAccounts[3].Address)
-	assert.Equal(t, "400batch", launchState.genesisAccounts[3].Coins)
+	assert.Equal(t, "challenger-address", launchState.genesisAccounts[3].Address)
+	assert.Equal(t, "500challenger", launchState.genesisAccounts[3].Coins)
 
-	assert.Equal(t, "challenger-address", launchState.genesisAccounts[4].Address)
-	assert.Equal(t, "500challenger", launchState.genesisAccounts[4].Coins)
+	assert.Equal(t, "batch-submitter-address", launchState.genesisAccounts[4].Address)
+	assert.Equal(t, "400batch", launchState.genesisAccounts[4].Coins)
 }

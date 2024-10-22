@@ -774,16 +774,11 @@ func initializeApp(state *RunL1NodeState) tea.Cmd {
 				panic(err)
 			}
 
-			// TODO: Remove this logic when we have a working version of the node_info endpoint
-			if state.chainId == "initiation-2" {
-				nodeVersion = "v0.5.3"
-			} else {
-				applicationVersion, ok := result["application_version"].(map[string]interface{})
-				if !ok {
-					panic("failed to get node version")
-				}
-				nodeVersion = applicationVersion["version"].(string)
+			applicationVersion, ok := result["application_version"].(map[string]interface{})
+			if !ok {
+				panic("failed to get node version")
 			}
+			nodeVersion = applicationVersion["version"].(string)
 			state.initiadVersion = nodeVersion
 			goos := runtime.GOOS
 			goarch := runtime.GOARCH

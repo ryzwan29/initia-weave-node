@@ -518,6 +518,9 @@ func (m *OpBridgeBatchSubmissionTargetSelect) Update(msg tea.Msg) (tea.Model, te
 	if selected != nil {
 		m.state.opBridgeBatchSubmissionTarget = utils.TransformFirstWordUpperCase(string(*selected))
 		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"Batch Submission Target"}, string(*selected)))
+		if *selected == Celestia {
+			m.state.batchSubmissionIsCelestia = true
+		}
 		return NewOracleEnableSelect(m.state), nil
 	}
 
@@ -1080,10 +1083,19 @@ type SystemKeyL1BatchSubmitterBalanceInput struct {
 }
 
 func NewSystemKeyL1BatchSubmitterBalanceInput(state *LaunchState) *SystemKeyL1BatchSubmitterBalanceInput {
+	var denom, network string
+	if state.batchSubmissionIsCelestia {
+		denom = "utia"
+		network = "Celestia Testnet"
+	} else {
+		denom = "uinit"
+		network = "L1"
+	}
+
 	model := &SystemKeyL1BatchSubmitterBalanceInput{
 		TextInput: utils.NewTextInput(),
 		state:     state,
-		question:  "Please specify initial balance for Batch Submitter on L1 (uinit)",
+		question:  fmt.Sprintf("Please specify initial balance for Batch Submitter on %s (%s)", network, denom),
 	}
 	model.WithPlaceholder("Enter the balance")
 	model.WithValidatorFn(utils.IsValidInteger)
@@ -1102,7 +1114,7 @@ func (m *SystemKeyL1BatchSubmitterBalanceInput) Update(msg tea.Msg) (tea.Model, 
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
 		m.state.systemKeyL1BatchSubmitterBalance = input.Text
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Batch Submitter", "L1"}, input.Text))
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Batch Submitter", "L1", "Celestia Testnet"}, input.Text))
 		return NewSystemKeyL1ChallengerBalanceInput(m.state), nil
 	}
 	m.TextInput = input
@@ -1111,7 +1123,7 @@ func (m *SystemKeyL1BatchSubmitterBalanceInput) Update(msg tea.Msg) (tea.Model, 
 
 func (m *SystemKeyL1BatchSubmitterBalanceInput) View() string {
 	return m.state.weave.Render() +
-		styles.RenderPrompt(m.GetQuestion(), []string{"Batch Submitter", "L1"}, styles.Question) + m.TextInput.View()
+		styles.RenderPrompt(m.GetQuestion(), []string{"Batch Submitter", "L1", "Celestia Testnet"}, styles.Question) + m.TextInput.View()
 }
 
 type SystemKeyL1ChallengerBalanceInput struct {
@@ -1626,6 +1638,12 @@ func (m *DownloadMinitiaBinaryLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) 
 		if m.state.downloadedNewBinary {
 			m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, fmt.Sprintf("Mini%s binary has been successfully downloaded.", strings.ToLower(m.state.vmType)), []string{}, ""))
 		}
+
+		if m.state.batchSubmissionIsCelestia {
+			model := NewDownloadCelestiaBinaryLoading(m.state)
+			return model, model.Init()
+		}
+
 		model := NewGenerateOrRecoverSystemKeysLoading(m.state)
 		return model, model.Init()
 	}
@@ -1633,6 +1651,113 @@ func (m *DownloadMinitiaBinaryLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) 
 }
 
 func (m *DownloadMinitiaBinaryLoading) View() string {
+	return m.state.weave.Render() + "\n" + m.loading.View()
+}
+
+type DownloadCelestiaBinaryLoading struct {
+	state   *LaunchState
+	loading utils.Loading
+}
+
+func NewDownloadCelestiaBinaryLoading(state *LaunchState) *DownloadCelestiaBinaryLoading {
+	var result map[string]interface{}
+	err := utils.MakeGetRequestUsingURL(
+		utils.GetConfig(fmt.Sprintf("constants.da_layer.celestia_mainnet.lcd")).(string),
+		"/cosmos/base/tendermint/v1beta1/node_info",
+		nil,
+		&result,
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	applicationVersion, ok := result["application_version"].(map[string]interface{})
+	if !ok {
+		panic("failed to get node version")
+	}
+	version := applicationVersion["version"].(string)
+	goos := runtime.GOOS
+	goarch := runtime.GOARCH
+	return &DownloadCelestiaBinaryLoading{
+		state:   state,
+		loading: utils.NewLoading(fmt.Sprintf("Downloading Celestia binary <%s>", version), downloadCelestiaApp(state, version, getCelestiaBinaryURL(version, goos, goarch))),
+	}
+}
+
+func getCelestiaBinaryURL(version, os, arch string) string {
+	switch os {
+	case "darwin":
+		switch arch {
+		case "amd64":
+			return fmt.Sprintf("https://github.com/celestiaorg/celestia-app/releases/download/v%s/celestia-app_Darwin_x86_64.tar.gz", version)
+		case "arm64":
+			return fmt.Sprintf("https://github.com/celestiaorg/celestia-app/releases/download/v%s/celestia-app_Darwin_arm64.tar.gz", version)
+		}
+	case "linux":
+		switch arch {
+		case "amd64":
+			return fmt.Sprintf("https://github.com/celestiaorg/celestia-app/releases/download/v%s/celestia-app_Linux_x86_64.tar.gz", version)
+		case "arm64":
+			return fmt.Sprintf("https://github.com/celestiaorg/celestia-app/releases/download/v%s/celestia-app_Linux_arm64.tar.gz", version)
+		}
+	}
+	panic("unsupported OS or architecture")
+}
+
+func (m *DownloadCelestiaBinaryLoading) Init() tea.Cmd {
+	return m.loading.Init()
+}
+
+func downloadCelestiaApp(state *LaunchState, version, binaryUrl string) tea.Cmd {
+	return func() tea.Msg {
+		userHome, err := os.UserHomeDir()
+		if err != nil {
+			panic(fmt.Sprintf("failed to get user home directory: %v", err))
+		}
+		weaveDataPath := filepath.Join(userHome, utils.WeaveDataDirectory)
+		tarballPath := filepath.Join(weaveDataPath, "celestia.tar.gz")
+		extractedPath := filepath.Join(weaveDataPath, fmt.Sprintf("celestia@%s", version))
+		binaryPath := filepath.Join(extractedPath, CelestiaAppName)
+		state.celestiaBinaryPath = binaryPath
+
+		if _, err := os.Stat(binaryPath); os.IsNotExist(err) {
+			if _, err := os.Stat(extractedPath); os.IsNotExist(err) {
+				err := os.MkdirAll(extractedPath, os.ModePerm)
+				if err != nil {
+					panic(fmt.Sprintf("failed to create weave data directory: %v", err))
+				}
+			}
+
+			if err = utils.DownloadAndExtractTarGz(binaryUrl, tarballPath, extractedPath); err != nil {
+				panic(fmt.Sprintf("failed to download and extract binary: %v", err))
+			}
+
+			err = os.Chmod(binaryPath, 0755)
+			if err != nil {
+				panic(fmt.Sprintf("failed to set permissions for binary: %v", err))
+			}
+
+			state.downloadedNewCelestiaBinary = true
+		}
+
+		return utils.EndLoading{}
+	}
+}
+
+func (m *DownloadCelestiaBinaryLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	loader, cmd := m.loading.Update(msg)
+	m.loading = loader
+	if m.loading.Completing {
+		if m.state.downloadedNewCelestiaBinary {
+			m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, fmt.Sprintf("Celestia binary has been successfully downloaded."), []string{}, ""))
+		}
+		model := NewGenerateOrRecoverSystemKeysLoading(m.state)
+		return model, model.Init()
+	}
+	return m, cmd
+}
+
+func (m *DownloadCelestiaBinaryLoading) View() string {
 	return m.state.weave.Render() + "\n" + m.loading.View()
 }
 
@@ -1660,7 +1785,6 @@ func (m *GenerateOrRecoverSystemKeysLoading) Init() tea.Cmd {
 
 func generateOrRecoverSystemKeys(state *LaunchState) tea.Cmd {
 	return func() tea.Msg {
-		// TODO: If user chose Celestia as a DA, Generate Celestia key
 		if state.generateKeys {
 			operatorKey := utils.MustGenerateNewKeyInfo(state.binaryPath, OperatorKeyName)
 			state.systemKeyOperatorMnemonic = operatorKey.Mnemonic
@@ -1674,9 +1798,17 @@ func generateOrRecoverSystemKeys(state *LaunchState) tea.Cmd {
 			state.systemKeyOutputSubmitterMnemonic = outputSubmitterKey.Mnemonic
 			state.systemKeyOutputSubmitterAddress = outputSubmitterKey.Address
 
-			batchSubmitterKey := utils.MustGenerateNewKeyInfo(state.binaryPath, BatchSubmitterKeyName)
-			state.systemKeyBatchSubmitterMnemonic = batchSubmitterKey.Mnemonic
-			state.systemKeyBatchSubmitterAddress = batchSubmitterKey.Address
+			if state.batchSubmissionIsCelestia {
+				batchSubmitterKey := utils.MustGenerateNewKeyInfo(state.celestiaBinaryPath, BatchSubmitterKeyName)
+				state.systemKeyBatchSubmitterMnemonic = batchSubmitterKey.Mnemonic
+				state.systemKeyBatchSubmitterAddress = batchSubmitterKey.Address
+				state.systemKeyL2BatchSubmitterAddress = utils.MustGetAddressFromMnemonic(state.binaryPath, batchSubmitterKey.Mnemonic)
+			} else {
+				batchSubmitterKey := utils.MustGenerateNewKeyInfo(state.binaryPath, BatchSubmitterKeyName)
+				state.systemKeyBatchSubmitterMnemonic = batchSubmitterKey.Mnemonic
+				state.systemKeyBatchSubmitterAddress = batchSubmitterKey.Address
+				state.systemKeyL2BatchSubmitterAddress = batchSubmitterKey.Address
+			}
 
 			challengerKey := utils.MustGenerateNewKeyInfo(state.binaryPath, ChallengerKeyName)
 			state.systemKeyChallengerMnemonic = challengerKey.Mnemonic
@@ -1805,25 +1937,38 @@ func (m *FundGasStationConfirmationInput) Update(msg tea.Msg) (tea.Model, tea.Cm
 }
 
 func (m *FundGasStationConfirmationInput) View() string {
-	formatSendMsg := func(coins, keyName, address string) string {
+	formatSendMsg := func(coins, denom, keyName, address string) string {
 		return fmt.Sprintf(
 			"> Send %s to %s %s\n",
-			styles.BoldText(coins+"uinit", styles.Ivory),
+			styles.BoldText(coins+denom, styles.Ivory),
 			styles.BoldText(keyName, styles.Ivory),
 			styles.Text(fmt.Sprintf("(%s)", address), styles.Gray))
+	}
+	headerText := map[bool]string{
+		true:  "Weave will now broadcast the following transactions",
+		false: "Weave will now broadcast the following transaction",
+	}
+	batchSubmitterText := map[bool]string{
+		true:  "",
+		false: formatSendMsg(m.state.systemKeyL1BatchSubmitterBalance, "uinit", "Batch Submitter on Initia L1", m.state.systemKeyBatchSubmitterAddress),
+	}
+	celestiaText := map[bool]string{
+		true:  fmt.Sprintf("\nSending tokens from the Gas Station account on Celestia Testnet ⛽️\n%s", formatSendMsg(m.state.systemKeyL1BatchSubmitterBalance, "utia", "Batch Submitter on Celestia Testnet", m.state.systemKeyBatchSubmitterAddress)),
+		false: "",
 	}
 	return m.state.weave.Render() + "\n" +
 		styles.Text("i ", styles.Yellow) +
 		styles.RenderPrompt(
-			styles.BoldUnderlineText("Weave will now broadcast the following transaction", styles.Yellow),
+			styles.BoldUnderlineText(headerText[m.state.batchSubmissionIsCelestia], styles.Yellow),
 			[]string{}, styles.Empty,
 		) + "\n\n" +
-		"Sending tokens from the Gas Station account on L1 ⛽️\n" +
-		formatSendMsg(m.state.systemKeyL1OperatorBalance, "Operator on L1", m.state.systemKeyOperatorAddress) +
-		formatSendMsg(m.state.systemKeyL1BridgeExecutorBalance, "Bridge Executor on L1", m.state.systemKeyBridgeExecutorAddress) +
-		formatSendMsg(m.state.systemKeyL1OutputSubmitterBalance, "Output Submitter on L1", m.state.systemKeyOutputSubmitterAddress) +
-		formatSendMsg(m.state.systemKeyL1BatchSubmitterBalance, "Batch Submitter on L1", m.state.systemKeyBatchSubmitterAddress) +
-		formatSendMsg(m.state.systemKeyL1ChallengerBalance, "Challenger on L1", m.state.systemKeyChallengerAddress) +
+		"Sending tokens from the Gas Station account on Initia L1 ⛽️\n" +
+		formatSendMsg(m.state.systemKeyL1OperatorBalance, "uinit", "Operator on Initia L1", m.state.systemKeyOperatorAddress) +
+		formatSendMsg(m.state.systemKeyL1BridgeExecutorBalance, "uinit", "Bridge Executor on Initia L1", m.state.systemKeyBridgeExecutorAddress) +
+		formatSendMsg(m.state.systemKeyL1OutputSubmitterBalance, "uinit", "Output Submitter on Initia L1", m.state.systemKeyOutputSubmitterAddress) +
+		batchSubmitterText[m.state.batchSubmissionIsCelestia] +
+		formatSendMsg(m.state.systemKeyL1ChallengerBalance, "uinit", "Challenger on Initia L1", m.state.systemKeyChallengerAddress) +
+		celestiaText[m.state.batchSubmissionIsCelestia] +
 		styles.RenderPrompt(m.GetQuestion(), []string{"`continue`"}, styles.Question) + m.TextInput.View()
 }
 
@@ -1866,12 +2011,15 @@ func broadcastFundingFromGasStation(state *LaunchState) tea.Cmd {
 				Address: state.systemKeyChallengerAddress,
 				Coins:   state.systemKeyL1ChallengerBalance,
 			},
-		).FundAccountsWithGasStation(state.binaryPath, state.l1RPC, state.l1ChainId)
+		).FundAccountsWithGasStation(state)
 		if err != nil {
 			panic(err)
 		}
 
-		state.systemKeyL1FundingTxHash = txResult.TxHash
+		if txResult.CelestiaTx != nil {
+			state.systemKeyCelestiaFundingTxHash = txResult.CelestiaTx.TxHash
+		}
+		state.systemKeyL1FundingTxHash = txResult.InitiaTx.TxHash
 		time.Sleep(1500 * time.Millisecond)
 
 		return utils.EndLoading{}
@@ -1882,7 +2030,10 @@ func (m *FundGasStationBroadcastLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd
 	loader, cmd := m.loading.Update(msg)
 	m.loading = loader
 	if m.loading.Completing {
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, "System keys on L1 funded via Gas Station, with Tx Hash", []string{}, m.state.systemKeyL1FundingTxHash))
+		if m.state.systemKeyCelestiaFundingTxHash != "" {
+			m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, "Batch Submitter on Celestia funded via Gas Station, with Tx Hash", []string{}, m.state.systemKeyCelestiaFundingTxHash))
+		}
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, "System keys on Initia L1 funded via Gas Station, with Tx Hash", []string{}, m.state.systemKeyL1FundingTxHash))
 		model := NewLaunchingNewMinitiaLoading(m.state)
 		return model, model.Init()
 	}
@@ -1962,6 +2113,7 @@ func launchingMinitia(state *LaunchState) tea.Cmd {
 				BatchSubmitter: types.NewSystemAccount(
 					state.systemKeyBatchSubmitterMnemonic,
 					state.systemKeyBatchSubmitterAddress,
+					state.systemKeyL2BatchSubmitterAddress,
 				),
 				Challenger: types.NewSystemAccount(
 					state.systemKeyChallengerMnemonic,

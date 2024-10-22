@@ -19,6 +19,7 @@ type LaunchState struct {
 	opBridgeSubmissionInterval       string
 	opBridgeOutputFinalizationPeriod string
 	opBridgeBatchSubmissionTarget    string
+	batchSubmissionIsCelestia        bool
 
 	generateKeys                     bool
 	systemKeyOperatorMnemonic        string
@@ -27,11 +28,12 @@ type LaunchState struct {
 	systemKeyBatchSubmitterMnemonic  string
 	systemKeyChallengerMnemonic      string
 
-	systemKeyOperatorAddress        string
-	systemKeyBridgeExecutorAddress  string
-	systemKeyOutputSubmitterAddress string
-	systemKeyBatchSubmitterAddress  string
-	systemKeyChallengerAddress      string
+	systemKeyOperatorAddress         string
+	systemKeyBridgeExecutorAddress   string
+	systemKeyOutputSubmitterAddress  string
+	systemKeyBatchSubmitterAddress   string
+	systemKeyL2BatchSubmitterAddress string
+	systemKeyChallengerAddress       string
 
 	systemKeyL1OperatorBalance        string
 	systemKeyL1BridgeExecutorBalance  string
@@ -39,6 +41,7 @@ type LaunchState struct {
 	systemKeyL1BatchSubmitterBalance  string
 	systemKeyL1ChallengerBalance      string
 	systemKeyL1FundingTxHash          string
+	systemKeyCelestiaFundingTxHash    string
 
 	systemKeyL2OperatorBalance        string
 	systemKeyL2BridgeExecutorBalance  string
@@ -46,8 +49,9 @@ type LaunchState struct {
 	systemKeyL2BatchSubmitterBalance  string
 	systemKeyL2ChallengerBalance      string
 
-	gasStationExist     bool
-	downloadedNewBinary bool
+	gasStationExist             bool
+	downloadedNewBinary         bool
+	downloadedNewCelestiaBinary bool
 
 	preGenesisAccountsResponsesCount int
 	preL1BalancesResponsesCount      int
@@ -55,7 +59,8 @@ type LaunchState struct {
 
 	minitiadLaunchStreamingLogs []string
 
-	binaryPath string
+	binaryPath         string
+	celestiaBinaryPath string
 }
 
 func NewLaunchState() *LaunchState {
@@ -65,27 +70,19 @@ func NewLaunchState() *LaunchState {
 }
 
 func (ls *LaunchState) FinalizeGenesisAccounts() {
-	ls.genesisAccounts = append(
-		ls.genesisAccounts,
-		types.GenesisAccount{
-			Address: ls.systemKeyOperatorAddress,
-			Coins:   ls.systemKeyL2OperatorBalance,
-		},
-		types.GenesisAccount{
-			Address: ls.systemKeyBridgeExecutorAddress,
-			Coins:   ls.systemKeyL2BridgeExecutorBalance,
-		},
-		types.GenesisAccount{
-			Address: ls.systemKeyOutputSubmitterAddress,
-			Coins:   ls.systemKeyL2OutputSubmitterBalance,
-		},
-		types.GenesisAccount{
+	accounts := []types.GenesisAccount{
+		{Address: ls.systemKeyOperatorAddress, Coins: ls.systemKeyL2OperatorBalance},
+		{Address: ls.systemKeyBridgeExecutorAddress, Coins: ls.systemKeyL2BridgeExecutorBalance},
+		{Address: ls.systemKeyOutputSubmitterAddress, Coins: ls.systemKeyL2OutputSubmitterBalance},
+		{Address: ls.systemKeyChallengerAddress, Coins: ls.systemKeyL2ChallengerBalance},
+	}
+
+	if !ls.batchSubmissionIsCelestia {
+		accounts = append(accounts, types.GenesisAccount{
 			Address: ls.systemKeyBatchSubmitterAddress,
 			Coins:   ls.systemKeyL2BatchSubmitterBalance,
-		},
-		types.GenesisAccount{
-			Address: ls.systemKeyChallengerAddress,
-			Coins:   ls.systemKeyL2ChallengerBalance,
-		},
-	)
+		})
+	}
+
+	ls.genesisAccounts = append(ls.genesisAccounts, accounts...)
 }

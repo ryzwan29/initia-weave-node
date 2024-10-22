@@ -8,10 +8,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/initia-labs/weave/service"
-
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/initia-labs/weave/service"
 	"github.com/initia-labs/weave/styles"
 	"github.com/initia-labs/weave/types"
 	"github.com/initia-labs/weave/utils"

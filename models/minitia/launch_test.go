@@ -1948,6 +1948,24 @@ func TestDownloadMinitiaBinaryLoading_View(t *testing.T) {
 	assert.Contains(t, view, loadingModel.loading.View())
 }
 
+func TestGetCelestiaBinaryURL(t *testing.T) {
+	tests := []struct {
+		os     string
+		arch   string
+		expect string
+	}{
+		{"darwin", "amd64", "https://github.com/celestiaorg/celestia-app/releases/download/v1.0.0/celestia-app_Darwin_x86_64.tar.gz"},
+		{"linux", "arm64", "https://github.com/celestiaorg/celestia-app/releases/download/v1.0.0/celestia-app_Linux_arm64.tar.gz"},
+	}
+
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("%s_%s", tt.os, tt.arch), func(t *testing.T) {
+			url := getCelestiaBinaryURL("1.0.0", tt.os, tt.arch)
+			assert.Equal(t, tt.expect, url)
+		})
+	}
+}
+
 func TestNewGenerateOrRecoverSystemKeysLoading_Generate(t *testing.T) {
 	state := &LaunchState{
 		generateKeys: true,
@@ -2212,12 +2230,12 @@ func TestFundGasStationConfirmationInput_View(t *testing.T) {
 	view := inputModel.View()
 
 	assert.Contains(t, view, "Weave will now broadcast the following transaction")
-	assert.Contains(t, view, "Sending tokens from the Gas Station account on L1")
-	assert.Contains(t, view, "> Send 1000uinit to Operator on L1")
-	assert.Contains(t, view, "> Send 2000uinit to Bridge Executor on L1")
-	assert.Contains(t, view, "> Send 3000uinit to Output Submitter on L1")
-	assert.Contains(t, view, "> Send 4000uinit to Batch Submitter on L1")
-	assert.Contains(t, view, "> Send 5000uinit to Challenger on L1")
+	assert.Contains(t, view, "Sending tokens from the Gas Station account on Initia L1")
+	assert.Contains(t, view, "> Send 1000uinit to Operator on Initia L1")
+	assert.Contains(t, view, "> Send 2000uinit to Bridge Executor on Initia L1")
+	assert.Contains(t, view, "> Send 3000uinit to Output Submitter on Initia L1")
+	assert.Contains(t, view, "> Send 4000uinit to Batch Submitter on Initia L1")
+	assert.Contains(t, view, "> Send 5000uinit to Challenger on Initia L1")
 	assert.Contains(t, view, "Confirm to proceed with signing and broadcasting the following transactions? [y]:")
 	assert.Contains(t, view, inputModel.TextInput.View())
 }
