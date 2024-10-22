@@ -69,6 +69,25 @@ func (s *CheckBox[T]) View() string {
 	return b.String()
 }
 
+func (s *CheckBox[T]) ViewWithBottom(text string) string {
+	var b strings.Builder
+	for i, option := range s.Options {
+		// Mark selected items and the current cursor
+		cursor := " "
+		if i == s.Cursor {
+			cursor = styles.Text(">", styles.Cyan)
+		}
+		selectedMark := "○"
+		if s.Selected[i] {
+			selectedMark = styles.Text("●", styles.Cyan)
+		}
+		b.WriteString(fmt.Sprintf("%s %s %v\n", cursor, selectedMark, option))
+	}
+	b.WriteString(styles.Text(fmt.Sprintf("\n%s", text), styles.Gray))
+	b.WriteString(styles.Text("\nUse arrow-keys. Space to select. Return to submit, or q to quit.\n", styles.White))
+	return b.String()
+}
+
 func (s *CheckBox[T]) GetSelected() []T {
 	selected := make([]T, 0)
 	for idx := range s.Options {

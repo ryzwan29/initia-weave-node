@@ -167,7 +167,7 @@ func TestSetupBotCheckbox_KeyNavigationAndSelection(t *testing.T) {
 		},
 	}
 
-	setupBotCheckbox := NewSetupBotCheckbox(state, false)
+	setupBotCheckbox := NewSetupBotCheckbox(state, false, false)
 
 	// Step 2: Simulate navigating and selecting bots
 	// Simulate KeyDown to move selection and KeySpace to select

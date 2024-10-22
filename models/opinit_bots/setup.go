@@ -96,7 +96,7 @@ func (m *SetupOPInitBotKeySelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			// Check if the config file exists
 			if !utils.FileOrFolderExists(minitiaConfigPath) {
-				model := NewSetupBotCheckbox(m.state, false)
+				model := NewSetupBotCheckbox(m.state, false, true)
 				return model, model.Init()
 			}
 
@@ -196,10 +196,10 @@ func (m *ProcessingMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					botInfo.Mnemonic = m.state.MinitiaConfig.SystemKeys.Challenger.Mnemonic
 				}
 			}
-			return NewSetupBotCheckbox(m.state, true), nil
+			return NewSetupBotCheckbox(m.state, true, false), nil
 		case NoAddMinitiaKeyOption:
 			m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{".minitia/artifacts/config.json"}, string(*selected)))
-			return NewSetupBotCheckbox(m.state, false), nil
+			return NewSetupBotCheckbox(m.state, false, false), nil
 
 		}
 	}
@@ -226,11 +226,13 @@ type SetupBotCheckbox struct {
 	question string
 }
 
-func NewSetupBotCheckbox(state *OPInitBotsState, addKeyRing bool) *SetupBotCheckbox {
+func NewSetupBotCheckbox(state *OPInitBotsState, addKeyRing bool, noMinitia bool) *SetupBotCheckbox {
 	checkBlock := make([]string, 0)
 	for idx, botInfo := range state.BotInfos {
-		if !botInfo.IsNotExist && addKeyRing {
-			checkBlock = append(checkBlock, fmt.Sprintf("%s (already exist in keyring)", BotNames[idx]))
+		if !botInfo.IsNotExist && noMinitia {
+			checkBlock = append(checkBlock, fmt.Sprintf("%s (key exists)", BotNames[idx]))
+		} else if !botInfo.IsNotExist && addKeyRing {
+			checkBlock = append(checkBlock, fmt.Sprintf("%s (key exists)", BotNames[idx]))
 		} else {
 			checkBlock = append(checkBlock, string(BotNames[idx]))
 		}
@@ -282,7 +284,7 @@ func (m *SetupBotCheckbox) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *SetupBotCheckbox) View() string {
-	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"bots", "set", "override", "~/.minitia/artifacts/config.json"}, styles.Question) + "\n" + m.CheckBox.View()
+	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"bots", "set", "override", "~/.minitia/artifacts/config.json"}, styles.Question) + "\n\n" + m.CheckBox.ViewWithBottom("For bots with an existing key, selecting them will override the key.")
 }
 
 type RecoverKeySelector struct {
