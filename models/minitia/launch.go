@@ -1817,7 +1817,13 @@ func generateOrRecoverSystemKeys(state *LaunchState) tea.Cmd {
 			state.systemKeyOperatorAddress = utils.MustGetAddressFromMnemonic(state.binaryPath, state.systemKeyOperatorMnemonic)
 			state.systemKeyBridgeExecutorAddress = utils.MustGetAddressFromMnemonic(state.binaryPath, state.systemKeyBridgeExecutorMnemonic)
 			state.systemKeyOutputSubmitterAddress = utils.MustGetAddressFromMnemonic(state.binaryPath, state.systemKeyOutputSubmitterMnemonic)
-			state.systemKeyBatchSubmitterAddress = utils.MustGetAddressFromMnemonic(state.binaryPath, state.systemKeyBatchSubmitterMnemonic)
+			if state.batchSubmissionIsCelestia {
+				state.systemKeyBatchSubmitterAddress = utils.MustGetAddressFromMnemonic(state.celestiaBinaryPath, state.systemKeyBatchSubmitterMnemonic)
+				state.systemKeyL2BatchSubmitterAddress = utils.MustGetAddressFromMnemonic(state.binaryPath, state.systemKeyBatchSubmitterMnemonic)
+			} else {
+				state.systemKeyBatchSubmitterAddress = utils.MustGetAddressFromMnemonic(state.binaryPath, state.systemKeyBatchSubmitterMnemonic)
+				state.systemKeyL2BatchSubmitterAddress = state.systemKeyBatchSubmitterAddress
+			}
 			state.systemKeyChallengerAddress = utils.MustGetAddressFromMnemonic(state.binaryPath, state.systemKeyChallengerMnemonic)
 		}
 
