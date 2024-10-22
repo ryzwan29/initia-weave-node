@@ -29,6 +29,8 @@ func Execute() error {
 
 	rootCmd.AddCommand(InitCommand())
 	rootCmd.AddCommand(InitiaCommand())
+	rootCmd.AddCommand(GasStationCommand())
+
 	if flags.IsEnabled(flags.MinitiaLaunch) {
 		rootCmd.AddCommand(MinitiaCommand())
 	}
