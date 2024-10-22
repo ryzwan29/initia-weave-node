@@ -70,7 +70,20 @@ func Setup() error {
 	}
 	binaryPath := filepath.Join(userHome, utils.WeaveDataDirectory, "opinitd")
 	currentVersion, _ := utils.GetBinaryVersion(binaryPath)
-	_, err = tea.NewProgram(opinit_bots.NewOPInitBotVersionSelector(opinit_bots.NewOPInitBotsState(), versions, currentVersion)).Run()
+
+	// Initialize AppState
+	appState := opinit_bots.NewAppState()
+
+	// Initialize the OPInitBotVersionSelector with the current state and versions
+	versionSelector := opinit_bots.NewOPInitBotVersionSelector(appState, versions, currentVersion)
+
+	// Set the initial page in AppState
+	appState.SetCurrentModel(versionSelector)
+	// Start the program
+	_, err = tea.NewProgram(appState.GetCurrentModel()).Run()
+	if err != nil {
+		fmt.Println("Error running program:", err)
+	}
 	return err
 }
 

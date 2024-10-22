@@ -16,14 +16,16 @@ import (
 	"github.com/initia-labs/weave/utils"
 )
 
+// TODO: REFACTOR CODE ON THIS FILE
+
 type OPInitBotVersionSelector struct {
 	utils.VersionSelector
-	state    *OPInitBotsState
+	state    *AppState
 	question string
 	versions utils.BinaryVersionWithDownloadURL
 }
 
-func NewOPInitBotVersionSelector(state *OPInitBotsState, versions utils.BinaryVersionWithDownloadURL, currentVersion string) *OPInitBotVersionSelector {
+func NewOPInitBotVersionSelector(state *AppState, versions utils.BinaryVersionWithDownloadURL, currentVersion string) *OPInitBotVersionSelector {
 	return &OPInitBotVersionSelector{
 		VersionSelector: utils.NewVersionSelector(versions, currentVersion),
 		state:           state,
@@ -41,11 +43,25 @@ func (m *OPInitBotVersionSelector) Init() tea.Cmd {
 }
 
 func (m *OPInitBotVersionSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	// Check for Cmd+Z (undo) and go back to the previous page if triggered
+	if model, cmd, handled := HandleCmdZ(m.state, msg); handled {
+		return model, cmd
+	}
+
+	// Normal selection handling logic
 	selected, cmd := m.Select(msg)
 	if selected != nil {
-		m.state.OPInitBotEndpoint = m.versions[*selected]
-		m.state.OPInitBotVersion = *selected
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"OPinit bots version"}, *selected))
+		// Save the current state and page before updating
+		m.state.PushPageState(m, m.state.currentState.Clone())
+
+		// Update the state with the selected version and endpoint
+		m.state.currentState.OPInitBotEndpoint = m.versions[*selected]
+		m.state.currentState.OPInitBotVersion = *selected
+
+		// Optionally, add a response for display
+		m.state.currentState.weave.PushPreviousResponse(
+			styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"OPinit bots version"}, *selected),
+		)
 		return NewSetupOPInitBotKeySelector(m.state), nil
 	}
 
@@ -58,11 +74,11 @@ func (m *OPInitBotVersionSelector) View() string {
 
 type SetupOPInitBotKeySelector struct {
 	utils.Selector[string]
-	state    *OPInitBotsState
+	state    *AppState
 	question string
 }
 
-func NewSetupOPInitBotKeySelector(state *OPInitBotsState) *SetupOPInitBotKeySelector {
+func NewSetupOPInitBotKeySelector(state *AppState) *SetupOPInitBotKeySelector {
 	return &SetupOPInitBotKeySelector{
 		state: state,
 		Selector: utils.Selector[string]{
@@ -84,12 +100,19 @@ func (m *SetupOPInitBotKeySelector) Init() tea.Cmd {
 }
 
 func (m *SetupOPInitBotKeySelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	// Check for Cmd+Z (undo) and go back to the previous page if triggered
+	if model, cmd, handled := HandleCmdZ(m.state, msg); handled {
+		return model, cmd
+	}
+	// Handle selection
 	selected, cmd := m.Select(msg)
 	if selected != nil {
+		m.state.PushPageState(m, m.state.currentState.Clone())
+		m.state.currentState.weave.PushPreviousResponse(
+			styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"OPinit bot keys"}, *selected),
+		)
 		switch *selected {
 		case "Yes":
-			m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"OPinit bot keys"}, *selected))
-
 			// Get user's home directory and construct the config path
 			homeDir, _ := os.UserHomeDir()
 			minitiaConfigPath := filepath.Join(homeDir, utils.MinitiaArtifactsDirectory, "config.json")
@@ -114,25 +137,26 @@ func (m *SetupOPInitBotKeySelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, cmd // handle error, maybe show a message to the user
 			}
 
-			for _, botInfo := range m.state.BotInfos {
-				botInfo.IsNotExist = true
+			// Mark all bots as non-existent for now
+			for i := range m.state.currentState.BotInfos {
+				m.state.currentState.BotInfos[i].IsNotExist = true
 			}
 
-			// Set the loaded config to a valuable state variable or process it as needed
-			m.state.MinitiaConfig = &minitiaConfig // assuming m.state has a field for storing the config
+			// Set the loaded config to the state variable
+			m.state.currentState.MinitiaConfig = &minitiaConfig
 			return NewProcessingMinitiaConfig(m.state), nil
 
 		case "No":
-			m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"OPinit bot keys"}, *selected))
 			model := NewSetupOPInitBots(m.state)
 			return model, model.Init()
 		}
 	}
+
 	return m, cmd
 }
 
 func (m *SetupOPInitBotKeySelector) View() string {
-	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"OPinit bot keys"}, styles.Question) + m.Selector.View()
+	return m.state.currentState.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"OPinit bot keys"}, styles.Question) + m.Selector.View()
 }
 
 type AddMinitiaKeyOption string
@@ -144,11 +168,11 @@ const (
 
 type ProcessingMinitiaConfig struct {
 	utils.Selector[AddMinitiaKeyOption]
-	state    *OPInitBotsState
+	state    *AppState
 	question string
 }
 
-func NewProcessingMinitiaConfig(state *OPInitBotsState) *ProcessingMinitiaConfig {
+func NewProcessingMinitiaConfig(state *AppState) *ProcessingMinitiaConfig {
 	return &ProcessingMinitiaConfig{
 		Selector: utils.Selector[AddMinitiaKeyOption]{
 			Options: []AddMinitiaKeyOption{
@@ -170,49 +194,60 @@ func (m *ProcessingMinitiaConfig) Init() tea.Cmd {
 }
 
 func (m *ProcessingMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	// Check for Cmd+Z (undo) and go back to the previous page if triggered
+	if model, cmd, handled := HandleCmdZ(m.state, msg); handled {
+		return model, cmd
+	}
+
+	// Handle selection logic
 	selected, cmd := m.Select(msg)
 	if selected != nil {
+		m.state.PushPageState(m, m.state.currentState.Clone())
+		// Save the user's decision and add the Minitia key
+		m.state.currentState.weave.PushPreviousResponse(
+			styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{".minitia/artifacts/config.json"}, string(*selected)),
+		)
 		switch *selected {
 		case YesAddMinitiaKeyOption:
-			m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{".minitia/artifacts/config.json"}, string(*selected)))
 
-			for idx := range m.state.BotInfos {
-				botInfo := &m.state.BotInfos[idx]
+			// Iterate through botInfos and add relevant keys
+			for idx := range m.state.currentState.BotInfos {
+				botInfo := &m.state.currentState.BotInfos[idx]
 				botInfo.IsNotExist = false
+
+				// Assign mnemonics based on bot name
 				switch botInfo.BotName {
 				case BridgeExecutor:
-					botInfo.Mnemonic = m.state.MinitiaConfig.SystemKeys.BridgeExecutor.Mnemonic
+					botInfo.Mnemonic = m.state.currentState.MinitiaConfig.SystemKeys.BridgeExecutor.Mnemonic
 				case OutputSubmitter:
-					botInfo.Mnemonic = m.state.MinitiaConfig.SystemKeys.OutputSubmitter.Mnemonic
+					botInfo.Mnemonic = m.state.currentState.MinitiaConfig.SystemKeys.OutputSubmitter.Mnemonic
 				case BatchSubmitter:
-					botInfo.Mnemonic = m.state.MinitiaConfig.SystemKeys.BatchSubmitter.Mnemonic
-					if strings.HasPrefix(m.state.MinitiaConfig.SystemKeys.BatchSubmitter.L1Address, "initia") {
+					botInfo.Mnemonic = m.state.currentState.MinitiaConfig.SystemKeys.BatchSubmitter.Mnemonic
+					// Determine Data Availability Layer (DA Layer)
+					if strings.HasPrefix(m.state.currentState.MinitiaConfig.SystemKeys.BatchSubmitter.L1Address, "initia") {
 						botInfo.DALayer = string(InitiaLayerOption)
 					} else {
-						botInfo.DALayer = string(CelestiaMainnet)
-
+						botInfo.DALayer = string(CelestiaLayerOption)
 					}
 				case Challenger:
-					botInfo.Mnemonic = m.state.MinitiaConfig.SystemKeys.Challenger.Mnemonic
+					botInfo.Mnemonic = m.state.currentState.MinitiaConfig.SystemKeys.Challenger.Mnemonic
 				}
 			}
 			return NewSetupBotCheckbox(m.state, true, false), nil
 		case NoAddMinitiaKeyOption:
-			m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{".minitia/artifacts/config.json"}, string(*selected)))
 			return NewSetupBotCheckbox(m.state, false, false), nil
-
 		}
 	}
 	return m, cmd
 }
 
 func (m *ProcessingMinitiaConfig) View() string {
-	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{".minitia/artifacts/config.json"}, styles.Question) + m.Selector.View()
+	return m.state.currentState.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{".minitia/artifacts/config.json"}, styles.Question) + m.Selector.View()
 }
 
-func NextUpdateOpinitBotKey(state *OPInitBotsState) (tea.Model, tea.Cmd) {
-	for idx := 0; idx < len(state.BotInfos); idx++ {
-		if state.BotInfos[idx].IsSetup {
+func NextUpdateOpinitBotKey(state *AppState) (tea.Model, tea.Cmd) {
+	for idx := 0; idx < len(state.currentState.BotInfos); idx++ {
+		if state.currentState.BotInfos[idx].IsSetup {
 			return NewRecoverKeySelector(state, idx), nil
 		}
 	}
@@ -222,13 +257,13 @@ func NextUpdateOpinitBotKey(state *OPInitBotsState) (tea.Model, tea.Cmd) {
 
 type SetupBotCheckbox struct {
 	utils.CheckBox[string]
-	state    *OPInitBotsState
+	state    *AppState
 	question string
 }
 
-func NewSetupBotCheckbox(state *OPInitBotsState, addKeyRing bool, noMinitia bool) *SetupBotCheckbox {
+func NewSetupBotCheckbox(state *AppState, addKeyRing bool, noMinitia bool) *SetupBotCheckbox {
 	checkBlock := make([]string, 0)
-	for idx, botInfo := range state.BotInfos {
+	for idx, botInfo := range state.currentState.BotInfos {
 		if !botInfo.IsNotExist && noMinitia {
 			checkBlock = append(checkBlock, fmt.Sprintf("%s (key exists)", BotNames[idx]))
 		} else if !botInfo.IsNotExist && addKeyRing {
@@ -261,22 +296,25 @@ func (m *SetupBotCheckbox) Init() tea.Cmd {
 }
 
 func (m *SetupBotCheckbox) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	// Check for Cmd+Z (undo) and go back to the previous page if triggered
+	if model, cmd, handled := HandleCmdZ(m.state, msg); handled {
+		return model, cmd
+	}
 	cb, cmd, done := m.Select(msg)
 	if done {
 		empty := true
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"bots", "set", "override", "~/.minitia/artifacts/config.json"}, cb.GetSelectedString()))
-
+		m.state.PushPageState(m, m.state.currentState.Clone())
+		m.state.currentState.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"bots", "set", "override", "~/.minitia/artifacts/config.json"}, cb.GetSelectedString()))
 		for idx, isSelected := range cb.Selected {
 			if isSelected {
 				empty = false
-				m.state.BotInfos[idx].IsSetup = true
+				m.state.currentState.BotInfos[idx].IsSetup = true
 			}
 		}
 		if empty {
 			model := NewSetupOPInitBots(m.state)
 			return model, model.Init()
 		}
-
 		return NextUpdateOpinitBotKey(m.state)
 	}
 
@@ -284,17 +322,17 @@ func (m *SetupBotCheckbox) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *SetupBotCheckbox) View() string {
-	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"bots", "set", "override", "~/.minitia/artifacts/config.json"}, styles.Question) + "\n\n" + m.CheckBox.ViewWithBottom("For bots with an existing key, selecting them will override the key.")
+	return m.state.currentState.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"bots", "set", "override", "~/.minitia/artifacts/config.json"}, styles.Question) + "\n\n" + m.CheckBox.ViewWithBottom("For bots with an existing key, selecting them will override the key.")
 }
 
 type RecoverKeySelector struct {
 	utils.Selector[string]
-	state    *OPInitBotsState
+	state    *AppState
 	idx      int
 	question string
 }
 
-func NewRecoverKeySelector(state *OPInitBotsState, idx int) *RecoverKeySelector {
+func NewRecoverKeySelector(state *AppState, idx int) *RecoverKeySelector {
 	return &RecoverKeySelector{
 		Selector: utils.Selector[string]{
 			Options: []string{
@@ -304,7 +342,7 @@ func NewRecoverKeySelector(state *OPInitBotsState, idx int) *RecoverKeySelector 
 		},
 		state:    state,
 		idx:      idx,
-		question: fmt.Sprintf(`Please select an option for the system key for %s`, state.BotInfos[idx].BotName),
+		question: fmt.Sprintf(`Please select an option for the system key for %s`, state.currentState.BotInfos[idx].BotName),
 	}
 }
 
@@ -317,21 +355,26 @@ func (m *RecoverKeySelector) Init() tea.Cmd {
 }
 
 func (m *RecoverKeySelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	// Check for Cmd+Z (undo) and go back to the previous page if triggered
+	if model, cmd, handled := HandleCmdZ(m.state, msg); handled {
+		return model, cmd
+	}
 	selected, cmd := m.Select(msg)
 	if selected != nil {
+		m.state.PushPageState(m, m.state.currentState.Clone())
 		switch *selected {
 		case "Generate new system key":
-			m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{string(m.state.BotInfos[m.idx].BotName)}, *selected))
+			m.state.currentState.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{string(m.state.currentState.BotInfos[m.idx].BotName)}, *selected))
 
-			m.state.BotInfos[m.idx].IsGenerateKey = true
-			m.state.BotInfos[m.idx].Mnemonic = ""
-			m.state.BotInfos[m.idx].IsSetup = false
-			if m.state.BotInfos[m.idx].BotName == BatchSubmitter {
+			m.state.currentState.BotInfos[m.idx].IsGenerateKey = true
+			m.state.currentState.BotInfos[m.idx].Mnemonic = ""
+			m.state.currentState.BotInfos[m.idx].IsSetup = false
+			if m.state.currentState.BotInfos[m.idx].BotName == BatchSubmitter {
 				return NewDALayerSelector(m.state, m.idx), nil
 			}
 			return NextUpdateOpinitBotKey(m.state)
 		case "Import existing key " + styles.Text("(you will be prompted to enter your mnemonic)", styles.Gray):
-			m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{string(m.state.BotInfos[m.idx].BotName)}, "Import existing key"))
+			m.state.currentState.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{string(m.state.currentState.BotInfos[m.idx].BotName)}, "Import existing key"))
 			return NewRecoverFromMnemonic(m.state, m.idx), nil
 		}
 	}
@@ -340,21 +383,21 @@ func (m *RecoverKeySelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *RecoverKeySelector) View() string {
-	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{string(m.state.BotInfos[m.idx].BotName)}, styles.Question) + m.Selector.View()
+	return m.state.currentState.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{string(m.state.currentState.BotInfos[m.idx].BotName)}, styles.Question) + m.Selector.View()
 }
 
 type RecoverFromMnemonic struct {
 	utils.TextInput
 	question string
-	state    *OPInitBotsState
+	state    *AppState
 	idx      int
 }
 
-func NewRecoverFromMnemonic(state *OPInitBotsState, idx int) *RecoverFromMnemonic {
+func NewRecoverFromMnemonic(state *AppState, idx int) *RecoverFromMnemonic {
 	model := &RecoverFromMnemonic{
 		TextInput: utils.NewTextInput(),
 		state:     state,
-		question:  fmt.Sprintf("Please add mnemonic for new %s", state.BotInfos[idx].BotName),
+		question:  fmt.Sprintf("Please add mnemonic for new %s", state.currentState.BotInfos[idx].BotName),
 		idx:       idx,
 	}
 	model.WithValidatorFn(utils.ValidateMnemonic)
@@ -371,12 +414,17 @@ func (m *RecoverFromMnemonic) Init() tea.Cmd {
 }
 
 func (m *RecoverFromMnemonic) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	// Check for Cmd+Z (undo) and go back to the previous page if triggered
+	if model, cmd, handled := HandleCmdZ(m.state, msg); handled {
+		return model, cmd
+	}
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-		m.state.BotInfos[m.idx].Mnemonic = strings.Trim(input.Text, "\n")
-		m.state.BotInfos[m.idx].IsSetup = false
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{string(m.state.BotInfos[m.idx].BotName)}, styles.HiddenMnemonicText))
-		if m.state.BotInfos[m.idx].BotName == BatchSubmitter {
+		m.state.PushPageState(m, m.state.currentState.Clone())
+		m.state.currentState.BotInfos[m.idx].Mnemonic = strings.Trim(input.Text, "\n")
+		m.state.currentState.BotInfos[m.idx].IsSetup = false
+		m.state.currentState.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{string(m.state.currentState.BotInfos[m.idx].BotName)}, styles.HiddenMnemonicText))
+		if m.state.currentState.BotInfos[m.idx].BotName == BatchSubmitter {
 			return NewDALayerSelector(m.state, m.idx), nil
 		}
 		return NextUpdateOpinitBotKey(m.state)
@@ -386,18 +434,18 @@ func (m *RecoverFromMnemonic) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *RecoverFromMnemonic) View() string {
-	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{string(m.state.BotInfos[m.idx].BotName)}, styles.Question) + m.TextInput.View()
+	return m.state.currentState.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{string(m.state.currentState.BotInfos[m.idx].BotName)}, styles.Question) + m.TextInput.View()
 }
 
 type SetupOPInitBots struct {
 	loading utils.Loading
-	state   *OPInitBotsState
+	state   *AppState
 }
 
-func NewSetupOPInitBots(state *OPInitBotsState) *SetupOPInitBots {
+func NewSetupOPInitBots(state *AppState) *SetupOPInitBots {
 	return &SetupOPInitBots{
 		state:   state,
-		loading: utils.NewLoading("Downloading binary and adding keys...", WaitSetupOPInitBots(state)),
+		loading: utils.NewLoading("Downloading binary and adding keys...", WaitSetupOPInitBots(state.currentState)),
 	}
 }
 
@@ -417,23 +465,23 @@ func (m *SetupOPInitBots) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *SetupOPInitBots) View() string {
 	if m.loading.Completing {
 		// Handle WaitSetupOPInitBots err
-		if len(m.state.SetupOpinitResponses) > 0 {
+		if len(m.state.currentState.SetupOpinitResponses) > 0 {
 			mnemonicText := ""
-			for botName, res := range m.state.SetupOpinitResponses {
+			for botName, res := range m.state.currentState.SetupOpinitResponses {
 				keyInfo := strings.Split(res, "\n")
 				address := strings.Split(keyInfo[0], ": ")
 				mnemonicText += renderMnemonic(string(botName), address[1], keyInfo[1])
 			}
 
-			return m.state.weave.Render() + "\n" + styles.RenderPrompt("Download binary and add keys successfully.", []string{}, styles.Completed) + "\n\n" +
+			return m.state.currentState.weave.Render() + "\n" + styles.RenderPrompt("Download binary and add keys successfully.", []string{}, styles.Completed) + "\n\n" +
 				styles.BoldUnderlineText("Important", styles.Yellow) + "\n" +
 				styles.Text("Write down these mnemonic phrases and store them in a safe place. \nIt is the only way to recover your system keys.", styles.Yellow) + "\n\n" +
 				mnemonicText
 		} else {
-			return m.state.weave.Render() + "\n" + styles.RenderPrompt("Download binary and add keys successfully.", []string{}, styles.Completed)
+			return m.state.currentState.weave.Render() + "\n" + styles.RenderPrompt("Download binary and add keys successfully.", []string{}, styles.Completed)
 		}
 	}
-	return m.state.weave.Render() + m.loading.View()
+	return m.state.currentState.weave.Render() + m.loading.View()
 }
 
 func renderMnemonic(keyName, address, mnemonic string) string {
@@ -451,12 +499,12 @@ const (
 
 type DALayerSelector struct {
 	utils.Selector[DALayerOption]
-	state    *OPInitBotsState
+	state    *AppState
 	question string
 	idx      int
 }
 
-func NewDALayerSelector(state *OPInitBotsState, idx int) *DALayerSelector {
+func NewDALayerSelector(state *AppState, idx int) *DALayerSelector {
 	return &DALayerSelector{
 		Selector: utils.Selector[DALayerOption]{
 			Options: []DALayerOption{
@@ -479,10 +527,16 @@ func (m *DALayerSelector) Init() tea.Cmd {
 }
 
 func (m *DALayerSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	// Check for Cmd+Z (undo) and go back to the previous page if triggered
+	if model, cmd, handled := HandleCmdZ(m.state, msg); handled {
+		return model, cmd
+	}
+
 	selected, cmd := m.Select(msg)
 	if selected != nil {
-		m.state.BotInfos[m.idx].DALayer = string(*selected)
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"DA Layer"}, string(*selected)))
+		m.state.PushPageState(m, m.state.currentState.Clone())
+		m.state.currentState.BotInfos[m.idx].DALayer = string(*selected)
+		m.state.currentState.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"DA Layer"}, string(*selected)))
 		return NextUpdateOpinitBotKey(m.state)
 	}
 
@@ -490,7 +544,7 @@ func (m *DALayerSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *DALayerSelector) View() string {
-	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"DA Layer"}, styles.Question) + m.Selector.View()
+	return m.state.currentState.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"DA Layer"}, styles.Question) + m.Selector.View()
 }
 
 func getBinaryURL(version, os, arch string) string {
