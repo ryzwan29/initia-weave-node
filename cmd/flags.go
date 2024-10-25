@@ -1,5 +1,8 @@
 package cmd
 
 const (
-	FlagN = "n"
+	FlagForce      = "force"
+	FlagN          = "n"
+	FlagVm         = "vm"
+	FlagWithConfig = "with-config"
 )

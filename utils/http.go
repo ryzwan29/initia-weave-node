@@ -3,7 +3,6 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"runtime"
 	"sort"
@@ -79,11 +78,10 @@ type BinaryRelease struct {
 
 type BinaryVersionWithDownloadURL map[string]string
 
-func ListBinaryReleases(url string) BinaryVersionWithDownloadURL {
+func getOSArch() (os, arch string) {
 	goos := runtime.GOOS
 	goarch := runtime.GOARCH
 
-	var os, arch string
 	switch goos {
 	case "darwin":
 		os = "Darwin"
@@ -92,6 +90,7 @@ func ListBinaryReleases(url string) BinaryVersionWithDownloadURL {
 	default:
 		panic(fmt.Errorf("unsupported OS: %s", goos))
 	}
+
 	switch goarch {
 	case "amd64":
 		arch = "x86_64"
@@ -101,6 +100,10 @@ func ListBinaryReleases(url string) BinaryVersionWithDownloadURL {
 		panic(fmt.Errorf("unsupported architecture: %s", goarch))
 	}
 
+	return os, arch
+}
+
+func fetchReleases(url string) BinaryVersionWithDownloadURL {
 	resp, err := http.Get(url)
 	if err != nil {
 		panic(fmt.Errorf("failed to fetch releases: %v", err))
@@ -111,19 +114,28 @@ func ListBinaryReleases(url string) BinaryVersionWithDownloadURL {
 		panic(fmt.Errorf("unexpected status code: %d", resp.StatusCode))
 	}
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		panic(fmt.Errorf("failed to read response body: %v", err))
+	var versions BinaryVersionWithDownloadURL
+	if strings.Contains(url, "releases/latest") {
+		var release BinaryRelease
+		if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
+			panic(fmt.Errorf("failed to unmarshal latest release JSON: %v", err))
+		}
+		versions = mapReleaseToVersion(release)
+	} else {
+		var releases []BinaryRelease
+		if err := json.NewDecoder(resp.Body).Decode(&releases); err != nil {
+			panic(fmt.Errorf("failed to unmarshal releases JSON: %v", err))
+		}
+		versions = mapReleasesToVersions(releases)
 	}
 
-	var releases []BinaryRelease
-	if err := json.Unmarshal(body, &releases); err != nil {
-		panic(fmt.Errorf("failed to unmarshal JSON: %v", err))
-	}
+	return versions
+}
 
-	searchString := fmt.Sprintf("%s_%s.tar.gz", os, arch)
-
+func mapReleasesToVersions(releases []BinaryRelease) BinaryVersionWithDownloadURL {
 	versions := make(BinaryVersionWithDownloadURL)
+	os, arch := getOSArch()
+	searchString := fmt.Sprintf("%s_%s.tar.gz", os, arch)
 
 	for _, release := range releases {
 		for _, asset := range release.Assets {
@@ -136,7 +148,37 @@ func ListBinaryReleases(url string) BinaryVersionWithDownloadURL {
 	return versions
 }
 
-// sortVersions sorts the versions based on semantic versioning, including pre-release handling
+func mapReleaseToVersion(release BinaryRelease) BinaryVersionWithDownloadURL {
+	versions := make(BinaryVersionWithDownloadURL)
+	os, arch := getOSArch()
+	searchString := fmt.Sprintf("%s_%s.tar.gz", os, arch)
+
+	for _, asset := range release.Assets {
+		if strings.Contains(asset.BrowserDownloadURL, searchString) {
+			versions[release.TagName] = asset.BrowserDownloadURL
+		}
+	}
+
+	return versions
+}
+
+func ListBinaryReleases(url string) BinaryVersionWithDownloadURL {
+	return fetchReleases(url)
+}
+
+func GetLatestMinitiaVersion(vm string) (string, string, error) {
+	url := fmt.Sprintf("https://api.github.com/repos/initia-labs/mini%s/releases/latest", vm)
+	versions := fetchReleases(url)
+
+	// Since there's only one release expected, we retrieve it directly.
+	for version, downloadURL := range versions {
+		return version, downloadURL, nil
+	}
+
+	return "", "", fmt.Errorf("unexpected case: no binary found")
+}
+
+// SortVersions sorts the versions based on semantic versioning, including pre-release handling
 func SortVersions(versions BinaryVersionWithDownloadURL) []string {
 	var versionTags []string
 	for tag := range versions {

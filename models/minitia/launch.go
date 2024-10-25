@@ -61,6 +61,10 @@ func (m *ExistingMinitiaChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.loading = loader
 	if m.loading.Completing {
 		if !m.state.existingMinitiaApp {
+			if m.state.launchFromExistingConfig {
+				model := NewDownloadMinitiaBinaryLoading(m.state)
+				return model, model.Init()
+			}
 			return NewNetworkSelect(m.state), nil
 		} else {
 			return NewDeleteExistingMinitiaInput(m.state), nil
@@ -108,6 +112,11 @@ func (m *DeleteExistingMinitiaInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if err = utils.DeleteDirectory(filepath.Join(userHome, utils.MinitiaDirectory)); err != nil {
 			panic(fmt.Sprintf("failed to delete .minitia: %v", err))
+		}
+
+		if m.state.launchFromExistingConfig {
+			model := NewDownloadMinitiaBinaryLoading(m.state)
+			return model, model.Init()
 		}
 		return NewNetworkSelect(m.state), nil
 	}
@@ -192,6 +201,19 @@ const (
 	Wasm VMTypeSelectOption = "Wasm"
 	EVM  VMTypeSelectOption = "EVM"
 )
+
+func ParseVMType(vmType string) (VMTypeSelectOption, error) {
+	switch vmType {
+	case "move":
+		return Move, nil
+	case "wasm":
+		return Wasm, nil
+	case "evm":
+		return EVM, nil
+	default:
+		return "", fmt.Errorf("invalid VM type: %s", vmType)
+	}
+}
 
 func NewVMTypeSelect(state *LaunchState) *VMTypeSelect {
 	return &VMTypeSelect{
@@ -1572,9 +1594,10 @@ type DownloadMinitiaBinaryLoading struct {
 }
 
 func NewDownloadMinitiaBinaryLoading(state *LaunchState) *DownloadMinitiaBinaryLoading {
+	latest := map[bool]string{true: "latest ", false: ""}
 	return &DownloadMinitiaBinaryLoading{
 		state:   state,
-		loading: utils.NewLoading(fmt.Sprintf("Downloading Mini%s binary <%s>", strings.ToLower(state.vmType), state.minitiadVersion), downloadMinitiaApp(state)),
+		loading: utils.NewLoading(fmt.Sprintf("Downloading %sMini%s binary <%s>", latest[state.launchFromExistingConfig], strings.ToLower(state.vmType), state.minitiadVersion), downloadMinitiaApp(state)),
 	}
 }
 
@@ -1637,6 +1660,11 @@ func (m *DownloadMinitiaBinaryLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) 
 	if m.loading.Completing {
 		if m.state.downloadedNewBinary {
 			m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, fmt.Sprintf("Mini%s binary has been successfully downloaded.", strings.ToLower(m.state.vmType)), []string{}, ""))
+		}
+
+		if m.state.launchFromExistingConfig {
+			model := NewLaunchingNewMinitiaLoading(m.state)
+			return model, model.Init()
 		}
 
 		if m.state.batchSubmissionIsCelestia {
@@ -2085,63 +2113,68 @@ func isJSONLog(line string) bool {
 
 func launchingMinitia(state *LaunchState) tea.Cmd {
 	return func() tea.Msg {
-		userHome, err := os.UserHomeDir()
-		if err != nil {
-			panic(fmt.Sprintf("failed to get user home directory: %v", err))
-		}
+		var configFilePath string
+		if state.launchFromExistingConfig {
+			configFilePath = state.existingConfigPath
+		} else {
+			userHome, err := os.UserHomeDir()
+			if err != nil {
+				panic(fmt.Sprintf("failed to get user home directory: %v", err))
+			}
 
-		config := &types.MinitiaConfig{
-			L1Config: &types.L1Config{
-				ChainID:   state.l1ChainId,
-				RpcUrl:    state.l1RPC,
-				GasPrices: DefaultL1GasPrices,
-			},
-			L2Config: &types.L2Config{
-				ChainID: state.chainId,
-				Denom:   state.gasDenom,
-				Moniker: state.moniker,
-			},
-			OpBridge: &types.OpBridge{
-				OutputSubmissionInterval:    state.opBridgeSubmissionInterval,
-				OutputFinalizationPeriod:    state.opBridgeOutputFinalizationPeriod,
-				OutputSubmissionStartHeight: 1,
-				BatchSubmissionTarget:       state.opBridgeBatchSubmissionTarget,
-				EnableOracle:                state.enableOracle,
-			},
-			SystemKeys: &types.SystemKeys{
-				Validator: types.NewSystemAccount(
-					state.systemKeyOperatorMnemonic,
-					state.systemKeyOperatorAddress,
-				),
-				BridgeExecutor: types.NewSystemAccount(
-					state.systemKeyBridgeExecutorMnemonic,
-					state.systemKeyBridgeExecutorAddress,
-				),
-				OutputSubmitter: types.NewSystemAccount(
-					state.systemKeyOutputSubmitterMnemonic,
-					state.systemKeyOutputSubmitterAddress,
-				),
-				BatchSubmitter: types.NewSystemAccount(
-					state.systemKeyBatchSubmitterMnemonic,
-					state.systemKeyBatchSubmitterAddress,
-					state.systemKeyL2BatchSubmitterAddress,
-				),
-				Challenger: types.NewSystemAccount(
-					state.systemKeyChallengerMnemonic,
-					state.systemKeyChallengerAddress,
-				),
-			},
-			GenesisAccounts: &state.genesisAccounts,
-		}
+			config := &types.MinitiaConfig{
+				L1Config: &types.L1Config{
+					ChainID:   state.l1ChainId,
+					RpcUrl:    state.l1RPC,
+					GasPrices: DefaultL1GasPrices,
+				},
+				L2Config: &types.L2Config{
+					ChainID: state.chainId,
+					Denom:   state.gasDenom,
+					Moniker: state.moniker,
+				},
+				OpBridge: &types.OpBridge{
+					OutputSubmissionInterval:    state.opBridgeSubmissionInterval,
+					OutputFinalizationPeriod:    state.opBridgeOutputFinalizationPeriod,
+					OutputSubmissionStartHeight: 1,
+					BatchSubmissionTarget:       state.opBridgeBatchSubmissionTarget,
+					EnableOracle:                state.enableOracle,
+				},
+				SystemKeys: &types.SystemKeys{
+					Validator: types.NewSystemAccount(
+						state.systemKeyOperatorMnemonic,
+						state.systemKeyOperatorAddress,
+					),
+					BridgeExecutor: types.NewSystemAccount(
+						state.systemKeyBridgeExecutorMnemonic,
+						state.systemKeyBridgeExecutorAddress,
+					),
+					OutputSubmitter: types.NewSystemAccount(
+						state.systemKeyOutputSubmitterMnemonic,
+						state.systemKeyOutputSubmitterAddress,
+					),
+					BatchSubmitter: types.NewSystemAccount(
+						state.systemKeyBatchSubmitterMnemonic,
+						state.systemKeyBatchSubmitterAddress,
+						state.systemKeyL2BatchSubmitterAddress,
+					),
+					Challenger: types.NewSystemAccount(
+						state.systemKeyChallengerMnemonic,
+						state.systemKeyChallengerAddress,
+					),
+				},
+				GenesisAccounts: &state.genesisAccounts,
+			}
 
-		configBz, err := json.MarshalIndent(config, "", " ")
-		if err != nil {
-			panic(fmt.Errorf("failed to marshal config: %v", err))
-		}
+			configBz, err := json.MarshalIndent(config, "", " ")
+			if err != nil {
+				panic(fmt.Errorf("failed to marshal config: %v", err))
+			}
 
-		configFilePath := filepath.Join(userHome, utils.WeaveDataDirectory, LaunchConfigFilename)
-		if err = os.WriteFile(configFilePath, configBz, 0600); err != nil {
-			panic(fmt.Errorf("failed to write config file: %v", err))
+			configFilePath = filepath.Join(userHome, utils.WeaveDataDirectory, LaunchConfigFilename)
+			if err = os.WriteFile(configFilePath, configBz, 0600); err != nil {
+				panic(fmt.Errorf("failed to write config file: %v", err))
+			}
 		}
 
 		launchCmd := exec.Command(state.binaryPath, "launch", "--with-config", configFilePath)

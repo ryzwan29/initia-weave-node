@@ -61,6 +61,9 @@ type LaunchState struct {
 
 	binaryPath         string
 	celestiaBinaryPath string
+
+	launchFromExistingConfig bool
+	existingConfigPath       string
 }
 
 func NewLaunchState() *LaunchState {
@@ -85,4 +88,16 @@ func (ls *LaunchState) FinalizeGenesisAccounts() {
 	}
 
 	ls.genesisAccounts = append(ls.genesisAccounts, accounts...)
+}
+
+func (ls *LaunchState) PrepareLaunchingWithConfig(vm, minitiadVersion, minitiadEndpoint, configPath string) {
+	vmType, err := ParseVMType(vm)
+	if err != nil {
+		panic(err)
+	}
+	ls.vmType = string(vmType)
+	ls.minitiadVersion = minitiadVersion
+	ls.minitiadEndpoint = minitiadEndpoint
+	ls.launchFromExistingConfig = true
+	ls.existingConfigPath = configPath
 }

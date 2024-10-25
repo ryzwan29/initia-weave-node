@@ -1,7 +1,11 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
@@ -9,8 +13,11 @@ import (
 	"github.com/initia-labs/weave/models"
 	"github.com/initia-labs/weave/models/minitia"
 	"github.com/initia-labs/weave/service"
+	"github.com/initia-labs/weave/types"
 	"github.com/initia-labs/weave/utils"
 )
+
+var validVMOptions = []string{"evm", "move", "wasm"}
 
 func MinitiaCommand() *cobra.Command {
 	cmd := &cobra.Command{
@@ -31,10 +38,60 @@ func MinitiaCommand() *cobra.Command {
 	return cmd
 }
 
+func validateVMFlag(vmValue string) error {
+	for _, option := range validVMOptions {
+		if vmValue == option {
+			return nil
+		}
+	}
+	return fmt.Errorf("invalid value for --vm. Valid options are: %s", strings.Join(validVMOptions, ", "))
+}
+
+func loadAndParseMinitiaConfig(path string) (*types.MinitiaConfig, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	var config types.MinitiaConfig
+	decoder := json.NewDecoder(file)
+	if err = decoder.Decode(&config); err != nil {
+		return nil, err
+	}
+
+	return &config, nil
+}
+
 func minitiaLaunchCommand() *cobra.Command {
 	launchCmd := &cobra.Command{
 		Use:   "launch",
 		Short: "Launch a new Minitia from scratch",
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			configPath, _ := cmd.Flags().GetString(FlagWithConfig)
+			vm, _ := cmd.Flags().GetString(FlagVm)
+
+			if configPath != "" && vm == "" {
+				return fmt.Errorf("the --vm flag is required when using --with-config")
+			}
+			if configPath == "" && vm != "" {
+				return fmt.Errorf("the --vm flag can only be used with --with-config")
+			}
+
+			if configPath != "" {
+				_, err := loadAndParseMinitiaConfig(configPath)
+				if err != nil {
+					return fmt.Errorf("failed to load config: %w", err)
+				}
+			}
+
+			if vm != "" {
+				if err := validateVMFlag(vm); err != nil {
+					return err
+				}
+			}
+			return nil
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if utils.IsFirstTimeSetup() {
 				finalModel, err := tea.NewProgram(models.NewExistingAppChecker(minitia.NewExistingMinitiaChecker(minitia.NewLaunchState()))).Run()
@@ -48,13 +105,42 @@ func minitiaLaunchCommand() *cobra.Command {
 				}
 			}
 
-			_, err := tea.NewProgram(minitia.NewExistingMinitiaChecker(minitia.NewLaunchState())).Run()
+			state := minitia.NewLaunchState()
+
+			configPath, _ := cmd.Flags().GetString(FlagWithConfig)
+			if configPath != "" {
+				vm, _ := cmd.Flags().GetString(FlagVm)
+				version, downloadURL, err := utils.GetLatestMinitiaVersion(vm)
+				if err != nil {
+					return err
+				}
+
+				state.PrepareLaunchingWithConfig(vm, version, downloadURL, configPath)
+			}
+
+			force, _ := cmd.Flags().GetBool(FlagForce)
+
+			if force {
+				userHome, err := os.UserHomeDir()
+				if err != nil {
+					return fmt.Errorf("failed to get user home directory: %v", err)
+				}
+				if err = utils.DeleteDirectory(filepath.Join(userHome, utils.MinitiaDirectory)); err != nil {
+					return fmt.Errorf("failed to delete %s: %v", utils.MinitiaDirectory, err)
+				}
+			}
+
+			_, err := tea.NewProgram(minitia.NewExistingMinitiaChecker(state)).Run()
 			if err != nil {
 				return err
 			}
 			return nil
 		},
 	}
+
+	launchCmd.Flags().String(FlagWithConfig, "", "launch using an existing Minitia config file. The argument should be the path to the config file.")
+	launchCmd.Flags().String(FlagVm, "", fmt.Sprintf("vm to be used. Required when using --with-config. Valid options are: %s", strings.Join(validVMOptions, ", ")))
+	launchCmd.Flags().BoolP(FlagForce, "f", false, "force the launch by deleting the existing .minitia directory if it exists.")
 
 	return launchCmd
 }
