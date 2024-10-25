@@ -1,10 +1,14 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
+	"strings"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 
+	"github.com/initia-labs/weave/models"
 	"github.com/initia-labs/weave/utils"
 )
 
@@ -29,12 +33,111 @@ func gasStationSetupCommand() *cobra.Command {
 		Use:   "setup",
 		Short: "Setup Gas Station account on Initia and Celestia for funding the OPinit-bots or relayer to send transactions.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// TODO: Implement this
-			return nil
+			_, err := tea.NewProgram(models.NewGasStationMnemonicInput("")).Run()
+			return err
 		},
 	}
 
 	return setupCmd
+}
+
+type Coin struct {
+	Denom  string `json:"denom"`
+	Amount string `json:"amount"`
+}
+
+type Coins []Coin
+
+func (cs *Coins) Render() string {
+	if len(*cs) == 0 {
+		return "No Balances\n"
+	}
+
+	maxAmountLen := cs.getMaxAmountLength()
+
+	var rendered strings.Builder
+	rendered.WriteString(strings.Repeat("-", 60) + "\n")
+
+	for _, coin := range *cs {
+		line := fmt.Sprintf("%*s %s", maxAmountLen, coin.Amount, coin.Denom)
+		rendered.WriteString(line + "\n")
+	}
+
+	rendered.WriteString(strings.Repeat("-", 60) + "\n")
+	return rendered.String()
+}
+
+func (cs *Coins) getMaxAmountLength() int {
+	maxLen := 0
+	for _, coin := range *cs {
+		if len(coin.Amount) > maxLen {
+			maxLen = len(coin.Amount)
+		}
+	}
+	return maxLen
+}
+
+func getInitiaBalanceFromConfig(network, address string) (*Coins, error) {
+	var result map[string]interface{}
+	err := utils.MakeGetRequestUsingConfig(
+		network,
+		"lcd",
+		fmt.Sprintf("/cosmos/bank/v1beta1/balances/%s", address),
+		map[string]string{"pagination.limit": "100"},
+		&result,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	rawBalances, ok := result["balances"].([]interface{})
+	if !ok {
+		return nil, fmt.Errorf("failed to parse balances field")
+	}
+
+	balancesJSON, err := json.Marshal(rawBalances)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal balances: %w", err)
+	}
+
+	var balances Coins
+	err = json.Unmarshal(balancesJSON, &balances)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal balances into Coins: %w", err)
+	}
+
+	return &balances, nil
+}
+
+func getBalanceFromLcd(lcd, address string) (*Coins, error) {
+	var result map[string]interface{}
+	err := utils.MakeGetRequestUsingURL(
+		lcd,
+		fmt.Sprintf("/cosmos/bank/v1beta1/balances/%s", address),
+		map[string]string{"pagination.limit": "100"},
+		&result,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	rawBalances, ok := result["balances"].([]interface{})
+	if !ok {
+		return nil, fmt.Errorf("failed to parse balances field")
+	}
+
+	balancesJSON, err := json.Marshal(rawBalances)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal balances: %w", err)
+	}
+
+	var balances Coins
+	err = json.Unmarshal(balancesJSON, &balances)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal balances into Coins: %w", err)
+	}
+
+	return &balances, nil
 }
 
 func gasStationShowCommand() *cobra.Command {
@@ -47,7 +150,42 @@ func gasStationShowCommand() *cobra.Command {
 				return nil
 			}
 
-			// TODO: Implement this
+			gasStationMnemonic := utils.GetConfig("common.gas_station_mnemonic").(string)
+			initiaGasStationAddress, err := utils.MnemonicToBech32Address("init", gasStationMnemonic)
+			if err != nil {
+				return err
+			}
+			celestiaGasStationAddress, err := utils.MnemonicToBech32Address("celestia", gasStationMnemonic)
+			if err != nil {
+				return err
+			}
+
+			// TODO: Dont forget mainnet here when we have one
+			initiaL1TestnetBalances, err := getInitiaBalanceFromConfig("testnet", initiaGasStationAddress)
+			if err != nil {
+				return err
+			}
+
+			celestiaTestnetBalance, err := getBalanceFromLcd(
+				utils.GetConfig(fmt.Sprintf("constants.da_layer.celestia_testnet.lcd")).(string),
+				celestiaGasStationAddress,
+			)
+			if err != nil {
+				return err
+			}
+
+			celestiaMainnetBalance, err := getBalanceFromLcd(
+				utils.GetConfig(fmt.Sprintf("constants.da_layer.celestia_mainnet.lcd")).(string),
+				celestiaGasStationAddress,
+			)
+			if err != nil {
+				return err
+			}
+
+			fmt.Println(fmt.Sprintf("Initia Address: %s\n%s", initiaGasStationAddress, initiaL1TestnetBalances.Render()))
+			fmt.Println(fmt.Sprintf("Celestia Testnet Address: %s\n%s", celestiaGasStationAddress, celestiaTestnetBalance.Render()))
+			fmt.Println(fmt.Sprintf("Celestia Mainnet Address: %s\n%s", celestiaGasStationAddress, celestiaMainnetBalance.Render()))
+
 			return nil
 		},
 	}

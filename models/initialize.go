@@ -69,12 +69,14 @@ func (m *ExistingWeaveChecker) View() string {
 
 type GasStationMnemonicInput struct {
 	previousResponse string
+	firstTime        bool
 	utils.TextInput
 }
 
 func NewGasStationMnemonicInput(previousResponse string) *GasStationMnemonicInput {
 	model := &GasStationMnemonicInput{
 		previousResponse: previousResponse,
+		firstTime:        utils.IsFirstTimeSetup(),
 		TextInput:        utils.NewTextInput(),
 	}
 	model.WithPlaceholder("Add mnemonic")
@@ -98,7 +100,15 @@ func (m *GasStationMnemonicInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *GasStationMnemonicInput) View() string {
-	return InitHeader() + m.previousResponse + styles.RenderPrompt("Please set up a Gas Station account", []string{"Gas Station account"}, styles.Question) + m.TextInput.View()
+	var header string
+	if m.firstTime {
+		header = InitHeader()
+	} else {
+		header = styles.FadeText("Welcome to Weave! 🪢\n\n") +
+			styles.RenderPrompt("Since you've previously set up your Gas Station account, you have the option to override it with a new one.\nThis account will continue to hold the necessary funds for the OPinit-bots or relayer to send transactions.\n\n", []string{"Gas Station account"}, styles.Empty) +
+			styles.BoldText("Please remember, Weave will only send transactions after your confirmation.\n", styles.Yellow)
+	}
+	return header + m.previousResponse + styles.RenderPrompt("Please set up a Gas Station account", []string{"Gas Station account"}, styles.Question) + m.TextInput.View()
 }
 
 type WeaveAppInitialization struct {

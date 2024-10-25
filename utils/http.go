@@ -23,6 +23,7 @@ func GetEndpointURL(network, endpoint string) (string, error) {
 }
 
 func MakeGetRequestUsingConfig(network, endpoint, additionalPath string, params map[string]string, result interface{}) error {
+	// TODO: Refactor this to a more generic function
 	baseURL, err := GetEndpointURL(network, endpoint)
 	if err != nil {
 		return err
