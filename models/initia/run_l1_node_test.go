@@ -750,12 +750,14 @@ func TestExistingDataChecker(t *testing.T) {
 		},
 	}
 
+	InitializeViperForTest(t)
 	for _, tc := range testCases {
 		t.Run(tc.syncMethod, func(t *testing.T) {
 			// Initialize mock state with sync method and existing data
 			mockState := &RunL1NodeState{
 				syncMethod:   tc.syncMethod,
 				existingData: tc.existingData,
+				chainId:      "initiation-2",
 			}
 
 			// Create ExistingDataChecker model
@@ -800,11 +802,13 @@ func TestExistingDataReplaceSelect(t *testing.T) {
 		},
 	}
 
+	InitializeViperForTest(t)
 	for _, tc := range testCases {
 		t.Run(string(tc.expectedSelection), func(t *testing.T) {
 			// Initialize mock state with a sync method from the test case
 			mockState := &RunL1NodeState{
 				syncMethod: tc.syncMethod,
+				chainId:    "initiation-2",
 			}
 
 			// Create ExistingDataReplaceSelect model
@@ -845,10 +849,13 @@ func TestSnapshotEndpointInput(t *testing.T) {
 		},
 	}
 
+	InitializeViperForTest(t)
 	for _, tc := range testCases {
 		t.Run(tc.inputURL, func(t *testing.T) {
 			// Initialize mock state
-			mockState := &RunL1NodeState{}
+			mockState := &RunL1NodeState{
+				chainId: "initiation-2",
+			}
 
 			// Create SnapshotEndpointInput model
 			model := NewSnapshotEndpointInput(mockState)
@@ -939,10 +946,13 @@ func TestSnapshotDownloadLoading_Update(t *testing.T) {
 		},
 	}
 
+	InitializeViperForTest(t)
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("hasError=%v, isComplete=%v", tc.hasError, tc.isComplete), func(t *testing.T) {
 			// Initialize mock state
-			mockState := &RunL1NodeState{}
+			mockState := &RunL1NodeState{
+				chainId: "initiation-2",
+			}
 
 			// Create SnapshotDownloadLoading model
 			downloadLoading, _ := NewSnapshotDownloadLoading(mockState)
@@ -982,10 +992,13 @@ func TestSnapshotExtractLoading(t *testing.T) {
 		},
 	}
 
+	InitializeViperForTest(t)
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("hasError=%v", tc.hasError), func(t *testing.T) {
 			// Initialize mock state
-			mockState := &RunL1NodeState{}
+			mockState := &RunL1NodeState{
+				chainId: "initiation-2",
+			}
 
 			// Create SnapshotExtractLoading model
 			extractLoading := NewSnapshotExtractLoading(mockState)
