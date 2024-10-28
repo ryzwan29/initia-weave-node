@@ -242,7 +242,8 @@ func (m *VMTypeSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if selected != nil {
 		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"VM type"}, string(*selected)))
 		m.state.vmType = string(*selected)
-		return NewVersionSelect(m.state), nil
+		model := NewLatestVersionLoading(m.state)
+		return model, model.Init()
 	}
 
 	return m, cmd
@@ -254,6 +255,55 @@ func (m *VMTypeSelect) View() string {
 		[]string{"VM type"},
 		styles.Question,
 	) + m.Selector.View()
+}
+
+type LatestVersionLoading struct {
+	state   *LaunchState
+	loading utils.Loading
+	vmType  string
+}
+
+func NewLatestVersionLoading(state *LaunchState) *LatestVersionLoading {
+	vmType := strings.ToLower(state.vmType)
+	return &LatestVersionLoading{
+		state:   state,
+		loading: utils.NewLoading(fmt.Sprintf("Fetching the latest release for Mini%s...", vmType), WaitLatestVersionLoading(state, vmType)),
+		vmType:  vmType,
+	}
+}
+
+func (m *LatestVersionLoading) Init() tea.Cmd {
+	return m.loading.Init()
+}
+
+func WaitLatestVersionLoading(state *LaunchState, vmType string) tea.Cmd {
+	return func() tea.Msg {
+		time.Sleep(1500 * time.Millisecond)
+
+		version, downloadURL, err := utils.GetLatestMinitiaVersion(vmType)
+		if err != nil {
+			return err
+		}
+		state.minitiadVersion = version
+		state.minitiadEndpoint = downloadURL
+
+		return utils.EndLoading{}
+	}
+}
+
+func (m *LatestVersionLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	loader, cmd := m.loading.Update(msg)
+	m.loading = loader
+	if m.loading.Completing {
+		vmText := fmt.Sprintf("Mini%s version", m.vmType)
+		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, fmt.Sprintf("Using the latest %s", vmText), []string{vmText}, m.state.minitiadVersion))
+		return NewChainIdInput(m.state), nil
+	}
+	return m, cmd
+}
+
+func (m *LatestVersionLoading) View() string {
+	return m.state.weave.Render() + "\n" + m.loading.View()
 }
 
 type VersionSelect struct {
