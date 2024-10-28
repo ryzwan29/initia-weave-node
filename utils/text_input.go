@@ -146,7 +146,7 @@ func moveToNextWord(text string, cursor int) int {
 
 func (ti TextInput) View() string {
 	var beforeCursor, cursorChar, afterCursor string
-	bottomText := styles.Text("Press Enter to submit or Ctrl+C to quit.", styles.Gray)
+	bottomText := styles.Text("Press Enter to submit, Ctrl+Z to go back, or Ctrl+C to quit.", styles.Gray)
 	feedback := ""
 	if ti.IsEntered {
 		if err := ti.ValidationFn(ti.Text); err != nil {

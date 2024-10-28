@@ -8,8 +8,9 @@ import (
 )
 
 type Selector[T any] struct {
-	Options []T
-	Cursor  int
+	Options    []T
+	Cursor     int
+	CannotBack bool
 }
 
 func (s *Selector[T]) Select(msg tea.Msg) (*T, tea.Cmd) {
@@ -41,18 +42,24 @@ func (s *Selector[T]) View() string {
 		}
 	}
 
-	return view + styles.Text("\nPress Enter to select, press Ctrl+C or q to quit.\n", styles.Gray)
+	if !s.CannotBack {
+		return view + styles.Text("\nPress Enter to select, press Ctrl+Z to go back, press Ctrl+C or q to quit.\n", styles.Gray)
+	} else {
+		return view + styles.Text("\nPress Enter to select, press Ctrl+C or q to quit.\n", styles.Gray)
+	}
 }
 
 type VersionSelector struct {
 	Selector[string]
 	currentVersion string
+	CannotBack     bool
 }
 
-func NewVersionSelector(versions BinaryVersionWithDownloadURL, currentVersion string) VersionSelector {
+func NewVersionSelector(versions BinaryVersionWithDownloadURL, currentVersion string, cannotBack bool) VersionSelector {
 	return VersionSelector{
 		Selector: Selector[string]{
-			Options: SortVersions(versions),
+			Options:    SortVersions(versions),
+			CannotBack: cannotBack,
 		},
 		currentVersion: currentVersion,
 	}
@@ -79,5 +86,9 @@ func (v *VersionSelector) View() string {
 		view += "\n"
 	}
 
-	return view + "\n" + styles.Text("\nPress Enter to select, press Ctrl+C or q to quit.\n", styles.Gray)
+	if !v.CannotBack {
+		return view + styles.Text("\nPress Enter to select, press Ctrl+Z to go back, press Ctrl+C or q to quit.\n", styles.Gray)
+	} else {
+		return view + styles.Text("\nPress Enter to select, press Ctrl+C or q to quit.\n", styles.Gray)
+	}
 }
