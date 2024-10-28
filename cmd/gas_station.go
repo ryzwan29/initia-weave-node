@@ -48,23 +48,34 @@ type Coin struct {
 
 type Coins []Coin
 
-func (cs *Coins) Render() string {
+func (cs *Coins) Render(maxWidth int) string {
 	if len(*cs) == 0 {
-		return "No Balances\n"
+		return createFrame("No Balances", maxWidth)
 	}
 
 	maxAmountLen := cs.getMaxAmountLength()
 
-	var rendered strings.Builder
-	rendered.WriteString(strings.Repeat("-", 60) + "\n")
-
+	var content strings.Builder
 	for _, coin := range *cs {
-		line := fmt.Sprintf("%*s %s", maxAmountLen, coin.Amount, coin.Denom)
-		rendered.WriteString(line + "\n")
+		line := fmt.Sprintf("%-*s %s", maxAmountLen, coin.Amount, coin.Denom)
+		content.WriteString(line + "\n")
 	}
 
-	rendered.WriteString(strings.Repeat("-", 60) + "\n")
-	return rendered.String()
+	contentStr := strings.TrimSuffix(content.String(), "\n")
+	return createFrame(contentStr, maxWidth)
+}
+
+func createFrame(text string, maxWidth int) string {
+	lines := strings.Split(text, "\n")
+	top := "┌" + strings.Repeat("─", maxWidth+2) + "┐"
+	bottom := "└" + strings.Repeat("─", maxWidth+2) + "┘"
+
+	var framedContent strings.Builder
+	for _, line := range lines {
+		framedContent.WriteString(fmt.Sprintf("│ %-*s │\n", maxWidth, line))
+	}
+
+	return fmt.Sprintf("%s\n%s%s", top, framedContent.String(), bottom)
 }
 
 func (cs *Coins) getMaxAmountLength() int {
@@ -140,6 +151,25 @@ func getBalanceFromLcd(lcd, address string) (*Coins, error) {
 	return &balances, nil
 }
 
+func getMaxWidth(coinGroups ...*Coins) int {
+	maxAmountWidth := 0
+	maxDenomWidth := 0
+
+	for _, coins := range coinGroups {
+		for _, coin := range *coins {
+			if len(coin.Amount) > maxAmountWidth {
+				maxAmountWidth = len(coin.Amount)
+			}
+			if len(coin.Denom) > maxDenomWidth {
+				maxDenomWidth = len(coin.Denom)
+			}
+		}
+	}
+
+	// Add 1 space here for the space between amount and denom
+	return maxAmountWidth + maxDenomWidth + 1
+}
+
 func gasStationShowCommand() *cobra.Command {
 	showCmd := &cobra.Command{
 		Use:   "show",
@@ -182,9 +212,11 @@ func gasStationShowCommand() *cobra.Command {
 				return err
 			}
 
-			fmt.Println(fmt.Sprintf("Initia Address: %s\n%s", initiaGasStationAddress, initiaL1TestnetBalances.Render()))
-			fmt.Println(fmt.Sprintf("Celestia Testnet Address: %s\n%s", celestiaGasStationAddress, celestiaTestnetBalance.Render()))
-			fmt.Println(fmt.Sprintf("Celestia Mainnet Address: %s\n%s", celestiaGasStationAddress, celestiaMainnetBalance.Render()))
+			maxWidth := getMaxWidth(initiaL1TestnetBalances, celestiaTestnetBalance, celestiaMainnetBalance)
+
+			fmt.Println(fmt.Sprintf("\n⛽️ Initia Address: %s\n%s\n", initiaGasStationAddress, initiaL1TestnetBalances.Render(maxWidth)))
+			fmt.Println(fmt.Sprintf("⛽️ Celestia Testnet Address: %s\n%s\n", celestiaGasStationAddress, celestiaTestnetBalance.Render(maxWidth)))
+			fmt.Println(fmt.Sprintf("⛽️ Celestia Mainnet Address: %s\n%s\n", celestiaGasStationAddress, celestiaMainnetBalance.Render(maxWidth)))
 
 			return nil
 		},
