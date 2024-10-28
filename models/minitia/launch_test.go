@@ -197,19 +197,19 @@ func TestVMTypeSelect_Update(t *testing.T) {
 			name:           "Select Move VM type",
 			keyPresses:     []tea.KeyMsg{tea.KeyMsg{Type: tea.KeyEnter}},
 			expectedVMType: "Move",
-			expectedModel:  &VersionSelect{},
+			expectedModel:  &LatestVersionLoading{},
 		},
 		{
 			name:           "Select Wasm VM type",
 			keyPresses:     []tea.KeyMsg{tea.KeyMsg{Type: tea.KeyDown}, tea.KeyMsg{Type: tea.KeyEnter}},
 			expectedVMType: "Wasm",
-			expectedModel:  &VersionSelect{},
+			expectedModel:  &LatestVersionLoading{},
 		},
 		{
 			name:           "Select EVM VM type",
 			keyPresses:     []tea.KeyMsg{tea.KeyMsg{Type: tea.KeyDown}, tea.KeyMsg{Type: tea.KeyDown}, tea.KeyMsg{Type: tea.KeyEnter}},
 			expectedVMType: "EVM",
-			expectedModel:  &VersionSelect{},
+			expectedModel:  &LatestVersionLoading{},
 		},
 	}
 
@@ -230,7 +230,7 @@ func TestVMTypeSelect_Update(t *testing.T) {
 			assert.Equal(t, tc.expectedVMType, mockState.vmType, "Expected vmType to be set correctly")
 
 			assert.IsType(t, tc.expectedModel, m, "Expected model to transition to the correct type after VM type selection")
-			assert.Nil(t, cmd, "Expected no command after VM type selection")
+			assert.NotNil(t, cmd, "Expected Init command after VM type selection")
 		})
 	}
 }
