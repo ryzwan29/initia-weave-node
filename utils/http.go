@@ -70,8 +70,9 @@ func makeGetRequest(baseURL, additionalPath string, params map[string]string, re
 }
 
 type BinaryRelease struct {
-	TagName string `json:"tag_name"`
-	Assets  []struct {
+	TagName     string `json:"tag_name"`
+	PublishedAt string `json:"published_at"`
+	Assets      []struct {
 		BrowserDownloadURL string `json:"browser_download_url"`
 	} `json:"assets"`
 }
@@ -103,7 +104,7 @@ func getOSArch() (os, arch string) {
 	return os, arch
 }
 
-func fetchReleases(url string) BinaryVersionWithDownloadURL {
+func fetchReleases(url string) []BinaryRelease {
 	resp, err := http.Get(url)
 	if err != nil {
 		panic(fmt.Errorf("failed to fetch releases: %v", err))
@@ -119,7 +120,7 @@ func fetchReleases(url string) BinaryVersionWithDownloadURL {
 		panic(fmt.Errorf("failed to unmarshal releases JSON: %v", err))
 	}
 
-	return mapReleasesToVersions(releases)
+	return releases
 }
 
 func mapReleasesToVersions(releases []BinaryRelease) BinaryVersionWithDownloadURL {
@@ -139,30 +140,41 @@ func mapReleasesToVersions(releases []BinaryRelease) BinaryVersionWithDownloadUR
 }
 
 func ListBinaryReleases(url string) BinaryVersionWithDownloadURL {
-	return fetchReleases(url)
+	releases := fetchReleases(url)
+	return mapReleasesToVersions(releases)
 }
 
 func GetLatestMinitiaVersion(vm string) (string, string, error) {
 	url := fmt.Sprintf("https://api.github.com/repos/initia-labs/mini%s/releases", vm)
-	versions := fetchReleases(url)
+	releases := fetchReleases(url)
 
-	if len(versions) < 1 {
-		return "", "", fmt.Errorf("unexpected case: no binary found")
+	if len(releases) < 1 {
+		return "", "", fmt.Errorf("no releases found")
 	}
 
-	keys := make([]string, 0, len(versions))
-	for k := range versions {
-		keys = append(keys, k)
+	os, arch := getOSArch()
+	searchString := fmt.Sprintf("%s_%s.tar.gz", os, arch)
+
+	var latestRelease *BinaryRelease
+	var downloadURL string
+
+	for _, release := range releases {
+		for _, asset := range release.Assets {
+			if strings.Contains(asset.BrowserDownloadURL, searchString) {
+				if latestRelease == nil || compareDates(latestRelease.PublishedAt, release.PublishedAt) {
+					latestRelease = &release
+					downloadURL = asset.BrowserDownloadURL
+				}
+				break
+			}
+		}
 	}
 
-	sort.Slice(keys, func(i, j int) bool {
-		return compareSemVer(keys[i], keys[j])
-	})
+	if latestRelease == nil {
+		return "", "", fmt.Errorf("no compatible release found for %s_%s", os, arch)
+	}
 
-	version := keys[0]
-	downloadURL := versions[version]
-
-	return version, downloadURL, nil
+	return latestRelease.TagName, downloadURL, nil
 }
 
 // SortVersions sorts the versions based on semantic versioning, including pre-release handling
@@ -178,6 +190,23 @@ func SortVersions(versions BinaryVersionWithDownloadURL) []string {
 	})
 
 	return versionTags
+}
+
+func compareDates(d1, d2 string) bool {
+	const layout = time.RFC3339
+
+	t1, err1 := time.Parse(layout, d1)
+	t2, err2 := time.Parse(layout, d2)
+
+	if err1 != nil && err2 != nil {
+		return d1 < d2 // fallback
+	} else if err1 != nil {
+		return false
+	} else if err2 != nil {
+		return true
+	}
+
+	return t1.Before(t2)
 }
 
 // compareSemVer compares two semantic version strings and returns true if v1 should be ordered before v2
