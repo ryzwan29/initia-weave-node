@@ -21,7 +21,7 @@ func NewTextInput() TextInput {
 	return TextInput{
 		Text:         "",
 		Cursor:       0,
-		Placeholder:  "<todo: Jennie revisit placeholder>",
+		Placeholder:  "",
 		DefaultValue: "",
 		ValidationFn: NoOps,
 		IsEntered:    false,

@@ -63,10 +63,7 @@ func (m *RunL1NodeNetworkSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"network"}, selectedString))
 		switch *selected {
 		case Mainnet, Testnet:
-			lowerNetwork := "testnet"
-			if *selected == Mainnet {
-				lowerNetwork = "mainnet"
-			}
+			lowerNetwork := utils.TransformFirstWordLowerCase(string(*selected))
 			chainId := utils.GetConfig(fmt.Sprintf("constants.chain_id.%s", lowerNetwork))
 			genesisEndpoint, err := utils.GetEndpointURL(lowerNetwork, "genesis")
 			if err != nil {
@@ -1109,11 +1106,18 @@ type SnapshotEndpointInput struct {
 }
 
 func NewSnapshotEndpointInput(state *RunL1NodeState) *SnapshotEndpointInput {
-	return &SnapshotEndpointInput{
+	defaultSnapshot, err := utils.FetchPolkachuSnapshotDownloadURL(PolkachuChainIdSlugMap[state.chainId])
+	if err != nil {
+		panic(fmt.Sprintf("failed to fetch snapshot url from Polkachu: %v", err))
+	}
+	model := &SnapshotEndpointInput{
 		TextInput: utils.NewTextInput(),
 		state:     state,
 		question:  "Please specify the snapshot url to download",
 	}
+	model.WithPlaceholder(fmt.Sprintf("Press tab to use the latest snapshot provided by Polkachu (%s)", defaultSnapshot))
+	model.WithDefaultValue(defaultSnapshot)
+	return model
 }
 
 func (m *SnapshotEndpointInput) GetQuestion() string {

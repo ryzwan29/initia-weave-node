@@ -168,7 +168,7 @@ func (m *Downloader) View() string {
 		return fmt.Sprintf("%sDownload Complete!\nTotal Size: %d bytes\n", styles.CorrectMark, m.total)
 	}
 	percentage := float64(m.current) / float64(m.total)
-	return fmt.Sprintf("%s: %s / %s \n%s", m.text, ByteCountSI(m.current), ByteCountSI(m.total), m.progress.ViewAs(percentage))
+	return fmt.Sprintf("\n %s: %s / %s \n %s", m.text, ByteCountSI(m.current), ByteCountSI(m.total), m.progress.ViewAs(percentage))
 }
 
 func (m *Downloader) GetCompletion() bool {
