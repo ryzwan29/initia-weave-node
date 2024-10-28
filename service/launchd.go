@@ -120,6 +120,7 @@ func (j *Launchd) Restart() error {
 	if err != nil {
 		return fmt.Errorf("failed to stop service: %v", err)
 	}
+	time.Sleep(1 * time.Second)
 	err = j.Start()
 	if err != nil {
 		return fmt.Errorf("failed to start service: %v", err)
