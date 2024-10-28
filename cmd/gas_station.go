@@ -12,6 +12,8 @@ import (
 	"github.com/initia-labs/weave/utils"
 )
 
+const NoBalancesText string = "No Balances"
+
 func GasStationCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:                        "gas-station",
@@ -50,7 +52,7 @@ type Coins []Coin
 
 func (cs *Coins) Render(maxWidth int) string {
 	if len(*cs) == 0 {
-		return createFrame("No Balances", maxWidth)
+		return createFrame(NoBalancesText, maxWidth)
 	}
 
 	maxAmountLen := cs.getMaxAmountLength()
@@ -213,8 +215,11 @@ func gasStationShowCommand() *cobra.Command {
 			}
 
 			maxWidth := getMaxWidth(initiaL1TestnetBalances, celestiaTestnetBalance, celestiaMainnetBalance)
+			if maxWidth < len(NoBalancesText) {
+				maxWidth = len(NoBalancesText)
+			}
 
-			fmt.Println(fmt.Sprintf("\n⛽️ Initia Address: %s\n%s\n", initiaGasStationAddress, initiaL1TestnetBalances.Render(maxWidth)))
+			fmt.Println(fmt.Sprintf("\n⛽️ Initia Testnet Address: %s\n%s\n", initiaGasStationAddress, initiaL1TestnetBalances.Render(maxWidth)))
 			fmt.Println(fmt.Sprintf("⛽️ Celestia Testnet Address: %s\n%s\n", celestiaGasStationAddress, celestiaTestnetBalance.Render(maxWidth)))
 			fmt.Println(fmt.Sprintf("⛽️ Celestia Mainnet Address: %s\n%s\n", celestiaGasStationAddress, celestiaMainnetBalance.Render(maxWidth)))
 
