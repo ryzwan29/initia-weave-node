@@ -282,7 +282,7 @@ func WaitLatestVersionLoading(state *LaunchState, vmType string) tea.Cmd {
 
 		version, downloadURL, err := utils.GetLatestMinitiaVersion(vmType)
 		if err != nil {
-			return err
+			panic(err)
 		}
 		state.minitiadVersion = version
 		state.minitiadEndpoint = downloadURL

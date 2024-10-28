@@ -114,22 +114,12 @@ func fetchReleases(url string) BinaryVersionWithDownloadURL {
 		panic(fmt.Errorf("unexpected status code: %d", resp.StatusCode))
 	}
 
-	var versions BinaryVersionWithDownloadURL
-	if strings.Contains(url, "releases/latest") {
-		var release BinaryRelease
-		if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
-			panic(fmt.Errorf("failed to unmarshal latest release JSON: %v", err))
-		}
-		versions = mapReleaseToVersion(release)
-	} else {
-		var releases []BinaryRelease
-		if err := json.NewDecoder(resp.Body).Decode(&releases); err != nil {
-			panic(fmt.Errorf("failed to unmarshal releases JSON: %v", err))
-		}
-		versions = mapReleasesToVersions(releases)
+	var releases []BinaryRelease
+	if err := json.NewDecoder(resp.Body).Decode(&releases); err != nil {
+		panic(fmt.Errorf("failed to unmarshal releases JSON: %v", err))
 	}
 
-	return versions
+	return mapReleasesToVersions(releases)
 }
 
 func mapReleasesToVersions(releases []BinaryRelease) BinaryVersionWithDownloadURL {
@@ -148,34 +138,31 @@ func mapReleasesToVersions(releases []BinaryRelease) BinaryVersionWithDownloadUR
 	return versions
 }
 
-func mapReleaseToVersion(release BinaryRelease) BinaryVersionWithDownloadURL {
-	versions := make(BinaryVersionWithDownloadURL)
-	os, arch := getOSArch()
-	searchString := fmt.Sprintf("%s_%s.tar.gz", os, arch)
-
-	for _, asset := range release.Assets {
-		if strings.Contains(asset.BrowserDownloadURL, searchString) {
-			versions[release.TagName] = asset.BrowserDownloadURL
-		}
-	}
-
-	return versions
-}
-
 func ListBinaryReleases(url string) BinaryVersionWithDownloadURL {
 	return fetchReleases(url)
 }
 
 func GetLatestMinitiaVersion(vm string) (string, string, error) {
-	url := fmt.Sprintf("https://api.github.com/repos/initia-labs/mini%s/releases/latest", vm)
+	url := fmt.Sprintf("https://api.github.com/repos/initia-labs/mini%s/releases", vm)
 	versions := fetchReleases(url)
 
-	// Since there's only one release expected, we retrieve it directly.
-	for version, downloadURL := range versions {
-		return version, downloadURL, nil
+	if len(versions) < 1 {
+		return "", "", fmt.Errorf("unexpected case: no binary found")
 	}
 
-	return "", "", fmt.Errorf("unexpected case: no binary found")
+	keys := make([]string, 0, len(versions))
+	for k := range versions {
+		keys = append(keys, k)
+	}
+
+	sort.Slice(keys, func(i, j int) bool {
+		return compareSemVer(keys[i], keys[j])
+	})
+
+	version := keys[0]
+	downloadURL := versions[version]
+
+	return version, downloadURL, nil
 }
 
 // SortVersions sorts the versions based on semantic versioning, including pre-release handling
