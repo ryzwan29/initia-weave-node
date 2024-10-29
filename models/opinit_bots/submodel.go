@@ -31,10 +31,10 @@ type Field struct {
 type BaseFieldModel struct {
 	utils.TextInput
 	state *OPInitBotsState
-	field Field
+	field *Field
 }
 
-func NewBaseFieldModel(state *OPInitBotsState, field Field) BaseFieldModel {
+func NewBaseFieldModel(state *OPInitBotsState, field *Field) BaseFieldModel {
 	textInput := utils.NewTextInput()
 	textInput.WithPlaceholder(field.Placeholder)
 	textInput.WithDefaultValue(field.DefaultValue)
@@ -71,7 +71,7 @@ type StringFieldModel struct {
 	BaseFieldModel
 }
 
-func NewStringFieldModel(state *OPInitBotsState, field Field) *StringFieldModel {
+func NewStringFieldModel(state *OPInitBotsState, field *Field) *StringFieldModel {
 	return &StringFieldModel{
 		BaseFieldModel: NewBaseFieldModel(state, field),
 	}
@@ -94,7 +94,7 @@ type NumberFieldModel struct {
 	BaseFieldModel
 }
 
-func NewNumberFieldModel(state *OPInitBotsState, field Field) *NumberFieldModel {
+func NewNumberFieldModel(state *OPInitBotsState, field *Field) *NumberFieldModel {
 
 	return &NumberFieldModel{
 		BaseFieldModel: NewBaseFieldModel(state, field),

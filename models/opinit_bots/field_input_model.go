@@ -12,7 +12,7 @@ type FieldInputModel struct {
 }
 
 // NewFieldInputModel initializes the parent model with the submodels
-func NewFieldInputModel(state *OPInitBotsState, fields []Field, newTerminalModel func(*OPInitBotsState) tea.Model) *FieldInputModel {
+func NewFieldInputModel(state *OPInitBotsState, fields []*Field, newTerminalModel func(*OPInitBotsState) tea.Model) *FieldInputModel {
 	submodels := make([]tea.Model, len(fields))
 
 	// Create submodels based on the field types
