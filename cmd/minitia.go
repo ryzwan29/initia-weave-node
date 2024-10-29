@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -17,7 +18,11 @@ import (
 	"github.com/initia-labs/weave/utils"
 )
 
-var validVMOptions = []string{"evm", "move", "wasm"}
+type minitiaConfigKey struct{}
+
+var (
+	validVMOptions = []string{"evm", "move", "wasm"}
+)
 
 func MinitiaCommand() *cobra.Command {
 	cmd := &cobra.Command{
@@ -79,10 +84,11 @@ func minitiaLaunchCommand() *cobra.Command {
 			}
 
 			if configPath != "" {
-				_, err := loadAndParseMinitiaConfig(configPath)
+				config, err := loadAndParseMinitiaConfig(configPath)
 				if err != nil {
 					return fmt.Errorf("failed to load config: %w", err)
 				}
+				cmd.SetContext(context.WithValue(cmd.Context(), minitiaConfigKey{}, config))
 			}
 
 			if vm != "" {
@@ -109,13 +115,18 @@ func minitiaLaunchCommand() *cobra.Command {
 
 			configPath, _ := cmd.Flags().GetString(FlagWithConfig)
 			if configPath != "" {
+				config, ok := cmd.Context().Value(minitiaConfigKey{}).(*types.MinitiaConfig)
+				if !ok {
+					return fmt.Errorf("failed to retrieve configuration from context")
+				}
+
 				vm, _ := cmd.Flags().GetString(FlagVm)
 				version, downloadURL, err := utils.GetLatestMinitiaVersion(vm)
 				if err != nil {
 					return err
 				}
 
-				state.PrepareLaunchingWithConfig(vm, version, downloadURL, configPath)
+				state.PrepareLaunchingWithConfig(vm, version, downloadURL, configPath, config)
 			}
 
 			force, _ := cmd.Flags().GetBool(FlagForce)

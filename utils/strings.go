@@ -1,7 +1,10 @@
 package utils
 
 import (
+	"os"
 	"strings"
+
+	"github.com/charmbracelet/x/term"
 )
 
 func TransformFirstWordUpperCase(input string) string {
@@ -18,4 +21,22 @@ func TransformFirstWordLowerCase(input string) string {
 		return strings.ToLower(words[0])
 	}
 	return ""
+}
+
+func WrapText(text string) string {
+	width, _, err := term.GetSize(os.Stdout.Fd())
+	if err != nil {
+		panic(err)
+	}
+	return WrapTextWithLimit(text, width)
+}
+
+func WrapTextWithLimit(text string, limit int) string {
+	var result []string
+	for len(text) > limit {
+		result = append(result, text[:limit])
+		text = text[limit:]
+	}
+	result = append(result, text)
+	return strings.Join(result, "\n")
 }

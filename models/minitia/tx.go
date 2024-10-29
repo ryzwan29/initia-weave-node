@@ -196,7 +196,7 @@ const FundMinitiaAccountsDefaultTxInterface = `
         ]
       }
     ],
-    "memo":"",
+    "memo":"Sent from Weave Gas Station!",
     "timeout_height":"0",
     "extension_options":[],
     "non_critical_extension_options":[]
@@ -269,7 +269,7 @@ const FundMinitiaAccountsWithoutBatchTxInterface = `
         ]
       }
     ],
-    "memo":"",
+    "memo":"Sent from Weave Gas Station!",
     "timeout_height":"0",
     "extension_options":[],
     "non_critical_extension_options":[]
