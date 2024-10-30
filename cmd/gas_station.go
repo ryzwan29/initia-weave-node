@@ -91,10 +91,16 @@ func (cs *Coins) getMaxAmountLength() int {
 }
 
 func getInitiaBalanceFromConfig(network, address string) (*Coins, error) {
+	baseUrl, err := utils.GetLcdEndpointByNetwork(network)
+	if err != nil {
+		return nil, err
+	}
+
+	client := utils.NewHTTPClient()
+
 	var result map[string]interface{}
-	err := utils.MakeGetRequestUsingConfig(
-		network,
-		"lcd",
+	_, err = client.Get(
+		baseUrl,
 		fmt.Sprintf("/cosmos/bank/v1beta1/balances/%s", address),
 		map[string]string{"pagination.limit": "100"},
 		&result,
@@ -123,8 +129,9 @@ func getInitiaBalanceFromConfig(network, address string) (*Coins, error) {
 }
 
 func getBalanceFromLcd(lcd, address string) (*Coins, error) {
+	client := utils.NewHTTPClient()
 	var result map[string]interface{}
-	err := utils.MakeGetRequestUsingURL(
+	_, err := client.Get(
 		lcd,
 		fmt.Sprintf("/cosmos/bank/v1beta1/balances/%s", address),
 		map[string]string{"pagination.limit": "100"},

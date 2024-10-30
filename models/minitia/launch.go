@@ -1739,8 +1739,9 @@ type DownloadCelestiaBinaryLoading struct {
 }
 
 func NewDownloadCelestiaBinaryLoading(state *LaunchState) *DownloadCelestiaBinaryLoading {
+	client := utils.NewHTTPClient()
 	var result map[string]interface{}
-	err := utils.MakeGetRequestUsingURL(
+	_, err := client.Get(
 		utils.GetConfig(fmt.Sprintf("constants.da_layer.celestia_mainnet.lcd")).(string),
 		"/cosmos/base/tendermint/v1beta1/node_info",
 		nil,

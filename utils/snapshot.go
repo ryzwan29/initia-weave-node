@@ -2,7 +2,7 @@ package utils
 
 import (
 	"fmt"
-	"net/http"
+	"strings"
 
 	"github.com/PuerkitoBio/goquery"
 )
@@ -13,17 +13,13 @@ const (
 )
 
 func FetchPolkachuSnapshotDownloadURL(chainSlug string) (string, error) {
-	resp, err := http.Get(fmt.Sprintf(PolkachuSnapshotURL, chainSlug))
+	client := NewHTTPClient()
+	body, err := client.Get(fmt.Sprintf(PolkachuSnapshotURL, chainSlug), "", nil, nil)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch page: %w", err)
 	}
-	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
-		return "", fmt.Errorf("received non-200 status code: %d", resp.StatusCode)
-	}
-
-	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(body)))
 	if err != nil {
 		return "", fmt.Errorf("failed to parse HTML: %w", err)
 	}

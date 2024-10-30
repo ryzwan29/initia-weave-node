@@ -1,11 +1,13 @@
 package utils
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"math/big"
 	"net"
 	"net/url"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -290,5 +292,35 @@ func IsValidTimestamp(s string) error {
 	if _, err := time.ParseDuration(s); err != nil {
 		return fmt.Errorf("invalid time format")
 	}
+	return nil
+}
+
+// LZ4 magic number for LZ4 frame format
+var lz4MagicNumber = []byte{0x04, 0x22, 0x4D, 0x18}
+
+// ValidateTarLz4Header checks if the downloaded file is a valid .tar.lz4 file based on the file header.
+func ValidateTarLz4Header(dest string) error {
+	// Open the .lz4 file
+	file, err := os.Open(dest)
+	if err != nil {
+		return fmt.Errorf("failed to open file: %w", err)
+	}
+	defer file.Close()
+
+	// Read the first few bytes of the file (header)
+	header := make([]byte, 4)
+	_, err = file.Read(header)
+	if err != nil {
+		return fmt.Errorf("failed to read file header: %w", err)
+	}
+
+	// Check if the header matches the LZ4 magic number
+	if !bytes.Equal(header, lz4MagicNumber) {
+		return fmt.Errorf("invalid file format: the file is not a valid .lz4 file")
+	}
+
+	// If the header matches, we assume it's a valid .lz4 file.
+	// You could continue checking the contents further if needed, but this verifies the file is compressed with LZ4.
+
 	return nil
 }

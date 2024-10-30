@@ -3,249 +3,153 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
-	"runtime"
-	"sort"
-	"strconv"
+	"net/url"
+	"os"
 	"strings"
 	"time"
 )
 
-func GetEndpointURL(network, endpoint string) (string, error) {
-	endpoints := GetConfig(fmt.Sprintf("constants.endpoints.%s", network))
-	netEndpoints := endpoints.(map[string]interface{})
-	url, ok := netEndpoints[endpoint].(string)
-	if !ok {
-		return "", fmt.Errorf("endpoint %s not found for network %s", endpoint, network)
-	}
-	return url, nil
+const (
+	maxRetries = 3
+	baseDelay  = 1 * time.Second
+
+	downloadBufferSize = 65536
+)
+
+// HTTPClient defines the logic for making HTTP requests.
+type HTTPClient struct{}
+
+// NewHTTPClient creates and returns a new HTTPClient instance.
+func NewHTTPClient() *HTTPClient {
+	return &HTTPClient{}
 }
 
-func MakeGetRequestUsingConfig(network, endpoint, additionalPath string, params map[string]string, result interface{}) error {
-	// TODO: Refactor this to a more generic function
-	baseURL, err := GetEndpointURL(network, endpoint)
+// Get performs an HTTP GET request.
+// It can either unmarshal a JSON response into the provided result or return the raw response data directly.
+func (c *HTTPClient) Get(baseURL, additionalPath string, params map[string]string, result interface{}) ([]byte, error) {
+	fullURL := constructURL(baseURL, additionalPath, params)
+
+	body, err := c.getWithRetry(fullURL)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return makeGetRequest(baseURL, additionalPath, params, result)
+
+	if result != nil {
+		if err := json.Unmarshal(body, result); err != nil {
+			return nil, fmt.Errorf("failed to parse JSON response: %w", err)
+		}
+	}
+
+	return body, nil
 }
 
-func MakeGetRequestUsingURL(overrideURL, additionalPath string, params map[string]string, result interface{}) error {
-	return makeGetRequest(overrideURL, additionalPath, params, result)
+// getWithRetry performs the HTTP GET request with retry logic, including exponential backoff.
+func (c *HTTPClient) getWithRetry(endpoint string) ([]byte, error) {
+	var lastErr error
+
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		resp, err := http.Get(endpoint)
+		if err != nil {
+			lastErr = fmt.Errorf("attempt %d: request error: %w", attempt, err)
+		} else {
+			if resp.StatusCode != http.StatusOK {
+				lastErr = fmt.Errorf("attempt %d: unexpected status code %d", attempt, resp.StatusCode)
+			} else {
+				body, err := io.ReadAll(resp.Body)
+				if err != nil {
+					lastErr = fmt.Errorf("attempt %d: failed to read response body: %w", attempt, err)
+				} else {
+					return body, nil
+				}
+			}
+			resp.Body.Close()
+		}
+		time.Sleep(baseDelay * time.Duration(attempt))
+	}
+
+	return nil, fmt.Errorf("all %d attempts failed: %w", maxRetries, lastErr)
 }
 
-func makeGetRequest(baseURL, additionalPath string, params map[string]string, result interface{}) error {
-	fullURL := fmt.Sprintf("%s%s", baseURL, additionalPath)
-
-	client := &http.Client{
-		Timeout: 10 * time.Second,
-	}
-
-	req, err := http.NewRequest("GET", fullURL, nil)
+// DownloadFile downloads a file from the specified URL
+// and updates the current progress using the provided progress pointer.
+func (c *HTTPClient) DownloadFile(url string, dest string, progress, totalSize *int64) error {
+	resp, err := http.Get(url)
 	if err != nil {
-		return fmt.Errorf("failed to create request: %v", err)
-	}
-
-	query := req.URL.Query()
-	for key, value := range params {
-		query.Add(key, value)
-	}
-	req.URL.RawQuery = query.Encode()
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return fmt.Errorf("request failed: %v", err)
+		return fmt.Errorf("failed to connect to URL: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		return fmt.Errorf("failed to download: received status code %d", resp.StatusCode)
 	}
 
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return fmt.Errorf("failed to decode JSON response: %v", err)
+	if totalSize != nil {
+		*totalSize = resp.ContentLength
+		if *totalSize <= 0 {
+			*totalSize = 1
+		}
+	}
+
+	file, err := os.Create(dest)
+	if err != nil {
+		return fmt.Errorf("failed to create destination file: %w", err)
+	}
+	defer file.Close()
+
+	buffer := make([]byte, downloadBufferSize)
+	var totalDownloaded int64
+	for {
+		n, err := resp.Body.Read(buffer)
+		if err != nil && err != io.EOF {
+			return fmt.Errorf("error during file download: %w", err)
+		}
+		if n == 0 {
+			break
+		}
+
+		if _, err := file.Write(buffer[:n]); err != nil {
+			return fmt.Errorf("failed to write to file: %w", err)
+		}
+
+		totalDownloaded += int64(n)
+		if progress != nil {
+			*progress = totalDownloaded
+		}
 	}
 
 	return nil
 }
 
-type BinaryRelease struct {
-	TagName     string `json:"tag_name"`
-	PublishedAt string `json:"published_at"`
-	Assets      []struct {
-		BrowserDownloadURL string `json:"browser_download_url"`
-	} `json:"assets"`
+// DownloadAndValidateFile does the HTTPClient.DownloadFile but with additional validation
+func (c *HTTPClient) DownloadAndValidateFile(url string, dest string, progress, totalSize *int64, validateFn func(string) error) error {
+	if err := c.DownloadFile(url, dest, progress, totalSize); err != nil {
+		return err
+	}
+
+	if err := validateFn(dest); err != nil {
+		return fmt.Errorf("validation failed: %w", err)
+	}
+
+	return nil
 }
 
-type BinaryVersionWithDownloadURL map[string]string
-
-func getOSArch() (os, arch string) {
-	goos := runtime.GOOS
-	goarch := runtime.GOARCH
-
-	switch goos {
-	case "darwin":
-		os = "Darwin"
-	case "linux":
-		os = "Linux"
-	default:
-		panic(fmt.Errorf("unsupported OS: %s", goos))
+// constructURL builds a complete URL with optional query parameters.
+func constructURL(baseURL, additionalPath string, params map[string]string) string {
+	u, _ := url.Parse(baseURL)
+	if additionalPath != "" {
+		u.Path = strings.TrimRight(u.Path, "/") + "/" + strings.TrimLeft(additionalPath, "/")
+	} else {
+		u.Path = strings.TrimRight(u.Path, "/")
 	}
 
-	switch goarch {
-	case "amd64":
-		arch = "x86_64"
-	case "arm64":
-		arch = "aarch64"
-	default:
-		panic(fmt.Errorf("unsupported architecture: %s", goarch))
-	}
-
-	return os, arch
-}
-
-func fetchReleases(url string) []BinaryRelease {
-	resp, err := http.Get(url)
-	if err != nil {
-		panic(fmt.Errorf("failed to fetch releases: %v", err))
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		panic(fmt.Errorf("unexpected status code: %d", resp.StatusCode))
-	}
-
-	var releases []BinaryRelease
-	if err := json.NewDecoder(resp.Body).Decode(&releases); err != nil {
-		panic(fmt.Errorf("failed to unmarshal releases JSON: %v", err))
-	}
-
-	return releases
-}
-
-func mapReleasesToVersions(releases []BinaryRelease) BinaryVersionWithDownloadURL {
-	versions := make(BinaryVersionWithDownloadURL)
-	os, arch := getOSArch()
-	searchString := fmt.Sprintf("%s_%s.tar.gz", os, arch)
-
-	for _, release := range releases {
-		for _, asset := range release.Assets {
-			if strings.Contains(asset.BrowserDownloadURL, searchString) {
-				versions[release.TagName] = asset.BrowserDownloadURL
-			}
+	if len(params) > 0 {
+		query := u.Query()
+		for key, value := range params {
+			query.Add(key, value)
 		}
+		u.RawQuery = query.Encode()
 	}
-
-	return versions
-}
-
-func ListBinaryReleases(url string) BinaryVersionWithDownloadURL {
-	releases := fetchReleases(url)
-	return mapReleasesToVersions(releases)
-}
-
-func GetLatestMinitiaVersion(vm string) (string, string, error) {
-	url := fmt.Sprintf("https://api.github.com/repos/initia-labs/mini%s/releases", vm)
-	releases := fetchReleases(url)
-
-	if len(releases) < 1 {
-		return "", "", fmt.Errorf("no releases found")
-	}
-
-	os, arch := getOSArch()
-	searchString := fmt.Sprintf("%s_%s.tar.gz", os, arch)
-
-	var latestRelease *BinaryRelease
-	var downloadURL string
-
-	for _, release := range releases {
-		for _, asset := range release.Assets {
-			if strings.Contains(asset.BrowserDownloadURL, searchString) {
-				if latestRelease == nil || compareDates(latestRelease.PublishedAt, release.PublishedAt) {
-					latestRelease = &release
-					downloadURL = asset.BrowserDownloadURL
-				}
-				break
-			}
-		}
-	}
-
-	if latestRelease == nil {
-		return "", "", fmt.Errorf("no compatible release found for %s_%s", os, arch)
-	}
-
-	return latestRelease.TagName, downloadURL, nil
-}
-
-// SortVersions sorts the versions based on semantic versioning, including pre-release handling
-func SortVersions(versions BinaryVersionWithDownloadURL) []string {
-	var versionTags []string
-	for tag := range versions {
-		versionTags = append(versionTags, tag)
-	}
-
-	// Sort based on major, minor, patch, and pre-release metadata
-	sort.Slice(versionTags, func(i, j int) bool {
-		return compareSemVer(versionTags[i], versionTags[j])
-	})
-
-	return versionTags
-}
-
-func compareDates(d1, d2 string) bool {
-	const layout = time.RFC3339
-
-	t1, err1 := time.Parse(layout, d1)
-	t2, err2 := time.Parse(layout, d2)
-
-	if err1 != nil && err2 != nil {
-		return d1 < d2 // fallback
-	} else if err1 != nil {
-		return false
-	} else if err2 != nil {
-		return true
-	}
-
-	return t1.Before(t2)
-}
-
-// compareSemVer compares two semantic version strings and returns true if v1 should be ordered before v2
-func compareSemVer(v1, v2 string) bool {
-	// Trim "v" prefix
-	v1 = strings.TrimPrefix(v1, "v")
-	v2 = strings.TrimPrefix(v2, "v")
-
-	v1Main, v1Pre := splitVersion(v1)
-	v2Main, v2Pre := splitVersion(v2)
-
-	// Compare the main (major, minor, patch) versions
-	v1MainParts := strings.Split(v1Main, ".")
-	v2MainParts := strings.Split(v2Main, ".")
-	for i := 0; i < 3; i++ {
-		v1Part, _ := strconv.Atoi(v1MainParts[i])
-		v2Part, _ := strconv.Atoi(v2MainParts[i])
-
-		if v1Part != v2Part {
-			return v1Part > v2Part
-		}
-	}
-
-	// Compare pre-release parts if main versions are equal
-	// A pre-release version is always ordered lower than the normal version
-	if v1Pre == "" && v2Pre != "" {
-		return true
-	}
-	if v1Pre != "" && v2Pre == "" {
-		return false
-	}
-	return v1Pre > v2Pre
-}
-
-// splitVersion separates the main version (e.g., "0.4.11") from the pre-release (e.g., "Binarytion.1")
-func splitVersion(version string) (mainVersion, preRelease string) {
-	if strings.Contains(version, "-") {
-		parts := strings.SplitN(version, "-", 2)
-		return parts[0], parts[1]
-	}
-	return version, ""
+	return u.String()
 }
