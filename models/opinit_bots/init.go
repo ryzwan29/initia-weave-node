@@ -321,7 +321,6 @@ func (m *UseCurrentConfigSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.Ctx = utils.CloneStateAndPushPage[OPInitBotsState](m.Ctx, m)
 		state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{m.configPath}, *selected))
-
 		switch *selected {
 		case "use current file":
 			state.ReplaceBotConfig = false

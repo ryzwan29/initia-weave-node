@@ -19,6 +19,17 @@ const (
 	// Add other types as needed
 )
 
+// SubModel is an interface that extends tea.Model with additional methods
+type SubModel interface {
+	Init() tea.Cmd
+
+	Update(tea.Msg) (tea.Model, tea.Cmd)
+
+	UpdateWithContext(context.Context, tea.Model, tea.Msg) (context.Context, tea.Model, tea.Cmd)
+
+	View() string
+}
+
 type Field struct {
 	Name         string
 	Type         FieldType
@@ -31,11 +42,11 @@ type Field struct {
 
 type BaseFieldModel struct {
 	utils.TextInput
-	utils.BaseModel
-	field Field
+	field      Field
+	CannotBack bool
 }
 
-func NewBaseFieldModel(ctx context.Context, field Field) BaseFieldModel {
+func NewBaseFieldModel(field Field) BaseFieldModel {
 	textInput := utils.NewTextInput()
 	textInput.WithPlaceholder(field.Placeholder)
 	textInput.WithDefaultValue(field.DefaultValue)
@@ -52,7 +63,6 @@ func NewBaseFieldModel(ctx context.Context, field Field) BaseFieldModel {
 	}
 	return BaseFieldModel{
 		TextInput: textInput,
-		BaseModel: utils.BaseModel{Ctx: ctx},
 		field:     field,
 	}
 }
@@ -62,61 +72,68 @@ func (m *BaseFieldModel) Init() tea.Cmd {
 	return nil
 }
 
+func (m *BaseFieldModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	return m, nil
+}
+
 // View is a common View method for all field models
 func (m *BaseFieldModel) View() string {
 	s := strings.Split(m.field.Name, ".")
 	return styles.RenderPrompt(m.field.Question, []string{s[len(s)-1], "L1", "L2"}, styles.Question) + m.TextInput.View()
 }
 
+func (m *BaseFieldModel) CanGoPreviousPage() bool {
+	return !m.CannotBack
+}
+
 type StringFieldModel struct {
 	BaseFieldModel
 }
 
-func NewStringFieldModel(ctx context.Context, field Field) *StringFieldModel {
+func NewStringFieldModel(field Field) *StringFieldModel {
 	return &StringFieldModel{
-		BaseFieldModel: NewBaseFieldModel(ctx, field),
+		BaseFieldModel: NewBaseFieldModel(field),
 	}
 }
 
-func (m *StringFieldModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m *StringFieldModel) UpdateWithContext(ctx context.Context, parent tea.Model, msg tea.Msg) (context.Context, tea.Model, tea.Cmd) {
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-		m.Ctx = utils.CloneStateAndPushPage[OPInitBotsState](m.Ctx, m)
-		state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
+		ctx = utils.CloneStateAndPushPage[OPInitBotsState](ctx, parent)
+		state := utils.GetCurrentState[OPInitBotsState](ctx)
 		res := strings.TrimSpace(input.Text)
 		state.botConfig[m.field.Name] = res
 		s := strings.Split(m.field.Name, ".")
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.field.Question, []string{s[len(s)-1], "L1", "L2"}, res))
-		m.Ctx = utils.SetCurrentState(m.Ctx, state)
-		return nil, nil // Done with this field, signal completion
+		ctx = utils.SetCurrentState(ctx, state)
+		return ctx, nil, nil // Done with this field, signal completion
 	}
 	m.TextInput = input
-	return m, cmd
+	return ctx, m, cmd
 }
 
 type NumberFieldModel struct {
 	BaseFieldModel
 }
 
-func NewNumberFieldModel(ctx context.Context, field Field) *NumberFieldModel {
+func NewNumberFieldModel(field Field) *NumberFieldModel {
 	return &NumberFieldModel{
-		BaseFieldModel: NewBaseFieldModel(ctx, field),
+		BaseFieldModel: NewBaseFieldModel(field),
 	}
 }
 
-func (m *NumberFieldModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m *NumberFieldModel) UpdateWithContext(ctx context.Context, parent tea.Model, msg tea.Msg) (context.Context, tea.Model, tea.Cmd) {
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-		m.Ctx = utils.CloneStateAndPushPage[OPInitBotsState](m.Ctx, m)
-		state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
-
+		ctx = utils.CloneStateAndPushPage[OPInitBotsState](ctx, parent)
+		state := utils.GetCurrentState[OPInitBotsState](ctx)
 		res := strings.TrimSpace(input.Text)
 		state.botConfig[m.field.Name] = res
 		s := strings.Split(m.field.Name, ".")
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.field.Question, []string{s[len(s)-1], "L1", "L2"}, res))
-		m.Ctx = utils.SetCurrentState(m.Ctx, state)
-		return nil, nil // Done with this field, signal completion
+		ctx = utils.SetCurrentState(ctx, state)
+		return ctx, nil, nil // Done with this field, signal completion
 	}
 	m.TextInput = input
-	return m, cmd
+	return ctx, m, cmd
 }

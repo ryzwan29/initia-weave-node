@@ -8,38 +8,35 @@ import (
 )
 
 type FieldInputModel struct {
-	fields       []Field
 	currentIndex int // The index of the current active submodel
 	utils.BaseModel
 	newTerminalModel func(context.Context) tea.Model
-	currentModel     tea.Model
+	subModels        []SubModel
 }
 
-func createSubmodule(ctx context.Context, field Field) tea.Model {
+func createSubmodel(field Field) SubModel {
 	switch field.Type {
 	case StringField:
-		return NewStringFieldModel(ctx, field)
+		return NewStringFieldModel(field)
 	case NumberField:
-		return NewNumberFieldModel(ctx, field)
+		return NewNumberFieldModel(field)
 	}
 	return nil
 }
 
-// NewFieldInputModel initializes the parent model with the submodels
+// NewFieldInputModel initializes the parent model with the subModels
 func NewFieldInputModel(ctx context.Context, fields []Field, newTerminalModel func(context.Context) tea.Model) *FieldInputModel {
-	submodels := make([]tea.Model, len(fields))
-
+	subModels := make([]SubModel, len(fields))
 	// Create submodels based on the field types
 	for idx, field := range fields {
-		submodels[idx] = createSubmodule(ctx, field)
+		subModels[idx] = createSubmodel(field)
 	}
 
 	return &FieldInputModel{
 		currentIndex:     0,
 		BaseModel:        utils.BaseModel{Ctx: ctx},
 		newTerminalModel: newTerminalModel,
-		fields:           fields,
-		currentModel:     createSubmodule(ctx, fields[0]),
+		subModels:        subModels,
 	}
 }
 
@@ -49,52 +46,29 @@ func (m *FieldInputModel) Init() tea.Cmd {
 
 // Update delegates the update logic to the current active submodel
 func (m *FieldInputModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	if m.currentIndex >= len(m.fields) {
-		// All submodels are completed, move to the next terminal model
-		model := m.newTerminalModel(m.Ctx)
-		return model, model.Init()
+	if model, cmd, handled := utils.HandleCommonCommands[OPInitBotsState](m, msg); handled {
+		m.currentIndex--
+		return model, cmd
 	}
 
-	var updatedModel tea.Model
-	var cmd tea.Cmd
-
-	if baseModel, ok := m.currentModel.(utils.BaseModelInterface); ok {
-		if keyMsg, ok := msg.(tea.KeyMsg); ok {
-			if keyMsg.String() == "ctrl+z" {
-				if m.currentIndex > 0 {
-					m.currentIndex--
-					state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
-					state.weave.PopPreviousResponse()
-					m.Ctx = utils.SetCurrentState(m.Ctx, state)
-					m.currentModel = createSubmodule(m.Ctx, m.fields[m.currentIndex])
-				}
-				return m, cmd
-			}
-		}
-		updatedModel, cmd = baseModel.Update(msg)
-		m.Ctx = baseModel.GetContext()
-	}
+	currentModel := m.subModels[m.currentIndex]
+	ctx, updatedModel, cmd := currentModel.UpdateWithContext(m.Ctx, m, msg)
+	m.Ctx = ctx
 	if updatedModel == nil {
 		m.currentIndex++
-		m.currentModel = createSubmodule(m.Ctx, m.fields[m.currentIndex])
-		if m.currentIndex < len(m.fields) {
-			return m, m.currentModel.Init()
+		if m.currentIndex < len(m.subModels) {
+			return m, cmd
 		}
 
 		model := m.newTerminalModel(m.Ctx)
 		return model, model.Init()
 	}
 
-	// Update the current submodel
-	m.currentModel = updatedModel
 	return m, cmd
 }
 
 // View delegates the view logic to the current active submodel
 func (m *FieldInputModel) View() string {
 	state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
-	if m.currentIndex >= len(m.fields) {
-		return "All fields are completed."
-	}
-	return state.weave.Render() + m.currentModel.View()
+	return state.weave.Render() + m.subModels[m.currentIndex].View()
 }

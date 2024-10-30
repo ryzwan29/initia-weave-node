@@ -169,8 +169,7 @@ func Undo[S CloneableState[S]](ctx context.Context, msg tea.Msg) (context.Contex
 		if keyMsg.String() == "ctrl+z" {
 			// Attempt to undo: Go back to the previous page and state
 			newCtx, prevPair := PopPageState[S](ctx)
-			if prevPair == nil {
-			} else {
+			if prevPair != nil {
 				newCtx = SetCurrentModel(newCtx, prevPair.Page)
 				newCtx = SetCurrentState(newCtx, prevPair.State)
 				return newCtx, prevPair.Page, nil, true
