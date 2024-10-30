@@ -52,7 +52,7 @@ func OPInitBotsCommand() *cobra.Command {
 	}
 
 	cmd.AddCommand(OPInitBotsKeysSetupCommand())
-	// cmd.AddCommand(OPInitBotsInitCommand())
+	cmd.AddCommand(OPInitBotsInitCommand())
 	cmd.AddCommand(OPInitBotsStartCommand())
 	cmd.AddCommand(OPInitBotsStopCommand())
 	cmd.AddCommand(OPInitBotsRestartCommand())
@@ -96,51 +96,43 @@ func OPInitBotsKeysSetupCommand() *cobra.Command {
 	return cmd
 }
 
-// func OPInitBotsInitCommand() *cobra.Command {
-// 	cmd := &cobra.Command{
-// 		Use:   "init [bot-name]",
-// 		Short: "Init OPinit bots",
-// 		Long: `Initialize the OPinit bot. The argument is optional, as you will be prompted to select a bot if no bot name is provided.
-// Alternatively, you can skip by specifying the bot name as an argument. Valid options are [executor, challenger] eg. weave opinit-bots init executor
-//  `,
-// 		Args: ValidateOPinitOptionalBotNameArgs,
-// 		RunE: func(cmd *cobra.Command, args []string) error {
-// 			userHome, err := os.UserHomeDir()
-// 			if err != nil {
-// 				panic(err)
-// 			}
-// 			binaryPath := filepath.Join(userHome, utils.WeaveDataDirectory, opinit_bots.AppName)
-// 			_, err = utils.GetBinaryVersion(binaryPath)
-// 			if err != nil {
-// 				err = Setup()
-// 				if err != nil {
-// 					return err
-// 				}
-// 			}
+func OPInitBotsInitCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "init [bot-name]",
+		Short: "Initialize OPinit bots",
+		Long: `Initialize the OPinit bot. The argument is optional, as you will be prompted to select a bot if no bot name is provided.
+Alternatively, you can specify a bot name as an argument to skip the selection. Valid options are [executor, challenger].
+Example: weave opinit-bots init executor`,
+		Args: ValidateOPinitOptionalBotNameArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			// Initialize the context with OPInitBotsState
+			ctx := utils.NewAppContext(opinit_bots.NewOPInitBotsState())
 
-// 			// Initialize the context with OPInitBotsState
-// 			ctx := utils.NewAppContext(opinit_bots.NewOPInitBotsState())
-
-// 			if len(args) == 1 {
-// 				botName := args[0]
-// 				switch botName {
-// 				case "executor":
-// 					_, err = tea.NewProgram(opinit_bots.OPInitBotInitSelectExecutor(ctx)).Run()
-// 					return err
-// 				case "challenger":
-// 					_, err = tea.NewProgram(opinit_bots.OPInitBotInitSelectChallenger(ctx)).Run()
-// 					return err
-// 				default:
-// 					return fmt.Errorf("invalid bot name")
-// 				}
-// 			} else {
-// 				_, err = tea.NewProgram(opinit_bots.NewOPInitBotInitSelector(ctx)).Run()
-// 				return err
-// 			}
-// 		},
-// 	}
-// 	return cmd
-// }
+			// Check if a bot name was provided as an argument
+			if len(args) == 1 {
+				botName := args[0]
+				switch botName {
+				case "executor":
+					_, err := tea.NewProgram(opinit_bots.OPInitBotInitSelectExecutor(ctx)).Run()
+					return err
+				case "challenger":
+					_, err := tea.NewProgram(opinit_bots.OPInitBotInitSelectChallenger(ctx)).Run()
+					return err
+				default:
+					return fmt.Errorf("invalid bot name provided: %s", botName)
+				}
+			} else {
+				// Start the version selector program if no bot name is provided
+				_, err := tea.NewProgram(opinit_bots.NewOPInitBotInitSelector(ctx)).Run()
+				if err != nil {
+					fmt.Println("Error running program:", err)
+				}
+				return err
+			}
+		},
+	}
+	return cmd
+}
 
 func OPInitBotsStartCommand() *cobra.Command {
 	startCmd := &cobra.Command{

@@ -27,7 +27,7 @@ type OPInitBotVersionSelector struct {
 func NewOPInitBotVersionSelector(ctx context.Context, versions utils.BinaryVersionWithDownloadURL, currentVersion string) *OPInitBotVersionSelector {
 	return &OPInitBotVersionSelector{
 		VersionSelector: utils.NewVersionSelector(versions, currentVersion, true),
-		BaseModel:       utils.BaseModel{Ctx: ctx},
+		BaseModel:       utils.BaseModel{Ctx: ctx, CannotBack: true},
 		versions:        versions,
 		question:        "Which OPinit bots version would you like to use?",
 	}
@@ -42,8 +42,7 @@ func (m *OPInitBotVersionSelector) Init() tea.Cmd {
 }
 
 func (m *OPInitBotVersionSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	// Check for Cmd+Z (undo) and go back to the previous page if triggered
-	if model, cmd, handled := utils.HandleUndo[OPInitBotsState](m, msg); handled {
+	if model, cmd, handled := utils.HandleCommonCommands[OPInitBotsState](m, msg); handled {
 		return model, cmd
 	}
 
@@ -81,9 +80,6 @@ type SetupOPInitBotKeySelector struct {
 }
 
 func NewSetupOPInitBotKeySelector(ctx context.Context) *SetupOPInitBotKeySelector {
-	// Debug to see if the context received is correct
-	// fmt.Printf("Context in NewSetupOPInitBotKeySelector: %v\n", ctx)
-	// PrintContextValues(ctx)
 	return &SetupOPInitBotKeySelector{
 		Selector: utils.Selector[string]{
 			Options: []string{"Yes", "No"},
@@ -103,8 +99,7 @@ func (m *SetupOPInitBotKeySelector) Init() tea.Cmd {
 }
 
 func (m *SetupOPInitBotKeySelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	// Check for Cmd+Z (undo) and go back to the previous page if triggered
-	if model, cmd, handled := utils.HandleUndo[OPInitBotsState](m, msg); handled {
+	if model, cmd, handled := utils.HandleCommonCommands[OPInitBotsState](m, msg); handled {
 		return model, cmd
 	}
 
@@ -202,8 +197,7 @@ func (m *ProcessingMinitiaConfig) Init() tea.Cmd {
 }
 
 func (m *ProcessingMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	// Check for Cmd+Z (undo) and go back to the previous page if triggered
-	if model, cmd, handled := utils.HandleUndo[OPInitBotsState](m, msg); handled {
+	if model, cmd, handled := utils.HandleCommonCommands[OPInitBotsState](m, msg); handled {
 		return model, cmd
 	}
 
@@ -314,7 +308,7 @@ func (m *SetupBotCheckbox) Init() tea.Cmd {
 }
 
 func (m *SetupBotCheckbox) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	if model, cmd, handled := utils.HandleUndo[OPInitBotsState](m, msg); handled {
+	if model, cmd, handled := utils.HandleCommonCommands[OPInitBotsState](m, msg); handled {
 		return model, cmd
 	}
 
@@ -389,7 +383,7 @@ func (m *RecoverKeySelector) Init() tea.Cmd {
 }
 
 func (m *RecoverKeySelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	if model, cmd, handled := utils.HandleUndo[OPInitBotsState](m, msg); handled {
+	if model, cmd, handled := utils.HandleCommonCommands[OPInitBotsState](m, msg); handled {
 		return model, cmd
 	}
 
@@ -458,8 +452,7 @@ func (m *RecoverFromMnemonic) Init() tea.Cmd {
 }
 
 func (m *RecoverFromMnemonic) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	// Check for Cmd+Z (undo) and go back to the previous page if triggered
-	if model, cmd, handled := utils.HandleUndo[OPInitBotsState](m, msg); handled {
+	if model, cmd, handled := utils.HandleCommonCommands[OPInitBotsState](m, msg); handled {
 		return model, cmd
 	}
 
@@ -593,8 +586,7 @@ func (m *DALayerSelector) Init() tea.Cmd {
 }
 
 func (m *DALayerSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	// Check for Cmd+Z (undo) and go back to the previous page if triggered
-	if model, cmd, handled := utils.HandleUndo[OPInitBotsState](m, msg); handled {
+	if model, cmd, handled := utils.HandleCommonCommands[OPInitBotsState](m, msg); handled {
 		return model, cmd
 	}
 

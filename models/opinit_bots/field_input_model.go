@@ -1,78 +1,100 @@
 package opinit_bots
 
 import (
+	"context"
+
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/initia-labs/weave/utils"
 )
 
 type FieldInputModel struct {
-	submodels        []tea.Model // The list of submodels
-	currentIndex     int         // The index of the current active submodel
-	state            *OPInitBotsState
-	newTerminalModel func(*OPInitBotsState) tea.Model
+	fields       []Field
+	currentIndex int // The index of the current active submodel
+	utils.BaseModel
+	newTerminalModel func(context.Context) tea.Model
+	currentModel     tea.Model
+}
+
+func createSubmodule(ctx context.Context, field Field) tea.Model {
+	switch field.Type {
+	case StringField:
+		return NewStringFieldModel(ctx, field)
+	case NumberField:
+		return NewNumberFieldModel(ctx, field)
+	}
+	return nil
 }
 
 // NewFieldInputModel initializes the parent model with the submodels
-func NewFieldInputModel(state *OPInitBotsState, fields []Field, newTerminalModel func(*OPInitBotsState) tea.Model) *FieldInputModel {
+func NewFieldInputModel(ctx context.Context, fields []Field, newTerminalModel func(context.Context) tea.Model) *FieldInputModel {
 	submodels := make([]tea.Model, len(fields))
 
 	// Create submodels based on the field types
-	for i, field := range fields {
-		switch field.Type {
-		case StringField:
-			submodels[i] = NewStringFieldModel(state, field)
-		case NumberField:
-			submodels[i] = NewNumberFieldModel(state, field)
-		}
+	for idx, field := range fields {
+		submodels[idx] = createSubmodule(ctx, field)
 	}
 
 	return &FieldInputModel{
-		submodels:        submodels,
 		currentIndex:     0,
-		state:            state,
+		BaseModel:        utils.BaseModel{Ctx: ctx},
 		newTerminalModel: newTerminalModel,
+		fields:           fields,
+		currentModel:     createSubmodule(ctx, fields[0]),
 	}
 }
 
-// Init initializes the current submodel
 func (m *FieldInputModel) Init() tea.Cmd {
-	if len(m.submodels) > 0 {
-		return m.submodels[m.currentIndex].Init()
-	}
 	return nil
 }
 
 // Update delegates the update logic to the current active submodel
 func (m *FieldInputModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	if m.currentIndex >= len(m.submodels) {
+	if m.currentIndex >= len(m.fields) {
 		// All submodels are completed, move to the next terminal model
-		model := m.newTerminalModel(m.state)
+		model := m.newTerminalModel(m.Ctx)
 		return model, model.Init()
 	}
 
-	currentModel := m.submodels[m.currentIndex]
-	updatedModel, cmd := currentModel.Update(msg)
+	var updatedModel tea.Model
+	var cmd tea.Cmd
 
-	// If the current submodel has completed, move to the next one
+	if baseModel, ok := m.currentModel.(utils.BaseModelInterface); ok {
+		if keyMsg, ok := msg.(tea.KeyMsg); ok {
+			if keyMsg.String() == "ctrl+z" {
+				if m.currentIndex > 0 {
+					m.currentIndex--
+					state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
+					state.weave.PopPreviousResponse()
+					m.Ctx = utils.SetCurrentState(m.Ctx, state)
+					m.currentModel = createSubmodule(m.Ctx, m.fields[m.currentIndex])
+				}
+				return m, cmd
+			}
+		}
+		updatedModel, cmd = baseModel.Update(msg)
+		m.Ctx = baseModel.GetContext()
+	}
 	if updatedModel == nil {
 		m.currentIndex++
-		if m.currentIndex < len(m.submodels) {
-			return m, m.submodels[m.currentIndex].Init()
+		m.currentModel = createSubmodule(m.Ctx, m.fields[m.currentIndex])
+		if m.currentIndex < len(m.fields) {
+			return m, m.currentModel.Init()
 		}
 
-		// If all submodels are done, move to the next terminal model
-		model := m.newTerminalModel(m.state)
+		model := m.newTerminalModel(m.Ctx)
 		return model, model.Init()
 	}
 
 	// Update the current submodel
-	m.submodels[m.currentIndex] = updatedModel
+	m.currentModel = updatedModel
 	return m, cmd
 }
 
 // View delegates the view logic to the current active submodel
 func (m *FieldInputModel) View() string {
-	if m.currentIndex >= len(m.submodels) {
+	state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
+	if m.currentIndex >= len(m.fields) {
 		return "All fields are completed."
 	}
-	return m.state.weave.Render() + m.submodels[m.currentIndex].View()
+	return state.weave.Render() + m.currentModel.View()
 }

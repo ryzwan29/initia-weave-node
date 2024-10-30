@@ -10,9 +10,10 @@ import (
 type ContextKey string
 
 const (
-	PageKey      ContextKey = "currentPage"
-	StateKey     ContextKey = "currentState"
-	PageStackKey ContextKey = "pageStack"
+	PageKey          ContextKey = "currentPage"
+	StateKey         ContextKey = "currentState"
+	PageStackKey     ContextKey = "pageStack"
+	TooltipToggleKey ContextKey = "tooltipToggle"
 )
 
 // CloneableState is an interface that requires the Clone method
@@ -33,8 +34,36 @@ func NewAppContext[S CloneableState[S]](initialState S) context.Context {
 	// Set initial context values
 	ctx = context.WithValue(ctx, StateKey, initialState)
 	ctx = context.WithValue(ctx, PageStackKey, []PageStatePair[S]{}) // Initialize with an empty slice
+	ctx = context.WithValue(ctx, TooltipToggleKey, false)            // Default to hiding more information
 
 	return ctx
+}
+
+// ToggleTooltip toggles the "tooltip" flag in the context for showing tooltips.
+func ToggleTooltip(ctx context.Context, msg tea.Msg) (context.Context, bool) {
+	if keyMsg, ok := msg.(tea.KeyMsg); ok && keyMsg.String() == "ctrl+i" {
+		ctx = ToggleTooltipInContext(ctx)
+		return ctx, true
+	}
+	return ctx, false
+}
+
+func ToggleTooltipInContext(ctx context.Context) context.Context {
+	currentValue := GetTooltip(ctx)
+	return SetTooltip(ctx, !currentValue)
+}
+
+// SetTooltip sets the boolean value for showing or hiding tooltip information in the context
+func SetTooltip(ctx context.Context, showTooltip bool) context.Context {
+	return context.WithValue(ctx, TooltipToggleKey, showTooltip)
+}
+
+// GetTooltip retrieves the boolean value for showing or hiding tooltip information from the context
+func GetTooltip(ctx context.Context) bool {
+	if value, ok := ctx.Value(TooltipToggleKey).(bool); ok {
+		return value
+	}
+	return false // Default to hidden if not set
 }
 
 // CloneContext creates a shallow copy of the existing context while preserving all keys and values
@@ -133,7 +162,7 @@ func GetPageStack[S CloneableState[S]](ctx context.Context) []PageStatePair[S] {
 }
 
 // HandleCmdZ handles the undo functionality
-func HandleCmdZ[S CloneableState[S]](ctx context.Context, msg tea.Msg) (context.Context, tea.Model, tea.Cmd, bool) {
+func Undo[S CloneableState[S]](ctx context.Context, msg tea.Msg) (context.Context, tea.Model, tea.Cmd, bool) {
 	if keyMsg, ok := msg.(tea.KeyMsg); ok {
 
 		// Detect Cmd+Z as Alt+Z
@@ -152,15 +181,17 @@ func HandleCmdZ[S CloneableState[S]](ctx context.Context, msg tea.Msg) (context.
 }
 
 // ContextAwareModel is an interface for models that use context and support context updates
-type ContextAwareModel interface {
+type BaseModelInterface interface {
 	tea.Model
 	SetContext(ctx context.Context)
 	GetContext() context.Context
+	CanGoPreviousPage() bool
 }
 
 // BaseModel provides common functionality for all context-aware models
 type BaseModel struct {
-	Ctx context.Context
+	Ctx        context.Context
+	CannotBack bool
 }
 
 // GetContext retrieves the context from BaseModel
@@ -173,16 +204,26 @@ func (b *BaseModel) GetContext() context.Context {
 	return b.Ctx
 }
 
-// HandleUndo handles Cmd+Z for undo functionality using context
-func HandleUndo[S CloneableState[S]](model ContextAwareModel, msg tea.Msg) (tea.Model, tea.Cmd, bool) {
-	// Utilize the centralized HandleCmdZ function
-	if newCtx, returnedModel, cmd, handled := HandleCmdZ[S](model.GetContext(), msg); handled {
-		if contextAwareModel, ok := returnedModel.(ContextAwareModel); ok {
-			// Update the context in the model
-			contextAwareModel.SetContext(newCtx)
-			return contextAwareModel, cmd, true
+func (b *BaseModel) CanGoPreviousPage() bool {
+	return !b.CannotBack
+}
+
+func HandleCommonCommands[S CloneableState[S]](model BaseModelInterface, msg tea.Msg) (tea.Model, tea.Cmd, bool) {
+	ctx := model.GetContext()
+	if model.CanGoPreviousPage() {
+		if newCtx, returnedModel, cmd, handled := Undo[S](ctx, msg); handled {
+			if baseModel, ok := returnedModel.(BaseModelInterface); ok {
+				SetTooltip(newCtx, GetTooltip(ctx)) // Preserve tooltip state
+				baseModel.SetContext(newCtx)
+				return baseModel, cmd, true
+			}
 		}
-		return returnedModel, cmd, true
 	}
+
+	if newCtx, handled := ToggleTooltip(ctx, msg); handled {
+		model.SetContext(newCtx)
+		return model, nil, true
+	}
+
 	return nil, nil, false
 }
