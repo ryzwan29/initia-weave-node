@@ -163,7 +163,7 @@ func TestGetActiveRpc(t *testing.T) {
 func TestGetActiveLcd(t *testing.T) {
 	// Start a test server to simulate the /health endpoint.
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/health" {
+		if r.URL.Path == "/cosmos/base/tendermint/v1beta1/syncing" {
 			w.WriteHeader(http.StatusOK) // Simulate a healthy LCD.
 			return
 		}

@@ -113,7 +113,7 @@ func (cr *ChainRegistry) GetPersistentPeers() string {
 
 func loadChainRegistry(chainType ChainType) error {
 	client := utils.NewHTTPClient()
-	endpoint := fmt.Sprintf(ChainTypeToEndpoint[chainType], ChainTypeToEndpointSlug[chainType])
+	endpoint := GetRegistryEndpoint(chainType)
 	LoadedChainRegistry[chainType] = &ChainRegistry{}
 	if _, err := client.Get(endpoint, "", nil, LoadedChainRegistry[chainType]); err != nil {
 		return err

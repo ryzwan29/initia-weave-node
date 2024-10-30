@@ -1,5 +1,7 @@
 package registry
 
+import "fmt"
+
 const (
 	CelestiaTestnet ChainType = iota
 	CelestiaMainnet
@@ -24,3 +26,7 @@ var (
 		InitiaL1Testnet: "testnets/initia",
 	}
 )
+
+func GetRegistryEndpoint(chainType ChainType) string {
+	return fmt.Sprintf(ChainTypeToEndpoint[chainType], ChainTypeToEndpointSlug[chainType])
+}
