@@ -261,6 +261,9 @@ func (m *DeleteDBSelector) Init() tea.Cmd {
 }
 
 func (m *DeleteDBSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := utils.HandleCommonCommands[OPInitBotsState](m, msg); handled {
+		return model, cmd
+	}
 	selected, cmd := m.Select(msg)
 	if selected != nil {
 		m.Ctx = utils.CloneStateAndPushPage[OPInitBotsState](m.Ctx, m)
@@ -316,6 +319,9 @@ func (m *UseCurrentConfigSelector) Init() tea.Cmd {
 }
 
 func (m *UseCurrentConfigSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := utils.HandleCommonCommands[OPInitBotsState](m, msg); handled {
+		return model, cmd
+	}
 	selected, cmd := m.Select(msg)
 	if selected != nil {
 		m.Ctx = utils.CloneStateAndPushPage[OPInitBotsState](m.Ctx, m)
@@ -342,7 +348,6 @@ func (m *UseCurrentConfigSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.Ctx = utils.SetCurrentState(m.Ctx, state)
 			return m, cmd
-
 		}
 	}
 
@@ -389,6 +394,9 @@ func (m *PrefillMinitiaConfig) Init() tea.Cmd {
 }
 
 func (m *PrefillMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := utils.HandleCommonCommands[OPInitBotsState](m, msg); handled {
+		return model, cmd
+	}
 	selected, cmd := m.Select(msg)
 	if selected != nil {
 		m.Ctx = utils.CloneStateAndPushPage[OPInitBotsState](m.Ctx, m)
@@ -468,6 +476,9 @@ func (m *L1PrefillSelector) Init() tea.Cmd {
 }
 
 func (m *L1PrefillSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := utils.HandleCommonCommands[OPInitBotsState](m, msg); handled {
+		return model, cmd
+	}
 	selected, cmd := m.Select(msg)
 	if selected != nil {
 		m.Ctx = utils.CloneStateAndPushPage[OPInitBotsState](m.Ctx, m)
@@ -547,6 +558,9 @@ func (m *SetDALayer) Init() tea.Cmd {
 }
 
 func (m *SetDALayer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := utils.HandleCommonCommands[OPInitBotsState](m, msg); handled {
+		return model, cmd
+	}
 	selected, cmd := m.Select(msg)
 	if selected != nil {
 		m.Ctx = utils.CloneStateAndPushPage[OPInitBotsState](m.Ctx, m)
@@ -595,7 +609,7 @@ func NewStartingInitBot(ctx context.Context) tea.Model {
 		bot = "challenger"
 	}
 	return &StartingInitBot{
-		BaseModel: utils.BaseModel{Ctx: ctx},
+		BaseModel: utils.BaseModel{Ctx: ctx, CannotBack: true},
 		loading:   utils.NewLoading(fmt.Sprintf("Setting up OPinit bot %s...", bot), WaitStartingInitBot(&state)),
 	}
 }
@@ -761,7 +775,7 @@ type OPinitBotSuccessful struct {
 
 func NewOPinitBotSuccessful(ctx context.Context) *OPinitBotSuccessful {
 	return &OPinitBotSuccessful{
-		BaseModel: utils.BaseModel{Ctx: ctx},
+		BaseModel: utils.BaseModel{Ctx: ctx, CannotBack: true},
 	}
 }
 

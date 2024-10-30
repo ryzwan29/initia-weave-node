@@ -41,7 +41,7 @@ func NewAppContext[S CloneableState[S]](initialState S) context.Context {
 
 // ToggleTooltip toggles the "tooltip" flag in the context for showing tooltips.
 func ToggleTooltip(ctx context.Context, msg tea.Msg) (context.Context, bool) {
-	if keyMsg, ok := msg.(tea.KeyMsg); ok && keyMsg.String() == "ctrl+i" {
+	if keyMsg, ok := msg.(tea.KeyMsg); ok && keyMsg.String() == "ctrl+t" {
 		ctx = ToggleTooltipInContext(ctx)
 		return ctx, true
 	}
