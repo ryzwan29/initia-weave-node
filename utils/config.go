@@ -83,16 +83,6 @@ func IsFirstTimeSetup() bool {
 	return viper.Get("common.gas_station_mnemonic") == nil
 }
 
-func GetEndpointURL(network, endpoint string) (string, error) {
-	endpoints := GetConfig(fmt.Sprintf("constants.endpoints.%s", network))
-	netEndpoints := endpoints.(map[string]interface{})
-	url, ok := netEndpoints[endpoint].(string)
-	if !ok {
-		return "", fmt.Errorf("endpoint %s not found for network %s", endpoint, network)
-	}
-	return url, nil
-}
-
 func getEndpointByNetwork(network, endpoint string) (string, error) {
 	endpoints := GetConfig(fmt.Sprintf("constants.endpoints.%s.%s", network, endpoint))
 	url, ok := endpoints.(string)
