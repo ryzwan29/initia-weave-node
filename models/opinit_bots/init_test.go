@@ -31,7 +31,9 @@ func TestDeleteDBSelector_Update_WithNavigation(t *testing.T) {
 
 func TestUseCurrentConfigSelector_Update_WithNavigation(t *testing.T) {
 	// Set up state for the test
-	state := &OPInitBotsState{}
+	state := &OPInitBotsState{
+		botConfig: map[string]string{},
+	}
 	bot := "test-bot"
 	selector := NewUseCurrentConfigSelector(state, bot)
 
@@ -88,10 +90,12 @@ func TestPrefillMinitiaConfig_Update_WithNavigation(t *testing.T) {
 			},
 			L2Config: &types.L2Config{
 				ChainID: "l2-chain-1",
+				Denom:   "ubeeb",
 			},
 		},
 		InitExecutorBot:   true,
 		InitChallengerBot: false,
+		botConfig:         map[string]string{},
 	}
 	selector := NewPrefillMinitiaConfig(state)
 
@@ -99,10 +103,10 @@ func TestPrefillMinitiaConfig_Update_WithNavigation(t *testing.T) {
 	selector.Update(tea.KeyMsg{Type: tea.KeyEnter}) // Confirm "Yes" selection
 
 	// Assert that the pre-fill values are set correctly for executor fields
-	assert.Equal(t, "chain-1", defaultExecutorFields[2].PrefillValue)
-	assert.Equal(t, "http://rpc-url", defaultExecutorFields[3].PrefillValue)
-	assert.Equal(t, "0.1token", defaultExecutorFields[4].PrefillValue)
-	assert.Equal(t, "l2-chain-1", defaultExecutorFields[5].PrefillValue)
+	assert.Equal(t, "http://rpc-url", GetField(defaultExecutorFields, "l1_node.rpc_address").PrefillValue)
+	assert.Equal(t, "l2-chain-1", GetField(defaultExecutorFields, "l2_node.chain_id").PrefillValue)
+	assert.Equal(t, "0.015ubeeb", GetField(defaultExecutorFields, "l2_node.gas_price").PrefillValue)
+	assert.Equal(t, "Press tab to use \"0.015ubeeb\"", GetField(defaultExecutorFields, "l2_node.gas_price").Placeholder)
 
 	// Simulate state where InitChallengerBot is true and test pre-fill for challenger fields
 	state.InitExecutorBot = false
@@ -111,9 +115,8 @@ func TestPrefillMinitiaConfig_Update_WithNavigation(t *testing.T) {
 	selector.Update(tea.KeyMsg{Type: tea.KeyEnter}) // Confirm "Yes" selection again
 
 	// Assert that the pre-fill values are set correctly for challenger fields
-	assert.Equal(t, "chain-1", defaultChallengerFields[2].PrefillValue)
-	assert.Equal(t, "http://rpc-url", defaultChallengerFields[3].PrefillValue)
-	assert.Equal(t, "l2-chain-1", defaultChallengerFields[4].PrefillValue)
+	assert.Equal(t, "http://rpc-url", GetField(defaultChallengerFields, "l1_node.rpc_address").PrefillValue)
+	assert.Equal(t, "l2-chain-1", GetField(defaultChallengerFields, "l2_node.chain_id").PrefillValue)
 }
 
 func TestPrefillMinitiaConfig_Update_SelectNo(t *testing.T) {

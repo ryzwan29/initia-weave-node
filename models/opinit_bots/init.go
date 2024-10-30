@@ -729,5 +729,10 @@ func (m *OPinitBotSuccessful) Update(_ tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *OPinitBotSuccessful) View() string {
-	return m.state.weave.Render() + styles.RenderPrompt("OPInit bot setup successful.", []string{}, styles.Completed) + "\n"
+	botConfigFileName := "executor"
+	if m.state.InitChallengerBot {
+		botConfigFileName = "challenger"
+	}
+
+	return m.state.weave.Render() + styles.RenderPrompt("OPInit bot setup successfully. Config file is saved at ~/.opinit/"+botConfigFileName+".json", []string{}, styles.Completed) + styles.RenderPrompt("You can start the bot by running `weave opinit-bots start "+botConfigFileName+"`", []string{}, styles.Completed) + "\n"
 }
