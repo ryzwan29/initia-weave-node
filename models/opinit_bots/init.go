@@ -44,14 +44,14 @@ var defaultExecutorFields = []*Field{
 
 var defaultChallengerFields = []*Field{
 	// Listen Address
-	{Name: "listen_address", Type: StringField, Question: "Please specify the listen_address", Placeholder: `Add listen address ex. localhost:3000`, ValidateFn: utils.ValidateEmptyString},
+	{Name: "listen_address", Type: StringField, Question: "Please specify the listen_address", Placeholder: `Press tab to use "localhost:3000"`, DefaultValue: "localhost:3000", ValidateFn: utils.ValidateEmptyString},
 
 	// L1 Node Configuration
 	{Name: "l1_node.rpc_address", Type: StringField, Question: "Please specify the L1 rpc_address", Placeholder: "Add RPC address ex. http://localhost:26657", ValidateFn: utils.ValidateURL},
 
 	// L2 Node Configuration
 	{Name: "l2_node.chain_id", Type: StringField, Question: "Please specify the L2 chain_id", Placeholder: "Add alphanumeric", ValidateFn: utils.ValidateEmptyString},
-	{Name: "l2_node.rpc_address", Type: StringField, Question: "Please specify the L2 rpc_address", Placeholder: "Add RPC address ex. http://localhost:26657", ValidateFn: utils.ValidateURL},
+	{Name: "l2_node.rpc_address", Type: StringField, Question: "Please specify the L2 rpc_address", Placeholder: `Press tab to use "http://localhost:26657"`, DefaultValue: "http://localhost:26657", ValidateFn: utils.ValidateURL},
 }
 
 func GetField(fields []*Field, name string) *Field {
@@ -166,7 +166,7 @@ func OPInitBotInitSelectChallenger(state *OPInitBotsState) tea.Model {
 		}
 		state.botConfig["l1_node.chain_id"] = botConfigChainId.L1Node.ChainID
 		state.botConfig["l2_node.chain_id"] = botConfigChainId.L2Node.ChainID
-		return NewUseCurrentConfigSelector(state, "executor")
+		return NewUseCurrentConfigSelector(state, "challenger")
 	}
 
 	state.ReplaceBotConfig = true
@@ -734,5 +734,5 @@ func (m *OPinitBotSuccessful) View() string {
 		botConfigFileName = "challenger"
 	}
 
-	return m.state.weave.Render() + styles.RenderPrompt("OPInit bot setup successfully. Config file is saved at ~/.opinit/"+botConfigFileName+".json", []string{}, styles.Completed) + styles.RenderPrompt("You can start the bot by running `weave opinit-bots start "+botConfigFileName+"`", []string{}, styles.Completed) + "\n"
+	return m.state.weave.Render() + styles.RenderPrompt("OPInit bot setup successfully. Config file is saved at ~/.opinit/"+botConfigFileName+".json", []string{}, styles.Completed) + "\n" + styles.RenderPrompt("You can start the bot by running `weave opinit-bots start "+botConfigFileName+"`", []string{}, styles.Completed) + "\n"
 }
