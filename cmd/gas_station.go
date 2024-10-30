@@ -36,7 +36,11 @@ func gasStationSetupCommand() *cobra.Command {
 		Short: "Setup Gas Station account on Initia and Celestia for funding the OPinit-bots or relayer to send transactions.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			_, err := tea.NewProgram(models.NewGasStationMnemonicInput("")).Run()
-			return err
+			if err != nil {
+				return err
+			}
+
+			return showGasStationBalances()
 		},
 	}
 
@@ -179,6 +183,51 @@ func getMaxWidth(coinGroups ...*Coins) int {
 	return maxAmountWidth + maxDenomWidth + 1
 }
 
+func showGasStationBalances() error {
+	gasStationMnemonic := utils.GetConfig("common.gas_station_mnemonic").(string)
+	initiaGasStationAddress, err := utils.MnemonicToBech32Address("init", gasStationMnemonic)
+	if err != nil {
+		return err
+	}
+	celestiaGasStationAddress, err := utils.MnemonicToBech32Address("celestia", gasStationMnemonic)
+	if err != nil {
+		return err
+	}
+
+	// TODO: Dont forget mainnet here when we have one
+	initiaL1TestnetBalances, err := getInitiaBalanceFromConfig("testnet", initiaGasStationAddress)
+	if err != nil {
+		return err
+	}
+
+	celestiaTestnetBalance, err := getBalanceFromLcd(
+		utils.GetConfig("constants.da_layer.celestia_testnet.lcd").(string),
+		celestiaGasStationAddress,
+	)
+	if err != nil {
+		return err
+	}
+
+	celestiaMainnetBalance, err := getBalanceFromLcd(
+		utils.GetConfig("constants.da_layer.celestia_mainnet.lcd").(string),
+		celestiaGasStationAddress,
+	)
+	if err != nil {
+		return err
+	}
+
+	maxWidth := getMaxWidth(initiaL1TestnetBalances, celestiaTestnetBalance, celestiaMainnetBalance)
+	if maxWidth < len(NoBalancesText) {
+		maxWidth = len(NoBalancesText)
+	}
+
+	fmt.Println(fmt.Sprintf("\n⛽️ Initia Testnet Address: %s\n%s\n", initiaGasStationAddress, initiaL1TestnetBalances.Render(maxWidth)))
+	fmt.Println(fmt.Sprintf("⛽️ Celestia Testnet Address: %s\n%s\n", celestiaGasStationAddress, celestiaTestnetBalance.Render(maxWidth)))
+	fmt.Println(fmt.Sprintf("⛽️ Celestia Mainnet Address: %s\n%s\n", celestiaGasStationAddress, celestiaMainnetBalance.Render(maxWidth)))
+
+	return nil
+}
+
 func gasStationShowCommand() *cobra.Command {
 	showCmd := &cobra.Command{
 		Use:   "show",
@@ -189,48 +238,7 @@ func gasStationShowCommand() *cobra.Command {
 				return nil
 			}
 
-			gasStationMnemonic := utils.GetConfig("common.gas_station_mnemonic").(string)
-			initiaGasStationAddress, err := utils.MnemonicToBech32Address("init", gasStationMnemonic)
-			if err != nil {
-				return err
-			}
-			celestiaGasStationAddress, err := utils.MnemonicToBech32Address("celestia", gasStationMnemonic)
-			if err != nil {
-				return err
-			}
-
-			// TODO: Dont forget mainnet here when we have one
-			initiaL1TestnetBalances, err := getInitiaBalanceFromConfig("testnet", initiaGasStationAddress)
-			if err != nil {
-				return err
-			}
-
-			celestiaTestnetBalance, err := getBalanceFromLcd(
-				utils.GetConfig(fmt.Sprintf("constants.da_layer.celestia_testnet.lcd")).(string),
-				celestiaGasStationAddress,
-			)
-			if err != nil {
-				return err
-			}
-
-			celestiaMainnetBalance, err := getBalanceFromLcd(
-				utils.GetConfig(fmt.Sprintf("constants.da_layer.celestia_mainnet.lcd")).(string),
-				celestiaGasStationAddress,
-			)
-			if err != nil {
-				return err
-			}
-
-			maxWidth := getMaxWidth(initiaL1TestnetBalances, celestiaTestnetBalance, celestiaMainnetBalance)
-			if maxWidth < len(NoBalancesText) {
-				maxWidth = len(NoBalancesText)
-			}
-
-			fmt.Println(fmt.Sprintf("\n⛽️ Initia Testnet Address: %s\n%s\n", initiaGasStationAddress, initiaL1TestnetBalances.Render(maxWidth)))
-			fmt.Println(fmt.Sprintf("⛽️ Celestia Testnet Address: %s\n%s\n", celestiaGasStationAddress, celestiaTestnetBalance.Render(maxWidth)))
-			fmt.Println(fmt.Sprintf("⛽️ Celestia Mainnet Address: %s\n%s\n", celestiaGasStationAddress, celestiaMainnetBalance.Render(maxWidth)))
-
-			return nil
+			return showGasStationBalances()
 		},
 	}
 
