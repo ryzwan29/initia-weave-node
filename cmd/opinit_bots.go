@@ -105,6 +105,15 @@ Alternatively, you can specify a bot name as an argument to skip the selection. 
 Example: weave opinit-bots init executor`,
 		Args: ValidateOPinitOptionalBotNameArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			userHome, err := os.UserHomeDir()
+			if err != nil {
+				panic(err)
+			}
+			binaryPath := filepath.Join(userHome, utils.WeaveDataDirectory, opinit_bots.AppName)
+			_, err = utils.GetBinaryVersion(binaryPath)
+			if err != nil {
+				Setup()
+			}
 			// Initialize the context with OPInitBotsState
 			ctx := utils.NewAppContext(opinit_bots.NewOPInitBotsState())
 
