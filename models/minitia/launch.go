@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/initia-labs/weave/registry"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -13,6 +12,8 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/initia-labs/weave/registry"
 
 	tea "github.com/charmbracelet/bubbletea"
 
@@ -457,7 +458,8 @@ func NewMonikerInput(state *LaunchState) *MonikerInput {
 		state:     state,
 		question:  "Please specify the moniker",
 	}
-	model.WithPlaceholder("Enter the moniker")
+	model.WithPlaceholder(`Press tab to use "operator"`)
+	model.WithDefaultValue("operator")
 	model.WithValidatorFn(utils.ValidateNonEmptyAndLengthString("Moniker", MaxMonikerLength))
 	return model
 }
@@ -2209,6 +2211,11 @@ func launchingMinitia(state *LaunchState) tea.Cmd {
 			userHome, err := os.UserHomeDir()
 			if err != nil {
 				panic(fmt.Sprintf("failed to get user home directory: %v", err))
+			}
+
+			// TODO: Remove this once new metric enables archival query for minitia launch
+			if state.l1ChainId == "initiation-2" {
+				state.l1RPC = "http://34.143.179.242:26657"
 			}
 
 			config := &types.MinitiaConfig{
