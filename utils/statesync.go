@@ -29,8 +29,9 @@ type StateSyncInfo struct {
 }
 
 func GetStateSyncInfo(url string) (*StateSyncInfo, error) {
+	client := NewHTTPClient()
 	var latestBlock BlockResponse
-	err := MakeGetRequestUsingURL(url, "/block", nil, &latestBlock)
+	_, err := client.Get(url, "/block", nil, &latestBlock)
 	if err != nil {
 		return nil, fmt.Errorf("Error fetching latest block height: %v\n", err)
 	}
@@ -42,7 +43,7 @@ func GetStateSyncInfo(url string) (*StateSyncInfo, error) {
 	blockHeight := latestHeight - 2000
 
 	var trustHashResp HashResponse
-	err = MakeGetRequestUsingURL(url, fmt.Sprintf("/block?height=%d", blockHeight), nil, &trustHashResp)
+	_, err = client.Get(url, "/block", map[string]string{"height": strconv.Itoa(blockHeight)}, &trustHashResp)
 	if err != nil {
 		return nil, fmt.Errorf("Error fetching trust hash: %v\n", err)
 	}

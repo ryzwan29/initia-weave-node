@@ -2,6 +2,7 @@ package minitia
 
 import (
 	"bufio"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -1738,8 +1739,9 @@ type DownloadCelestiaBinaryLoading struct {
 }
 
 func NewDownloadCelestiaBinaryLoading(state *LaunchState) *DownloadCelestiaBinaryLoading {
+	client := utils.NewHTTPClient()
 	var result map[string]interface{}
-	err := utils.MakeGetRequestUsingURL(
+	_, err := client.Get(
 		utils.GetConfig(fmt.Sprintf("constants.da_layer.celestia_mainnet.lcd")).(string),
 		"/cosmos/base/tendermint/v1beta1/node_info",
 		nil,
@@ -2133,6 +2135,26 @@ func (m *FundGasStationBroadcastLoading) View() string {
 	return m.state.weave.Render() + "\n" + m.loading.View()
 }
 
+type ScanPayload struct {
+	Vm          string  `json:"vm"`
+	ChainId     string  `json:"chainId"`
+	MinGasPrice float64 `json:"minGasPrice"`
+	Denom       string  `json:"denom"`
+	Lcd         string  `json:"lcd"`
+	Rpc         string  `json:"rpc"`
+	JsonRpc     string  `json:"jsonRpc,omitempty"`
+}
+
+func (sp *ScanPayload) EncodeToBase64() (string, error) {
+	jsonBytes, err := json.Marshal(sp)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal struct: %w", err)
+	}
+
+	base64String := base64.StdEncoding.EncodeToString(jsonBytes)
+	return base64String, nil
+}
+
 type LaunchingNewMinitiaLoading struct {
 	state   *LaunchState
 	loading utils.Loading
@@ -2294,6 +2316,36 @@ func (m *LaunchingNewMinitiaLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.loading.Completing {
 		m.state.minitiadLaunchStreamingLogs = []string{}
 		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "New Minitia has been launched. (More details about your Minitia in ~/.minitia/artifacts/artifacts.json & ~/.minitia/artifacts/config.json)", []string{}, ""))
+
+		var jsonRpc string
+		if m.state.vmType == string(EVM) {
+			jsonRpc = DefaultMinitiaJsonRPC
+		}
+
+		payload := &ScanPayload{
+			Vm:          strings.ToLower(m.state.vmType),
+			ChainId:     m.state.chainId,
+			MinGasPrice: 0,
+			Denom:       m.state.gasDenom,
+			Lcd:         DefaultMinitiaLCD,
+			Rpc:         DefaultMinitiaRPC,
+			JsonRpc:     jsonRpc,
+		}
+
+		encodedPayload, err := payload.EncodeToBase64()
+		if err != nil {
+			panic(fmt.Errorf("failed to encode payload: %v", err))
+		}
+
+		link := fmt.Sprintf("%s/custom-network/add/link?config=%s", InitiaScanURL, encodedPayload)
+		scanText := fmt.Sprintf(
+			"\n✨ %s 🪄 (Don't forget to use %s to start the app)\n%s\n\n",
+			styles.BoldText("Explore your new Minitia here", styles.White),
+			styles.BoldText("weave minitia start", styles.White),
+			utils.WrapText(link),
+		)
+		m.state.weave.PushPreviousResponse(scanText)
+
 		return NewTerminalState(m.state), tea.Quit
 	}
 	return m, cmd

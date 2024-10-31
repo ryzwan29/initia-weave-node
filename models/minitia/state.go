@@ -90,7 +90,7 @@ func (ls *LaunchState) FinalizeGenesisAccounts() {
 	ls.genesisAccounts = append(ls.genesisAccounts, accounts...)
 }
 
-func (ls *LaunchState) PrepareLaunchingWithConfig(vm, minitiadVersion, minitiadEndpoint, configPath string) {
+func (ls *LaunchState) PrepareLaunchingWithConfig(vm, minitiadVersion, minitiadEndpoint, configPath string, config *types.MinitiaConfig) {
 	vmType, err := ParseVMType(vm)
 	if err != nil {
 		panic(err)
@@ -100,4 +100,6 @@ func (ls *LaunchState) PrepareLaunchingWithConfig(vm, minitiadVersion, minitiadE
 	ls.minitiadEndpoint = minitiadEndpoint
 	ls.launchFromExistingConfig = true
 	ls.existingConfigPath = configPath
+	ls.chainId = config.L2Config.ChainID
+	ls.gasDenom = config.L2Config.Denom
 }

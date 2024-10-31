@@ -5,7 +5,6 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
-	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -19,7 +18,8 @@ func FileOrFolderExists(path string) bool {
 }
 
 func DownloadAndExtractTarGz(url, tarballPath, extractedPath string) error {
-	if err := DownloadFile(url, tarballPath); err != nil {
+	client := NewHTTPClient()
+	if err := client.DownloadFile(url, tarballPath, nil, nil); err != nil {
 		return err
 	}
 
@@ -32,23 +32,6 @@ func DownloadAndExtractTarGz(url, tarballPath, extractedPath string) error {
 	}
 
 	return nil
-}
-
-func DownloadFile(url, filepath string) error {
-	resp, err := http.Get(url)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	out, err := os.Create(filepath)
-	if err != nil {
-		return err
-	}
-	defer out.Close()
-
-	_, err = io.Copy(out, resp.Body)
-	return err
 }
 
 func ExtractTarGz(src string, dest string) error {

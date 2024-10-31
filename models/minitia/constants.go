@@ -19,4 +19,9 @@ const (
 	LaunchConfigFilename = "minitia.config.json"
 
 	CelestiaAppName string = "celestia-appd"
+
+	InitiaScanURL         string = "https://scan.testnet.initia.xyz"
+	DefaultMinitiaLCD     string = "http://localhost:1317"
+	DefaultMinitiaRPC     string = "http://localhost:26657"
+	DefaultMinitiaJsonRPC string = "http://localhost:8545"
 )

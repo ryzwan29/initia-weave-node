@@ -8,8 +8,9 @@ import (
 )
 
 type Selector[T any] struct {
-	Options []T
-	Cursor  int
+	Options    []T
+	Cursor     int
+	CannotBack bool
 }
 
 func (s *Selector[T]) Select(msg tea.Msg) (*T, tea.Cmd) {
@@ -31,6 +32,14 @@ func (s *Selector[T]) Select(msg tea.Msg) (*T, tea.Cmd) {
 	return nil, nil
 }
 
+// GetFooter returns the footer text based on the CannotBack flag.
+func (s *Selector[T]) GetFooter() string {
+	if s.CannotBack {
+		return styles.Text("\nPress Enter to select, Ctrl+C or q to quit.\n", styles.Gray)
+	}
+	return styles.Text("\nPress Enter to select, Ctrl+Z to go back, Ctrl+C or q to quit.\n", styles.Gray)
+}
+
 func (s *Selector[T]) View() string {
 	view := "\n\n"
 	for i, option := range s.Options {
@@ -41,7 +50,7 @@ func (s *Selector[T]) View() string {
 		}
 	}
 
-	return view + styles.Text("\nPress Enter to select, press Ctrl+C or q to quit.\n", styles.Gray)
+	return view + s.GetFooter()
 }
 
 type VersionSelector struct {
@@ -49,10 +58,11 @@ type VersionSelector struct {
 	currentVersion string
 }
 
-func NewVersionSelector(versions BinaryVersionWithDownloadURL, currentVersion string) VersionSelector {
+func NewVersionSelector(versions BinaryVersionWithDownloadURL, currentVersion string, cannotBack bool) VersionSelector {
 	return VersionSelector{
 		Selector: Selector[string]{
-			Options: SortVersions(versions),
+			Options:    SortVersions(versions),
+			CannotBack: cannotBack,
 		},
 		currentVersion: currentVersion,
 	}
@@ -79,5 +89,5 @@ func (v *VersionSelector) View() string {
 		view += "\n"
 	}
 
-	return view + "\n" + styles.Text("\nPress Enter to select, press Ctrl+C or q to quit.\n", styles.Gray)
+	return view + v.GetFooter()
 }

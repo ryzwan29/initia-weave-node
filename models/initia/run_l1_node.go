@@ -65,7 +65,7 @@ func (m *RunL1NodeNetworkSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case Mainnet, Testnet:
 			lowerNetwork := utils.TransformFirstWordLowerCase(string(*selected))
 			chainId := utils.GetConfig(fmt.Sprintf("constants.chain_id.%s", lowerNetwork))
-			genesisEndpoint, err := utils.GetEndpointURL(lowerNetwork, "genesis")
+			genesisEndpoint, err := utils.GetGenesisEndpointByNetwork(lowerNetwork)
 			if err != nil {
 				panic(err)
 			}
@@ -754,6 +754,7 @@ func initializeApp(state *RunL1NodeState) tea.Cmd {
 		weaveDataPath := filepath.Join(userHome, utils.WeaveDataDirectory)
 		tarballPath := filepath.Join(weaveDataPath, "initia.tar.gz")
 
+		client := utils.NewHTTPClient()
 		var nodeVersion, extractedPath, binaryPath, url string
 
 		switch state.network {
@@ -761,12 +762,18 @@ func initializeApp(state *RunL1NodeState) tea.Cmd {
 			nodeVersion = state.initiadVersion
 			url = state.initiadEndpoint
 		case string(Mainnet), string(Testnet):
-			var result map[string]interface{}
 			network := "testnet"
 			if state.network == string(Mainnet) {
 				network = "mainnet"
 			}
-			err = utils.MakeGetRequestUsingConfig(network, "lcd", "/cosmos/base/tendermint/v1beta1/node_info", nil, &result)
+
+			baseUrl, err := utils.GetLcdEndpointByNetwork(network)
+			if err != nil {
+				panic(err)
+			}
+
+			var result map[string]interface{}
+			_, err = client.Get(baseUrl, "/cosmos/base/tendermint/v1beta1/node_info", nil, &result)
 			if err != nil {
 				panic(err)
 			}
@@ -844,7 +851,7 @@ func initializeApp(state *RunL1NodeState) tea.Cmd {
 		}
 
 		if state.genesisEndpoint != "" {
-			if err := utils.DownloadFile(state.genesisEndpoint, filepath.Join(weaveDataPath, "genesis.json")); err != nil {
+			if err := client.DownloadFile(state.genesisEndpoint, filepath.Join(weaveDataPath, "genesis.json"), nil, nil); err != nil {
 				panic(fmt.Sprintf("failed to download genesis.json: %v", err))
 			}
 
@@ -1211,6 +1218,7 @@ func NewSnapshotDownloadLoading(state *RunL1NodeState) (*SnapshotDownloadLoading
 			"Downloading snapshot from the provided URL",
 			state.snapshotEndpoint,
 			fmt.Sprintf("%s/%s/%s", userHome, utils.WeaveDataDirectory, utils.SnapshotFilename),
+			utils.ValidateTarLz4Header,
 		),
 		state: state,
 	}, nil
