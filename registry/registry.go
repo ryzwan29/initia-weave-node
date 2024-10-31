@@ -230,3 +230,12 @@ func GetOPInitBotsSpecVersion(chainId string) (int, error) {
 
 	return version, nil
 }
+
+func MustGetOPInitBotsSpecVersion(chainId string) int {
+	version, err := GetOPInitBotsSpecVersion(chainId)
+	if err != nil {
+		panic(err)
+	}
+
+	return version
+}
