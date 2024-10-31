@@ -14,12 +14,13 @@ type FieldInputModel struct {
 	subModels        []SubModel
 }
 
-// NewFieldInputModel initializes the parent model with the subModels
-func NewFieldInputModel(ctx context.Context, fields []Field, newTerminalModel func(context.Context) tea.Model) *FieldInputModel {
+// NewFieldInputModel initializes the parent model with the submodels
+func NewFieldInputModel(ctx context.Context, fields []*Field, newTerminalModel func(context.Context) tea.Model) *FieldInputModel {
 	subModels := make([]SubModel, len(fields))
+
 	// Create submodels based on the field types
 	for idx, field := range fields {
-		subModels[idx] = NewSubModel(field)
+		subModels[idx] = NewSubModel(*field)
 	}
 
 	return &FieldInputModel{

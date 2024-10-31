@@ -86,7 +86,3 @@ func (m *SubModel) View() string {
 	s := strings.Split(m.field.Name, ".")
 	return styles.RenderPrompt(m.field.Question, []string{s[len(s)-1], "L1", "L2"}, styles.Question) + m.TextInput.View()
 }
-
-func (m *SubModel) CanGoPreviousPage() bool {
-	return !m.CannotBack
-}

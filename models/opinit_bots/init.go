@@ -30,49 +30,38 @@ type OPInitBotInitSelector struct {
 	question string
 }
 
-var defaultExecutorFields = []Field{
-	// Version
-	{Name: "version", Type: NumberField, Question: "Please specify the version", Placeholder: `Press tab to use "1"`, DefaultValue: "1", ValidateFn: utils.IsValidInteger},
-
+var defaultExecutorFields = []*Field{
 	// Listen Address
-	{Name: "listen_address", Type: StringField, Question: "Please specify the listen_address", Placeholder: `Add listen address ex. localhost:3000`, ValidateFn: utils.ValidateEmptyString},
+	{Name: "listen_address", Type: StringField, Question: "Please specify the listen_address", Placeholder: `Press tab to use "localhost:3000"`, DefaultValue: "localhost:3000", ValidateFn: utils.ValidateEmptyString},
 
 	// L1 Node Configuration
-	{Name: "l1_node.chain_id", Type: StringField, Question: "Please specify the L1 chain_id", Placeholder: "Add alphanumeric", ValidateFn: utils.ValidateEmptyString},
-	{Name: "l1_node.rpc_address", Type: StringField, Question: "Please specify the L1 rpc_address", Placeholder: "Add RPC address ex. tcp://localhost:26657", ValidateFn: utils.ValidateURL},
-	{Name: "l1_node.gas_price", Type: StringField, Question: "Please specify the L1 gas_price", Placeholder: `Press tab to use "0.15uinit"`, DefaultValue: "0.15uinit", ValidateFn: utils.ValidateDecCoin},
+	{Name: "l1_node.rpc_address", Type: StringField, Question: "Please specify the L1 rpc_address", Placeholder: "Add RPC address ex. http://localhost:26657", ValidateFn: utils.ValidateURL},
 
 	// L2 Node Configuration
 	{Name: "l2_node.chain_id", Type: StringField, Question: "Please specify the L2 chain_id", Placeholder: "Add alphanumeric", ValidateFn: utils.ValidateEmptyString},
-	{Name: "l2_node.rpc_address", Type: StringField, Question: "Please specify the L2 rpc_address", Placeholder: "Add RPC address ex. tcp://localhost:26657", ValidateFn: utils.ValidateURL},
-	{Name: "l2_node.gas_price", Type: StringField, Question: "Please specify the L2 gas_price", Placeholder: `Press tab to use "0.15uinit"`, DefaultValue: "0.15uinit", ValidateFn: utils.ValidateDecCoin},
+	{Name: "l2_node.rpc_address", Type: StringField, Question: "Please specify the L2 rpc_address", Placeholder: `Press tab to use "http://localhost:26657"`, DefaultValue: "http://localhost:26657", ValidateFn: utils.ValidateURL},
+	{Name: "l2_node.gas_price", Type: StringField, Question: "Please specify the L2 gas_price", Placeholder: `Press tab to use "0.015umin"`, DefaultValue: "0.015umin", ValidateFn: utils.ValidateDecCoin},
 }
 
-var defaultDALayerFields = []Field{
-	// Version
-	{Name: "l2_start_height", Type: NumberField, Question: "Please specify the l2_start_height", ValidateFn: utils.IsValidInteger},
-
+var defaultChallengerFields = []*Field{
 	// Listen Address
-	{Name: "batch_start_height", Type: NumberField, Question: "Please specify the batch_start_height", ValidateFn: utils.IsValidInteger},
-}
-
-var defaultChallengerFields = []Field{
-	// Version
-	{Name: "version", Type: NumberField, Question: "Please specify the version", Placeholder: `Press tab to use "1"`, DefaultValue: "1", ValidateFn: utils.IsValidInteger},
-
-	// Listen Address
-	{Name: "listen_address", Type: StringField, Question: "Please specify the listen_address", Placeholder: `Add listen address ex. localhost:3000`, ValidateFn: utils.ValidateEmptyString},
+	{Name: "listen_address", Type: StringField, Question: "Please specify the listen_address", Placeholder: `Press tab to use "localhost:3000"`, DefaultValue: "localhost:3000", ValidateFn: utils.ValidateEmptyString},
 
 	// L1 Node Configuration
-	{Name: "l1_node.chain_id", Type: StringField, Question: "Please specify the L1 chain_id", Placeholder: "Add alphanumeric", ValidateFn: utils.ValidateEmptyString},
-	{Name: "l1_node.rpc_address", Type: StringField, Question: "Please specify the L1 rpc_address", Placeholder: "Add RPC address ex. tcp://localhost:26657", ValidateFn: utils.ValidateURL},
+	{Name: "l1_node.rpc_address", Type: StringField, Question: "Please specify the L1 rpc_address", Placeholder: "Add RPC address ex. http://localhost:26657", ValidateFn: utils.ValidateURL},
 
 	// L2 Node Configuration
 	{Name: "l2_node.chain_id", Type: StringField, Question: "Please specify the L2 chain_id", Placeholder: "Add alphanumeric", ValidateFn: utils.ValidateEmptyString},
-	{Name: "l2_node.rpc_address", Type: StringField, Question: "Please specify the L2 rpc_address", Placeholder: "Add RPC address ex. tcp://localhost:26657", ValidateFn: utils.ValidateURL},
+	{Name: "l2_node.rpc_address", Type: StringField, Question: "Please specify the L2 rpc_address", Placeholder: `Press tab to use "http://localhost:26657"`, DefaultValue: "http://localhost:26657", ValidateFn: utils.ValidateURL},
+}
 
-	// Version
-	{Name: "l2_start_height", Type: NumberField, Question: "Please specify the l2_start_height", ValidateFn: utils.IsValidInteger},
+func GetField(fields []*Field, name string) *Field {
+	for _, field := range fields {
+		if field.Name == name {
+			return field
+		}
+	}
+	panic(fmt.Sprintf("field %s not found", name))
 }
 
 func NewOPInitBotInitSelector(ctx context.Context) tea.Model {
@@ -150,6 +139,8 @@ func OPInitBotInitSelectExecutor(ctx context.Context) tea.Model {
 		return NewUseCurrentConfigSelector(ctx, "executor")
 	}
 
+	state.ReplaceBotConfig = true
+
 	if state.MinitiaConfig != nil {
 		ctx = utils.SetCurrentState(ctx, state)
 		return NewPrefillMinitiaConfig(ctx)
@@ -189,6 +180,8 @@ func OPInitBotInitSelectChallenger(ctx context.Context) tea.Model {
 		ctx = utils.SetCurrentState(ctx, state)
 		return NewUseCurrentConfigSelector(ctx, "challenger")
 	}
+
+	state.ReplaceBotConfig = true
 
 	if state.MinitiaConfig != nil {
 		ctx = utils.SetCurrentState(ctx, state)
@@ -338,12 +331,9 @@ func (m *UseCurrentConfigSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.Ctx = utils.SetCurrentState(m.Ctx, state)
 				return NewPrefillMinitiaConfig(m.Ctx), cmd
 			}
-			if state.InitExecutorBot {
+			if state.InitExecutorBot || state.InitChallengerBot {
 				m.Ctx = utils.SetCurrentState(m.Ctx, state)
-				return NewFieldInputModel(m.Ctx, defaultExecutorFields, NewSetDALayer), cmd
-			} else if state.InitChallengerBot {
-				m.Ctx = utils.SetCurrentState(m.Ctx, state)
-				return NewFieldInputModel(m.Ctx, defaultChallengerFields, NewStartingInitBot), cmd
+				return NewL1PrefillSelector(m.Ctx), cmd
 			}
 			m.Ctx = utils.SetCurrentState(m.Ctx, state)
 			return m, cmd
@@ -405,22 +395,22 @@ func (m *PrefillMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch *selected {
 		case PrefillMinitiaConfigYes:
 			minitiaConfig := state.MinitiaConfig
-			defaultExecutorFields[2].PrefillValue = minitiaConfig.L1Config.ChainID
-			defaultExecutorFields[3].PrefillValue = minitiaConfig.L1Config.RpcUrl
-			defaultExecutorFields[4].PrefillValue = minitiaConfig.L1Config.GasPrices
-			defaultExecutorFields[5].PrefillValue = minitiaConfig.L2Config.ChainID
+			state.botConfig["l1_node.chain_id"] = minitiaConfig.L1Config.ChainID
+			GetField(defaultExecutorFields, "l1_node.rpc_address").PrefillValue = minitiaConfig.L1Config.RpcUrl
+			GetField(defaultExecutorFields, "l2_node.chain_id").PrefillValue = minitiaConfig.L2Config.ChainID
+			GetField(defaultExecutorFields, "l2_node.gas_price").PrefillValue = "0.015" + minitiaConfig.L2Config.Denom
+			GetField(defaultExecutorFields, "l2_node.gas_price").Placeholder = "Press tab to use " + "\"0.015" + minitiaConfig.L2Config.Denom + "\""
 
-			defaultChallengerFields[2].PrefillValue = minitiaConfig.L1Config.ChainID
-			defaultChallengerFields[3].PrefillValue = minitiaConfig.L1Config.RpcUrl
-			defaultChallengerFields[4].PrefillValue = minitiaConfig.L2Config.ChainID
+			GetField(defaultChallengerFields, "l1_node.rpc_address").PrefillValue = minitiaConfig.L1Config.RpcUrl
+			GetField(defaultChallengerFields, "l2_node.chain_id").PrefillValue = minitiaConfig.L2Config.ChainID
 			m.Ctx = utils.SetCurrentState(m.Ctx, state)
 
 			if state.InitExecutorBot {
 				return NewFieldInputModel(m.Ctx, defaultExecutorFields, NewSetDALayer), cmd
 			} else if state.InitChallengerBot {
 				return NewFieldInputModel(m.Ctx, defaultChallengerFields, NewStartingInitBot), cmd
-			}
 
+			}
 		case PrefillMinitiaConfigNo:
 			m.Ctx = utils.SetCurrentState(m.Ctx, state)
 			return NewL1PrefillSelector(m.Ctx), cmd
@@ -495,11 +485,13 @@ func (m *L1PrefillSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			chainId = fmt.Sprintf("%s", utils.GetConfig("constants.chain_id.testnet"))
 			rpc = fmt.Sprintf("%s", utils.GetConfig("constants.endpoints.testnet.rpc"))
 		}
-		defaultExecutorFields[2].PrefillValue = chainId
-		defaultExecutorFields[3].PrefillValue = rpc
+		state.botConfig["l1_node.chain_id"] = chainId
 
-		defaultChallengerFields[2].PrefillValue = chainId
-		defaultChallengerFields[3].PrefillValue = rpc
+		// To be replaced with information from registry
+		state.botConfig["l1_node.gas_price"] = "0.015uinit"
+
+		GetField(defaultExecutorFields, "l1_node.rpc_address").PrefillValue = rpc
+		GetField(defaultChallengerFields, "l1_node.rpc_address").PrefillValue = rpc
 
 		if state.InitExecutorBot {
 			m.Ctx = utils.SetCurrentState(m.Ctx, state)
@@ -583,7 +575,9 @@ func (m *SetDALayer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			state.botConfig["da.gas_price"] = fmt.Sprintf("%s", utils.GetConfig("constants.da_layer.celestia_testnet.gas_price"))
 		}
 		m.Ctx = utils.SetCurrentState(m.Ctx, state)
-		return NewFieldInputModel(m.Ctx, defaultDALayerFields, NewStartingInitBot), cmd
+		model := NewStartingInitBot(m.Ctx)
+		return model, model.Init()
+
 	}
 
 	return m, cmd
@@ -607,6 +601,10 @@ func NewStartingInitBot(ctx context.Context) tea.Model {
 	} else {
 		bot = "challenger"
 	}
+
+	// default config
+	state.botConfig["version"] = "1"
+
 	return &StartingInitBot{
 		BaseModel: utils.BaseModel{Ctx: ctx, CannotBack: true},
 		loading:   utils.NewLoading(fmt.Sprintf("Setting up OPinit bot %s...", bot), WaitStartingInitBot(&state)),
@@ -657,8 +655,6 @@ func WaitStartingInitBot(state *OPInitBotsState) tea.Cmd {
 			}
 
 			version, _ := strconv.Atoi(configMap["version"])
-			l2StartHeight, _ := strconv.Atoi(configMap["l2_start_height"])
-			batchStartHeight, _ := strconv.Atoi(configMap["batch_start_height"])
 
 			config := ExecutorConfig{
 				Version:       version,
@@ -687,14 +683,14 @@ func WaitStartingInitBot(state *OPInitBotsState) tea.Cmd {
 					GasAdjustment: 1.5,
 					TxTimeout:     60,
 				},
-				OutputSubmitter:       "",
-				BridgeExecutor:        "",
+				OutputSubmitter:       OutputSubmitterKeyName,
+				BridgeExecutor:        BridgeExecutorKeyName,
 				BatchSubmitterEnabled: true,
 				MaxChunks:             5000,
 				MaxChunkSize:          300000,
 				MaxSubmissionTime:     3600,
-				L2StartHeight:         l2StartHeight,
-				BatchStartHeight:      batchStartHeight,
+				L2StartHeight:         0,
+				BatchStartHeight:      0,
 			}
 			configBz, err := json.MarshalIndent(config, "", " ")
 			if err != nil {
@@ -720,7 +716,6 @@ func WaitStartingInitBot(state *OPInitBotsState) tea.Cmd {
 			}
 
 			version, _ := strconv.Atoi(configMap["version"])
-			l2StartHeight, _ := strconv.Atoi(configMap["l2_start_height"])
 			config := ChallengerConfig{
 				Version:       version,
 				ListenAddress: configMap["listen_address"],
@@ -734,7 +729,7 @@ func WaitStartingInitBot(state *OPInitBotsState) tea.Cmd {
 					RPCAddress:   configMap["l2_node.rpc_address"],
 					Bech32Prefix: "init",
 				},
-				L2StartHeight: l2StartHeight,
+				L2StartHeight: 0,
 			}
 			configBz, err := json.MarshalIndent(config, "", " ")
 			if err != nil {
@@ -788,5 +783,12 @@ func (m *OPinitBotSuccessful) Update(_ tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *OPinitBotSuccessful) View() string {
 	state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt("OPInit bot setup successful.", []string{}, styles.Completed) + "\n"
+
+	botConfigFileName := "executor"
+	if state.InitChallengerBot {
+		botConfigFileName = "challenger"
+	}
+
+	return state.weave.Render() + styles.RenderPrompt("OPInit bot setup successfully. Config file is saved at ~/.opinit/"+botConfigFileName+".json", []string{}, styles.Completed) + "\n" + styles.RenderPrompt("You can start the bot by running `weave opinit-bots start "+botConfigFileName+"`", []string{}, styles.Completed) + "\n"
+
 }
