@@ -429,7 +429,6 @@ func (m *PrefillMinitiaConfig) View() string {
 type L1PrefillOption string
 
 var (
-	L1PrefillOptionMainnet L1PrefillOption = ""
 	L1PrefillOptionTestnet L1PrefillOption = ""
 	L1PrefillOptionCustom  L1PrefillOption = "Custom"
 )
@@ -441,12 +440,10 @@ type L1PrefillSelector struct {
 }
 
 func NewL1PrefillSelector(ctx context.Context) *L1PrefillSelector {
-	L1PrefillOptionMainnet = L1PrefillOption(fmt.Sprintf("Mainnet (%s)", utils.GetConfig("constants.chain_id.mainnet")))
 	L1PrefillOptionTestnet = L1PrefillOption(fmt.Sprintf("Testnet (%s)", utils.GetConfig("constants.chain_id.testnet")))
 	return &L1PrefillSelector{
 		Selector: utils.Selector[L1PrefillOption]{
 			Options: []L1PrefillOption{
-				L1PrefillOptionMainnet,
 				L1PrefillOptionTestnet,
 				L1PrefillOptionCustom,
 			},
@@ -476,10 +473,6 @@ func (m *L1PrefillSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		var chainId, rpc string
 		switch *selected {
-
-		case L1PrefillOptionMainnet:
-			chainId = fmt.Sprintf("%s", utils.GetConfig("constants.chain_id.mainnet"))
-			rpc = fmt.Sprintf("%s", utils.GetConfig("constants.endpoints.mainnet.rpc"))
 
 		case L1PrefillOptionTestnet:
 			chainId = fmt.Sprintf("%s", utils.GetConfig("constants.chain_id.testnet"))
