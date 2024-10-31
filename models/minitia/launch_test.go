@@ -147,13 +147,6 @@ func TestNetworkSelect_Update_Selection(t *testing.T) {
 	msg = tea.KeyMsg{Type: tea.KeyEnter}
 	updatedModel, cmd = updatedModel.Update(msg)
 
-	network := utils.TransformFirstWordUpperCase("Testnet")
-	expectedChainID := utils.GetConfig(fmt.Sprintf("constants.chain_id.%s", network)).(string)
-	expectedRPC := utils.GetConfig(fmt.Sprintf("constants.endpoints.%s.rpc", network)).(string)
-
-	assert.Equal(t, expectedChainID, state.l1ChainId, "Expected l1ChainId to be set based on Testnet")
-	assert.Equal(t, expectedRPC, state.l1RPC, "Expected l1RPC to be set based on Testnet")
-
 	assert.IsType(t, &VMTypeSelect{}, updatedModel, "Expected model to transition to VMTypeSelect after network selection")
 	assert.Nil(t, cmd, "Expected no command after network selection")
 }
@@ -262,7 +255,7 @@ func TestNetworkSelect_SaveToState(t *testing.T) {
 	m, _ := networkSelect.Update(tea.KeyMsg{Type: tea.KeyEnter})
 
 	assert.Equal(t, "initiation-2", mockState.l1ChainId)
-	assert.Equal(t, "https://rpc.initiation-2.initia.xyz:443", mockState.l1RPC)
+	assert.Equal(t, "https://rpc.testnet.initia.xyz:443/", mockState.l1RPC)
 
 	assert.IsType(t, m, &VMTypeSelect{})
 }

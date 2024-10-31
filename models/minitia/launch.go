@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/initia-labs/weave/registry"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -139,14 +140,27 @@ type NetworkSelect struct {
 
 type NetworkSelectOption string
 
+func (n NetworkSelectOption) ToChainType() registry.ChainType {
+	switch n {
+	case Mainnet:
+		return registry.InitiaL1Mainnet
+	case Testnet:
+		return registry.InitiaL1Testnet
+	default:
+		panic("invalid case for NetworkSelectOption")
+	}
+}
+
 var (
 	Testnet NetworkSelectOption = ""
 	Mainnet NetworkSelectOption = ""
 )
 
 func NewNetworkSelect(state *LaunchState) *NetworkSelect {
-	Testnet = NetworkSelectOption(fmt.Sprintf("Testnet (%s)", utils.GetConfig("constants.chain_id.testnet")))
-	Mainnet = NetworkSelectOption(fmt.Sprintf("Mainnet (%s)", utils.GetConfig("constants.chain_id.mainnet")))
+	testnetRegistry := registry.MustGetChainRegistry(registry.InitiaL1Testnet)
+	//mainnetRegistry := registry.MustGetChainRegistry(registry.InitiaL1Mainnet)
+	Testnet = NetworkSelectOption(fmt.Sprintf("Testnet (%s)", testnetRegistry.GetChainId()))
+	//Mainnet = NetworkSelectOption(fmt.Sprintf("Mainnet (%s)", mainnetRegistry.GetChainId()))
 	return &NetworkSelect{
 		Selector: utils.Selector[NetworkSelectOption]{
 			Options: []NetworkSelectOption{
@@ -171,9 +185,10 @@ func (m *NetworkSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	selected, cmd := m.Select(msg)
 	if selected != nil {
 		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"Initia L1 network"}, string(*selected)))
-		network := utils.TransformFirstWordUpperCase(string(*selected))
-		m.state.l1ChainId = utils.GetConfig(fmt.Sprintf("constants.chain_id.%s", network)).(string)
-		m.state.l1RPC = utils.GetConfig(fmt.Sprintf("constants.endpoints.%s.rpc", network)).(string)
+		chainType := selected.ToChainType()
+		chainRegistry := registry.MustGetChainRegistry(chainType)
+		m.state.l1ChainId = chainRegistry.GetChainId()
+		m.state.l1RPC = chainRegistry.MustGetActiveRpc()
 		return NewVMTypeSelect(m.state), nil
 	}
 
@@ -1739,10 +1754,12 @@ type DownloadCelestiaBinaryLoading struct {
 }
 
 func NewDownloadCelestiaBinaryLoading(state *LaunchState) *DownloadCelestiaBinaryLoading {
+	celestiaMainnetRegistry := registry.MustGetChainRegistry(registry.CelestiaMainnet)
 	client := utils.NewHTTPClient()
+
 	var result map[string]interface{}
 	_, err := client.Get(
-		utils.GetConfig(fmt.Sprintf("constants.da_layer.celestia_mainnet.lcd")).(string),
+		celestiaMainnetRegistry.MustGetActiveLcd(),
 		"/cosmos/base/tendermint/v1beta1/node_info",
 		nil,
 		&result,
@@ -1996,7 +2013,7 @@ type FundGasStationConfirmationInput struct {
 }
 
 func NewFundGasStationConfirmationInput(state *LaunchState) *FundGasStationConfirmationInput {
-	gasStationMnemonic := utils.GetConfig("common.gas_station_mnemonic").(string)
+	gasStationMnemonic := utils.GetGasStationMnemonic()
 	model := &FundGasStationConfirmationInput{
 		TextInput:                 utils.NewTextInput(),
 		state:                     state,

@@ -43,7 +43,7 @@ func TestRunL1NodeNetworkSelect_SaveToState(t *testing.T) {
 	m, _ := networkSelect.Update(tea.KeyMsg{Type: tea.KeyEnter})
 
 	assert.Equal(t, "Testnet (initiation-2)", mockState.network)
-	assert.Equal(t, "https://storage.googleapis.com/initia-binaries/genesis.json", mockState.genesisEndpoint)
+	assert.Equal(t, "https://storage.googleapis.com/init-common-genesis/initiation-2/genesis.json", mockState.genesisEndpoint)
 
 	assert.IsType(t, m, &ExistingAppChecker{})
 

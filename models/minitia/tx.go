@@ -3,6 +3,7 @@ package minitia
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/initia-labs/weave/registry"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -37,7 +38,7 @@ type FundAccountsResponse struct {
 func (lsk *L1SystemKeys) FundAccountsWithGasStation(state *LaunchState) (*FundAccountsResponse, error) {
 	var resp FundAccountsResponse
 
-	gasStationMnemonic := utils.GetConfig("common.gas_station_mnemonic").(string)
+	gasStationMnemonic := utils.GetGasStationMnemonic()
 	rawKey, err := utils.RecoverKeyFromMnemonic(state.binaryPath, utils.WeaveGasStationKeyName, gasStationMnemonic)
 	if err != nil {
 		return nil, fmt.Errorf("failed to recover gas station key: %v", err)
@@ -63,8 +64,17 @@ func (lsk *L1SystemKeys) FundAccountsWithGasStation(state *LaunchState) (*FundAc
 		defer utils.MustDeleteKey(state.celestiaBinaryPath, utils.WeaveGasStationKeyName)
 
 		// TODO: Choose DA layer based on the chosen L1 network
-		celestiaRpc := utils.GetConfig("constants.da_layer.celestia_testnet.rpc").(string)
-		celestiaChainId := utils.GetConfig("constants.da_layer.celestia_testnet.chain_id").(string)
+		celestiaRegistry, err := registry.GetChainRegistry(registry.CelestiaTestnet)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get celestia registry: %v", err)
+		}
+
+		celestiaRpc, err := celestiaRegistry.GetActiveRpc()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get active rpc for celestia: %v", err)
+		}
+
+		celestiaChainId := celestiaRegistry.GetChainId()
 		sendCmd := exec.Command(state.celestiaBinaryPath, "tx", "bank", "send", utils.WeaveGasStationKeyName,
 			lsk.BatchSubmitter.Address, fmt.Sprintf("%sutia", lsk.BatchSubmitter.Coins), "--node", celestiaRpc,
 			"--chain-id", celestiaChainId, "--gas", "100000", "--gas-prices", "0.1utia", "--output", "json", "-y",

@@ -302,3 +302,25 @@ func TestGetBech32Prefix(t *testing.T) {
 		})
 	}
 }
+
+func TestCheckAndAddPort(t *testing.T) {
+	tests := []struct {
+		address  string
+		expected string
+	}{
+		{"https://example.com", "https://example.com:443"},
+		{"http://example.com", "http://example.com:80"},
+		{"https://example.com:26657", "https://example.com:26657"},
+		{"http://example.com:443", "http://example.com:443"},
+	}
+
+	for _, test := range tests {
+		result, err := checkAndAddPort(test.address)
+		if err != nil {
+			t.Fatalf("Unexpected error: %v", err)
+		}
+		if result != test.expected {
+			t.Errorf("For address %s, expected %s, got %s", test.address, test.expected, result)
+		}
+	}
+}

@@ -10,6 +10,8 @@ func (ct ChainType) String() string {
 		return "Celestia Mainnet"
 	case InitiaL1Testnet:
 		return "Initia L1 Testnet"
+	case InitiaL1Mainnet:
+		return "Initia L1 Mainnet"
 	default:
 		return "Unknown"
 	}

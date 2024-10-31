@@ -2,6 +2,7 @@ package initia
 
 import (
 	"fmt"
+	"github.com/initia-labs/weave/registry"
 	"github.com/initia-labs/weave/service"
 	"os"
 	"os/exec"
@@ -24,6 +25,17 @@ type RunL1NodeNetworkSelect struct {
 
 type L1NodeNetworkOption string
 
+func (l L1NodeNetworkOption) ToChainType() registry.ChainType {
+	switch l {
+	case Mainnet:
+		return registry.InitiaL1Mainnet
+	case Testnet:
+		return registry.InitiaL1Testnet
+	default:
+		panic("invalid case for L1NodeNetworkOption")
+	}
+}
+
 var (
 	Mainnet L1NodeNetworkOption = ""
 	Testnet L1NodeNetworkOption = ""
@@ -32,8 +44,10 @@ var (
 const Local L1NodeNetworkOption = "Local"
 
 func NewRunL1NodeNetworkSelect(state *RunL1NodeState) *RunL1NodeNetworkSelect {
-	Testnet = L1NodeNetworkOption(fmt.Sprintf("Testnet (%s)", utils.GetConfig("constants.chain_id.testnet")))
-	Mainnet = L1NodeNetworkOption(fmt.Sprintf("Mainnet (%s)", utils.GetConfig("constants.chain_id.mainnet")))
+	testnetRegistry := registry.MustGetChainRegistry(registry.InitiaL1Testnet)
+	//mainnetRegistry := registry.MustGetChainRegistry(registry.InitiaL1Mainnet)
+	Testnet = L1NodeNetworkOption(fmt.Sprintf("Testnet (%s)", testnetRegistry.GetChainId()))
+	//Mainnet = L1NodeNetworkOption(fmt.Sprintf("Mainnet (%s)", mainnetRegistry.GetChainId()))
 	return &RunL1NodeNetworkSelect{
 		Selector: utils.Selector[L1NodeNetworkOption]{
 			Options: []L1NodeNetworkOption{
@@ -63,14 +77,11 @@ func (m *RunL1NodeNetworkSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"network"}, selectedString))
 		switch *selected {
 		case Mainnet, Testnet:
-			lowerNetwork := utils.TransformFirstWordLowerCase(string(*selected))
-			chainId := utils.GetConfig(fmt.Sprintf("constants.chain_id.%s", lowerNetwork))
-			genesisEndpoint, err := utils.GetGenesisEndpointByNetwork(lowerNetwork)
-			if err != nil {
-				panic(err)
-			}
-			m.state.chainId = chainId.(string)
-			m.state.genesisEndpoint = genesisEndpoint
+			chainType := selected.ToChainType()
+			chainRegistry := registry.MustGetChainRegistry(chainType)
+			m.state.chainId = chainRegistry.GetChainId()
+			m.state.genesisEndpoint = chainRegistry.GetGenesisUrl()
+
 			model := NewExistingAppChecker(m.state)
 			return model, model.Init()
 		case Local:
@@ -762,12 +773,13 @@ func initializeApp(state *RunL1NodeState) tea.Cmd {
 			nodeVersion = state.initiadVersion
 			url = state.initiadEndpoint
 		case string(Mainnet), string(Testnet):
-			network := "testnet"
+			chainType := registry.InitiaL1Testnet
 			if state.network == string(Mainnet) {
-				network = "mainnet"
+				chainType = registry.InitiaL1Mainnet
 			}
 
-			baseUrl, err := utils.GetLcdEndpointByNetwork(network)
+			chainRegistry := registry.MustGetChainRegistry(chainType)
+			baseUrl, err := chainRegistry.GetActiveLcd()
 			if err != nil {
 				panic(err)
 			}

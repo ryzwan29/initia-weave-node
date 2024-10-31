@@ -157,7 +157,7 @@ func getMaxWidth(coinGroups ...*Coins) int {
 }
 
 func showGasStationBalance() error {
-	gasStationMnemonic := utils.GetConfig("common.gas_station_mnemonic").(string)
+	gasStationMnemonic := utils.GetGasStationMnemonic()
 	initiaGasStationAddress, err := utils.MnemonicToBech32Address("init", gasStationMnemonic)
 	if err != nil {
 		return err

@@ -2,6 +2,7 @@ package registry
 
 import (
 	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/initia-labs/weave/utils"
@@ -11,11 +12,12 @@ import (
 var LoadedChainRegistry = make(map[ChainType]*ChainRegistry)
 
 type ChainRegistry struct {
-	ChainId      string `json:"chain_id"`
-	Bech32Prefix string `json:"bech32_prefix"`
-	Fees         Fees   `json:"fees"`
-	Apis         Apis   `json:"apis"`
-	Peers        Peers  `json:"peers"`
+	ChainId      string   `json:"chain_id"`
+	Bech32Prefix string   `json:"bech32_prefix"`
+	Fees         Fees     `json:"fees"`
+	Codebase     Codebase `json:"codebase"`
+	Apis         Apis     `json:"apis"`
+	Peers        Peers    `json:"peers"`
 }
 
 type Fees struct {
@@ -25,6 +27,14 @@ type Fees struct {
 type FeeTokens struct {
 	Denom            string  `json:"denom"`
 	FixedMinGasPrice float64 `json:"fixed_min_gas_price"`
+}
+
+type Codebase struct {
+	Genesis Genesis `json:"genesis"`
+}
+
+type Genesis struct {
+	GenesisUrl string `json:"genesis_url"`
 }
 
 type Apis struct {
@@ -67,18 +77,49 @@ func (cr *ChainRegistry) GetMinGasPriceByDenom(denom string) (string, error) {
 	return "", fmt.Errorf("denomination %s not found in fee tokens", denom)
 }
 
+func checkAndAddPort(addr string) (string, error) {
+	u, err := url.Parse(addr)
+	if err != nil {
+		return "", fmt.Errorf("invalid address: %v", err)
+	}
+
+	if u.Port() == "" {
+		if u.Scheme == "https" {
+			u.Host = u.Host + ":443"
+		} else if u.Scheme == "http" {
+			u.Host = u.Host + ":80"
+		}
+	}
+
+	return u.String(), nil
+}
+
 func (cr *ChainRegistry) GetActiveRpc() (string, error) {
 	client := utils.NewHTTPClient()
 	for _, rpc := range cr.Apis.Rpc {
-		_, err := client.Get(rpc.Address, "/health", nil, nil)
+		address, err := checkAndAddPort(rpc.Address)
 		if err != nil {
 			continue
 		}
 
-		return rpc.Address, nil
+		_, err = client.Get(address, "/health", nil, nil)
+		if err != nil {
+			continue
+		}
+
+		return address, nil
 	}
 
 	return "", fmt.Errorf("no active RPC endpoints available")
+}
+
+func (cr *ChainRegistry) MustGetActiveRpc() string {
+	rpc, err := cr.GetActiveRpc()
+	if err != nil {
+		panic(err)
+	}
+
+	return rpc
 }
 
 func (cr *ChainRegistry) GetActiveLcd() (string, error) {
@@ -93,6 +134,15 @@ func (cr *ChainRegistry) GetActiveLcd() (string, error) {
 	}
 
 	return "", fmt.Errorf("no active LCD endpoints available")
+}
+
+func (cr *ChainRegistry) MustGetActiveLcd() string {
+	lcd, err := cr.GetActiveLcd()
+	if err != nil {
+		panic(err)
+	}
+
+	return lcd
 }
 
 func (cr *ChainRegistry) GetSeeds() string {
@@ -111,6 +161,10 @@ func (cr *ChainRegistry) GetPersistentPeers() string {
 	return strings.Join(persistentPeers, ",")
 }
 
+func (cr *ChainRegistry) GetGenesisUrl() string {
+	return cr.Codebase.Genesis.GenesisUrl
+}
+
 func loadChainRegistry(chainType ChainType) error {
 	client := utils.NewHTTPClient()
 	endpoint := GetRegistryEndpoint(chainType)
@@ -123,18 +177,24 @@ func loadChainRegistry(chainType ChainType) error {
 }
 
 func GetChainRegistry(chainType ChainType) (*ChainRegistry, error) {
-	if _, ok := LoadedChainRegistry[chainType]; !ok {
+	chainRegistry, ok := LoadedChainRegistry[chainType]
+	if !ok {
 		if err := loadChainRegistry(chainType); err != nil {
 			return nil, fmt.Errorf("failed to load chain registry for %s: %v", chainType, err)
 		}
-	}
-
-	chainRegistry, ok := LoadedChainRegistry[chainType]
-	if !ok {
-		return nil, fmt.Errorf("cannot retrieve chain registry from map")
+		return LoadedChainRegistry[chainType], nil
 	}
 
 	return chainRegistry, nil
+}
+
+func MustGetChainRegistry(chainType ChainType) *ChainRegistry {
+	chainRegistry, err := GetChainRegistry(chainType)
+	if err != nil {
+		panic(err)
+	}
+
+	return chainRegistry
 }
 
 var OPInitBotsSpecVersion = make(map[string]int)
