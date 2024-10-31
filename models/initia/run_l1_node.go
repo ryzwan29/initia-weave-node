@@ -328,7 +328,18 @@ func (m *RunL1NodeMonikerInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if done {
 		m.state.moniker = input.Text
 		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"moniker"}, input.Text))
-		return NewMinGasPriceInput(m.state), cmd
+		switch m.state.network {
+		case string(Local):
+			return NewMinGasPriceInput(m.state), cmd
+		case string(Testnet):
+			chainRegistry := registry.MustGetChainRegistry(registry.InitiaL1Testnet)
+			m.state.minGasPrice = chainRegistry.MustGetMinGasPriceByDenom(DefaultGasPriceDenom)
+			return NewEnableFeaturesCheckbox(m.state), cmd
+		case string(Mainnet):
+			chainRegistry := registry.MustGetChainRegistry(registry.InitiaL1Mainnet)
+			m.state.minGasPrice = chainRegistry.MustGetMinGasPriceByDenom(DefaultGasPriceDenom)
+			return NewEnableFeaturesCheckbox(m.state), cmd
+		}
 	}
 	m.TextInput = input
 	return m, cmd
