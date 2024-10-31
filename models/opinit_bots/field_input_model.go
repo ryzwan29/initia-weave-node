@@ -14,22 +14,12 @@ type FieldInputModel struct {
 	subModels        []SubModel
 }
 
-func createSubmodel(field Field) SubModel {
-	switch field.Type {
-	case StringField:
-		return NewStringFieldModel(field)
-	case NumberField:
-		return NewNumberFieldModel(field)
-	}
-	return nil
-}
-
 // NewFieldInputModel initializes the parent model with the subModels
 func NewFieldInputModel(ctx context.Context, fields []Field, newTerminalModel func(context.Context) tea.Model) *FieldInputModel {
 	subModels := make([]SubModel, len(fields))
 	// Create submodels based on the field types
 	for idx, field := range fields {
-		subModels[idx] = createSubmodel(field)
+		subModels[idx] = NewSubModel(field)
 	}
 
 	return &FieldInputModel{
@@ -47,6 +37,7 @@ func (m *FieldInputModel) Init() tea.Cmd {
 // Update delegates the update logic to the current active submodel
 func (m *FieldInputModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if model, cmd, handled := utils.HandleCommonCommands[OPInitBotsState](m, msg); handled {
+		m.subModels[m.currentIndex].Text = ""
 		m.currentIndex--
 		return model, cmd
 	}
@@ -64,6 +55,7 @@ func (m *FieldInputModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return model, model.Init()
 	}
 
+	m.subModels[m.currentIndex] = *updatedModel
 	return m, cmd
 }
 
