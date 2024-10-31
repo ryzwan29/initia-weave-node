@@ -71,8 +71,7 @@ func CloneContext(ctx context.Context) context.Context {
 	// Create a base context
 	clonedCtx := context.Background()
 
-	// Iterate over all known context keys and copy their values to the new context
-	for _, key := range []ContextKey{PageKey, StateKey, PageStackKey} {
+	for _, key := range []ContextKey{PageKey, StateKey, PageStackKey, TooltipToggleKey} {
 		if value := ctx.Value(key); value != nil {
 			clonedCtx = context.WithValue(clonedCtx, key, value)
 		}
@@ -165,7 +164,6 @@ func GetPageStack[S CloneableState[S]](ctx context.Context) []PageStatePair[S] {
 func Undo[S CloneableState[S]](ctx context.Context, msg tea.Msg) (context.Context, tea.Model, tea.Cmd, bool) {
 	if keyMsg, ok := msg.(tea.KeyMsg); ok {
 
-		// Detect Cmd+Z as Alt+Z
 		if keyMsg.String() == "ctrl+z" {
 			// Attempt to undo: Go back to the previous page and state
 			newCtx, prevPair := PopPageState[S](ctx)
