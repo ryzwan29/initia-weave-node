@@ -3,6 +3,7 @@ package initia
 import (
 	"errors"
 	"fmt"
+	"github.com/initia-labs/weave/registry"
 	"strings"
 	"testing"
 
@@ -58,7 +59,8 @@ func TestRunL1NodeNetworkSelect_SaveToState(t *testing.T) {
 func TestRunL1NodeMonikerInput_Update(t *testing.T) {
 	// Create a mock state
 	mockState := &RunL1NodeState{
-		moniker: "",
+		chainRegistry: registry.MustGetChainRegistry(registry.InitiaL1Testnet),
+		moniker:       "",
 	}
 
 	model := NewRunL1NodeMonikerInput(mockState)
@@ -70,7 +72,7 @@ func TestRunL1NodeMonikerInput_Update(t *testing.T) {
 
 	m, _ = model.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	assert.Equal(t, "Node1", mockState.moniker)
-	assert.IsType(t, m, &MinGasPriceInput{})
+	assert.IsType(t, m, &EnableFeaturesCheckbox{})
 }
 
 func TestRunL1NodeVersionSelect(t *testing.T) {
@@ -238,7 +240,9 @@ func TestMinGasPriceInput_Fail(t *testing.T) {
 
 func TestEnableFeaturesCheckbox(t *testing.T) {
 	// Initialize mock state
-	mockState := &RunL1NodeState{}
+	mockState := &RunL1NodeState{
+		chainRegistry: registry.MustGetChainRegistry(registry.InitiaL1Testnet),
+	}
 
 	// Create the checkbox model
 	model := NewEnableFeaturesCheckbox(mockState)
@@ -259,7 +263,9 @@ func TestEnableFeaturesCheckbox(t *testing.T) {
 	assert.IsType(t, &SeedsInput{}, m)
 
 	// Simulate selecting none (deselect both options)
-	mockState = &RunL1NodeState{}
+	mockState = &RunL1NodeState{
+		chainRegistry: registry.MustGetChainRegistry(registry.InitiaL1Testnet),
+	}
 	model = NewEnableFeaturesCheckbox(mockState)
 
 	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(" ")})
@@ -284,7 +290,9 @@ func TestSeedsInput_Success(t *testing.T) {
 	for _, seedsInput := range testCases {
 		t.Run(seedsInput, func(t *testing.T) {
 			// Initialize mock state
-			mockState := &RunL1NodeState{}
+			mockState := &RunL1NodeState{
+				chainRegistry: registry.MustGetChainRegistry(registry.InitiaL1Testnet),
+			}
 
 			// Create the SeedsInput model
 			model := NewSeedsInput(mockState)
@@ -317,7 +325,9 @@ func TestSeedsInput_Fail(t *testing.T) {
 	for _, seedsInput := range failTestCases {
 		t.Run(seedsInput, func(t *testing.T) {
 			// Initialize mock state
-			mockState := &RunL1NodeState{}
+			mockState := &RunL1NodeState{
+				chainRegistry: registry.MustGetChainRegistry(registry.InitiaL1Testnet),
+			}
 
 			// Create the SeedsInput model
 			model := NewSeedsInput(mockState)
@@ -366,7 +376,8 @@ func TestPersistentPeersInput_SuccessWithMixedStates(t *testing.T) {
 		t.Run(tc.network, func(t *testing.T) {
 			// Initialize mock state with the specified network
 			mockState := &RunL1NodeState{
-				network: tc.network,
+				network:       tc.network,
+				chainRegistry: registry.MustGetChainRegistry(registry.InitiaL1Testnet),
 			}
 
 			// Create the PersistentPeersInput model

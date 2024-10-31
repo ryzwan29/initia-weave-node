@@ -79,6 +79,7 @@ func (m *RunL1NodeNetworkSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case Mainnet, Testnet:
 			chainType := selected.ToChainType()
 			chainRegistry := registry.MustGetChainRegistry(chainType)
+			m.state.chainRegistry = chainRegistry
 			m.state.chainId = chainRegistry.GetChainId()
 			m.state.genesisEndpoint = chainRegistry.GetGenesisUrl()
 
@@ -331,13 +332,8 @@ func (m *RunL1NodeMonikerInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch m.state.network {
 		case string(Local):
 			return NewMinGasPriceInput(m.state), cmd
-		case string(Testnet):
-			chainRegistry := registry.MustGetChainRegistry(registry.InitiaL1Testnet)
-			m.state.minGasPrice = chainRegistry.MustGetMinGasPriceByDenom(DefaultGasPriceDenom)
-			return NewEnableFeaturesCheckbox(m.state), cmd
-		case string(Mainnet):
-			chainRegistry := registry.MustGetChainRegistry(registry.InitiaL1Mainnet)
-			m.state.minGasPrice = chainRegistry.MustGetMinGasPriceByDenom(DefaultGasPriceDenom)
+		case string(Testnet), string(Mainnet):
+			m.state.minGasPrice = m.state.chainRegistry.MustGetMinGasPriceByDenom(DefaultGasPriceDenom)
 			return NewEnableFeaturesCheckbox(m.state), cmd
 		}
 	}
@@ -464,8 +460,15 @@ func NewSeedsInput(state *RunL1NodeState) *SeedsInput {
 		state:     state,
 		question:  "Please specify the seeds",
 	}
-	model.WithPlaceholder("Enter in the format `id@ip:port`. You can add multiple seeds by separating them with a comma (,)")
 	model.WithValidatorFn(utils.IsValidPeerOrSeed)
+
+	if state.network != string(Local) {
+		model.WithDefaultValue(state.chainRegistry.GetSeeds())
+		model.WithPlaceholder("Press tab to use the official seeds from the Initia Registry")
+	} else {
+		model.WithPlaceholder("Enter in the format `id@ip:port`. You can add multiple seeds by separating them with a comma (,)")
+	}
+
 	return model
 }
 
@@ -504,8 +507,15 @@ func NewPersistentPeersInput(state *RunL1NodeState) *PersistentPeersInput {
 		state:     state,
 		question:  "Please specify the persistent_peers",
 	}
-	model.WithPlaceholder("Enter in the format `id@ip:port`. You can add multiple seeds by separating them with a comma (,)")
 	model.WithValidatorFn(utils.IsValidPeerOrSeed)
+
+	if state.network != string(Local) {
+		model.WithDefaultValue(state.chainRegistry.GetPersistentPeers())
+		model.WithPlaceholder("Press tab to use the official persistent peers from the Initia Registry")
+	} else {
+		model.WithPlaceholder("Enter in the format `id@ip:port`. You can add multiple seeds by separating them with a comma (,)")
+	}
+
 	return model
 }
 
