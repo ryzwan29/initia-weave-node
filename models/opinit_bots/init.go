@@ -331,12 +331,9 @@ func (m *UseCurrentConfigSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.Ctx = utils.SetCurrentState(m.Ctx, state)
 				return NewPrefillMinitiaConfig(m.Ctx), cmd
 			}
-			if state.InitExecutorBot {
+			if state.InitExecutorBot || state.InitChallengerBot {
 				m.Ctx = utils.SetCurrentState(m.Ctx, state)
-				return NewFieldInputModel(m.Ctx, defaultExecutorFields, NewSetDALayer), cmd
-			} else if state.InitChallengerBot {
-				m.Ctx = utils.SetCurrentState(m.Ctx, state)
-				return NewFieldInputModel(m.Ctx, defaultChallengerFields, NewStartingInitBot), cmd
+				return NewL1PrefillSelector(m.Ctx), cmd
 			}
 			m.Ctx = utils.SetCurrentState(m.Ctx, state)
 			return m, cmd
