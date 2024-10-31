@@ -1,6 +1,7 @@
 package opinit_bots
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -28,13 +29,13 @@ type Field struct {
 	ValidateFn   func(string) error
 }
 
-type BaseFieldModel struct {
+type SubModel struct {
 	utils.TextInput
-	state *OPInitBotsState
-	field Field
+	field      Field
+	CannotBack bool
 }
 
-func NewBaseFieldModel(state *OPInitBotsState, field Field) BaseFieldModel {
+func NewSubModel(field Field) SubModel {
 	textInput := utils.NewTextInput()
 	textInput.WithPlaceholder(field.Placeholder)
 	textInput.WithDefaultValue(field.DefaultValue)
@@ -49,67 +50,43 @@ func NewBaseFieldModel(state *OPInitBotsState, field Field) BaseFieldModel {
 			return nil
 		})
 	}
-	return BaseFieldModel{
+	return SubModel{
 		TextInput: textInput,
-		state:     state,
 		field:     field,
 	}
 }
 
 // Init is a common Init method for all field models
-func (m *BaseFieldModel) Init() tea.Cmd {
+func (m *SubModel) Init() tea.Cmd {
 	return nil
 }
 
+func (m *SubModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	return m, nil
+}
+
+func (m *SubModel) UpdateWithContext(ctx context.Context, parent tea.Model, msg tea.Msg) (context.Context, *SubModel, tea.Cmd) {
+	input, cmd, done := m.TextInput.Update(msg)
+	if done {
+		ctx = utils.CloneStateAndPushPage[OPInitBotsState](ctx, parent)
+		state := utils.GetCurrentState[OPInitBotsState](ctx)
+		res := strings.TrimSpace(input.Text)
+		state.botConfig[m.field.Name] = res
+		s := strings.Split(m.field.Name, ".")
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.field.Question, []string{s[len(s)-1], "L1", "L2"}, res))
+		ctx = utils.SetCurrentState(ctx, state)
+		return ctx, nil, nil // Done with this field, signal completion
+	}
+	m.TextInput = input
+	return ctx, m, cmd
+}
+
 // View is a common View method for all field models
-func (m *BaseFieldModel) View() string {
+func (m *SubModel) View() string {
 	s := strings.Split(m.field.Name, ".")
 	return styles.RenderPrompt(m.field.Question, []string{s[len(s)-1], "L1", "L2"}, styles.Question) + m.TextInput.View()
 }
 
-type StringFieldModel struct {
-	BaseFieldModel
-}
-
-func NewStringFieldModel(state *OPInitBotsState, field Field) *StringFieldModel {
-	return &StringFieldModel{
-		BaseFieldModel: NewBaseFieldModel(state, field),
-	}
-}
-
-func (m *StringFieldModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	input, cmd, done := m.TextInput.Update(msg)
-	if done {
-		res := strings.TrimSpace(input.Text)
-		m.state.botConfig[m.field.Name] = res
-		s := strings.Split(m.field.Name, ".")
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.field.Question, []string{s[len(s)-1], "L1", "L2"}, res))
-		return nil, nil // Done with this field, signal completion
-	}
-	m.TextInput = input
-	return m, cmd
-}
-
-type NumberFieldModel struct {
-	BaseFieldModel
-}
-
-func NewNumberFieldModel(state *OPInitBotsState, field Field) *NumberFieldModel {
-
-	return &NumberFieldModel{
-		BaseFieldModel: NewBaseFieldModel(state, field),
-	}
-}
-
-func (m *NumberFieldModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	input, cmd, done := m.TextInput.Update(msg)
-	if done {
-		res := strings.TrimSpace(input.Text)
-		m.state.botConfig[m.field.Name] = res
-		s := strings.Split(m.field.Name, ".")
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.field.Question, []string{s[len(s)-1], "L1", "L2"}, res))
-		return nil, nil // Done with this field, signal completion
-	}
-	m.TextInput = input
-	return m, cmd
+func (m *SubModel) CanGoPreviousPage() bool {
+	return !m.CannotBack
 }

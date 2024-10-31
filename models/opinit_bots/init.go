@@ -1,6 +1,7 @@
 package opinit_bots
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -24,8 +25,8 @@ const (
 )
 
 type OPInitBotInitSelector struct {
+	utils.BaseModel
 	utils.Selector[OPInitBotInitOption]
-	state    *OPInitBotsState
 	question string
 }
 
@@ -74,13 +75,14 @@ var defaultChallengerFields = []Field{
 	{Name: "l2_start_height", Type: NumberField, Question: "Please specify the l2_start_height", ValidateFn: utils.IsValidInteger},
 }
 
-func NewOPInitBotInitSelector(state *OPInitBotsState) tea.Model {
+func NewOPInitBotInitSelector(ctx context.Context) tea.Model {
 	return &OPInitBotInitSelector{
 		Selector: utils.Selector[OPInitBotInitOption]{
-			Options: []OPInitBotInitOption{ExecutorOPInitBotInitOption, ChallengerOPInitBotInitOption},
+			Options:    []OPInitBotInitOption{ExecutorOPInitBotInitOption, ChallengerOPInitBotInitOption},
+			CannotBack: true,
 		},
-		state:    state,
-		question: "Which bot would you like to run?",
+		BaseModel: utils.BaseModel{Ctx: ctx, CannotBack: true},
+		question:  "Which bot would you like to run?",
 	}
 }
 
@@ -101,8 +103,10 @@ type BotConfigChainId struct {
 	} `json:"l2_node"`
 }
 
-func OPInitBotInitSelectExecutor(state *OPInitBotsState) tea.Model {
+func OPInitBotInitSelectExecutor(ctx context.Context) tea.Model {
 	homeDir, _ := os.UserHomeDir()
+
+	state := utils.GetCurrentState[OPInitBotsState](ctx)
 	state.InitExecutorBot = true
 	minitiaConfigPath := filepath.Join(homeDir, utils.MinitiaArtifactsDirectory, "config.json")
 
@@ -123,7 +127,8 @@ func OPInitBotInitSelectExecutor(state *OPInitBotsState) tea.Model {
 
 	state.dbPath = filepath.Join(homeDir, utils.OPinitDirectory, "executor.db")
 	if utils.FileOrFolderExists(state.dbPath) {
-		return NewDeleteDBSelector(state, "executor")
+		ctx = utils.SetCurrentState(ctx, state)
+		return NewDeleteDBSelector(ctx, "executor")
 	}
 
 	executorJsonPath := filepath.Join(homeDir, utils.OPinitDirectory, "executor.json")
@@ -141,23 +146,29 @@ func OPInitBotInitSelectExecutor(state *OPInitBotsState) tea.Model {
 		}
 		state.botConfig["l1_node.chain_id"] = botConfigChainId.L1Node.ChainID
 		state.botConfig["l2_node.chain_id"] = botConfigChainId.L2Node.ChainID
-		return NewUseCurrentConfigSelector(state, "executor")
+		ctx = utils.SetCurrentState(ctx, state)
+		return NewUseCurrentConfigSelector(ctx, "executor")
 	}
 
 	if state.MinitiaConfig != nil {
-		return NewPrefillMinitiaConfig(state)
+		ctx = utils.SetCurrentState(ctx, state)
+		return NewPrefillMinitiaConfig(ctx)
 	}
 
-	return NewL1PrefillSelector(state)
+	ctx = utils.SetCurrentState(ctx, state)
+	return NewL1PrefillSelector(ctx)
 }
 
-func OPInitBotInitSelectChallenger(state *OPInitBotsState) tea.Model {
+func OPInitBotInitSelectChallenger(ctx context.Context) tea.Model {
 	homeDir, _ := os.UserHomeDir()
+
+	state := utils.GetCurrentState[OPInitBotsState](ctx)
 	state.InitChallengerBot = true
 
 	state.dbPath = filepath.Join(homeDir, utils.OPinitDirectory, "challenger.db")
 	if utils.FileOrFolderExists(state.dbPath) {
-		return NewDeleteDBSelector(state, "challenger")
+		ctx = utils.SetCurrentState(ctx, state)
+		return NewDeleteDBSelector(ctx, "challenger")
 	}
 
 	challengerJsonPath := filepath.Join(homeDir, utils.OPinitDirectory, "challenger.json")
@@ -175,26 +186,31 @@ func OPInitBotInitSelectChallenger(state *OPInitBotsState) tea.Model {
 		}
 		state.botConfig["l1_node.chain_id"] = botConfigChainId.L1Node.ChainID
 		state.botConfig["l2_node.chain_id"] = botConfigChainId.L2Node.ChainID
-		return NewUseCurrentConfigSelector(state, "executor")
+		ctx = utils.SetCurrentState(ctx, state)
+		return NewUseCurrentConfigSelector(ctx, "challenger")
 	}
 
 	if state.MinitiaConfig != nil {
-		return NewPrefillMinitiaConfig(state)
+		ctx = utils.SetCurrentState(ctx, state)
+		return NewPrefillMinitiaConfig(ctx)
 	}
-	return NewL1PrefillSelector(state)
+	ctx = utils.SetCurrentState(ctx, state)
+	return NewL1PrefillSelector(ctx)
 }
 
 func (m *OPInitBotInitSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	selected, cmd := m.Select(msg)
 	if selected != nil {
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"bot"}, string(*selected)))
-
+		m.Ctx = utils.CloneStateAndPushPage[OPInitBotsState](m.Ctx, m)
+		state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"bot"}, string(*selected)))
+		m.Ctx = utils.SetCurrentState(m.Ctx, state)
 		var nextModel tea.Model
 		switch *selected {
 		case ExecutorOPInitBotInitOption:
-			nextModel = OPInitBotInitSelectExecutor(m.state)
+			nextModel = OPInitBotInitSelectExecutor(m.Ctx)
 		case ChallengerOPInitBotInitOption:
-			nextModel = OPInitBotInitSelectChallenger(m.state)
+			nextModel = OPInitBotInitSelectChallenger(m.Ctx)
 		}
 
 		return nextModel, cmd
@@ -216,12 +232,12 @@ const (
 
 type DeleteDBSelector struct {
 	utils.Selector[DeleteDBOption]
-	state    *OPInitBotsState
+	utils.BaseModel
 	question string
 	bot      string
 }
 
-func NewDeleteDBSelector(state *OPInitBotsState, bot string) *DeleteDBSelector {
+func NewDeleteDBSelector(ctx context.Context, bot string) *DeleteDBSelector {
 	return &DeleteDBSelector{
 		Selector: utils.Selector[DeleteDBOption]{
 			Options: []DeleteDBOption{
@@ -229,9 +245,9 @@ func NewDeleteDBSelector(state *OPInitBotsState, bot string) *DeleteDBSelector {
 				DeleteDBOptionYes,
 			},
 		},
-		state:    state,
-		question: "Would you like to reset the database?",
-		bot:      bot,
+		BaseModel: utils.BaseModel{Ctx: ctx},
+		question:  "Would you like to reset the database?",
+		bot:       bot,
 	}
 }
 
@@ -244,17 +260,22 @@ func (m *DeleteDBSelector) Init() tea.Cmd {
 }
 
 func (m *DeleteDBSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := utils.HandleCommonCommands[OPInitBotsState](m, msg); handled {
+		return model, cmd
+	}
 	selected, cmd := m.Select(msg)
 	if selected != nil {
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, string(*selected)))
-
+		m.Ctx = utils.CloneStateAndPushPage[OPInitBotsState](m.Ctx, m)
+		state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, string(*selected)))
 		switch *selected {
 		case DeleteDBOptionNo:
-			m.state.isDeleteDB = false
+			state.isDeleteDB = false
 		case DeleteDBOptionYes:
-			m.state.isDeleteDB = true
+			state.isDeleteDB = true
 		}
-		return NewUseCurrentConfigSelector(m.state, m.bot), cmd
+		m.Ctx = utils.SetCurrentState(m.Ctx, state)
+		return NewUseCurrentConfigSelector(m.Ctx, m.bot), cmd
 
 	}
 
@@ -262,17 +283,18 @@ func (m *DeleteDBSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *DeleteDBSelector) View() string {
-	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{}, styles.Question) + m.Selector.View()
+	state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{}, styles.Question) + m.Selector.View()
 }
 
 type UseCurrentConfigSelector struct {
 	utils.Selector[string]
-	state      *OPInitBotsState
+	utils.BaseModel
 	question   string
 	configPath string
 }
 
-func NewUseCurrentConfigSelector(state *OPInitBotsState, bot string) *UseCurrentConfigSelector {
+func NewUseCurrentConfigSelector(ctx context.Context, bot string) *UseCurrentConfigSelector {
 	configPath := fmt.Sprintf(".opinit/%s.json", bot)
 	return &UseCurrentConfigSelector{
 		Selector: utils.Selector[string]{
@@ -281,7 +303,7 @@ func NewUseCurrentConfigSelector(state *OPInitBotsState, bot string) *UseCurrent
 				"replace",
 			},
 		},
-		state:      state,
+		BaseModel:  utils.BaseModel{Ctx: ctx},
 		question:   fmt.Sprintf("Existing %s detected. Would you like to use the current one or replace it?", configPath),
 		configPath: configPath,
 	}
@@ -296,29 +318,35 @@ func (m *UseCurrentConfigSelector) Init() tea.Cmd {
 }
 
 func (m *UseCurrentConfigSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := utils.HandleCommonCommands[OPInitBotsState](m, msg); handled {
+		return model, cmd
+	}
 	selected, cmd := m.Select(msg)
 	if selected != nil {
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{m.configPath}, *selected))
-
+		m.Ctx = utils.CloneStateAndPushPage[OPInitBotsState](m.Ctx, m)
+		state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{m.configPath}, *selected))
 		switch *selected {
 		case "use current file":
-			m.state.ReplaceBotConfig = false
-
-			model := NewStartingInitBot(m.state)
+			state.ReplaceBotConfig = false
+			m.Ctx = utils.SetCurrentState(m.Ctx, state)
+			model := NewStartingInitBot(m.Ctx)
 			return model, model.Init()
 		case "replace":
-			m.state.ReplaceBotConfig = true
-			if m.state.MinitiaConfig != nil {
-				return NewPrefillMinitiaConfig(m.state), cmd
+			state.ReplaceBotConfig = true
+			if state.MinitiaConfig != nil {
+				m.Ctx = utils.SetCurrentState(m.Ctx, state)
+				return NewPrefillMinitiaConfig(m.Ctx), cmd
 			}
-			if m.state.InitExecutorBot {
-				return NewFieldInputModel(m.state, defaultExecutorFields, NewSetDALayer), cmd
-			} else if m.state.InitChallengerBot {
-				return NewFieldInputModel(m.state, defaultChallengerFields, NewStartingInitBot), cmd
+			if state.InitExecutorBot {
+				m.Ctx = utils.SetCurrentState(m.Ctx, state)
+				return NewFieldInputModel(m.Ctx, defaultExecutorFields, NewSetDALayer), cmd
+			} else if state.InitChallengerBot {
+				m.Ctx = utils.SetCurrentState(m.Ctx, state)
+				return NewFieldInputModel(m.Ctx, defaultChallengerFields, NewStartingInitBot), cmd
 			}
-
+			m.Ctx = utils.SetCurrentState(m.Ctx, state)
 			return m, cmd
-
 		}
 	}
 
@@ -326,7 +354,8 @@ func (m *UseCurrentConfigSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *UseCurrentConfigSelector) View() string {
-	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{m.configPath}, styles.Question) + m.Selector.View()
+	state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{m.configPath}, styles.Question) + m.Selector.View()
 }
 
 type PrefillMinitiaConfigOption string
@@ -338,11 +367,11 @@ const (
 
 type PrefillMinitiaConfig struct {
 	utils.Selector[PrefillMinitiaConfigOption]
-	state    *OPInitBotsState
+	utils.BaseModel
 	question string
 }
 
-func NewPrefillMinitiaConfig(state *OPInitBotsState) *PrefillMinitiaConfig {
+func NewPrefillMinitiaConfig(ctx context.Context) *PrefillMinitiaConfig {
 	return &PrefillMinitiaConfig{
 		Selector: utils.Selector[PrefillMinitiaConfigOption]{
 			Options: []PrefillMinitiaConfigOption{
@@ -350,8 +379,8 @@ func NewPrefillMinitiaConfig(state *OPInitBotsState) *PrefillMinitiaConfig {
 				PrefillMinitiaConfigNo,
 			},
 		},
-		state:    state,
-		question: "Existing .minitia/artifacts/config.json detected. Would you like to use the data in this file to pre-fill some fields?",
+		BaseModel: utils.BaseModel{Ctx: ctx},
+		question:  "Existing .minitia/artifacts/config.json detected. Would you like to use the data in this file to pre-fill some fields?",
 	}
 }
 
@@ -364,13 +393,18 @@ func (m *PrefillMinitiaConfig) Init() tea.Cmd {
 }
 
 func (m *PrefillMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := utils.HandleCommonCommands[OPInitBotsState](m, msg); handled {
+		return model, cmd
+	}
 	selected, cmd := m.Select(msg)
 	if selected != nil {
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{".minitia/artifacts/config.json"}, string(*selected)))
+		m.Ctx = utils.CloneStateAndPushPage[OPInitBotsState](m.Ctx, m)
+		state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{".minitia/artifacts/config.json"}, string(*selected)))
 
 		switch *selected {
 		case PrefillMinitiaConfigYes:
-			minitiaConfig := m.state.MinitiaConfig
+			minitiaConfig := state.MinitiaConfig
 			defaultExecutorFields[2].PrefillValue = minitiaConfig.L1Config.ChainID
 			defaultExecutorFields[3].PrefillValue = minitiaConfig.L1Config.RpcUrl
 			defaultExecutorFields[4].PrefillValue = minitiaConfig.L1Config.GasPrices
@@ -379,14 +413,17 @@ func (m *PrefillMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			defaultChallengerFields[2].PrefillValue = minitiaConfig.L1Config.ChainID
 			defaultChallengerFields[3].PrefillValue = minitiaConfig.L1Config.RpcUrl
 			defaultChallengerFields[4].PrefillValue = minitiaConfig.L2Config.ChainID
-			if m.state.InitExecutorBot {
-				return NewFieldInputModel(m.state, defaultExecutorFields, NewSetDALayer), cmd
-			} else if m.state.InitChallengerBot {
-				return NewFieldInputModel(m.state, defaultChallengerFields, NewStartingInitBot), cmd
+			m.Ctx = utils.SetCurrentState(m.Ctx, state)
+
+			if state.InitExecutorBot {
+				return NewFieldInputModel(m.Ctx, defaultExecutorFields, NewSetDALayer), cmd
+			} else if state.InitChallengerBot {
+				return NewFieldInputModel(m.Ctx, defaultChallengerFields, NewStartingInitBot), cmd
 			}
 
 		case PrefillMinitiaConfigNo:
-			return NewL1PrefillSelector(m.state), cmd
+			m.Ctx = utils.SetCurrentState(m.Ctx, state)
+			return NewL1PrefillSelector(m.Ctx), cmd
 		}
 
 	}
@@ -395,7 +432,8 @@ func (m *PrefillMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *PrefillMinitiaConfig) View() string {
-	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{".minitia/artifacts/config.json"}, styles.Question) + m.Selector.View()
+	state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{".minitia/artifacts/config.json"}, styles.Question) + m.Selector.View()
 }
 
 type L1PrefillOption string
@@ -408,11 +446,11 @@ var (
 
 type L1PrefillSelector struct {
 	utils.Selector[L1PrefillOption]
-	state    *OPInitBotsState
+	utils.BaseModel
 	question string
 }
 
-func NewL1PrefillSelector(state *OPInitBotsState) *L1PrefillSelector {
+func NewL1PrefillSelector(ctx context.Context) *L1PrefillSelector {
 	L1PrefillOptionMainnet = L1PrefillOption(fmt.Sprintf("Mainnet (%s)", utils.GetConfig("constants.chain_id.mainnet")))
 	L1PrefillOptionTestnet = L1PrefillOption(fmt.Sprintf("Testnet (%s)", utils.GetConfig("constants.chain_id.testnet")))
 	return &L1PrefillSelector{
@@ -423,8 +461,8 @@ func NewL1PrefillSelector(state *OPInitBotsState) *L1PrefillSelector {
 				L1PrefillOptionCustom,
 			},
 		},
-		state:    state,
-		question: "Which L1 would you like your Minitia to connect to?",
+		BaseModel: utils.BaseModel{Ctx: ctx},
+		question:  "Which L1 would you like your Minitia to connect to?",
 	}
 }
 
@@ -437,9 +475,14 @@ func (m *L1PrefillSelector) Init() tea.Cmd {
 }
 
 func (m *L1PrefillSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := utils.HandleCommonCommands[OPInitBotsState](m, msg); handled {
+		return model, cmd
+	}
 	selected, cmd := m.Select(msg)
 	if selected != nil {
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"L1"}, string(*selected)))
+		m.Ctx = utils.CloneStateAndPushPage[OPInitBotsState](m.Ctx, m)
+		state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"L1"}, string(*selected)))
 
 		var chainId, rpc string
 		switch *selected {
@@ -458,10 +501,12 @@ func (m *L1PrefillSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		defaultChallengerFields[2].PrefillValue = chainId
 		defaultChallengerFields[3].PrefillValue = rpc
 
-		if m.state.InitExecutorBot {
-			return NewFieldInputModel(m.state, defaultExecutorFields, NewSetDALayer), cmd
-		} else if m.state.InitChallengerBot {
-			return NewFieldInputModel(m.state, defaultChallengerFields, NewStartingInitBot), cmd
+		if state.InitExecutorBot {
+			m.Ctx = utils.SetCurrentState(m.Ctx, state)
+			return NewFieldInputModel(m.Ctx, defaultExecutorFields, NewSetDALayer), cmd
+		} else if state.InitChallengerBot {
+			m.Ctx = utils.SetCurrentState(m.Ctx, state)
+			return NewFieldInputModel(m.Ctx, defaultChallengerFields, NewStartingInitBot), cmd
 		}
 
 	}
@@ -470,7 +515,8 @@ func (m *L1PrefillSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *L1PrefillSelector) View() string {
-	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"L1"}, styles.Question) + m.Selector.View()
+	state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"L1"}, styles.Question) + m.Selector.View()
 }
 
 type DALayerNetwork string
@@ -484,11 +530,11 @@ const (
 
 type SetDALayer struct {
 	utils.Selector[DALayerNetwork]
-	state    *OPInitBotsState
+	utils.BaseModel
 	question string
 }
 
-func NewSetDALayer(state *OPInitBotsState) tea.Model {
+func NewSetDALayer(ctx context.Context) tea.Model {
 	return &SetDALayer{
 		Selector: utils.Selector[DALayerNetwork]{
 			Options: []DALayerNetwork{
@@ -497,8 +543,8 @@ func NewSetDALayer(state *OPInitBotsState) tea.Model {
 				CelestiaTestnet,
 			},
 		},
-		state:    state,
-		question: "Which DA Layer would you like to use?",
+		BaseModel: utils.BaseModel{Ctx: ctx},
+		question:  "Which DA Layer would you like to use?",
 	}
 }
 
@@ -511,42 +557,50 @@ func (m *SetDALayer) Init() tea.Cmd {
 }
 
 func (m *SetDALayer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := utils.HandleCommonCommands[OPInitBotsState](m, msg); handled {
+		return model, cmd
+	}
 	selected, cmd := m.Select(msg)
 	if selected != nil {
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"DA Layer"}, string(*selected)))
+		m.Ctx = utils.CloneStateAndPushPage[OPInitBotsState](m.Ctx, m)
+		state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"DA Layer"}, string(*selected)))
 		switch *selected {
 		case Initia:
-			m.state.botConfig["da.chain_id"] = m.state.botConfig["l1_node.chain_id"]
-			m.state.botConfig["da.rpc_address"] = m.state.botConfig["l1_node.rpc_address"]
-			m.state.botConfig["da.bech32_prefix"] = "init"
-			m.state.botConfig["da.gas_price"] = m.state.botConfig["l1_node.gas_price"]
+			state.botConfig["da.chain_id"] = state.botConfig["l1_node.chain_id"]
+			state.botConfig["da.rpc_address"] = state.botConfig["l1_node.rpc_address"]
+			state.botConfig["da.bech32_prefix"] = "init"
+			state.botConfig["da.gas_price"] = state.botConfig["l1_node.gas_price"]
 		case CelestiaMainnet:
-			m.state.botConfig["da.chain_id"] = fmt.Sprintf("%s", utils.GetConfig("constants.da_layer.celestia_mainnet.chain_id"))
-			m.state.botConfig["da.rpc_address"] = fmt.Sprintf("%s", utils.GetConfig("constants.da_layer.celestia_mainnet.rpc"))
-			m.state.botConfig["da.bech32_prefix"] = fmt.Sprintf("%s", utils.GetConfig("constants.da_layer.celestia_mainnet.bech32_prefix"))
-			m.state.botConfig["da.gas_price"] = fmt.Sprintf("%s", utils.GetConfig("constants.da_layer.celestia_mainnet.gas_price"))
+			state.botConfig["da.chain_id"] = fmt.Sprintf("%s", utils.GetConfig("constants.da_layer.celestia_mainnet.chain_id"))
+			state.botConfig["da.rpc_address"] = fmt.Sprintf("%s", utils.GetConfig("constants.da_layer.celestia_mainnet.rpc"))
+			state.botConfig["da.bech32_prefix"] = fmt.Sprintf("%s", utils.GetConfig("constants.da_layer.celestia_mainnet.bech32_prefix"))
+			state.botConfig["da.gas_price"] = fmt.Sprintf("%s", utils.GetConfig("constants.da_layer.celestia_mainnet.gas_price"))
 		case CelestiaTestnet:
-			m.state.botConfig["da.chain_id"] = fmt.Sprintf("%s", utils.GetConfig("constants.da_layer.celestia_testnet.chain_id"))
-			m.state.botConfig["da.rpc_address"] = fmt.Sprintf("%s", utils.GetConfig("constants.da_layer.celestia_testnet.rpc"))
-			m.state.botConfig["da.bech32_prefix"] = fmt.Sprintf("%s", utils.GetConfig("constants.da_layer.celestia_testnet.bech32_prefix"))
-			m.state.botConfig["da.gas_price"] = fmt.Sprintf("%s", utils.GetConfig("constants.da_layer.celestia_testnet.gas_price"))
+			state.botConfig["da.chain_id"] = fmt.Sprintf("%s", utils.GetConfig("constants.da_layer.celestia_testnet.chain_id"))
+			state.botConfig["da.rpc_address"] = fmt.Sprintf("%s", utils.GetConfig("constants.da_layer.celestia_testnet.rpc"))
+			state.botConfig["da.bech32_prefix"] = fmt.Sprintf("%s", utils.GetConfig("constants.da_layer.celestia_testnet.bech32_prefix"))
+			state.botConfig["da.gas_price"] = fmt.Sprintf("%s", utils.GetConfig("constants.da_layer.celestia_testnet.gas_price"))
 		}
-		return NewFieldInputModel(m.state, defaultDALayerFields, NewStartingInitBot), cmd
+		m.Ctx = utils.SetCurrentState(m.Ctx, state)
+		return NewFieldInputModel(m.Ctx, defaultDALayerFields, NewStartingInitBot), cmd
 	}
 
 	return m, cmd
 }
 
 func (m *SetDALayer) View() string {
-	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"DA Layer"}, styles.Question) + m.Selector.View()
+	state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"DA Layer"}, styles.Question) + m.Selector.View()
 }
 
 type StartingInitBot struct {
-	state   *OPInitBotsState
+	utils.BaseModel
 	loading utils.Loading
 }
 
-func NewStartingInitBot(state *OPInitBotsState) tea.Model {
+func NewStartingInitBot(ctx context.Context) tea.Model {
+	state := utils.GetCurrentState[OPInitBotsState](ctx)
 	var bot string
 	if state.InitExecutorBot {
 		bot = "executor"
@@ -554,8 +608,8 @@ func NewStartingInitBot(state *OPInitBotsState) tea.Model {
 		bot = "challenger"
 	}
 	return &StartingInitBot{
-		state:   state,
-		loading: utils.NewLoading(fmt.Sprintf("Setting up OPinit bot %s...", bot), WaitStartingInitBot(state)),
+		BaseModel: utils.BaseModel{Ctx: ctx, CannotBack: true},
+		loading:   utils.NewLoading(fmt.Sprintf("Setting up OPinit bot %s...", bot), WaitStartingInitBot(&state)),
 	}
 }
 
@@ -704,22 +758,23 @@ func (m *StartingInitBot) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	loader, cmd := m.loading.Update(msg)
 	m.loading = loader
 	if m.loading.Completing {
-		return NewOPinitBotSuccessful(m.state), nil
+		return NewOPinitBotSuccessful(m.Ctx), nil
 	}
 	return m, cmd
 }
 
 func (m *StartingInitBot) View() string {
-	return m.state.weave.Render() + m.loading.View()
+	state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
+	return state.weave.Render() + m.loading.View()
 }
 
 type OPinitBotSuccessful struct {
-	state *OPInitBotsState
+	utils.BaseModel
 }
 
-func NewOPinitBotSuccessful(state *OPInitBotsState) *OPinitBotSuccessful {
+func NewOPinitBotSuccessful(ctx context.Context) *OPinitBotSuccessful {
 	return &OPinitBotSuccessful{
-		state: state,
+		BaseModel: utils.BaseModel{Ctx: ctx, CannotBack: true},
 	}
 }
 
@@ -732,5 +787,6 @@ func (m *OPinitBotSuccessful) Update(_ tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *OPinitBotSuccessful) View() string {
-	return m.state.weave.Render() + styles.RenderPrompt("OPInit bot setup successful.", []string{}, styles.Completed) + "\n"
+	state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
+	return state.weave.Render() + styles.RenderPrompt("OPInit bot setup successful.", []string{}, styles.Completed) + "\n"
 }
