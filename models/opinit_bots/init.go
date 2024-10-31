@@ -188,7 +188,7 @@ func OPInitBotInitSelectChallenger(ctx context.Context) tea.Model {
 		state.botConfig["l1_node.chain_id"] = botConfigChainId.L1Node.ChainID
 		state.botConfig["l2_node.chain_id"] = botConfigChainId.L2Node.ChainID
 		ctx = utils.SetCurrentState(ctx, state)
-		return NewUseCurrentConfigSelector(ctx, "executor")
+		return NewUseCurrentConfigSelector(ctx, "challenger")
 	}
 
 	if state.MinitiaConfig != nil {

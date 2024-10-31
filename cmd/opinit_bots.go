@@ -133,9 +133,6 @@ Example: weave opinit-bots init executor`,
 			} else {
 				// Start the version selector program if no bot name is provided
 				_, err := tea.NewProgram(opinit_bots.NewOPInitBotInitSelector(ctx)).Run()
-				if err != nil {
-					fmt.Println("Error running program:", err)
-				}
 				return err
 			}
 		},
