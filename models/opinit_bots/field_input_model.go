@@ -39,6 +39,7 @@ func (m *FieldInputModel) Init() tea.Cmd {
 func (m *FieldInputModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if model, cmd, handled := utils.HandleCommonCommands[OPInitBotsState](m, msg); handled {
 		m.subModels[m.currentIndex].Text = ""
+		m.subModels[m.currentIndex].Cursor = 0
 		m.currentIndex--
 		return model, cmd
 	}
