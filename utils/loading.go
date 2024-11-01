@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -31,6 +32,7 @@ type Loading struct {
 	frame      int
 	executeFn  tea.Cmd
 	Err        error
+	EndContext context.Context
 }
 
 func NewLoading(text string, executeFn tea.Cmd) Loading {
@@ -64,6 +66,7 @@ func (m Loading) Update(msg tea.Msg) (Loading, tea.Cmd) {
 		return m, m.tick()
 	case EndLoading:
 		m.Completing = true
+		m.EndContext = msg.Ctx
 		return m, nil
 	case ErrorLoading:
 		m.Err = msg.Err
@@ -92,7 +95,9 @@ func (m Loading) tick() tea.Cmd {
 	})
 }
 
-type EndLoading struct{}
+type EndLoading struct {
+	Ctx context.Context
+}
 
 func DefaultWait() tea.Cmd {
 	return func() tea.Msg {
