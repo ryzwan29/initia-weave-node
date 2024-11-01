@@ -418,7 +418,8 @@ func NewGasDenomInput(state *LaunchState) *GasDenomInput {
 		state:     state,
 		question:  "Please specify the L2 Gas Token Denom",
 	}
-	model.WithPlaceholder("Enter the denom")
+	model.WithPlaceholder(`Press tab to use "umin"`)
+	model.WithDefaultValue("umin")
 	model.WithValidatorFn(utils.ValidateDenom)
 	return model
 }
@@ -2369,6 +2370,14 @@ func (m *LaunchingNewMinitiaLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			utils.WrapText(link),
 		)
 		m.state.weave.PushPreviousResponse(scanText)
+
+		srv, err := service.NewService(service.Minitia)
+		if err != nil {
+			m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "Invalid OS: only Linux and Darwin are supported", []string{}, fmt.Sprintf("%v", err)))
+		}
+		if err = srv.Start(); err != nil {
+			m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "Failed to start Minitia service", []string{}, fmt.Sprintf("%v", err)))
+		}
 
 		return NewTerminalState(m.state), tea.Quit
 	}
