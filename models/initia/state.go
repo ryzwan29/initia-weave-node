@@ -2,6 +2,7 @@ package initia
 
 import "github.com/initia-labs/weave/types"
 
+// RunL1NodeState represents the configuration state of a Layer 1 Node
 type RunL1NodeState struct {
 	weave                             types.WeaveState
 	network                           string
@@ -26,8 +27,36 @@ type RunL1NodeState struct {
 	stateSyncEndpoint                 string
 }
 
-func NewRunL1NodeState() *RunL1NodeState {
-	return &RunL1NodeState{
+// NewRunL1NodeState initializes a new RunL1NodeState with default values.
+func NewRunL1NodeState() RunL1NodeState {
+	return RunL1NodeState{
 		weave: types.NewWeaveState(),
+	}
+}
+
+// Clone creates a deep copy of RunL1NodeState without pointers.
+func (s RunL1NodeState) Clone() RunL1NodeState {
+	return RunL1NodeState{
+		weave:                             s.weave.Clone(), // Assuming WeaveState has a Clone method
+		network:                           s.network,
+		initiadVersion:                    s.initiadVersion,
+		initiadEndpoint:                   s.initiadEndpoint,
+		chainId:                           s.chainId,
+		moniker:                           s.moniker,
+		existingApp:                       s.existingApp,
+		replaceExistingApp:                s.replaceExistingApp,
+		minGasPrice:                       s.minGasPrice,
+		enableLCD:                         s.enableLCD,
+		enableGRPC:                        s.enableGRPC,
+		seeds:                             s.seeds,
+		persistentPeers:                   s.persistentPeers,
+		existingGenesis:                   s.existingGenesis,
+		genesisEndpoint:                   s.genesisEndpoint,
+		existingData:                      s.existingData,
+		syncMethod:                        s.syncMethod,
+		replaceExistingData:               s.replaceExistingData,
+		replaceExistingGenesisWithDefault: s.replaceExistingGenesisWithDefault,
+		snapshotEndpoint:                  s.snapshotEndpoint,
+		stateSyncEndpoint:                 s.stateSyncEndpoint,
 	}
 }
