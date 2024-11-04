@@ -77,7 +77,7 @@ func NewGasStationMnemonicInput(previousResponse string) *GasStationMnemonicInpu
 	model := &GasStationMnemonicInput{
 		previousResponse: previousResponse,
 		firstTime:        utils.IsFirstTimeSetup(),
-		TextInput:        utils.NewTextInput(),
+		TextInput:        utils.NewTextInput(true),
 	}
 	model.WithPlaceholder("Add mnemonic")
 	model.WithValidatorFn(utils.ValidateMnemonic)

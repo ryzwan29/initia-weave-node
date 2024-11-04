@@ -27,7 +27,7 @@ func NewHomepage() tea.Model {
 			},
 			Cursor: 0,
 		},
-		TextInput: utils.NewTextInput(),
+		TextInput: utils.NewTextInput(true),
 	}
 }
 

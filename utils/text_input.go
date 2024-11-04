@@ -15,9 +15,10 @@ type TextInput struct {
 	DefaultValue string
 	ValidationFn func(string) error
 	IsEntered    bool
+	CannotBack   bool
 }
 
-func NewTextInput() TextInput {
+func NewTextInput(cannotBack bool) TextInput {
 	return TextInput{
 		Text:         "",
 		Cursor:       0,
@@ -25,6 +26,7 @@ func NewTextInput() TextInput {
 		DefaultValue: "",
 		ValidationFn: NoOps,
 		IsEntered:    false,
+		CannotBack:   cannotBack,
 	}
 }
 
@@ -145,14 +147,21 @@ func moveToNextWord(text string, cursor int) int {
 }
 
 func (ti TextInput) View() string {
-	var beforeCursor, cursorChar, afterCursor string
-	bottomText := styles.Text("Press Enter to submit, Ctrl+Z to go back, or Ctrl+C to quit.", styles.Gray)
+	var beforeCursor, cursorChar, afterCursor, bottomText string
+
+	if ti.CannotBack {
+		bottomText = styles.Text("Press Enter to submit or Ctrl+C to quit.", styles.Gray)
+	} else {
+		bottomText = styles.Text("Press Enter to submit, Ctrl+Z to go back or Ctrl+C to quit.", styles.Gray)
+	}
+
 	feedback := ""
 	if ti.IsEntered {
 		if err := ti.ValidationFn(ti.Text); err != nil {
 			feedback = styles.RenderError(err)
 		}
 	}
+
 	if len(ti.Text) == 0 {
 		return fmt.Sprintf("\n%s %s\n\n%s%s", styles.Text(">", styles.Cyan), styles.Text(ti.Placeholder, styles.Gray), feedback, bottomText)
 	} else if ti.Cursor < len(ti.Text) {

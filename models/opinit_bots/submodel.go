@@ -36,7 +36,7 @@ type SubModel struct {
 }
 
 func NewSubModel(field Field) SubModel {
-	textInput := utils.NewTextInput()
+	textInput := utils.NewTextInput(false)
 	textInput.WithPlaceholder(field.Placeholder)
 	textInput.WithDefaultValue(field.DefaultValue)
 	textInput.WithPrefillValue(field.PrefillValue)
