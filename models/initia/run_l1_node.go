@@ -12,7 +12,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-  "github.com/initia-labs/weave/registry"
+	"github.com/initia-labs/weave/registry"
 	"github.com/initia-labs/weave/service"
 	"github.com/initia-labs/weave/styles"
 	"github.com/initia-labs/weave/utils"
@@ -337,8 +337,8 @@ func (m *RunL1NodeMonikerInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-    m.Ctx = utils.CloneStateAndPushPage[RunL1NodeState](m.Ctx, m)
-    state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
+		m.Ctx = utils.CloneStateAndPushPage[RunL1NodeState](m.Ctx, m)
+		state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
 
 		state.moniker = input.Text
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"moniker"}, input.Text))
@@ -490,6 +490,7 @@ func NewSeedsInput(ctx context.Context) *SeedsInput {
 	}
 	model.WithValidatorFn(utils.IsValidPeerOrSeed)
 
+	state := utils.GetCurrentState[RunL1NodeState](ctx)
 	if state.network != string(Local) {
 		model.WithDefaultValue(state.chainRegistry.GetSeeds())
 		model.WithPlaceholder("Press tab to use the official seeds from the Initia Registry")
@@ -544,6 +545,7 @@ func NewPersistentPeersInput(ctx context.Context) *PersistentPeersInput {
 	}
 	model.WithValidatorFn(utils.IsValidPeerOrSeed)
 
+	state := utils.GetCurrentState[RunL1NodeState](ctx)
 	if state.network != string(Local) {
 		model.WithDefaultValue(state.chainRegistry.GetPersistentPeers())
 		model.WithPlaceholder("Press tab to use the official persistent peers from the Initia Registry")
