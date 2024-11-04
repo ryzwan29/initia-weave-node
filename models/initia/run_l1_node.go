@@ -89,7 +89,6 @@ func (m *RunL1NodeNetworkSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			chainRegistry := registry.MustGetChainRegistry(chainType)
 			state.chainId = chainRegistry.GetChainId()
 			state.genesisEndpoint = chainRegistry.GetGenesisUrl()
-			m.Ctx = utils.SetCurrentState(m.Ctx, state)
 
 			if !IsExistApp() {
 				state.existingApp = false
