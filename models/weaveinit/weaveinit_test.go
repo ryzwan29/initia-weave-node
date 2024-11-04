@@ -14,8 +14,8 @@ func TestGetWeaveInitOptions(t *testing.T) {
 	}{
 		{"", []WeaveInitOption{RunL1NodeOption}},
 		{"minitia_launch", []WeaveInitOption{RunL1NodeOption, LaunchNewMinitiaOption}},
-		{"minitia_launch,opinit_bots", []WeaveInitOption{RunL1NodeOption, LaunchNewMinitiaOption, InitializeOPBotsOption}},
-		{"minitia_launch,opinit_bots,relayer", []WeaveInitOption{RunL1NodeOption, LaunchNewMinitiaOption, InitializeOPBotsOption, StartRelayerOption}},
+		{"minitia_launch,opinit_bots", []WeaveInitOption{RunL1NodeOption, LaunchNewMinitiaOption, SetupOPBotsKeys, InitializeOPBotsOption}},
+		{"minitia_launch,opinit_bots,relayer", []WeaveInitOption{RunL1NodeOption, LaunchNewMinitiaOption, SetupOPBotsKeys, InitializeOPBotsOption, StartRelayerOption}},
 	}
 
 	for _, tc := range testCases {
