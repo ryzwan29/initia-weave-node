@@ -38,7 +38,8 @@ func initiaInitCommand() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if utils.IsFirstTimeSetup() {
 				// Capture both the final model and the error from Run()
-				finalModel, err := tea.NewProgram(models.NewExistingAppChecker(initia.NewRunL1NodeNetworkSelect(initia.NewRunL1NodeState()))).Run()
+				ctx := utils.NewAppContext(initia.NewRunL1NodeState())
+				finalModel, err := tea.NewProgram(models.NewExistingAppChecker(initia.NewRunL1NodeNetworkSelect(ctx))).Run()
 				if err != nil {
 					return err
 				}
@@ -49,8 +50,8 @@ func initiaInitCommand() *cobra.Command {
 					return nil
 				}
 			}
-
-			_, err := tea.NewProgram(initia.NewRunL1NodeNetworkSelect(initia.NewRunL1NodeState())).Run()
+			ctx := utils.NewAppContext(initia.NewRunL1NodeState())
+			_, err := tea.NewProgram(initia.NewRunL1NodeNetworkSelect(ctx)).Run()
 			if err != nil {
 				return err
 			}

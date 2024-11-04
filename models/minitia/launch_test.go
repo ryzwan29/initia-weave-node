@@ -425,7 +425,7 @@ package minitia
 //
 //	view := input.View()
 //	assert.Contains(t, view, "Please specify the L2 Gas Token Denom", "Expected question prompt in the view")
-//	assert.Contains(t, view, "Enter the denom", "Expected placeholder in the view")
+//	assert.Contains(t, view, `Press tab to use "umin"`, "Expected placeholder in the view")
 //}
 //
 //func TestMonikerInput_Init(t *testing.T) {

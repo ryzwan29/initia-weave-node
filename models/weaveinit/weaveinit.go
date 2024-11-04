@@ -61,7 +61,8 @@ func (m *WeaveInit) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if selected != nil {
 		switch *selected {
 		case RunL1NodeOption:
-			return initia.NewRunL1NodeNetworkSelect(&initia.RunL1NodeState{}), nil
+			ctx := utils.NewAppContext(initia.RunL1NodeState{})
+			return initia.NewRunL1NodeNetworkSelect(ctx), nil
 		case LaunchNewMinitiaOption:
 			minitiaChecker := minitia.NewExistingMinitiaChecker(utils.NewAppContext(*minitia.NewLaunchState()))
 			return minitiaChecker, minitiaChecker.Init()
