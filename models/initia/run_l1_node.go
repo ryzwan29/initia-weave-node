@@ -1326,6 +1326,7 @@ func NewStateSyncEndpointInput(ctx context.Context) *StateSyncEndpointInput {
 		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  "Please specify the state sync RPC server url",
 	}
+	model.WithValidatorFn(utils.ValidateEmptyString)
 	model.WithPlaceholder(fmt.Sprintf("Press tab to use the latest state sync RPC server provided by Polkachu (%s)", defaultStateSync))
 	model.WithDefaultValue(defaultStateSync)
 
@@ -1602,7 +1603,7 @@ func (m *StateSyncSetupLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.Loading.Completing {
 		m.Ctx = utils.CloneStateAndPushPage[RunL1NodeState](m.Ctx, m)
 		state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "State syncg setup successfully.", []string{}, ""))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "State sync setup successfully.", []string{}, ""))
 		m.Ctx = utils.SetCurrentState(m.Ctx, state)
 		return m, tea.Quit
 	}
