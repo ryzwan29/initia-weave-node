@@ -497,7 +497,7 @@ type SetupOPInitBots struct {
 func NewSetupOPInitBots(ctx context.Context) *SetupOPInitBots {
 	state := utils.GetCurrentState[OPInitBotsState](ctx)
 	return &SetupOPInitBots{
-		BaseModel: utils.BaseModel{Ctx: ctx},
+		BaseModel: utils.BaseModel{Ctx: ctx, CannotBack: true},
 		loading:   utils.NewLoading("Downloading binary and adding keys...", WaitSetupOPInitBots(&state)),
 	}
 }
