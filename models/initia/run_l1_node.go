@@ -86,8 +86,9 @@ func (m *RunL1NodeNetworkSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case Mainnet, Testnet:
 			chainType := selected.ToChainType()
 			chainRegistry := registry.MustGetChainRegistry(chainType)
-			state.chainId = chainRegistry.GetChainId()
-			state.genesisEndpoint = chainRegistry.GetGenesisUrl()
+			state.chainRegistry = chainRegistry
+			state.chainId = state.chainRegistry.GetChainId()
+			state.genesisEndpoint = state.chainRegistry.GetGenesisUrl()
 
 			if !IsExistApp() {
 				state.existingApp = false
@@ -518,7 +519,13 @@ func (m *SeedsInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.Ctx = utils.CloneStateAndPushPage[RunL1NodeState](m.Ctx, m)
 		state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
 		state.seeds = input.Text
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"seeds"}, input.Text))
+		var prevAnswer string
+		if input.Text == "" {
+			prevAnswer = "None"
+		} else {
+			prevAnswer = input.Text
+		}
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"seeds"}, prevAnswer))
 		m.Ctx = utils.SetCurrentState(m.Ctx, state)
 		return NewPersistentPeersInput(m.Ctx), cmd
 	}
@@ -573,7 +580,13 @@ func (m *PersistentPeersInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.Ctx = utils.CloneStateAndPushPage[RunL1NodeState](m.Ctx, m)
 		state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
 		state.persistentPeers = input.Text
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"persistent_peers"}, input.Text))
+		var prevAnswer string
+		if input.Text == "" {
+			prevAnswer = "None"
+		} else {
+			prevAnswer = input.Text
+		}
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"persistent_peers"}, prevAnswer))
 		m.Ctx = utils.SetCurrentState(m.Ctx, state)
 		switch state.network {
 		case string(Local):
@@ -867,13 +880,7 @@ func initializeApp(ctx context.Context) tea.Cmd {
 			nodeVersion = state.initiadVersion
 			url = state.initiadEndpoint
 		case string(Mainnet), string(Testnet):
-			chainType := registry.InitiaL1Testnet
-			if state.network == string(Mainnet) {
-				chainType = registry.InitiaL1Mainnet
-			}
-
-			chainRegistry := registry.MustGetChainRegistry(chainType)
-			baseUrl, err := chainRegistry.GetActiveLcd()
+			baseUrl, err := state.chainRegistry.GetActiveLcd()
 			if err != nil {
 				panic(err)
 			}

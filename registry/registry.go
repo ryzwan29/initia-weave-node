@@ -206,7 +206,7 @@ func MustGetChainRegistry(chainType ChainType) *ChainRegistry {
 	return chainRegistry
 }
 
-var OPInitBotsSpecVersion = make(map[string]int)
+var OPInitBotsSpecVersion map[string]int
 
 func loadOPInitBotsSpecVersion() error {
 	client := utils.NewHTTPClient()

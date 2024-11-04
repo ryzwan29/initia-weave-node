@@ -481,7 +481,8 @@ func NewGasDenomInput(ctx context.Context) *GasDenomInput {
 		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  "Please specify the L2 Gas Token Denom",
 	}
-	model.WithPlaceholder("Enter the denom")
+	model.WithPlaceholder(`Press tab to use "umin"`)
+	model.WithDefaultValue("umin")
 	model.WithValidatorFn(utils.ValidateDenom)
 	return model
 }
@@ -2357,11 +2358,15 @@ type FundGasStationConfirmationInput struct {
 func NewFundGasStationConfirmationInput(ctx context.Context) *FundGasStationConfirmationInput {
 	state := utils.GetCurrentState[LaunchState](ctx)
 	gasStationMnemonic := utils.GetGasStationMnemonic()
+	var celestiaGasStationAddress string
+	if state.batchSubmissionIsCelestia {
+		celestiaGasStationAddress = utils.MustGetAddressFromMnemonic(state.celestiaBinaryPath, gasStationMnemonic)
+	}
 	model := &FundGasStationConfirmationInput{
-		TextInput:                 utils.NewTextInput(true),
-		BaseModel:                 utils.BaseModel{Ctx: ctx, CannotBack: true},
+		TextInput:                 utils.NewTextInput(false),
+		BaseModel:                 utils.BaseModel{Ctx: ctx},
 		initiaGasStationAddress:   utils.MustGetAddressFromMnemonic(state.binaryPath, gasStationMnemonic),
-		celestiaGasStationAddress: utils.MustGetAddressFromMnemonic(state.celestiaBinaryPath, gasStationMnemonic),
+		celestiaGasStationAddress: celestiaGasStationAddress,
 		question:                  "Confirm to proceed with signing and broadcasting the following transactions? [y]:",
 	}
 	model.WithPlaceholder("Type `y` to confirm")
@@ -2739,6 +2744,14 @@ func (m *LaunchingNewMinitiaLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			utils.WrapText(link),
 		)
 		state.weave.PushPreviousResponse(scanText)
+
+		srv, err := service.NewService(service.Minitia)
+		if err != nil {
+			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "Invalid OS: only Linux and Darwin are supported", []string{}, fmt.Sprintf("%v", err)))
+		}
+		if err = srv.Start(); err != nil {
+			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "Failed to start Minitia service", []string{}, fmt.Sprintf("%v", err)))
+		}
 
 		return NewTerminalState(utils.SetCurrentState(m.Ctx, state)), tea.Quit
 	}
