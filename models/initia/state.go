@@ -43,6 +43,7 @@ func (s RunL1NodeState) Clone() RunL1NodeState {
 	return RunL1NodeState{
 		weave:                             s.weave.Clone(), // Assuming WeaveState has a Clone method
 		network:                           s.network,
+		chainRegistry:                     s.chainRegistry,
 		initiadVersion:                    s.initiadVersion,
 		initiadEndpoint:                   s.initiadEndpoint,
 		chainId:                           s.chainId,

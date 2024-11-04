@@ -56,6 +56,7 @@ func NewRunL1NodeNetworkSelect(ctx context.Context) *RunL1NodeNetworkSelect {
 				Testnet,
 				Local,
 			},
+			CannotBack: true,
 		},
 		BaseModel: utils.BaseModel{Ctx: ctx, CannotBack: true},
 		question:  "Which network will your node participate in?",
@@ -613,7 +614,7 @@ type ExistingGenesisChecker struct {
 
 func NewExistingGenesisChecker(ctx context.Context) *ExistingGenesisChecker {
 	return &ExistingGenesisChecker{
-		BaseModel: utils.BaseModel{Ctx: ctx},
+		BaseModel: utils.BaseModel{Ctx: ctx, CannotBack: true},
 		loading:   utils.NewLoading("Checking for an existing Initia genesis file...", WaitExistingGenesisChecker(ctx)),
 	}
 }
@@ -1054,8 +1055,9 @@ func NewSyncMethodSelect(ctx context.Context) *SyncMethodSelect {
 				StateSync,
 				NoSync,
 			},
+			CannotBack: true,
 		},
-		BaseModel: utils.BaseModel{Ctx: ctx},
+		BaseModel: utils.BaseModel{Ctx: ctx, CannotBack: true},
 		question:  "Please select a sync option",
 	}
 }
@@ -1110,7 +1112,7 @@ type ExistingDataChecker struct {
 
 func NewExistingDataChecker(ctx context.Context) *ExistingDataChecker {
 	return &ExistingDataChecker{
-		BaseModel: utils.BaseModel{Ctx: ctx},
+		BaseModel: utils.BaseModel{Ctx: ctx, CannotBack: true},
 		loading:   utils.NewLoading("Checking for an existing Initia data...", WaitExistingDataChecker(ctx)),
 	}
 }
@@ -1194,8 +1196,9 @@ func NewExistingDataReplaceSelect(ctx context.Context) *ExistingDataReplaceSelec
 				ProceedWithSync,
 				Skip,
 			},
+			CannotBack: true,
 		},
-		BaseModel: utils.BaseModel{Ctx: ctx},
+		BaseModel: utils.BaseModel{Ctx: ctx, CannotBack: true},
 		question:  fmt.Sprintf("Existing %s detected. By syncing, the existing data will be replaced. Would you want to proceed ?", utils.InitiaDataDirectory),
 	}
 }
@@ -1374,7 +1377,7 @@ func NewSnapshotDownloadLoading(ctx context.Context) (*SnapshotDownloadLoading, 
 			fmt.Sprintf("%s/%s/%s", userHome, utils.WeaveDataDirectory, utils.SnapshotFilename),
 			utils.ValidateTarLz4Header,
 		),
-		BaseModel: utils.BaseModel{Ctx: ctx},
+		BaseModel: utils.BaseModel{Ctx: ctx, CannotBack: true},
 	}, nil
 }
 
@@ -1421,7 +1424,7 @@ type SnapshotExtractLoading struct {
 func NewSnapshotExtractLoading(ctx context.Context) *SnapshotExtractLoading {
 	return &SnapshotExtractLoading{
 		Loading:   utils.NewLoading("Extracting downloaded snapshot...", snapshotExtractor(ctx)),
-		BaseModel: utils.BaseModel{Ctx: ctx},
+		BaseModel: utils.BaseModel{Ctx: ctx, CannotBack: true},
 	}
 }
 
@@ -1502,7 +1505,7 @@ func NewStateSyncSetupLoading(ctx context.Context) *StateSyncSetupLoading {
 	state := utils.GetCurrentState[RunL1NodeState](ctx)
 	return &StateSyncSetupLoading{
 		Loading:   utils.NewLoading("Setting up State Sync...", setupStateSync(&state)),
-		BaseModel: utils.BaseModel{Ctx: ctx},
+		BaseModel: utils.BaseModel{Ctx: ctx, CannotBack: true},
 	}
 }
 
