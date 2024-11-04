@@ -1,6 +1,8 @@
 package minitia
 
-import "github.com/initia-labs/weave/types"
+import (
+	"github.com/initia-labs/weave/types"
+)
 
 type LaunchState struct {
 	weave              types.WeaveState
@@ -57,8 +59,6 @@ type LaunchState struct {
 	preL1BalancesResponsesCount      int
 	preL2BalancesResponsesCount      int
 
-	minitiadLaunchStreamingLogs []string
-
 	binaryPath         string
 	celestiaBinaryPath string
 
@@ -114,7 +114,6 @@ func (ls LaunchState) Clone() LaunchState {
 		preGenesisAccountsResponsesCount:  ls.preGenesisAccountsResponsesCount,
 		preL1BalancesResponsesCount:       ls.preL1BalancesResponsesCount,
 		preL2BalancesResponsesCount:       ls.preL2BalancesResponsesCount,
-		minitiadLaunchStreamingLogs:       make([]string, len(ls.minitiadLaunchStreamingLogs)),
 		binaryPath:                        ls.binaryPath,
 		celestiaBinaryPath:                ls.celestiaBinaryPath,
 		launchFromExistingConfig:          ls.launchFromExistingConfig,
@@ -122,7 +121,6 @@ func (ls LaunchState) Clone() LaunchState {
 	}
 
 	copy(clone.genesisAccounts, ls.genesisAccounts)
-	copy(clone.minitiadLaunchStreamingLogs, ls.minitiadLaunchStreamingLogs)
 
 	return clone
 }
@@ -133,7 +131,7 @@ func NewLaunchState() *LaunchState {
 	}
 }
 
-func (ls LaunchState) FinalizeGenesisAccounts() {
+func (ls *LaunchState) FinalizeGenesisAccounts() {
 	accounts := []types.GenesisAccount{
 		{Address: ls.systemKeyOperatorAddress, Coins: ls.systemKeyL2OperatorBalance},
 		{Address: ls.systemKeyBridgeExecutorAddress, Coins: ls.systemKeyL2BridgeExecutorBalance},
@@ -151,7 +149,7 @@ func (ls LaunchState) FinalizeGenesisAccounts() {
 	ls.genesisAccounts = append(ls.genesisAccounts, accounts...)
 }
 
-func (ls LaunchState) PrepareLaunchingWithConfig(vm, minitiadVersion, minitiadEndpoint, configPath string, config *types.MinitiaConfig) {
+func (ls *LaunchState) PrepareLaunchingWithConfig(vm, minitiadVersion, minitiadEndpoint, configPath string, config *types.MinitiaConfig) {
 	vmType, err := ParseVMType(vm)
 	if err != nil {
 		panic(err)

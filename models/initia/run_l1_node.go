@@ -173,7 +173,7 @@ type RunL1NodeChainIdInput struct {
 
 func NewRunL1NodeChainIdInput(ctx context.Context) *RunL1NodeChainIdInput {
 	model := &RunL1NodeChainIdInput{
-		TextInput: utils.NewTextInput(),
+		TextInput: utils.NewTextInput(false),
 		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  "Please specify the chain id",
 	}
@@ -314,7 +314,7 @@ type RunL1NodeMonikerInput struct {
 
 func NewRunL1NodeMonikerInput(ctx context.Context) *RunL1NodeMonikerInput {
 	model := &RunL1NodeMonikerInput{
-		TextInput: utils.NewTextInput(),
+		TextInput: utils.NewTextInput(false),
 		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  "Please specify the moniker",
 	}
@@ -367,7 +367,7 @@ type MinGasPriceInput struct {
 
 func NewMinGasPriceInput(ctx context.Context) *MinGasPriceInput {
 	model := &MinGasPriceInput{
-		TextInput: utils.NewTextInput(),
+		TextInput: utils.NewTextInput(false),
 		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  "Please specify min-gas-price",
 	}
@@ -484,7 +484,7 @@ type SeedsInput struct {
 
 func NewSeedsInput(ctx context.Context) *SeedsInput {
 	model := &SeedsInput{
-		TextInput: utils.NewTextInput(),
+		TextInput: utils.NewTextInput(false),
 		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  "Please specify the seeds",
 	}
@@ -539,7 +539,7 @@ type PersistentPeersInput struct {
 
 func NewPersistentPeersInput(ctx context.Context) *PersistentPeersInput {
 	model := &PersistentPeersInput{
-		TextInput: utils.NewTextInput(),
+		TextInput: utils.NewTextInput(false),
 		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  "Please specify the persistent_peers",
 	}
@@ -741,7 +741,7 @@ type GenesisEndpointInput struct {
 
 func NewGenesisEndpointInput(ctx context.Context) *GenesisEndpointInput {
 	model := &GenesisEndpointInput{
-		TextInput: utils.NewTextInput(),
+		TextInput: utils.NewTextInput(true),
 		BaseModel: utils.BaseModel{Ctx: ctx, CannotBack: true},
 		question:  "Please specify the endpoint to fetch genesis.json",
 		err:       nil,
@@ -1251,7 +1251,7 @@ func NewSnapshotEndpointInput(ctx context.Context) *SnapshotEndpointInput {
 		panic(fmt.Sprintf("failed to fetch snapshot url from Polkachu: %v", err))
 	}
 	model := &SnapshotEndpointInput{
-		TextInput: utils.NewTextInput(),
+		TextInput: utils.NewTextInput(false),
 		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  "Please specify the snapshot url to download",
 	}
@@ -1307,7 +1307,7 @@ type StateSyncEndpointInput struct {
 
 func NewStateSyncEndpointInput(ctx context.Context) *StateSyncEndpointInput {
 	return &StateSyncEndpointInput{
-		TextInput: utils.NewTextInput(),
+		TextInput: utils.NewTextInput(false),
 		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  "Please specify the state sync RPC server url",
 	}

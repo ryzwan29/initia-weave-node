@@ -71,6 +71,7 @@ func (m *ExistingMinitiaChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.loading.Completing {
 		m.Ctx = utils.CloneStateAndPushPage[LaunchState](m.loading.EndContext, m)
 		state := utils.GetCurrentState[LaunchState](m.Ctx)
+
 		if !state.existingMinitiaApp {
 			if state.launchFromExistingConfig {
 				model := NewDownloadMinitiaBinaryLoading(utils.SetCurrentState(m.Ctx, state))
@@ -97,7 +98,7 @@ type DeleteExistingMinitiaInput struct {
 
 func NewDeleteExistingMinitiaInput(ctx context.Context) *DeleteExistingMinitiaInput {
 	model := &DeleteExistingMinitiaInput{
-		TextInput: utils.NewTextInput(),
+		TextInput: utils.NewTextInput(true),
 		BaseModel: utils.BaseModel{Ctx: ctx, CannotBack: true},
 		question:  "Please type `delete existing minitia` to delete the .minitia folder and proceed with weave minitia launch",
 	}
@@ -318,7 +319,7 @@ func NewLatestVersionLoading(ctx context.Context) *LatestVersionLoading {
 	state := utils.GetCurrentState[LaunchState](ctx)
 	vmType := strings.ToLower(state.vmType)
 	return &LatestVersionLoading{
-		BaseModel: utils.BaseModel{Ctx: ctx},
+		BaseModel: utils.BaseModel{Ctx: ctx, CannotBack: true},
 		loading:   utils.NewLoading(fmt.Sprintf("Fetching the latest release for Mini%s...", vmType), waitLatestVersionLoading(ctx, vmType)),
 		vmType:    vmType,
 	}
@@ -428,8 +429,8 @@ type ChainIdInput struct {
 
 func NewChainIdInput(ctx context.Context) *ChainIdInput {
 	model := &ChainIdInput{
-		TextInput: utils.NewTextInput(),
-		BaseModel: utils.BaseModel{Ctx: ctx},
+		TextInput: utils.NewTextInput(true),
+		BaseModel: utils.BaseModel{Ctx: ctx, CannotBack: true},
 		question:  "Please specify the L2 chain id",
 	}
 	model.WithPlaceholder("Enter in alphanumeric format")
@@ -476,7 +477,7 @@ type GasDenomInput struct {
 
 func NewGasDenomInput(ctx context.Context) *GasDenomInput {
 	model := &GasDenomInput{
-		TextInput: utils.NewTextInput(),
+		TextInput: utils.NewTextInput(false),
 		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  "Please specify the L2 Gas Token Denom",
 	}
@@ -524,7 +525,7 @@ type MonikerInput struct {
 
 func NewMonikerInput(ctx context.Context) *MonikerInput {
 	model := &MonikerInput{
-		TextInput: utils.NewTextInput(),
+		TextInput: utils.NewTextInput(false),
 		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  "Please specify the moniker",
 	}
@@ -573,7 +574,7 @@ type OpBridgeSubmissionIntervalInput struct {
 
 func NewOpBridgeSubmissionIntervalInput(ctx context.Context) *OpBridgeSubmissionIntervalInput {
 	model := &OpBridgeSubmissionIntervalInput{
-		TextInput: utils.NewTextInput(),
+		TextInput: utils.NewTextInput(false),
 		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  "Please specify OP bridge config: Submission Interval (format s, m or h - ex. 30s, 5m, 12h)",
 	}
@@ -622,7 +623,7 @@ type OpBridgeOutputFinalizationPeriodInput struct {
 
 func NewOpBridgeOutputFinalizationPeriodInput(ctx context.Context) *OpBridgeOutputFinalizationPeriodInput {
 	model := &OpBridgeOutputFinalizationPeriodInput{
-		TextInput: utils.NewTextInput(),
+		TextInput: utils.NewTextInput(false),
 		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  "Please specify OP bridge config: Output Finalization Period (format s, m or h - ex. 30s, 5m, 12h)",
 	}
@@ -873,7 +874,7 @@ type SystemKeyOperatorMnemonicInput struct {
 
 func NewSystemKeyOperatorMnemonicInput(ctx context.Context) *SystemKeyOperatorMnemonicInput {
 	model := &SystemKeyOperatorMnemonicInput{
-		TextInput: utils.NewTextInput(),
+		TextInput: utils.NewTextInput(false),
 		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  "Please add mnemonic for Operator",
 	}
@@ -922,7 +923,7 @@ type SystemKeyBridgeExecutorMnemonicInput struct {
 
 func NewSystemKeyBridgeExecutorMnemonicInput(ctx context.Context) *SystemKeyBridgeExecutorMnemonicInput {
 	model := &SystemKeyBridgeExecutorMnemonicInput{
-		TextInput: utils.NewTextInput(),
+		TextInput: utils.NewTextInput(false),
 		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  "Please add mnemonic for Bridge Executor",
 	}
@@ -970,7 +971,7 @@ type SystemKeyOutputSubmitterMnemonicInput struct {
 
 func NewSystemKeyOutputSubmitterMnemonicInput(ctx context.Context) *SystemKeyOutputSubmitterMnemonicInput {
 	model := &SystemKeyOutputSubmitterMnemonicInput{
-		TextInput: utils.NewTextInput(),
+		TextInput: utils.NewTextInput(false),
 		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  "Please add mnemonic for Output Submitter",
 	}
@@ -1018,7 +1019,7 @@ type SystemKeyBatchSubmitterMnemonicInput struct {
 
 func NewSystemKeyBatchSubmitterMnemonicInput(ctx context.Context) *SystemKeyBatchSubmitterMnemonicInput {
 	model := &SystemKeyBatchSubmitterMnemonicInput{
-		TextInput: utils.NewTextInput(),
+		TextInput: utils.NewTextInput(false),
 		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  "Please add mnemonic for Batch Submitter",
 	}
@@ -1066,7 +1067,7 @@ type SystemKeyChallengerMnemonicInput struct {
 
 func NewSystemKeyChallengerMnemonicInput(ctx context.Context) *SystemKeyChallengerMnemonicInput {
 	model := &SystemKeyChallengerMnemonicInput{
-		TextInput: utils.NewTextInput(),
+		TextInput: utils.NewTextInput(false),
 		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  "Please add mnemonic for Challenger",
 	}
@@ -1115,7 +1116,7 @@ type ExistingGasStationChecker struct {
 func NewExistingGasStationChecker(ctx context.Context) *ExistingGasStationChecker {
 	return &ExistingGasStationChecker{
 		loading:   utils.NewLoading("Checking for Gas Station account...", waitExistingGasStationChecker(ctx)),
-		BaseModel: utils.BaseModel{Ctx: ctx},
+		BaseModel: utils.BaseModel{Ctx: ctx, CannotBack: true},
 	}
 }
 
@@ -1174,7 +1175,7 @@ type GasStationMnemonicInput struct {
 
 func NewGasStationMnemonicInput(ctx context.Context) *GasStationMnemonicInput {
 	model := &GasStationMnemonicInput{
-		TextInput: utils.NewTextInput(),
+		TextInput: utils.NewTextInput(false),
 		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  fmt.Sprintf("Please set up a Gas Station account %s\n%s", styles.Text("(The account that will hold the funds required by the OPinit-bots or relayer to send transactions)", styles.Gray), styles.BoldText("Weave will not send any transactions without your confirmation.", styles.Yellow)),
 	}
@@ -1229,8 +1230,8 @@ func NewSystemKeyL1OperatorBalanceInput(ctx context.Context) *SystemKeyL1Operato
 	state := utils.GetCurrentState[LaunchState](ctx)
 	state.preL1BalancesResponsesCount = len(state.weave.PreviousResponse)
 	model := &SystemKeyL1OperatorBalanceInput{
-		TextInput: utils.NewTextInput(),
-		BaseModel: utils.BaseModel{Ctx: ctx},
+		TextInput: utils.NewTextInput(true),
+		BaseModel: utils.BaseModel{Ctx: ctx, CannotBack: true},
 		question:  "Please specify initial balance for Operator on L1 (uinit)",
 	}
 	model.WithPlaceholder("Enter the amount")
@@ -1281,7 +1282,7 @@ type SystemKeyL1BridgeExecutorBalanceInput struct {
 
 func NewSystemKeyL1BridgeExecutorBalanceInput(ctx context.Context) *SystemKeyL1BridgeExecutorBalanceInput {
 	model := &SystemKeyL1BridgeExecutorBalanceInput{
-		TextInput: utils.NewTextInput(),
+		TextInput: utils.NewTextInput(false),
 		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  "Please specify initial balance for Bridge Executor on L1 (uinit)",
 	}
@@ -1330,7 +1331,7 @@ type SystemKeyL1OutputSubmitterBalanceInput struct {
 
 func NewSystemKeyL1OutputSubmitterBalanceInput(ctx context.Context) *SystemKeyL1OutputSubmitterBalanceInput {
 	model := &SystemKeyL1OutputSubmitterBalanceInput{
-		TextInput: utils.NewTextInput(),
+		TextInput: utils.NewTextInput(false),
 		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  "Please specify initial balance for Output Submitter on L1 (uinit)",
 	}
@@ -1389,7 +1390,7 @@ func NewSystemKeyL1BatchSubmitterBalanceInput(ctx context.Context) *SystemKeyL1B
 	}
 
 	model := &SystemKeyL1BatchSubmitterBalanceInput{
-		TextInput: utils.NewTextInput(),
+		TextInput: utils.NewTextInput(false),
 		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  fmt.Sprintf("Please specify initial balance for Batch Submitter on %s (%s)", network, denom),
 	}
@@ -1438,7 +1439,7 @@ type SystemKeyL1ChallengerBalanceInput struct {
 
 func NewSystemKeyL1ChallengerBalanceInput(ctx context.Context) *SystemKeyL1ChallengerBalanceInput {
 	model := &SystemKeyL1ChallengerBalanceInput{
-		TextInput: utils.NewTextInput(),
+		TextInput: utils.NewTextInput(false),
 		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  "Please specify initial balance for Challenger on L1 (uinit)",
 	}
@@ -1490,8 +1491,8 @@ func NewSystemKeyL2OperatorBalanceInput(ctx context.Context) *SystemKeyL2Operato
 	state := utils.GetCurrentState[LaunchState](ctx)
 	state.preL2BalancesResponsesCount = len(state.weave.PreviousResponse)
 	model := &SystemKeyL2OperatorBalanceInput{
-		TextInput: utils.NewTextInput(),
-		BaseModel: utils.BaseModel{Ctx: ctx},
+		TextInput: utils.NewTextInput(true),
+		BaseModel: utils.BaseModel{Ctx: ctx, CannotBack: true},
 		question:  fmt.Sprintf("Please specify initial balance for Operator on L2 (%s)", state.gasDenom),
 	}
 	model.WithPlaceholder("Enter the balance")
@@ -1543,7 +1544,7 @@ type SystemKeyL2BridgeExecutorBalanceInput struct {
 func NewSystemKeyL2BridgeExecutorBalanceInput(ctx context.Context) *SystemKeyL2BridgeExecutorBalanceInput {
 	state := utils.GetCurrentState[LaunchState](ctx)
 	model := &SystemKeyL2BridgeExecutorBalanceInput{
-		TextInput: utils.NewTextInput(),
+		TextInput: utils.NewTextInput(false),
 		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  fmt.Sprintf("Please specify initial balance for Bridge Executor on L2 (%s)", state.gasDenom),
 	}
@@ -1593,7 +1594,7 @@ type SystemKeyL2OutputSubmitterBalanceInput struct {
 func NewSystemKeyL2OutputSubmitterBalanceInput(ctx context.Context) *SystemKeyL2OutputSubmitterBalanceInput {
 	state := utils.GetCurrentState[LaunchState](ctx)
 	model := &SystemKeyL2OutputSubmitterBalanceInput{
-		TextInput: utils.NewTextInput(),
+		TextInput: utils.NewTextInput(false),
 		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  fmt.Sprintf("Please specify initial balance for Output Submitter on L2 (%s)", state.gasDenom),
 	}
@@ -1649,7 +1650,7 @@ type SystemKeyL2BatchSubmitterBalanceInput struct {
 func NewSystemKeyL2BatchSubmitterBalanceInput(ctx context.Context) *SystemKeyL2BatchSubmitterBalanceInput {
 	state := utils.GetCurrentState[LaunchState](ctx)
 	model := &SystemKeyL2BatchSubmitterBalanceInput{
-		TextInput: utils.NewTextInput(),
+		TextInput: utils.NewTextInput(false),
 		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  fmt.Sprintf("Please specify initial balance for Batch Submitter on L2 (%s)", state.gasDenom),
 	}
@@ -1705,7 +1706,7 @@ type SystemKeyL2ChallengerBalanceInput struct {
 func NewSystemKeyL2ChallengerBalanceInput(ctx context.Context) *SystemKeyL2ChallengerBalanceInput {
 	state := utils.GetCurrentState[LaunchState](ctx)
 	model := &SystemKeyL2ChallengerBalanceInput{
-		TextInput: utils.NewTextInput(),
+		TextInput: utils.NewTextInput(false),
 		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  fmt.Sprintf("Please specify initial balance for Challenger on L2 (%s)", state.gasDenom),
 	}
@@ -1780,8 +1781,9 @@ func NewAddGenesisAccountsSelect(recurring bool, ctx context.Context) *AddGenesi
 				Yes,
 				No,
 			},
+			CannotBack: true,
 		},
-		BaseModel:         utils.BaseModel{Ctx: utils.SetCurrentState(ctx, state)},
+		BaseModel:         utils.BaseModel{Ctx: utils.SetCurrentState(ctx, state), CannotBack: true},
 		recurring:         recurring,
 		firstTimeQuestion: "Would you like to add genesis accounts?",
 		recurringQuestion: "Would you like to add another genesis account?",
@@ -1858,7 +1860,7 @@ type GenesisAccountsAddressInput struct {
 
 func NewGenesisAccountsAddressInput(ctx context.Context) *GenesisAccountsAddressInput {
 	model := &GenesisAccountsAddressInput{
-		TextInput: utils.NewTextInput(),
+		TextInput: utils.NewTextInput(false),
 		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  "Please specify genesis account address",
 	}
@@ -1907,7 +1909,7 @@ type GenesisAccountsBalanceInput struct {
 func NewGenesisAccountsBalanceInput(address string, ctx context.Context) *GenesisAccountsBalanceInput {
 	state := utils.GetCurrentState[LaunchState](ctx)
 	model := &GenesisAccountsBalanceInput{
-		TextInput: utils.NewTextInput(),
+		TextInput: utils.NewTextInput(false),
 		BaseModel: utils.BaseModel{Ctx: ctx},
 		address:   address,
 		question:  fmt.Sprintf("Please specify initial balance for %s (%s)", address, state.gasDenom),
@@ -1961,7 +1963,7 @@ func NewDownloadMinitiaBinaryLoading(ctx context.Context) *DownloadMinitiaBinary
 	latest := map[bool]string{true: "latest ", false: ""}
 	return &DownloadMinitiaBinaryLoading{
 		loading:   utils.NewLoading(fmt.Sprintf("Downloading %sMini%s binary <%s>", latest[state.launchFromExistingConfig], strings.ToLower(state.vmType), state.minitiadVersion), downloadMinitiaApp(ctx)),
-		BaseModel: utils.BaseModel{Ctx: ctx},
+		BaseModel: utils.BaseModel{Ctx: ctx, CannotBack: true},
 	}
 }
 
@@ -2087,7 +2089,7 @@ func NewDownloadCelestiaBinaryLoading(ctx context.Context) *DownloadCelestiaBina
 	goarch := runtime.GOARCH
 	return &DownloadCelestiaBinaryLoading{
 		loading:   utils.NewLoading(fmt.Sprintf("Downloading Celestia binary <%s>", version), downloadCelestiaApp(ctx, version, getCelestiaBinaryURL(version, goos, goarch))),
-		BaseModel: utils.BaseModel{Ctx: ctx},
+		BaseModel: utils.BaseModel{Ctx: ctx, CannotBack: true},
 	}
 }
 
@@ -2194,7 +2196,7 @@ func NewGenerateOrRecoverSystemKeysLoading(ctx context.Context) *GenerateOrRecov
 	}
 	return &GenerateOrRecoverSystemKeysLoading{
 		loading:   utils.NewLoading(loadingText, generateOrRecoverSystemKeys(ctx)),
-		BaseModel: utils.BaseModel{Ctx: ctx},
+		BaseModel: utils.BaseModel{Ctx: ctx, CannotBack: true},
 	}
 }
 
@@ -2291,8 +2293,8 @@ type SystemKeysMnemonicDisplayInput struct {
 
 func NewSystemKeysMnemonicDisplayInput(ctx context.Context) *SystemKeysMnemonicDisplayInput {
 	model := &SystemKeysMnemonicDisplayInput{
-		TextInput: utils.NewTextInput(),
-		BaseModel: utils.BaseModel{Ctx: ctx},
+		TextInput: utils.NewTextInput(true),
+		BaseModel: utils.BaseModel{Ctx: ctx, CannotBack: true},
 		question:  "Please type `continue` to proceed after you have securely stored the mnemonic.",
 	}
 	model.WithPlaceholder("Type `continue` to continue, Ctrl+C to quit.")
@@ -2356,8 +2358,8 @@ func NewFundGasStationConfirmationInput(ctx context.Context) *FundGasStationConf
 	state := utils.GetCurrentState[LaunchState](ctx)
 	gasStationMnemonic := utils.GetGasStationMnemonic()
 	model := &FundGasStationConfirmationInput{
-		TextInput:                 utils.NewTextInput(),
-		BaseModel:                 utils.BaseModel{Ctx: ctx},
+		TextInput:                 utils.NewTextInput(true),
+		BaseModel:                 utils.BaseModel{Ctx: ctx, CannotBack: true},
 		initiaGasStationAddress:   utils.MustGetAddressFromMnemonic(state.binaryPath, gasStationMnemonic),
 		celestiaGasStationAddress: utils.MustGetAddressFromMnemonic(state.celestiaBinaryPath, gasStationMnemonic),
 		question:                  "Confirm to proceed with signing and broadcasting the following transactions? [y]:",
@@ -2435,7 +2437,7 @@ type FundGasStationBroadcastLoading struct {
 func NewFundGasStationBroadcastLoading(ctx context.Context) *FundGasStationBroadcastLoading {
 	return &FundGasStationBroadcastLoading{
 		loading:   utils.NewLoading("Broadcasting transactions...", broadcastFundingFromGasStation(ctx)),
-		BaseModel: utils.BaseModel{Ctx: ctx},
+		BaseModel: utils.BaseModel{Ctx: ctx, CannotBack: true},
 	}
 }
 
@@ -2533,17 +2535,20 @@ func (sp *ScanPayload) EncodeToBase64() (string, error) {
 type LaunchingNewMinitiaLoading struct {
 	loading utils.Loading
 	utils.BaseModel
+	streamingLogs *[]string
 }
 
 func NewLaunchingNewMinitiaLoading(ctx context.Context) *LaunchingNewMinitiaLoading {
+	newLogs := make([]string, 0)
 	return &LaunchingNewMinitiaLoading{
 		loading: utils.NewLoading(
 			styles.RenderPrompt(
 				"Running `minitiad launch` with the specified config...",
 				[]string{"`minitiad launch`"},
 				styles.Empty,
-			), launchingMinitia(ctx)),
-		BaseModel: utils.BaseModel{Ctx: ctx},
+			), launchingMinitia(ctx, &newLogs)),
+		BaseModel:     utils.BaseModel{Ctx: ctx, CannotBack: true},
+		streamingLogs: &newLogs,
 	}
 }
 
@@ -2558,7 +2563,7 @@ func isJSONLog(line string) bool {
 	return timestampRegex.MatchString(line) || initPrefixRegex.MatchString(line)
 }
 
-func launchingMinitia(ctx context.Context) tea.Cmd {
+func launchingMinitia(ctx context.Context, streamingLogs *[]string) tea.Cmd {
 	return func() tea.Msg {
 		state := utils.GetCurrentState[LaunchState](ctx)
 
@@ -2651,9 +2656,9 @@ func launchingMinitia(ctx context.Context) tea.Cmd {
 			for scanner.Scan() {
 				line := scanner.Text()
 				if !isJSONLog(line) {
-					state.minitiadLaunchStreamingLogs = append(state.minitiadLaunchStreamingLogs, line)
-					if len(state.minitiadLaunchStreamingLogs) > 10 {
-						state.minitiadLaunchStreamingLogs = state.minitiadLaunchStreamingLogs[1:]
+					*streamingLogs = append(*streamingLogs, line)
+					if len(*streamingLogs) > 10 {
+						*streamingLogs = (*streamingLogs)[1:]
 					}
 				}
 			}
@@ -2664,9 +2669,9 @@ func launchingMinitia(ctx context.Context) tea.Cmd {
 			for scanner.Scan() {
 				line := scanner.Text()
 				if !isJSONLog(line) {
-					state.minitiadLaunchStreamingLogs = append(state.minitiadLaunchStreamingLogs, line)
-					if len(state.minitiadLaunchStreamingLogs) > 10 {
-						state.minitiadLaunchStreamingLogs = state.minitiadLaunchStreamingLogs[1:]
+					*streamingLogs = append(*streamingLogs, line)
+					if len(*streamingLogs) > 10 {
+						*streamingLogs = (*streamingLogs)[1:]
 					}
 				}
 			}
@@ -2674,7 +2679,7 @@ func launchingMinitia(ctx context.Context) tea.Cmd {
 
 		if err = launchCmd.Wait(); err != nil {
 			if err != nil {
-				state.minitiadLaunchStreamingLogs = append(state.minitiadLaunchStreamingLogs, fmt.Sprintf("Launch command finished with error: %v", err))
+				*streamingLogs = append(*streamingLogs, fmt.Sprintf("Launch command finished with error: %v", err))
 				panic(fmt.Errorf("command execution failed: %v", err))
 			}
 		}
@@ -2704,8 +2709,6 @@ func (m *LaunchingNewMinitiaLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.loading.Completing {
 		m.Ctx = utils.CloneStateAndPushPage[LaunchState](m.loading.EndContext, m)
 		state := utils.GetCurrentState[LaunchState](m.Ctx)
-
-		state.minitiadLaunchStreamingLogs = []string{}
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "New Minitia has been launched. (More details about your Minitia in ~/.minitia/artifacts/artifacts.json & ~/.minitia/artifacts/config.json)", []string{}, ""))
 
 		var jsonRpc string
@@ -2744,7 +2747,7 @@ func (m *LaunchingNewMinitiaLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *LaunchingNewMinitiaLoading) View() string {
 	state := utils.GetCurrentState[LaunchState](m.Ctx)
-	return state.weave.Render() + "\n" + m.loading.View() + "\n" + strings.Join(state.minitiadLaunchStreamingLogs, "\n")
+	return state.weave.Render() + "\n" + m.loading.View() + "\n" + strings.Join(*m.streamingLogs, "\n")
 }
 
 type TerminalState struct {

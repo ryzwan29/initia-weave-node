@@ -141,7 +141,7 @@ func minitiaLaunchCommand() *cobra.Command {
 				}
 			}
 
-			_, err := tea.NewProgram(minitia.NewExistingMinitiaChecker(utils.NewAppContext(*minitia.NewLaunchState()))).Run()
+			_, err := tea.NewProgram(minitia.NewExistingMinitiaChecker(utils.NewAppContext(*state))).Run()
 			if err != nil {
 				return err
 			}

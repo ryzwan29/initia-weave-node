@@ -433,7 +433,7 @@ type RecoverFromMnemonic struct {
 func NewRecoverFromMnemonic(ctx context.Context, idx int) *RecoverFromMnemonic {
 	state := utils.GetCurrentState[OPInitBotsState](ctx)
 	model := &RecoverFromMnemonic{
-		TextInput: utils.NewTextInput(),
+		TextInput: utils.NewTextInput(false),
 		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  fmt.Sprintf("Please add mnemonic for new %s", state.BotInfos[idx].BotName),
 		idx:       idx,
