@@ -2,6 +2,7 @@ package minitia
 
 import (
 	"bufio"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -24,14 +25,14 @@ import (
 )
 
 type ExistingMinitiaChecker struct {
-	state   *LaunchState
+	utils.BaseModel
 	loading utils.Loading
 }
 
-func NewExistingMinitiaChecker(state *LaunchState) *ExistingMinitiaChecker {
+func NewExistingMinitiaChecker(ctx context.Context) *ExistingMinitiaChecker {
 	return &ExistingMinitiaChecker{
-		state:   state,
-		loading: utils.NewLoading("Checking for an existing Minitia app...", waitExistingMinitiaChecker(state)),
+		BaseModel: utils.BaseModel{Ctx: ctx, CannotBack: true},
+		loading:   utils.NewLoading("Checking for an existing Minitia app...", waitExistingMinitiaChecker(ctx)),
 	}
 }
 
@@ -39,8 +40,10 @@ func (m *ExistingMinitiaChecker) Init() tea.Cmd {
 	return m.loading.Init()
 }
 
-func waitExistingMinitiaChecker(state *LaunchState) tea.Cmd {
+func waitExistingMinitiaChecker(ctx context.Context) tea.Cmd {
 	return func() tea.Msg {
+		state := utils.GetCurrentState[LaunchState](ctx)
+
 		homeDir, err := os.UserHomeDir()
 		if err != nil {
 			return utils.ErrorLoading{Err: err}
@@ -51,26 +54,32 @@ func waitExistingMinitiaChecker(state *LaunchState) tea.Cmd {
 
 		if !utils.FileOrFolderExists(minitiaPath) {
 			state.existingMinitiaApp = false
-			return utils.EndLoading{}
+			return utils.EndLoading{Ctx: utils.SetCurrentState(ctx, state)}
 		} else {
 			state.existingMinitiaApp = true
-			return utils.EndLoading{}
+			return utils.EndLoading{Ctx: utils.SetCurrentState(ctx, state)}
 		}
 	}
 }
 
 func (m *ExistingMinitiaChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := utils.HandleCommonCommands[LaunchState](m, msg); handled {
+		return model, cmd
+	}
+
 	loader, cmd := m.loading.Update(msg)
 	m.loading = loader
 	if m.loading.Completing {
-		if !m.state.existingMinitiaApp {
-			if m.state.launchFromExistingConfig {
-				model := NewDownloadMinitiaBinaryLoading(m.state)
+		m.Ctx = utils.CloneStateAndPushPage[LaunchState](m.loading.EndContext, m)
+		state := utils.GetCurrentState[LaunchState](m.Ctx)
+		if !state.existingMinitiaApp {
+			if state.launchFromExistingConfig {
+				model := NewDownloadMinitiaBinaryLoading(utils.SetCurrentState(m.Ctx, state))
 				return model, model.Init()
 			}
-			return NewNetworkSelect(m.state), nil
+			return NewNetworkSelect(utils.SetCurrentState(m.Ctx, state)), nil
 		} else {
-			return NewDeleteExistingMinitiaInput(m.state), nil
+			return NewDeleteExistingMinitiaInput(utils.SetCurrentState(m.Ctx, state)), nil
 		}
 	}
 	return m, cmd
@@ -83,14 +92,14 @@ func (m *ExistingMinitiaChecker) View() string {
 
 type DeleteExistingMinitiaInput struct {
 	utils.TextInput
-	state    *LaunchState
+	utils.BaseModel
 	question string
 }
 
-func NewDeleteExistingMinitiaInput(state *LaunchState) *DeleteExistingMinitiaInput {
+func NewDeleteExistingMinitiaInput(ctx context.Context) *DeleteExistingMinitiaInput {
 	model := &DeleteExistingMinitiaInput{
 		TextInput: utils.NewTextInput(),
-		state:     state,
+		BaseModel: utils.BaseModel{Ctx: ctx, CannotBack: true},
 		question:  "Please type `delete existing minitia` to delete the .minitia folder and proceed with weave minitia launch",
 	}
 	model.WithPlaceholder("Type `delete existing minitia` to delete, Ctrl+C to keep the folder and quit this command.")
@@ -107,8 +116,15 @@ func (m *DeleteExistingMinitiaInput) Init() tea.Cmd {
 }
 
 func (m *DeleteExistingMinitiaInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := utils.HandleCommonCommands[LaunchState](m, msg); handled {
+		return model, cmd
+	}
+
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
+		m.Ctx = utils.CloneStateAndPushPage[LaunchState](m.Ctx, m)
+		state := utils.GetCurrentState[LaunchState](m.Ctx)
+
 		userHome, err := os.UserHomeDir()
 		if err != nil {
 			panic(fmt.Sprintf("failed to get user home directory: %v", err))
@@ -117,11 +133,11 @@ func (m *DeleteExistingMinitiaInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			panic(fmt.Sprintf("failed to delete .minitia: %v", err))
 		}
 
-		if m.state.launchFromExistingConfig {
-			model := NewDownloadMinitiaBinaryLoading(m.state)
+		if state.launchFromExistingConfig {
+			model := NewDownloadMinitiaBinaryLoading(utils.SetCurrentState(m.Ctx, state))
 			return model, model.Init()
 		}
-		return NewNetworkSelect(m.state), nil
+		return NewNetworkSelect(utils.SetCurrentState(m.Ctx, state)), nil
 	}
 	m.TextInput = input
 	return m, cmd
@@ -135,7 +151,7 @@ func (m *DeleteExistingMinitiaInput) View() string {
 
 type NetworkSelect struct {
 	utils.Selector[NetworkSelectOption]
-	state    *LaunchState
+	utils.BaseModel
 	question string
 }
 
@@ -157,7 +173,7 @@ var (
 	Mainnet NetworkSelectOption = ""
 )
 
-func NewNetworkSelect(state *LaunchState) *NetworkSelect {
+func NewNetworkSelect(ctx context.Context) *NetworkSelect {
 	testnetRegistry := registry.MustGetChainRegistry(registry.InitiaL1Testnet)
 	//mainnetRegistry := registry.MustGetChainRegistry(registry.InitiaL1Mainnet)
 	Testnet = NetworkSelectOption(fmt.Sprintf("Testnet (%s)", testnetRegistry.GetChainId()))
@@ -168,9 +184,10 @@ func NewNetworkSelect(state *LaunchState) *NetworkSelect {
 				Testnet,
 				//Mainnet,
 			},
+			CannotBack: true,
 		},
-		state:    state,
-		question: "Which Initia L1 network would you like to connect to?",
+		BaseModel: utils.BaseModel{Ctx: ctx, CannotBack: true},
+		question:  "Which Initia L1 network would you like to connect to?",
 	}
 }
 
@@ -183,22 +200,31 @@ func (m *NetworkSelect) Init() tea.Cmd {
 }
 
 func (m *NetworkSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := utils.HandleCommonCommands[LaunchState](m, msg); handled {
+		return model, cmd
+	}
+
 	selected, cmd := m.Select(msg)
 	if selected != nil {
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"Initia L1 network"}, string(*selected)))
+		m.Ctx = utils.CloneStateAndPushPage[LaunchState](m.Ctx, m)
+		state := utils.GetCurrentState[LaunchState](m.Ctx)
+
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"Initia L1 network"}, string(*selected)))
 		chainType := selected.ToChainType()
 		chainRegistry := registry.MustGetChainRegistry(chainType)
-		m.state.l1ChainId = chainRegistry.GetChainId()
-		m.state.l1RPC = chainRegistry.MustGetActiveRpc()
-		return NewVMTypeSelect(m.state), nil
+		state.l1ChainId = chainRegistry.GetChainId()
+		state.l1RPC = chainRegistry.MustGetActiveRpc()
+
+		return NewVMTypeSelect(utils.SetCurrentState(m.Ctx, state)), nil
 	}
 
 	return m, cmd
 }
 
 func (m *NetworkSelect) View() string {
+	state := utils.GetCurrentState[LaunchState](m.Ctx)
 	return styles.Text("🪢 For launching Minitia, once all required configurations are complete, \nit will run for a few blocks to set up neccesary components.\nPlease note that this may take a moment, and your patience is appreciated!\n\n", styles.Ivory) +
-		m.state.weave.Render() + styles.RenderPrompt(
+		state.weave.Render() + styles.RenderPrompt(
 		m.GetQuestion(),
 		[]string{"Initia L1 network"},
 		styles.Question,
@@ -207,7 +233,7 @@ func (m *NetworkSelect) View() string {
 
 type VMTypeSelect struct {
 	utils.Selector[VMTypeSelectOption]
-	state    *LaunchState
+	utils.BaseModel
 	question string
 }
 
@@ -232,7 +258,7 @@ func ParseVMType(vmType string) (VMTypeSelectOption, error) {
 	}
 }
 
-func NewVMTypeSelect(state *LaunchState) *VMTypeSelect {
+func NewVMTypeSelect(ctx context.Context) *VMTypeSelect {
 	return &VMTypeSelect{
 		Selector: utils.Selector[VMTypeSelectOption]{
 			Options: []VMTypeSelectOption{
@@ -241,8 +267,8 @@ func NewVMTypeSelect(state *LaunchState) *VMTypeSelect {
 				EVM,
 			},
 		},
-		state:    state,
-		question: "Which VM type would you like to select?",
+		BaseModel: utils.BaseModel{Ctx: ctx},
+		question:  "Which VM type would you like to select?",
 	}
 }
 
@@ -255,11 +281,19 @@ func (m *VMTypeSelect) Init() tea.Cmd {
 }
 
 func (m *VMTypeSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := utils.HandleCommonCommands[LaunchState](m, msg); handled {
+		return model, cmd
+	}
+
 	selected, cmd := m.Select(msg)
 	if selected != nil {
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"VM type"}, string(*selected)))
-		m.state.vmType = string(*selected)
-		model := NewLatestVersionLoading(m.state)
+		m.Ctx = utils.CloneStateAndPushPage[LaunchState](m.Ctx, m)
+		state := utils.GetCurrentState[LaunchState](m.Ctx)
+
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"VM type"}, string(*selected)))
+		state.vmType = string(*selected)
+		model := NewLatestVersionLoading(utils.SetCurrentState(m.Ctx, state))
+
 		return model, model.Init()
 	}
 
@@ -267,7 +301,8 @@ func (m *VMTypeSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *VMTypeSelect) View() string {
-	return m.state.weave.Render() + styles.RenderPrompt(
+	state := utils.GetCurrentState[LaunchState](m.Ctx)
+	return state.weave.Render() + styles.RenderPrompt(
 		m.GetQuestion(),
 		[]string{"VM type"},
 		styles.Question,
@@ -275,17 +310,18 @@ func (m *VMTypeSelect) View() string {
 }
 
 type LatestVersionLoading struct {
-	state   *LaunchState
+	utils.BaseModel
 	loading utils.Loading
 	vmType  string
 }
 
-func NewLatestVersionLoading(state *LaunchState) *LatestVersionLoading {
+func NewLatestVersionLoading(ctx context.Context) *LatestVersionLoading {
+	state := utils.GetCurrentState[LaunchState](ctx)
 	vmType := strings.ToLower(state.vmType)
 	return &LatestVersionLoading{
-		state:   state,
-		loading: utils.NewLoading(fmt.Sprintf("Fetching the latest release for Mini%s...", vmType), WaitLatestVersionLoading(state, vmType)),
-		vmType:  vmType,
+		BaseModel: utils.BaseModel{Ctx: ctx},
+		loading:   utils.NewLoading(fmt.Sprintf("Fetching the latest release for Mini%s...", vmType), waitLatestVersionLoading(ctx, vmType)),
+		vmType:    vmType,
 	}
 }
 
@@ -293,9 +329,11 @@ func (m *LatestVersionLoading) Init() tea.Cmd {
 	return m.loading.Init()
 }
 
-func WaitLatestVersionLoading(state *LaunchState, vmType string) tea.Cmd {
+func waitLatestVersionLoading(ctx context.Context, vmType string) tea.Cmd {
 	return func() tea.Msg {
 		time.Sleep(1500 * time.Millisecond)
+
+		state := utils.GetCurrentState[LaunchState](ctx)
 
 		version, downloadURL, err := utils.GetLatestMinitiaVersion(vmType)
 		if err != nil {
@@ -304,41 +342,50 @@ func WaitLatestVersionLoading(state *LaunchState, vmType string) tea.Cmd {
 		state.minitiadVersion = version
 		state.minitiadEndpoint = downloadURL
 
-		return utils.EndLoading{}
+		return utils.EndLoading{Ctx: utils.SetCurrentState(ctx, state)}
 	}
 }
 
 func (m *LatestVersionLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := utils.HandleCommonCommands[LaunchState](m, msg); handled {
+		return model, cmd
+	}
+
 	loader, cmd := m.loading.Update(msg)
 	m.loading = loader
 	if m.loading.Completing {
+		m.Ctx = utils.CloneStateAndPushPage[LaunchState](m.loading.EndContext, m)
+		state := utils.GetCurrentState[LaunchState](m.Ctx)
+
 		vmText := fmt.Sprintf("Mini%s version", m.vmType)
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, fmt.Sprintf("Using the latest %s", vmText), []string{vmText}, m.state.minitiadVersion))
-		return NewChainIdInput(m.state), nil
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, fmt.Sprintf("Using the latest %s", vmText), []string{vmText}, state.minitiadVersion))
+		return NewChainIdInput(utils.SetCurrentState(m.Ctx, state)), nil
 	}
 	return m, cmd
 }
 
 func (m *LatestVersionLoading) View() string {
-	return m.state.weave.Render() + "\n" + m.loading.View()
+	state := utils.GetCurrentState[LaunchState](m.Ctx)
+	return state.weave.Render() + "\n" + m.loading.View()
 }
 
 type VersionSelect struct {
 	utils.Selector[string]
-	state    *LaunchState
+	utils.BaseModel
 	versions utils.BinaryVersionWithDownloadURL
 	question string
 }
 
-func NewVersionSelect(state *LaunchState) *VersionSelect {
+func NewVersionSelect(ctx context.Context) *VersionSelect {
+	state := utils.GetCurrentState[LaunchState](ctx)
 	versions := utils.ListBinaryReleases(fmt.Sprintf("https://api.github.com/repos/initia-labs/mini%s/releases", strings.ToLower(state.vmType)))
 	return &VersionSelect{
 		Selector: utils.Selector[string]{
 			Options: utils.SortVersions(versions),
 		},
-		state:    state,
-		versions: versions,
-		question: "Please specify the minitiad version?",
+		BaseModel: utils.BaseModel{Ctx: ctx},
+		versions:  versions,
+		question:  "Please specify the minitiad version?",
 	}
 }
 
@@ -351,31 +398,39 @@ func (m *VersionSelect) Init() tea.Cmd {
 }
 
 func (m *VersionSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := utils.HandleCommonCommands[LaunchState](m, msg); handled {
+		return model, cmd
+	}
+
 	selected, cmd := m.Select(msg)
 	if selected != nil {
-		m.state.minitiadVersion = *selected
-		m.state.minitiadEndpoint = m.versions[*selected]
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"minitiad version"}, *selected))
-		return NewChainIdInput(m.state), nil
+		m.Ctx = utils.CloneStateAndPushPage[LaunchState](m.Ctx, m)
+		state := utils.GetCurrentState[LaunchState](m.Ctx)
+
+		state.minitiadVersion = *selected
+		state.minitiadEndpoint = m.versions[*selected]
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"minitiad version"}, *selected))
+		return NewChainIdInput(utils.SetCurrentState(m.Ctx, state)), nil
 	}
 
 	return m, cmd
 }
 
 func (m *VersionSelect) View() string {
-	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"minitiad version"}, styles.Question) + m.Selector.View()
+	state := utils.GetCurrentState[LaunchState](m.Ctx)
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"minitiad version"}, styles.Question) + m.Selector.View()
 }
 
 type ChainIdInput struct {
 	utils.TextInput
-	state    *LaunchState
+	utils.BaseModel
 	question string
 }
 
-func NewChainIdInput(state *LaunchState) *ChainIdInput {
+func NewChainIdInput(ctx context.Context) *ChainIdInput {
 	model := &ChainIdInput{
 		TextInput: utils.NewTextInput(),
-		state:     state,
+		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  "Please specify the L2 chain id",
 	}
 	model.WithPlaceholder("Enter in alphanumeric format")
@@ -392,30 +447,38 @@ func (m *ChainIdInput) Init() tea.Cmd {
 }
 
 func (m *ChainIdInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := utils.HandleCommonCommands[LaunchState](m, msg); handled {
+		return model, cmd
+	}
+
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-		m.state.chainId = input.Text
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"L2 chain id"}, input.Text))
-		return NewGasDenomInput(m.state), nil
+		m.Ctx = utils.CloneStateAndPushPage[LaunchState](m.Ctx, m)
+		state := utils.GetCurrentState[LaunchState](m.Ctx)
+
+		state.chainId = input.Text
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"L2 chain id"}, input.Text))
+		return NewGasDenomInput(utils.SetCurrentState(m.Ctx, state)), nil
 	}
 	m.TextInput = input
 	return m, cmd
 }
 
 func (m *ChainIdInput) View() string {
-	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"L2 chain id"}, styles.Question) + m.TextInput.View()
+	state := utils.GetCurrentState[LaunchState](m.Ctx)
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"L2 chain id"}, styles.Question) + m.TextInput.View()
 }
 
 type GasDenomInput struct {
 	utils.TextInput
-	state    *LaunchState
+	utils.BaseModel
 	question string
 }
 
-func NewGasDenomInput(state *LaunchState) *GasDenomInput {
+func NewGasDenomInput(ctx context.Context) *GasDenomInput {
 	model := &GasDenomInput{
 		TextInput: utils.NewTextInput(),
-		state:     state,
+		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  "Please specify the L2 Gas Token Denom",
 	}
 	model.WithPlaceholder("Enter the denom")
@@ -432,30 +495,38 @@ func (m *GasDenomInput) Init() tea.Cmd {
 }
 
 func (m *GasDenomInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := utils.HandleCommonCommands[LaunchState](m, msg); handled {
+		return model, cmd
+	}
+
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-		m.state.gasDenom = input.Text
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"L2 Gas Token Denom"}, input.Text))
-		return NewMonikerInput(m.state), nil
+		m.Ctx = utils.CloneStateAndPushPage[LaunchState](m.Ctx, m)
+		state := utils.GetCurrentState[LaunchState](m.Ctx)
+
+		state.gasDenom = input.Text
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"L2 Gas Token Denom"}, input.Text))
+		return NewMonikerInput(utils.SetCurrentState(m.Ctx, state)), nil
 	}
 	m.TextInput = input
 	return m, cmd
 }
 
 func (m *GasDenomInput) View() string {
-	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"L2 Gas Token Denom"}, styles.Question) + m.TextInput.View()
+	state := utils.GetCurrentState[LaunchState](m.Ctx)
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"L2 Gas Token Denom"}, styles.Question) + m.TextInput.View()
 }
 
 type MonikerInput struct {
 	utils.TextInput
-	state    *LaunchState
+	utils.BaseModel
 	question string
 }
 
-func NewMonikerInput(state *LaunchState) *MonikerInput {
+func NewMonikerInput(ctx context.Context) *MonikerInput {
 	model := &MonikerInput{
 		TextInput: utils.NewTextInput(),
-		state:     state,
+		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  "Please specify the moniker",
 	}
 	model.WithPlaceholder(`Press tab to use "operator"`)
@@ -473,30 +544,38 @@ func (m *MonikerInput) Init() tea.Cmd {
 }
 
 func (m *MonikerInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := utils.HandleCommonCommands[LaunchState](m, msg); handled {
+		return model, cmd
+	}
+
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-		m.state.moniker = input.Text
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"moniker"}, input.Text))
-		return NewOpBridgeSubmissionIntervalInput(m.state), nil
+		m.Ctx = utils.CloneStateAndPushPage[LaunchState](m.Ctx, m)
+		state := utils.GetCurrentState[LaunchState](m.Ctx)
+
+		state.moniker = input.Text
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"moniker"}, input.Text))
+		return NewOpBridgeSubmissionIntervalInput(utils.SetCurrentState(m.Ctx, state)), nil
 	}
 	m.TextInput = input
 	return m, cmd
 }
 
 func (m *MonikerInput) View() string {
-	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"moniker"}, styles.Question) + m.TextInput.View()
+	state := utils.GetCurrentState[LaunchState](m.Ctx)
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"moniker"}, styles.Question) + m.TextInput.View()
 }
 
 type OpBridgeSubmissionIntervalInput struct {
 	utils.TextInput
-	state    *LaunchState
+	utils.BaseModel
 	question string
 }
 
-func NewOpBridgeSubmissionIntervalInput(state *LaunchState) *OpBridgeSubmissionIntervalInput {
+func NewOpBridgeSubmissionIntervalInput(ctx context.Context) *OpBridgeSubmissionIntervalInput {
 	model := &OpBridgeSubmissionIntervalInput{
 		TextInput: utils.NewTextInput(),
-		state:     state,
+		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  "Please specify OP bridge config: Submission Interval (format s, m or h - ex. 30s, 5m, 12h)",
 	}
 	model.WithPlaceholder("Press tab to use “1m”")
@@ -514,30 +593,38 @@ func (m *OpBridgeSubmissionIntervalInput) Init() tea.Cmd {
 }
 
 func (m *OpBridgeSubmissionIntervalInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := utils.HandleCommonCommands[LaunchState](m, msg); handled {
+		return model, cmd
+	}
+
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-		m.state.opBridgeSubmissionInterval = input.Text
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Submission Interval"}, input.Text))
-		return NewOpBridgeOutputFinalizationPeriodInput(m.state), nil
+		m.Ctx = utils.CloneStateAndPushPage[LaunchState](m.Ctx, m)
+		state := utils.GetCurrentState[LaunchState](m.Ctx)
+
+		state.opBridgeSubmissionInterval = input.Text
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Submission Interval"}, input.Text))
+		return NewOpBridgeOutputFinalizationPeriodInput(utils.SetCurrentState(m.Ctx, state)), nil
 	}
 	m.TextInput = input
 	return m, cmd
 }
 
 func (m *OpBridgeSubmissionIntervalInput) View() string {
-	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"Submission Interval"}, styles.Question) + m.TextInput.View()
+	state := utils.GetCurrentState[LaunchState](m.Ctx)
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"Submission Interval"}, styles.Question) + m.TextInput.View()
 }
 
 type OpBridgeOutputFinalizationPeriodInput struct {
 	utils.TextInput
-	state    *LaunchState
+	utils.BaseModel
 	question string
 }
 
-func NewOpBridgeOutputFinalizationPeriodInput(state *LaunchState) *OpBridgeOutputFinalizationPeriodInput {
+func NewOpBridgeOutputFinalizationPeriodInput(ctx context.Context) *OpBridgeOutputFinalizationPeriodInput {
 	model := &OpBridgeOutputFinalizationPeriodInput{
 		TextInput: utils.NewTextInput(),
-		state:     state,
+		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  "Please specify OP bridge config: Output Finalization Period (format s, m or h - ex. 30s, 5m, 12h)",
 	}
 	model.WithPlaceholder("Press tab to use “168h” (7 days)")
@@ -555,23 +642,31 @@ func (m *OpBridgeOutputFinalizationPeriodInput) Init() tea.Cmd {
 }
 
 func (m *OpBridgeOutputFinalizationPeriodInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := utils.HandleCommonCommands[LaunchState](m, msg); handled {
+		return model, cmd
+	}
+
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-		m.state.opBridgeOutputFinalizationPeriod = input.Text
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Output Finalization Period"}, input.Text))
-		return NewOpBridgeBatchSubmissionTargetSelect(m.state), nil
+		m.Ctx = utils.CloneStateAndPushPage[LaunchState](m.Ctx, m)
+		state := utils.GetCurrentState[LaunchState](m.Ctx)
+
+		state.opBridgeOutputFinalizationPeriod = input.Text
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Output Finalization Period"}, input.Text))
+		return NewOpBridgeBatchSubmissionTargetSelect(utils.SetCurrentState(m.Ctx, state)), nil
 	}
 	m.TextInput = input
 	return m, cmd
 }
 
 func (m *OpBridgeOutputFinalizationPeriodInput) View() string {
-	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"Output Finalization Period"}, styles.Question) + m.TextInput.View()
+	state := utils.GetCurrentState[LaunchState](m.Ctx)
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"Output Finalization Period"}, styles.Question) + m.TextInput.View()
 }
 
 type OpBridgeBatchSubmissionTargetSelect struct {
 	utils.Selector[OpBridgeBatchSubmissionTargetOption]
-	state    *LaunchState
+	utils.BaseModel
 	question string
 }
 
@@ -582,7 +677,7 @@ const (
 	Initia   OpBridgeBatchSubmissionTargetOption = "Initia L1"
 )
 
-func NewOpBridgeBatchSubmissionTargetSelect(state *LaunchState) *OpBridgeBatchSubmissionTargetSelect {
+func NewOpBridgeBatchSubmissionTargetSelect(ctx context.Context) *OpBridgeBatchSubmissionTargetSelect {
 	return &OpBridgeBatchSubmissionTargetSelect{
 		Selector: utils.Selector[OpBridgeBatchSubmissionTargetOption]{
 			Options: []OpBridgeBatchSubmissionTargetOption{
@@ -590,8 +685,8 @@ func NewOpBridgeBatchSubmissionTargetSelect(state *LaunchState) *OpBridgeBatchSu
 				Initia,
 			},
 		},
-		state:    state,
-		question: "Which OP bridge config: Batch Submission Target would you like to select?",
+		BaseModel: utils.BaseModel{Ctx: ctx},
+		question:  "Which OP bridge config: Batch Submission Target would you like to select?",
 	}
 }
 
@@ -604,21 +699,29 @@ func (m *OpBridgeBatchSubmissionTargetSelect) Init() tea.Cmd {
 }
 
 func (m *OpBridgeBatchSubmissionTargetSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := utils.HandleCommonCommands[LaunchState](m, msg); handled {
+		return model, cmd
+	}
+
 	selected, cmd := m.Select(msg)
 	if selected != nil {
-		m.state.opBridgeBatchSubmissionTarget = utils.TransformFirstWordUpperCase(string(*selected))
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"Batch Submission Target"}, string(*selected)))
+		m.Ctx = utils.CloneStateAndPushPage[LaunchState](m.Ctx, m)
+		state := utils.GetCurrentState[LaunchState](m.Ctx)
+
+		state.opBridgeBatchSubmissionTarget = utils.TransformFirstWordUpperCase(string(*selected))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"Batch Submission Target"}, string(*selected)))
 		if *selected == Celestia {
-			m.state.batchSubmissionIsCelestia = true
+			state.batchSubmissionIsCelestia = true
 		}
-		return NewOracleEnableSelect(m.state), nil
+		return NewOracleEnableSelect(utils.SetCurrentState(m.Ctx, state)), nil
 	}
 
 	return m, cmd
 }
 
 func (m *OpBridgeBatchSubmissionTargetSelect) View() string {
-	return m.state.weave.Render() + styles.RenderPrompt(
+	state := utils.GetCurrentState[LaunchState](m.Ctx)
+	return state.weave.Render() + styles.RenderPrompt(
 		m.GetQuestion(),
 		[]string{"Batch Submission Target"},
 		styles.Question,
@@ -627,7 +730,7 @@ func (m *OpBridgeBatchSubmissionTargetSelect) View() string {
 
 type OracleEnableSelect struct {
 	utils.Selector[OracleEnableOption]
-	state    *LaunchState
+	utils.BaseModel
 	question string
 }
 
@@ -638,7 +741,7 @@ const (
 	Disable OracleEnableOption = "Disable"
 )
 
-func NewOracleEnableSelect(state *LaunchState) *OracleEnableSelect {
+func NewOracleEnableSelect(ctx context.Context) *OracleEnableSelect {
 	return &OracleEnableSelect{
 		Selector: utils.Selector[OracleEnableOption]{
 			Options: []OracleEnableOption{
@@ -646,8 +749,8 @@ func NewOracleEnableSelect(state *LaunchState) *OracleEnableSelect {
 				Disable,
 			},
 		},
-		state:    state,
-		question: "Would you like to enable the oracle?",
+		BaseModel: utils.BaseModel{Ctx: ctx},
+		question:  "Would you like to enable the oracle?",
 	}
 }
 
@@ -660,22 +763,30 @@ func (m *OracleEnableSelect) Init() tea.Cmd {
 }
 
 func (m *OracleEnableSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := utils.HandleCommonCommands[LaunchState](m, msg); handled {
+		return model, cmd
+	}
+
 	selected, cmd := m.Select(msg)
 	if selected != nil {
+		m.Ctx = utils.CloneStateAndPushPage[LaunchState](m.Ctx, m)
+		state := utils.GetCurrentState[LaunchState](m.Ctx)
+
 		if *selected == Enable {
-			m.state.enableOracle = true
+			state.enableOracle = true
 		} else {
-			m.state.enableOracle = false
+			state.enableOracle = false
 		}
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"oracle"}, string(*selected)))
-		return NewSystemKeysSelect(m.state), nil
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"oracle"}, string(*selected)))
+		return NewSystemKeysSelect(utils.SetCurrentState(m.Ctx, state)), nil
 	}
 
 	return m, cmd
 }
 
 func (m *OracleEnableSelect) View() string {
-	return m.state.weave.Render() + styles.RenderPrompt(
+	state := utils.GetCurrentState[LaunchState](m.Ctx)
+	return state.weave.Render() + styles.RenderPrompt(
 		m.GetQuestion(),
 		[]string{"oracle"},
 		styles.Question,
@@ -684,7 +795,7 @@ func (m *OracleEnableSelect) View() string {
 
 type SystemKeysSelect struct {
 	utils.Selector[SystemKeysOption]
-	state    *LaunchState
+	utils.BaseModel
 	question string
 }
 
@@ -695,7 +806,7 @@ const (
 	Import   SystemKeysOption = "Import existing keys"
 )
 
-func NewSystemKeysSelect(state *LaunchState) *SystemKeysSelect {
+func NewSystemKeysSelect(ctx context.Context) *SystemKeysSelect {
 	return &SystemKeysSelect{
 		Selector: utils.Selector[SystemKeysOption]{
 			Options: []SystemKeysOption{
@@ -703,8 +814,8 @@ func NewSystemKeysSelect(state *LaunchState) *SystemKeysSelect {
 				Import,
 			},
 		},
-		state:    state,
-		question: "Please select an option for the system keys",
+		BaseModel: utils.BaseModel{Ctx: ctx},
+		question:  "Please select an option for the system keys",
 	}
 }
 
@@ -717,16 +828,23 @@ func (m *SystemKeysSelect) Init() tea.Cmd {
 }
 
 func (m *SystemKeysSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := utils.HandleCommonCommands[LaunchState](m, msg); handled {
+		return model, cmd
+	}
+
 	selected, cmd := m.Select(msg)
 	if selected != nil {
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"the system keys"}, string(*selected)))
+		m.Ctx = utils.CloneStateAndPushPage[LaunchState](m.Ctx, m)
+		state := utils.GetCurrentState[LaunchState](m.Ctx)
+
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"the system keys"}, string(*selected)))
 		switch *selected {
 		case Generate:
-			m.state.generateKeys = true
-			model := NewExistingGasStationChecker(m.state)
+			state.generateKeys = true
+			model := NewExistingGasStationChecker(utils.SetCurrentState(m.Ctx, state))
 			return model, model.Init()
 		case Import:
-			return NewSystemKeyOperatorMnemonicInput(m.state), nil
+			return NewSystemKeyOperatorMnemonicInput(utils.SetCurrentState(m.Ctx, state)), nil
 		}
 	}
 
@@ -734,7 +852,8 @@ func (m *SystemKeysSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *SystemKeysSelect) View() string {
-	return m.state.weave.Render() + "\n" +
+	state := utils.GetCurrentState[LaunchState](m.Ctx)
+	return state.weave.Render() + "\n" +
 		styles.RenderPrompt(
 			"System keys are required for each of the following roles:\nOperator, Bridge Executor, Output Submitter, Batch Submitter, Challenger",
 			[]string{"System keys"},
@@ -749,14 +868,14 @@ func (m *SystemKeysSelect) View() string {
 
 type SystemKeyOperatorMnemonicInput struct {
 	utils.TextInput
-	state    *LaunchState
+	utils.BaseModel
 	question string
 }
 
-func NewSystemKeyOperatorMnemonicInput(state *LaunchState) *SystemKeyOperatorMnemonicInput {
+func NewSystemKeyOperatorMnemonicInput(ctx context.Context) *SystemKeyOperatorMnemonicInput {
 	model := &SystemKeyOperatorMnemonicInput{
 		TextInput: utils.NewTextInput(),
-		state:     state,
+		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  "Please add mnemonic for Operator",
 	}
 	model.WithPlaceholder("Enter the mnemonic")
@@ -773,31 +892,39 @@ func (m *SystemKeyOperatorMnemonicInput) Init() tea.Cmd {
 }
 
 func (m *SystemKeyOperatorMnemonicInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := utils.HandleCommonCommands[LaunchState](m, msg); handled {
+		return model, cmd
+	}
+
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
+		m.Ctx = utils.CloneStateAndPushPage[LaunchState](m.Ctx, m)
+		state := utils.GetCurrentState[LaunchState](m.Ctx)
+
 		// TODO: Check if duplicate
-		m.state.systemKeyOperatorMnemonic = input.Text
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Operator"}, styles.HiddenMnemonicText))
-		return NewSystemKeyBridgeExecutorMnemonicInput(m.state), nil
+		state.systemKeyOperatorMnemonic = input.Text
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Operator"}, styles.HiddenMnemonicText))
+		return NewSystemKeyBridgeExecutorMnemonicInput(utils.SetCurrentState(m.Ctx, state)), nil
 	}
 	m.TextInput = input
 	return m, cmd
 }
 
 func (m *SystemKeyOperatorMnemonicInput) View() string {
-	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"Operator"}, styles.Question) + m.TextInput.View()
+	state := utils.GetCurrentState[LaunchState](m.Ctx)
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"Operator"}, styles.Question) + m.TextInput.View()
 }
 
 type SystemKeyBridgeExecutorMnemonicInput struct {
 	utils.TextInput
-	state    *LaunchState
+	utils.BaseModel
 	question string
 }
 
-func NewSystemKeyBridgeExecutorMnemonicInput(state *LaunchState) *SystemKeyBridgeExecutorMnemonicInput {
+func NewSystemKeyBridgeExecutorMnemonicInput(ctx context.Context) *SystemKeyBridgeExecutorMnemonicInput {
 	model := &SystemKeyBridgeExecutorMnemonicInput{
 		TextInput: utils.NewTextInput(),
-		state:     state,
+		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  "Please add mnemonic for Bridge Executor",
 	}
 	model.WithPlaceholder("Enter the mnemonic")
@@ -814,30 +941,38 @@ func (m *SystemKeyBridgeExecutorMnemonicInput) Init() tea.Cmd {
 }
 
 func (m *SystemKeyBridgeExecutorMnemonicInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := utils.HandleCommonCommands[LaunchState](m, msg); handled {
+		return model, cmd
+	}
+
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-		m.state.systemKeyBridgeExecutorMnemonic = input.Text
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Bridge Executor"}, styles.HiddenMnemonicText))
-		return NewSystemKeyOutputSubmitterMnemonicInput(m.state), nil
+		m.Ctx = utils.CloneStateAndPushPage[LaunchState](m.Ctx, m)
+		state := utils.GetCurrentState[LaunchState](m.Ctx)
+
+		state.systemKeyBridgeExecutorMnemonic = input.Text
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Bridge Executor"}, styles.HiddenMnemonicText))
+		return NewSystemKeyOutputSubmitterMnemonicInput(utils.SetCurrentState(m.Ctx, state)), nil
 	}
 	m.TextInput = input
 	return m, cmd
 }
 
 func (m *SystemKeyBridgeExecutorMnemonicInput) View() string {
-	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"Bridge Executor"}, styles.Question) + m.TextInput.View()
+	state := utils.GetCurrentState[LaunchState](m.Ctx)
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"Bridge Executor"}, styles.Question) + m.TextInput.View()
 }
 
 type SystemKeyOutputSubmitterMnemonicInput struct {
 	utils.TextInput
-	state    *LaunchState
+	utils.BaseModel
 	question string
 }
 
-func NewSystemKeyOutputSubmitterMnemonicInput(state *LaunchState) *SystemKeyOutputSubmitterMnemonicInput {
+func NewSystemKeyOutputSubmitterMnemonicInput(ctx context.Context) *SystemKeyOutputSubmitterMnemonicInput {
 	model := &SystemKeyOutputSubmitterMnemonicInput{
 		TextInput: utils.NewTextInput(),
-		state:     state,
+		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  "Please add mnemonic for Output Submitter",
 	}
 	model.WithPlaceholder("Enter the mnemonic")
@@ -854,30 +989,38 @@ func (m *SystemKeyOutputSubmitterMnemonicInput) Init() tea.Cmd {
 }
 
 func (m *SystemKeyOutputSubmitterMnemonicInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := utils.HandleCommonCommands[LaunchState](m, msg); handled {
+		return model, cmd
+	}
+
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-		m.state.systemKeyOutputSubmitterMnemonic = input.Text
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Output Submitter"}, styles.HiddenMnemonicText))
-		return NewSystemKeyBatchSubmitterMnemonicInput(m.state), nil
+		m.Ctx = utils.CloneStateAndPushPage[LaunchState](m.Ctx, m)
+		state := utils.GetCurrentState[LaunchState](m.Ctx)
+
+		state.systemKeyOutputSubmitterMnemonic = input.Text
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Output Submitter"}, styles.HiddenMnemonicText))
+		return NewSystemKeyBatchSubmitterMnemonicInput(utils.SetCurrentState(m.Ctx, state)), nil
 	}
 	m.TextInput = input
 	return m, cmd
 }
 
 func (m *SystemKeyOutputSubmitterMnemonicInput) View() string {
-	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"Output Submitter"}, styles.Question) + m.TextInput.View()
+	state := utils.GetCurrentState[LaunchState](m.Ctx)
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"Output Submitter"}, styles.Question) + m.TextInput.View()
 }
 
 type SystemKeyBatchSubmitterMnemonicInput struct {
 	utils.TextInput
-	state    *LaunchState
+	utils.BaseModel
 	question string
 }
 
-func NewSystemKeyBatchSubmitterMnemonicInput(state *LaunchState) *SystemKeyBatchSubmitterMnemonicInput {
+func NewSystemKeyBatchSubmitterMnemonicInput(ctx context.Context) *SystemKeyBatchSubmitterMnemonicInput {
 	model := &SystemKeyBatchSubmitterMnemonicInput{
 		TextInput: utils.NewTextInput(),
-		state:     state,
+		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  "Please add mnemonic for Batch Submitter",
 	}
 	model.WithPlaceholder("Enter the mnemonic")
@@ -894,30 +1037,38 @@ func (m *SystemKeyBatchSubmitterMnemonicInput) Init() tea.Cmd {
 }
 
 func (m *SystemKeyBatchSubmitterMnemonicInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := utils.HandleCommonCommands[LaunchState](m, msg); handled {
+		return model, cmd
+	}
+
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-		m.state.systemKeyBatchSubmitterMnemonic = input.Text
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Batch Submitter"}, styles.HiddenMnemonicText))
-		return NewSystemKeyChallengerMnemonicInput(m.state), nil
+		m.Ctx = utils.CloneStateAndPushPage[LaunchState](m.Ctx, m)
+		state := utils.GetCurrentState[LaunchState](m.Ctx)
+
+		state.systemKeyBatchSubmitterMnemonic = input.Text
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Batch Submitter"}, styles.HiddenMnemonicText))
+		return NewSystemKeyChallengerMnemonicInput(utils.SetCurrentState(m.Ctx, state)), nil
 	}
 	m.TextInput = input
 	return m, cmd
 }
 
 func (m *SystemKeyBatchSubmitterMnemonicInput) View() string {
-	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"Batch Submitter"}, styles.Question) + m.TextInput.View()
+	state := utils.GetCurrentState[LaunchState](m.Ctx)
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"Batch Submitter"}, styles.Question) + m.TextInput.View()
 }
 
 type SystemKeyChallengerMnemonicInput struct {
 	utils.TextInput
-	state    *LaunchState
+	utils.BaseModel
 	question string
 }
 
-func NewSystemKeyChallengerMnemonicInput(state *LaunchState) *SystemKeyChallengerMnemonicInput {
+func NewSystemKeyChallengerMnemonicInput(ctx context.Context) *SystemKeyChallengerMnemonicInput {
 	model := &SystemKeyChallengerMnemonicInput{
 		TextInput: utils.NewTextInput(),
-		state:     state,
+		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  "Please add mnemonic for Challenger",
 	}
 	model.WithPlaceholder("Enter the mnemonic")
@@ -934,11 +1085,18 @@ func (m *SystemKeyChallengerMnemonicInput) Init() tea.Cmd {
 }
 
 func (m *SystemKeyChallengerMnemonicInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := utils.HandleCommonCommands[LaunchState](m, msg); handled {
+		return model, cmd
+	}
+
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-		m.state.systemKeyChallengerMnemonic = input.Text
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Challenger"}, styles.HiddenMnemonicText))
-		model := NewExistingGasStationChecker(m.state)
+		m.Ctx = utils.CloneStateAndPushPage[LaunchState](m.Ctx, m)
+		state := utils.GetCurrentState[LaunchState](m.Ctx)
+
+		state.systemKeyChallengerMnemonic = input.Text
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Challenger"}, styles.HiddenMnemonicText))
+		model := NewExistingGasStationChecker(utils.SetCurrentState(m.Ctx, state))
 		return model, model.Init()
 	}
 	m.TextInput = input
@@ -946,18 +1104,19 @@ func (m *SystemKeyChallengerMnemonicInput) Update(msg tea.Msg) (tea.Model, tea.C
 }
 
 func (m *SystemKeyChallengerMnemonicInput) View() string {
-	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"Challenger"}, styles.Question) + m.TextInput.View()
+	state := utils.GetCurrentState[LaunchState](m.Ctx)
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"Challenger"}, styles.Question) + m.TextInput.View()
 }
 
 type ExistingGasStationChecker struct {
-	state   *LaunchState
 	loading utils.Loading
+	utils.BaseModel
 }
 
-func NewExistingGasStationChecker(state *LaunchState) *ExistingGasStationChecker {
+func NewExistingGasStationChecker(ctx context.Context) *ExistingGasStationChecker {
 	return &ExistingGasStationChecker{
-		state:   state,
-		loading: utils.NewLoading("Checking for Gas Station account...", WaitExistingGasStationChecker(state)),
+		loading:   utils.NewLoading("Checking for Gas Station account...", waitExistingGasStationChecker(ctx)),
+		BaseModel: utils.BaseModel{Ctx: ctx},
 	}
 }
 
@@ -965,46 +1124,59 @@ func (m *ExistingGasStationChecker) Init() tea.Cmd {
 	return m.loading.Init()
 }
 
-func WaitExistingGasStationChecker(state *LaunchState) tea.Cmd {
+func waitExistingGasStationChecker(ctx context.Context) tea.Cmd {
 	return func() tea.Msg {
 		time.Sleep(1500 * time.Millisecond)
+
+		state := utils.GetCurrentState[LaunchState](ctx)
 		if utils.IsFirstTimeSetup() {
 			state.gasStationExist = false
-			return utils.EndLoading{}
+			return utils.EndLoading{
+				Ctx: utils.SetCurrentState(ctx, state),
+			}
 		} else {
 			state.gasStationExist = true
-			return utils.EndLoading{}
+			return utils.EndLoading{
+				Ctx: utils.SetCurrentState(ctx, state),
+			}
 		}
 	}
 }
 
 func (m *ExistingGasStationChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := utils.HandleCommonCommands[LaunchState](m, msg); handled {
+		return model, cmd
+	}
+
 	loader, cmd := m.loading.Update(msg)
 	m.loading = loader
 	if m.loading.Completing {
-		if !m.state.gasStationExist {
-			return NewGasStationMnemonicInput(m.state), nil
+		m.Ctx = utils.CloneStateAndPushPage[LaunchState](m.loading.EndContext, m)
+		state := utils.GetCurrentState[LaunchState](m.Ctx)
+		if !state.gasStationExist {
+			return NewGasStationMnemonicInput(utils.SetCurrentState(m.Ctx, state)), nil
 		} else {
-			return NewSystemKeyL1OperatorBalanceInput(m.state), nil
+			return NewSystemKeyL1OperatorBalanceInput(utils.SetCurrentState(m.Ctx, state)), nil
 		}
 	}
 	return m, cmd
 }
 
 func (m *ExistingGasStationChecker) View() string {
-	return m.state.weave.Render() + "\n" + m.loading.View()
+	state := utils.GetCurrentState[LaunchState](m.Ctx)
+	return state.weave.Render() + "\n" + m.loading.View()
 }
 
 type GasStationMnemonicInput struct {
 	utils.TextInput
-	state    *LaunchState
+	utils.BaseModel
 	question string
 }
 
-func NewGasStationMnemonicInput(state *LaunchState) *GasStationMnemonicInput {
+func NewGasStationMnemonicInput(ctx context.Context) *GasStationMnemonicInput {
 	model := &GasStationMnemonicInput{
 		TextInput: utils.NewTextInput(),
-		state:     state,
+		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  fmt.Sprintf("Please set up a Gas Station account %s\n%s", styles.Text("(The account that will hold the funds required by the OPinit-bots or relayer to send transactions)", styles.Gray), styles.BoldText("Weave will not send any transactions without your confirmation.", styles.Yellow)),
 	}
 	model.WithPlaceholder("Enter the mnemonic")
@@ -1021,40 +1193,50 @@ func (m *GasStationMnemonicInput) Init() tea.Cmd {
 }
 
 func (m *GasStationMnemonicInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := utils.HandleCommonCommands[LaunchState](m, msg); handled {
+		return model, cmd
+	}
+
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
+		m.Ctx = utils.CloneStateAndPushPage[LaunchState](m.Ctx, m)
+		state := utils.GetCurrentState[LaunchState](m.Ctx)
+
 		err := utils.SetConfig("common.gas_station_mnemonic", input.Text)
 		if err != nil {
 			panic(err)
 		}
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, "Please set up a Gas Station account", []string{"Gas Station account"}, styles.HiddenMnemonicText))
-		return NewSystemKeyL1OperatorBalanceInput(m.state), nil
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, "Please set up a Gas Station account", []string{"Gas Station account"}, styles.HiddenMnemonicText))
+		return NewSystemKeyL1OperatorBalanceInput(utils.SetCurrentState(m.Ctx, state)), nil
 	}
 	m.TextInput = input
 	return m, cmd
 }
 
 func (m *GasStationMnemonicInput) View() string {
-	return m.state.weave.Render() + "\n" +
+	state := utils.GetCurrentState[LaunchState](m.Ctx)
+	return state.weave.Render() + "\n" +
 		styles.RenderPrompt(fmt.Sprintf("%s %s", styles.BoldUnderlineText("Please note that", styles.Yellow), styles.Text("you will need to set up a Gas Station account to fund the following accounts in order to run the weave minitia launch command:\n  • Operator\n  • Bridge Executor\n  • Output Submitter\n  • Batch Submitter\n  • Challenger", styles.Yellow)), []string{}, styles.Information) + "\n" +
 		styles.RenderPrompt(m.GetQuestion(), []string{"Gas Station account"}, styles.Question) + m.TextInput.View()
 }
 
 type SystemKeyL1OperatorBalanceInput struct {
 	utils.TextInput
-	state    *LaunchState
+	utils.BaseModel
 	question string
 }
 
-func NewSystemKeyL1OperatorBalanceInput(state *LaunchState) *SystemKeyL1OperatorBalanceInput {
+func NewSystemKeyL1OperatorBalanceInput(ctx context.Context) *SystemKeyL1OperatorBalanceInput {
+	state := utils.GetCurrentState[LaunchState](ctx)
 	state.preL1BalancesResponsesCount = len(state.weave.PreviousResponse)
 	model := &SystemKeyL1OperatorBalanceInput{
 		TextInput: utils.NewTextInput(),
-		state:     state,
+		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  "Please specify initial balance for Operator on L1 (uinit)",
 	}
 	model.WithPlaceholder("Enter the amount")
 	model.WithValidatorFn(utils.IsValidInteger)
+	model.Ctx = utils.SetCurrentState(model.Ctx, state)
 	return model
 }
 
@@ -1067,33 +1249,41 @@ func (m *SystemKeyL1OperatorBalanceInput) Init() tea.Cmd {
 }
 
 func (m *SystemKeyL1OperatorBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := utils.HandleCommonCommands[LaunchState](m, msg); handled {
+		return model, cmd
+	}
+
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-		m.state.systemKeyL1OperatorBalance = input.Text
-		m.state.weave.PushPreviousResponse(fmt.Sprintf("\n%s\n", styles.RenderPrompt("Please fund the following accounts on L1:\n  • Operator\n  • Bridge Executor\n  • Output Submitter\n  • Batch Submitter\n  • Challenger\n", []string{"L1"}, styles.Information)))
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Operator", "L1"}, input.Text))
-		return NewSystemKeyL1BridgeExecutorBalanceInput(m.state), nil
+		m.Ctx = utils.CloneStateAndPushPage[LaunchState](m.Ctx, m)
+		state := utils.GetCurrentState[LaunchState](m.Ctx)
+
+		state.systemKeyL1OperatorBalance = input.Text
+		state.weave.PushPreviousResponse(fmt.Sprintf("\n%s\n", styles.RenderPrompt("Please fund the following accounts on L1:\n  • Operator\n  • Bridge Executor\n  • Output Submitter\n  • Batch Submitter\n  • Challenger\n", []string{"L1"}, styles.Information)))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Operator", "L1"}, input.Text))
+		return NewSystemKeyL1BridgeExecutorBalanceInput(utils.SetCurrentState(m.Ctx, state)), nil
 	}
 	m.TextInput = input
 	return m, cmd
 }
 
 func (m *SystemKeyL1OperatorBalanceInput) View() string {
-	return m.state.weave.Render() + "\n" +
+	state := utils.GetCurrentState[LaunchState](m.Ctx)
+	return state.weave.Render() + "\n" +
 		styles.RenderPrompt("Please fund the following accounts on L1:\n  • Operator\n  • Bridge Executor\n  • Output Submitter\n  • Batch Submitter\n  • Challenger", []string{"L1"}, styles.Information) + "\n" +
 		styles.RenderPrompt(m.GetQuestion(), []string{"Operator", "L1"}, styles.Question) + m.TextInput.View()
 }
 
 type SystemKeyL1BridgeExecutorBalanceInput struct {
 	utils.TextInput
-	state    *LaunchState
+	utils.BaseModel
 	question string
 }
 
-func NewSystemKeyL1BridgeExecutorBalanceInput(state *LaunchState) *SystemKeyL1BridgeExecutorBalanceInput {
+func NewSystemKeyL1BridgeExecutorBalanceInput(ctx context.Context) *SystemKeyL1BridgeExecutorBalanceInput {
 	model := &SystemKeyL1BridgeExecutorBalanceInput{
 		TextInput: utils.NewTextInput(),
-		state:     state,
+		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  "Please specify initial balance for Bridge Executor on L1 (uinit)",
 	}
 	model.WithPlaceholder("Enter the balance")
@@ -1110,31 +1300,39 @@ func (m *SystemKeyL1BridgeExecutorBalanceInput) Init() tea.Cmd {
 }
 
 func (m *SystemKeyL1BridgeExecutorBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := utils.HandleCommonCommands[LaunchState](m, msg); handled {
+		return model, cmd
+	}
+
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-		m.state.systemKeyL1BridgeExecutorBalance = input.Text
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Bridge Executor", "L1"}, input.Text))
-		return NewSystemKeyL1OutputSubmitterBalanceInput(m.state), nil
+		m.Ctx = utils.CloneStateAndPushPage[LaunchState](m.Ctx, m)
+		state := utils.GetCurrentState[LaunchState](m.Ctx)
+
+		state.systemKeyL1BridgeExecutorBalance = input.Text
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Bridge Executor", "L1"}, input.Text))
+		return NewSystemKeyL1OutputSubmitterBalanceInput(utils.SetCurrentState(m.Ctx, state)), nil
 	}
 	m.TextInput = input
 	return m, cmd
 }
 
 func (m *SystemKeyL1BridgeExecutorBalanceInput) View() string {
-	return m.state.weave.Render() +
+	state := utils.GetCurrentState[LaunchState](m.Ctx)
+	return state.weave.Render() +
 		styles.RenderPrompt(m.GetQuestion(), []string{"Bridge Executor", "L1"}, styles.Question) + m.TextInput.View()
 }
 
 type SystemKeyL1OutputSubmitterBalanceInput struct {
 	utils.TextInput
-	state    *LaunchState
+	utils.BaseModel
 	question string
 }
 
-func NewSystemKeyL1OutputSubmitterBalanceInput(state *LaunchState) *SystemKeyL1OutputSubmitterBalanceInput {
+func NewSystemKeyL1OutputSubmitterBalanceInput(ctx context.Context) *SystemKeyL1OutputSubmitterBalanceInput {
 	model := &SystemKeyL1OutputSubmitterBalanceInput{
 		TextInput: utils.NewTextInput(),
-		state:     state,
+		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  "Please specify initial balance for Output Submitter on L1 (uinit)",
 	}
 	model.WithPlaceholder("Enter the balance")
@@ -1151,28 +1349,37 @@ func (m *SystemKeyL1OutputSubmitterBalanceInput) Init() tea.Cmd {
 }
 
 func (m *SystemKeyL1OutputSubmitterBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := utils.HandleCommonCommands[LaunchState](m, msg); handled {
+		return model, cmd
+	}
+
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-		m.state.systemKeyL1OutputSubmitterBalance = input.Text
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Output Submitter", "L1"}, input.Text))
-		return NewSystemKeyL1BatchSubmitterBalanceInput(m.state), nil
+		m.Ctx = utils.CloneStateAndPushPage[LaunchState](m.Ctx, m)
+		state := utils.GetCurrentState[LaunchState](m.Ctx)
+
+		state.systemKeyL1OutputSubmitterBalance = input.Text
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Output Submitter", "L1"}, input.Text))
+		return NewSystemKeyL1BatchSubmitterBalanceInput(utils.SetCurrentState(m.Ctx, state)), nil
 	}
 	m.TextInput = input
 	return m, cmd
 }
 
 func (m *SystemKeyL1OutputSubmitterBalanceInput) View() string {
-	return m.state.weave.Render() +
+	state := utils.GetCurrentState[LaunchState](m.Ctx)
+	return state.weave.Render() +
 		styles.RenderPrompt(m.GetQuestion(), []string{"Output Submitter", "L1"}, styles.Question) + m.TextInput.View()
 }
 
 type SystemKeyL1BatchSubmitterBalanceInput struct {
 	utils.TextInput
-	state    *LaunchState
+	utils.BaseModel
 	question string
 }
 
-func NewSystemKeyL1BatchSubmitterBalanceInput(state *LaunchState) *SystemKeyL1BatchSubmitterBalanceInput {
+func NewSystemKeyL1BatchSubmitterBalanceInput(ctx context.Context) *SystemKeyL1BatchSubmitterBalanceInput {
+	state := utils.GetCurrentState[LaunchState](ctx)
 	var denom, network string
 	if state.batchSubmissionIsCelestia {
 		denom = "utia"
@@ -1184,7 +1391,7 @@ func NewSystemKeyL1BatchSubmitterBalanceInput(state *LaunchState) *SystemKeyL1Ba
 
 	model := &SystemKeyL1BatchSubmitterBalanceInput{
 		TextInput: utils.NewTextInput(),
-		state:     state,
+		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  fmt.Sprintf("Please specify initial balance for Batch Submitter on %s (%s)", network, denom),
 	}
 	model.WithPlaceholder("Enter the balance")
@@ -1201,31 +1408,39 @@ func (m *SystemKeyL1BatchSubmitterBalanceInput) Init() tea.Cmd {
 }
 
 func (m *SystemKeyL1BatchSubmitterBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := utils.HandleCommonCommands[LaunchState](m, msg); handled {
+		return model, cmd
+	}
+
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-		m.state.systemKeyL1BatchSubmitterBalance = input.Text
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Batch Submitter", "L1", "Celestia Testnet"}, input.Text))
-		return NewSystemKeyL1ChallengerBalanceInput(m.state), nil
+		m.Ctx = utils.CloneStateAndPushPage[LaunchState](m.Ctx, m)
+		state := utils.GetCurrentState[LaunchState](m.Ctx)
+
+		state.systemKeyL1BatchSubmitterBalance = input.Text
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Batch Submitter", "L1", "Celestia Testnet"}, input.Text))
+		return NewSystemKeyL1ChallengerBalanceInput(utils.SetCurrentState(m.Ctx, state)), nil
 	}
 	m.TextInput = input
 	return m, cmd
 }
 
 func (m *SystemKeyL1BatchSubmitterBalanceInput) View() string {
-	return m.state.weave.Render() +
+	state := utils.GetCurrentState[LaunchState](m.Ctx)
+	return state.weave.Render() +
 		styles.RenderPrompt(m.GetQuestion(), []string{"Batch Submitter", "L1", "Celestia Testnet"}, styles.Question) + m.TextInput.View()
 }
 
 type SystemKeyL1ChallengerBalanceInput struct {
 	utils.TextInput
-	state    *LaunchState
+	utils.BaseModel
 	question string
 }
 
-func NewSystemKeyL1ChallengerBalanceInput(state *LaunchState) *SystemKeyL1ChallengerBalanceInput {
+func NewSystemKeyL1ChallengerBalanceInput(ctx context.Context) *SystemKeyL1ChallengerBalanceInput {
 	model := &SystemKeyL1ChallengerBalanceInput{
 		TextInput: utils.NewTextInput(),
-		state:     state,
+		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  "Please specify initial balance for Challenger on L1 (uinit)",
 	}
 	model.WithPlaceholder("Enter the balance")
@@ -1242,37 +1457,47 @@ func (m *SystemKeyL1ChallengerBalanceInput) Init() tea.Cmd {
 }
 
 func (m *SystemKeyL1ChallengerBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := utils.HandleCommonCommands[LaunchState](m, msg); handled {
+		return model, cmd
+	}
+
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-		m.state.systemKeyL1ChallengerBalance = input.Text
-		m.state.weave.PopPreviousResponseAtIndex(m.state.preL1BalancesResponsesCount)
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Challenger", "L1"}, input.Text))
-		return NewSystemKeyL2OperatorBalanceInput(m.state), nil
+		m.Ctx = utils.CloneStateAndPushPage[LaunchState](m.Ctx, m)
+		state := utils.GetCurrentState[LaunchState](m.Ctx)
+
+		state.systemKeyL1ChallengerBalance = input.Text
+		state.weave.PopPreviousResponseAtIndex(state.preL1BalancesResponsesCount)
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Challenger", "L1"}, input.Text))
+		return NewSystemKeyL2OperatorBalanceInput(utils.SetCurrentState(m.Ctx, state)), nil
 	}
 	m.TextInput = input
 	return m, cmd
 }
 
 func (m *SystemKeyL1ChallengerBalanceInput) View() string {
-	return m.state.weave.Render() +
+	state := utils.GetCurrentState[LaunchState](m.Ctx)
+	return state.weave.Render() +
 		styles.RenderPrompt(m.GetQuestion(), []string{"Challenger", "L1"}, styles.Question) + m.TextInput.View()
 }
 
 type SystemKeyL2OperatorBalanceInput struct {
 	utils.TextInput
-	state    *LaunchState
+	utils.BaseModel
 	question string
 }
 
-func NewSystemKeyL2OperatorBalanceInput(state *LaunchState) *SystemKeyL2OperatorBalanceInput {
+func NewSystemKeyL2OperatorBalanceInput(ctx context.Context) *SystemKeyL2OperatorBalanceInput {
+	state := utils.GetCurrentState[LaunchState](ctx)
 	state.preL2BalancesResponsesCount = len(state.weave.PreviousResponse)
 	model := &SystemKeyL2OperatorBalanceInput{
 		TextInput: utils.NewTextInput(),
-		state:     state,
+		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  fmt.Sprintf("Please specify initial balance for Operator on L2 (%s)", state.gasDenom),
 	}
 	model.WithPlaceholder("Enter the balance")
 	model.WithValidatorFn(utils.IsValidInteger)
+	model.Ctx = utils.SetCurrentState(model.Ctx, state)
 	return model
 }
 
@@ -1285,33 +1510,42 @@ func (m *SystemKeyL2OperatorBalanceInput) Init() tea.Cmd {
 }
 
 func (m *SystemKeyL2OperatorBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := utils.HandleCommonCommands[LaunchState](m, msg); handled {
+		return model, cmd
+	}
+
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-		m.state.systemKeyL2OperatorBalance = fmt.Sprintf("%s%s", input.Text, m.state.gasDenom)
-		m.state.weave.PushPreviousResponse(fmt.Sprintf("\n%s\n", styles.RenderPrompt(fmt.Sprintf("Please fund the following accounts on L2:\n  • Operator\n  • Bridge Executor\n  • Output Submitter %[1]s\n  • Batch Submitter %[1]s\n  • Challenger %[1]s\n", styles.Text("(Optional)", styles.Gray)), []string{"L2"}, styles.Information)))
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Operator", "L2"}, input.Text))
-		return NewSystemKeyL2BridgeExecutorBalanceInput(m.state), nil
+		m.Ctx = utils.CloneStateAndPushPage[LaunchState](m.Ctx, m)
+		state := utils.GetCurrentState[LaunchState](m.Ctx)
+
+		state.systemKeyL2OperatorBalance = fmt.Sprintf("%s%s", input.Text, state.gasDenom)
+		state.weave.PushPreviousResponse(fmt.Sprintf("\n%s\n", styles.RenderPrompt(fmt.Sprintf("Please fund the following accounts on L2:\n  • Operator\n  • Bridge Executor\n  • Output Submitter %[1]s\n  • Batch Submitter %[1]s\n  • Challenger %[1]s\n", styles.Text("(Optional)", styles.Gray)), []string{"L2"}, styles.Information)))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Operator", "L2"}, input.Text))
+		return NewSystemKeyL2BridgeExecutorBalanceInput(utils.SetCurrentState(m.Ctx, state)), nil
 	}
 	m.TextInput = input
 	return m, cmd
 }
 
 func (m *SystemKeyL2OperatorBalanceInput) View() string {
-	return m.state.weave.Render() + "\n" +
+	state := utils.GetCurrentState[LaunchState](m.Ctx)
+	return state.weave.Render() + "\n" +
 		styles.RenderPrompt(fmt.Sprintf("Please fund the following accounts on L2:\n  • Operator\n  • Bridge Executor\n  • Output Submitter %[1]s\n  • Batch Submitter %[1]s\n  • Challenger %[1]s", styles.Text("(Optional)", styles.Gray)), []string{"L2"}, styles.Information) + "\n" +
 		styles.RenderPrompt(m.GetQuestion(), []string{"Operator", "L2"}, styles.Question) + m.TextInput.View()
 }
 
 type SystemKeyL2BridgeExecutorBalanceInput struct {
 	utils.TextInput
-	state    *LaunchState
+	utils.BaseModel
 	question string
 }
 
-func NewSystemKeyL2BridgeExecutorBalanceInput(state *LaunchState) *SystemKeyL2BridgeExecutorBalanceInput {
+func NewSystemKeyL2BridgeExecutorBalanceInput(ctx context.Context) *SystemKeyL2BridgeExecutorBalanceInput {
+	state := utils.GetCurrentState[LaunchState](ctx)
 	model := &SystemKeyL2BridgeExecutorBalanceInput{
 		TextInput: utils.NewTextInput(),
-		state:     state,
+		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  fmt.Sprintf("Please specify initial balance for Bridge Executor on L2 (%s)", state.gasDenom),
 	}
 	model.WithPlaceholder("Enter the balance")
@@ -1328,31 +1562,40 @@ func (m *SystemKeyL2BridgeExecutorBalanceInput) Init() tea.Cmd {
 }
 
 func (m *SystemKeyL2BridgeExecutorBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := utils.HandleCommonCommands[LaunchState](m, msg); handled {
+		return model, cmd
+	}
+
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-		m.state.systemKeyL2BridgeExecutorBalance = fmt.Sprintf("%s%s", input.Text, m.state.gasDenom)
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Bridge Executor", "L2"}, input.Text))
-		return NewSystemKeyL2OutputSubmitterBalanceInput(m.state), nil
+		m.Ctx = utils.CloneStateAndPushPage[LaunchState](m.Ctx, m)
+		state := utils.GetCurrentState[LaunchState](m.Ctx)
+
+		state.systemKeyL2BridgeExecutorBalance = fmt.Sprintf("%s%s", input.Text, state.gasDenom)
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Bridge Executor", "L2"}, input.Text))
+		return NewSystemKeyL2OutputSubmitterBalanceInput(utils.SetCurrentState(m.Ctx, state)), nil
 	}
 	m.TextInput = input
 	return m, cmd
 }
 
 func (m *SystemKeyL2BridgeExecutorBalanceInput) View() string {
-	return m.state.weave.Render() +
+	state := utils.GetCurrentState[LaunchState](m.Ctx)
+	return state.weave.Render() +
 		styles.RenderPrompt(m.GetQuestion(), []string{"Bridge Executor", "L2"}, styles.Question) + m.TextInput.View()
 }
 
 type SystemKeyL2OutputSubmitterBalanceInput struct {
 	utils.TextInput
-	state    *LaunchState
+	utils.BaseModel
 	question string
 }
 
-func NewSystemKeyL2OutputSubmitterBalanceInput(state *LaunchState) *SystemKeyL2OutputSubmitterBalanceInput {
+func NewSystemKeyL2OutputSubmitterBalanceInput(ctx context.Context) *SystemKeyL2OutputSubmitterBalanceInput {
+	state := utils.GetCurrentState[LaunchState](ctx)
 	model := &SystemKeyL2OutputSubmitterBalanceInput{
 		TextInput: utils.NewTextInput(),
-		state:     state,
+		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  fmt.Sprintf("Please specify initial balance for Output Submitter on L2 (%s)", state.gasDenom),
 	}
 	model.WithPlaceholder("Enter the balance (Press Enter to skip)")
@@ -1368,38 +1611,47 @@ func (m *SystemKeyL2OutputSubmitterBalanceInput) Init() tea.Cmd {
 }
 
 func (m *SystemKeyL2OutputSubmitterBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := utils.HandleCommonCommands[LaunchState](m, msg); handled {
+		return model, cmd
+	}
+
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
+		m.Ctx = utils.CloneStateAndPushPage[LaunchState](m.Ctx, m)
+		state := utils.GetCurrentState[LaunchState](m.Ctx)
+
 		var text string
 		if input.Text == "" {
-			m.state.systemKeyL2OutputSubmitterBalance = ""
+			state.systemKeyL2OutputSubmitterBalance = ""
 			text = "None"
 		} else {
-			m.state.systemKeyL2OutputSubmitterBalance = fmt.Sprintf("%s%s", input.Text, m.state.gasDenom)
+			state.systemKeyL2OutputSubmitterBalance = fmt.Sprintf("%s%s", input.Text, state.gasDenom)
 			text = input.Text
 		}
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Output Submitter", "L2"}, text))
-		return NewSystemKeyL2BatchSubmitterBalanceInput(m.state), nil
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Output Submitter", "L2"}, text))
+		return NewSystemKeyL2BatchSubmitterBalanceInput(utils.SetCurrentState(m.Ctx, state)), nil
 	}
 	m.TextInput = input
 	return m, cmd
 }
 
 func (m *SystemKeyL2OutputSubmitterBalanceInput) View() string {
-	return m.state.weave.Render() +
+	state := utils.GetCurrentState[LaunchState](m.Ctx)
+	return state.weave.Render() +
 		styles.RenderPrompt(m.GetQuestion(), []string{"Output Submitter", "L2"}, styles.Question) + m.TextInput.View()
 }
 
 type SystemKeyL2BatchSubmitterBalanceInput struct {
 	utils.TextInput
-	state    *LaunchState
+	utils.BaseModel
 	question string
 }
 
-func NewSystemKeyL2BatchSubmitterBalanceInput(state *LaunchState) *SystemKeyL2BatchSubmitterBalanceInput {
+func NewSystemKeyL2BatchSubmitterBalanceInput(ctx context.Context) *SystemKeyL2BatchSubmitterBalanceInput {
+	state := utils.GetCurrentState[LaunchState](ctx)
 	model := &SystemKeyL2BatchSubmitterBalanceInput{
 		TextInput: utils.NewTextInput(),
-		state:     state,
+		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  fmt.Sprintf("Please specify initial balance for Batch Submitter on L2 (%s)", state.gasDenom),
 	}
 	model.WithPlaceholder("Enter the balance (Press Enter to skip)")
@@ -1415,38 +1667,47 @@ func (m *SystemKeyL2BatchSubmitterBalanceInput) Init() tea.Cmd {
 }
 
 func (m *SystemKeyL2BatchSubmitterBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := utils.HandleCommonCommands[LaunchState](m, msg); handled {
+		return model, cmd
+	}
+
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
+		m.Ctx = utils.CloneStateAndPushPage[LaunchState](m.Ctx, m)
+		state := utils.GetCurrentState[LaunchState](m.Ctx)
+
 		var text string
 		if input.Text == "" {
-			m.state.systemKeyL2BatchSubmitterBalance = ""
+			state.systemKeyL2BatchSubmitterBalance = ""
 			text = "None"
 		} else {
-			m.state.systemKeyL2BatchSubmitterBalance = fmt.Sprintf("%s%s", input.Text, m.state.gasDenom)
+			state.systemKeyL2BatchSubmitterBalance = fmt.Sprintf("%s%s", input.Text, state.gasDenom)
 			text = input.Text
 		}
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Batch Submitter", "L2"}, text))
-		return NewSystemKeyL2ChallengerBalanceInput(m.state), nil
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Batch Submitter", "L2"}, text))
+		return NewSystemKeyL2ChallengerBalanceInput(utils.SetCurrentState(m.Ctx, state)), nil
 	}
 	m.TextInput = input
 	return m, cmd
 }
 
 func (m *SystemKeyL2BatchSubmitterBalanceInput) View() string {
-	return m.state.weave.Render() +
+	state := utils.GetCurrentState[LaunchState](m.Ctx)
+	return state.weave.Render() +
 		styles.RenderPrompt(m.GetQuestion(), []string{"Batch Submitter", "L2"}, styles.Question) + m.TextInput.View()
 }
 
 type SystemKeyL2ChallengerBalanceInput struct {
 	utils.TextInput
-	state    *LaunchState
+	utils.BaseModel
 	question string
 }
 
-func NewSystemKeyL2ChallengerBalanceInput(state *LaunchState) *SystemKeyL2ChallengerBalanceInput {
+func NewSystemKeyL2ChallengerBalanceInput(ctx context.Context) *SystemKeyL2ChallengerBalanceInput {
+	state := utils.GetCurrentState[LaunchState](ctx)
 	model := &SystemKeyL2ChallengerBalanceInput{
 		TextInput: utils.NewTextInput(),
-		state:     state,
+		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  fmt.Sprintf("Please specify initial balance for Challenger on L2 (%s)", state.gasDenom),
 	}
 	model.WithPlaceholder("Enter the balance (Press Enter to skip)")
@@ -1462,32 +1723,40 @@ func (m *SystemKeyL2ChallengerBalanceInput) Init() tea.Cmd {
 }
 
 func (m *SystemKeyL2ChallengerBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := utils.HandleCommonCommands[LaunchState](m, msg); handled {
+		return model, cmd
+	}
+
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
+		m.Ctx = utils.CloneStateAndPushPage[LaunchState](m.Ctx, m)
+		state := utils.GetCurrentState[LaunchState](m.Ctx)
+
 		var text string
 		if input.Text == "" {
-			m.state.systemKeyL2ChallengerBalance = ""
+			state.systemKeyL2ChallengerBalance = ""
 			text = "None"
 		} else {
-			m.state.systemKeyL2ChallengerBalance = fmt.Sprintf("%s%s", input.Text, m.state.gasDenom)
+			state.systemKeyL2ChallengerBalance = fmt.Sprintf("%s%s", input.Text, state.gasDenom)
 			text = input.Text
 		}
-		m.state.weave.PopPreviousResponseAtIndex(m.state.preL2BalancesResponsesCount)
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Challenger", "L2"}, text))
-		return NewAddGenesisAccountsSelect(false, m.state), nil
+		state.weave.PopPreviousResponseAtIndex(state.preL2BalancesResponsesCount)
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Challenger", "L2"}, text))
+		return NewAddGenesisAccountsSelect(false, utils.SetCurrentState(m.Ctx, state)), nil
 	}
 	m.TextInput = input
 	return m, cmd
 }
 
 func (m *SystemKeyL2ChallengerBalanceInput) View() string {
-	return m.state.weave.Render() +
+	state := utils.GetCurrentState[LaunchState](m.Ctx)
+	return state.weave.Render() +
 		styles.RenderPrompt(m.GetQuestion(), []string{"Challenger", "L2"}, styles.Question) + m.TextInput.View()
 }
 
 type AddGenesisAccountsSelect struct {
 	utils.Selector[AddGenesisAccountsOption]
-	state             *LaunchState
+	utils.BaseModel
 	recurring         bool
 	firstTimeQuestion string
 	recurringQuestion string
@@ -1500,10 +1769,12 @@ const (
 	No  AddGenesisAccountsOption = "No"
 )
 
-func NewAddGenesisAccountsSelect(recurring bool, state *LaunchState) *AddGenesisAccountsSelect {
+func NewAddGenesisAccountsSelect(recurring bool, ctx context.Context) *AddGenesisAccountsSelect {
+	state := utils.GetCurrentState[LaunchState](ctx)
 	if !recurring {
 		state.preGenesisAccountsResponsesCount = len(state.weave.PreviousResponse)
 	}
+
 	return &AddGenesisAccountsSelect{
 		Selector: utils.Selector[AddGenesisAccountsOption]{
 			Options: []AddGenesisAccountsOption{
@@ -1511,7 +1782,7 @@ func NewAddGenesisAccountsSelect(recurring bool, state *LaunchState) *AddGenesis
 				No,
 			},
 		},
-		state:             state,
+		BaseModel:         utils.BaseModel{Ctx: utils.SetCurrentState(ctx, state)},
 		recurring:         recurring,
 		firstTimeQuestion: "Would you like to add genesis accounts?",
 		recurringQuestion: "Would you like to add another genesis account?",
@@ -1530,28 +1801,35 @@ func (m *AddGenesisAccountsSelect) Init() tea.Cmd {
 }
 
 func (m *AddGenesisAccountsSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := utils.HandleCommonCommands[LaunchState](m, msg); handled {
+		return model, cmd
+	}
+
 	selected, cmd := m.Select(msg)
 	if selected != nil {
+		m.Ctx = utils.CloneStateAndPushPage[LaunchState](m.Ctx, m)
+		state := utils.GetCurrentState[LaunchState](m.Ctx)
+
 		switch *selected {
 		case Yes:
 			question, highlight := m.GetQuestionAndHighlight()
-			m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, question, []string{highlight}, string(*selected)))
-			return NewGenesisAccountsAddressInput(m.state), nil
+			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, question, []string{highlight}, string(*selected)))
+			return NewGenesisAccountsAddressInput(utils.SetCurrentState(m.Ctx, state)), nil
 		case No:
 			question := m.firstTimeQuestion
 			highlight := "genesis accounts"
-			if len(m.state.genesisAccounts) > 0 {
-				m.state.weave.PreviousResponse = m.state.weave.PreviousResponse[:m.state.preGenesisAccountsResponsesCount]
-				m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, question, []string{highlight}, string(Yes)))
+			if len(state.genesisAccounts) > 0 {
+				state.weave.PreviousResponse = state.weave.PreviousResponse[:state.preGenesisAccountsResponsesCount]
+				state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, question, []string{highlight}, string(Yes)))
 				currentResponse := "  List of extra Genesis Accounts (excluding OPinit bots)\n"
-				for _, account := range m.state.genesisAccounts {
+				for _, account := range state.genesisAccounts {
 					currentResponse += styles.Text(fmt.Sprintf("  %s\tInitial Balance: %s\n", account.Address, account.Coins), styles.Gray)
 				}
-				m.state.weave.PushPreviousResponse(currentResponse)
+				state.weave.PushPreviousResponse(currentResponse)
 			} else {
-				m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, question, []string{highlight}, string(No)))
+				state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, question, []string{highlight}, string(No)))
 			}
-			model := NewDownloadMinitiaBinaryLoading(m.state)
+			model := NewDownloadMinitiaBinaryLoading(utils.SetCurrentState(m.Ctx, state))
 			return model, model.Init()
 		}
 	}
@@ -1560,12 +1838,13 @@ func (m *AddGenesisAccountsSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *AddGenesisAccountsSelect) View() string {
+	state := utils.GetCurrentState[LaunchState](m.Ctx)
 	preText := ""
 	if !m.recurring {
 		preText += "\n" + styles.RenderPrompt("You can add extra genesis accounts by first entering the addresses, then assigning the initial balance one by one.", []string{"genesis accounts"}, styles.Information) + "\n"
 	}
 	question, highlight := m.GetQuestionAndHighlight()
-	return m.state.weave.Render() + preText + styles.RenderPrompt(
+	return state.weave.Render() + preText + styles.RenderPrompt(
 		question,
 		[]string{highlight},
 		styles.Question,
@@ -1574,14 +1853,14 @@ func (m *AddGenesisAccountsSelect) View() string {
 
 type GenesisAccountsAddressInput struct {
 	utils.TextInput
-	state    *LaunchState
+	utils.BaseModel
 	question string
 }
 
-func NewGenesisAccountsAddressInput(state *LaunchState) *GenesisAccountsAddressInput {
+func NewGenesisAccountsAddressInput(ctx context.Context) *GenesisAccountsAddressInput {
 	model := &GenesisAccountsAddressInput{
 		TextInput: utils.NewTextInput(),
-		state:     state,
+		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  "Please specify genesis account address",
 	}
 	model.WithPlaceholder("Enter the address")
@@ -1598,30 +1877,39 @@ func (m *GenesisAccountsAddressInput) Init() tea.Cmd {
 }
 
 func (m *GenesisAccountsAddressInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := utils.HandleCommonCommands[LaunchState](m, msg); handled {
+		return model, cmd
+	}
+
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"genesis account address"}, input.Text))
-		return NewGenesisAccountsBalanceInput(input.Text, m.state), nil
+		m.Ctx = utils.CloneStateAndPushPage[LaunchState](m.Ctx, m)
+		state := utils.GetCurrentState[LaunchState](m.Ctx)
+
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"genesis account address"}, input.Text))
+		return NewGenesisAccountsBalanceInput(input.Text, utils.SetCurrentState(m.Ctx, state)), nil
 	}
 	m.TextInput = input
 	return m, cmd
 }
 
 func (m *GenesisAccountsAddressInput) View() string {
-	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"moniker"}, styles.Question) + m.TextInput.View()
+	state := utils.GetCurrentState[LaunchState](m.Ctx)
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"moniker"}, styles.Question) + m.TextInput.View()
 }
 
 type GenesisAccountsBalanceInput struct {
 	utils.TextInput
-	state    *LaunchState
+	utils.BaseModel
 	address  string
 	question string
 }
 
-func NewGenesisAccountsBalanceInput(address string, state *LaunchState) *GenesisAccountsBalanceInput {
+func NewGenesisAccountsBalanceInput(address string, ctx context.Context) *GenesisAccountsBalanceInput {
+	state := utils.GetCurrentState[LaunchState](ctx)
 	model := &GenesisAccountsBalanceInput{
 		TextInput: utils.NewTextInput(),
-		state:     state,
+		BaseModel: utils.BaseModel{Ctx: ctx},
 		address:   address,
 		question:  fmt.Sprintf("Please specify initial balance for %s (%s)", address, state.gasDenom),
 	}
@@ -1639,33 +1927,42 @@ func (m *GenesisAccountsBalanceInput) Init() tea.Cmd {
 }
 
 func (m *GenesisAccountsBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := utils.HandleCommonCommands[LaunchState](m, msg); handled {
+		return model, cmd
+	}
+
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-		m.state.genesisAccounts = append(m.state.genesisAccounts, types.GenesisAccount{
+		m.Ctx = utils.CloneStateAndPushPage[LaunchState](m.Ctx, m)
+		state := utils.GetCurrentState[LaunchState](m.Ctx)
+
+		state.genesisAccounts = append(state.genesisAccounts, types.GenesisAccount{
 			Address: m.address,
-			Coins:   fmt.Sprintf("%s%s", input.Text, m.state.gasDenom),
+			Coins:   fmt.Sprintf("%s%s", input.Text, state.gasDenom),
 		})
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{m.address}, input.Text))
-		return NewAddGenesisAccountsSelect(true, m.state), nil
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{m.address}, input.Text))
+		return NewAddGenesisAccountsSelect(true, utils.SetCurrentState(m.Ctx, state)), nil
 	}
 	m.TextInput = input
 	return m, cmd
 }
 
 func (m *GenesisAccountsBalanceInput) View() string {
-	return m.state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{m.address}, styles.Question) + m.TextInput.View()
+	state := utils.GetCurrentState[LaunchState](m.Ctx)
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{m.address}, styles.Question) + m.TextInput.View()
 }
 
 type DownloadMinitiaBinaryLoading struct {
-	state   *LaunchState
 	loading utils.Loading
+	utils.BaseModel
 }
 
-func NewDownloadMinitiaBinaryLoading(state *LaunchState) *DownloadMinitiaBinaryLoading {
+func NewDownloadMinitiaBinaryLoading(ctx context.Context) *DownloadMinitiaBinaryLoading {
+	state := utils.GetCurrentState[LaunchState](ctx)
 	latest := map[bool]string{true: "latest ", false: ""}
 	return &DownloadMinitiaBinaryLoading{
-		state:   state,
-		loading: utils.NewLoading(fmt.Sprintf("Downloading %sMini%s binary <%s>", latest[state.launchFromExistingConfig], strings.ToLower(state.vmType), state.minitiadVersion), downloadMinitiaApp(state)),
+		loading:   utils.NewLoading(fmt.Sprintf("Downloading %sMini%s binary <%s>", latest[state.launchFromExistingConfig], strings.ToLower(state.vmType), state.minitiadVersion), downloadMinitiaApp(ctx)),
+		BaseModel: utils.BaseModel{Ctx: ctx},
 	}
 }
 
@@ -1673,8 +1970,10 @@ func (m *DownloadMinitiaBinaryLoading) Init() tea.Cmd {
 	return m.loading.Init()
 }
 
-func downloadMinitiaApp(state *LaunchState) tea.Cmd {
+func downloadMinitiaApp(ctx context.Context) tea.Cmd {
 	return func() tea.Msg {
+		state := utils.GetCurrentState[LaunchState](ctx)
+
 		userHome, err := os.UserHomeDir()
 		if err != nil {
 			panic(fmt.Sprintf("failed to get user home directory: %v", err))
@@ -1718,44 +2017,54 @@ func downloadMinitiaApp(state *LaunchState) tea.Cmd {
 			utils.SetLibraryPaths(filepath.Dir(binaryPath))
 		}
 
-		return utils.EndLoading{}
+		return utils.EndLoading{
+			Ctx: utils.SetCurrentState(ctx, state),
+		}
 	}
 }
 
 func (m *DownloadMinitiaBinaryLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := utils.HandleCommonCommands[LaunchState](m, msg); handled {
+		return model, cmd
+	}
+
 	loader, cmd := m.loading.Update(msg)
 	m.loading = loader
 	if m.loading.Completing {
-		if m.state.downloadedNewBinary {
-			m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, fmt.Sprintf("Mini%s binary has been successfully downloaded.", strings.ToLower(m.state.vmType)), []string{}, ""))
+		m.Ctx = utils.CloneStateAndPushPage[LaunchState](m.loading.EndContext, m)
+		state := utils.GetCurrentState[LaunchState](m.Ctx)
+
+		if state.downloadedNewBinary {
+			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, fmt.Sprintf("Mini%s binary has been successfully downloaded.", strings.ToLower(state.vmType)), []string{}, ""))
 		}
 
-		if m.state.launchFromExistingConfig {
-			model := NewLaunchingNewMinitiaLoading(m.state)
+		if state.launchFromExistingConfig {
+			model := NewLaunchingNewMinitiaLoading(utils.SetCurrentState(m.Ctx, state))
 			return model, model.Init()
 		}
 
-		if m.state.batchSubmissionIsCelestia {
-			model := NewDownloadCelestiaBinaryLoading(m.state)
+		if state.batchSubmissionIsCelestia {
+			model := NewDownloadCelestiaBinaryLoading(utils.SetCurrentState(m.Ctx, state))
 			return model, model.Init()
 		}
 
-		model := NewGenerateOrRecoverSystemKeysLoading(m.state)
+		model := NewGenerateOrRecoverSystemKeysLoading(utils.SetCurrentState(m.Ctx, state))
 		return model, model.Init()
 	}
 	return m, cmd
 }
 
 func (m *DownloadMinitiaBinaryLoading) View() string {
-	return m.state.weave.Render() + "\n" + m.loading.View()
+	state := utils.GetCurrentState[LaunchState](m.Ctx)
+	return state.weave.Render() + "\n" + m.loading.View()
 }
 
 type DownloadCelestiaBinaryLoading struct {
-	state   *LaunchState
 	loading utils.Loading
+	utils.BaseModel
 }
 
-func NewDownloadCelestiaBinaryLoading(state *LaunchState) *DownloadCelestiaBinaryLoading {
+func NewDownloadCelestiaBinaryLoading(ctx context.Context) *DownloadCelestiaBinaryLoading {
 	celestiaMainnetRegistry := registry.MustGetChainRegistry(registry.CelestiaMainnet)
 	client := utils.NewHTTPClient()
 
@@ -1778,8 +2087,8 @@ func NewDownloadCelestiaBinaryLoading(state *LaunchState) *DownloadCelestiaBinar
 	goos := runtime.GOOS
 	goarch := runtime.GOARCH
 	return &DownloadCelestiaBinaryLoading{
-		state:   state,
-		loading: utils.NewLoading(fmt.Sprintf("Downloading Celestia binary <%s>", version), downloadCelestiaApp(state, version, getCelestiaBinaryURL(version, goos, goarch))),
+		loading:   utils.NewLoading(fmt.Sprintf("Downloading Celestia binary <%s>", version), downloadCelestiaApp(ctx, version, getCelestiaBinaryURL(version, goos, goarch))),
+		BaseModel: utils.BaseModel{Ctx: ctx},
 	}
 }
 
@@ -1807,8 +2116,9 @@ func (m *DownloadCelestiaBinaryLoading) Init() tea.Cmd {
 	return m.loading.Init()
 }
 
-func downloadCelestiaApp(state *LaunchState, version, binaryUrl string) tea.Cmd {
+func downloadCelestiaApp(ctx context.Context, version, binaryUrl string) tea.Cmd {
 	return func() tea.Msg {
+		state := utils.GetCurrentState[LaunchState](ctx)
 		userHome, err := os.UserHomeDir()
 		if err != nil {
 			panic(fmt.Sprintf("failed to get user home directory: %v", err))
@@ -1839,33 +2149,44 @@ func downloadCelestiaApp(state *LaunchState, version, binaryUrl string) tea.Cmd 
 			state.downloadedNewCelestiaBinary = true
 		}
 
-		return utils.EndLoading{}
+		return utils.EndLoading{
+			Ctx: utils.SetCurrentState(ctx, state),
+		}
 	}
 }
 
 func (m *DownloadCelestiaBinaryLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := utils.HandleCommonCommands[LaunchState](m, msg); handled {
+		return model, cmd
+	}
+
 	loader, cmd := m.loading.Update(msg)
 	m.loading = loader
 	if m.loading.Completing {
-		if m.state.downloadedNewCelestiaBinary {
-			m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, fmt.Sprintf("Celestia binary has been successfully downloaded."), []string{}, ""))
+		m.Ctx = utils.CloneStateAndPushPage[LaunchState](m.loading.EndContext, m)
+		state := utils.GetCurrentState[LaunchState](m.Ctx)
+
+		if state.downloadedNewCelestiaBinary {
+			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, fmt.Sprintf("Celestia binary has been successfully downloaded."), []string{}, ""))
 		}
-		model := NewGenerateOrRecoverSystemKeysLoading(m.state)
+		model := NewGenerateOrRecoverSystemKeysLoading(utils.SetCurrentState(m.Ctx, state))
 		return model, model.Init()
 	}
 	return m, cmd
 }
 
 func (m *DownloadCelestiaBinaryLoading) View() string {
-	return m.state.weave.Render() + "\n" + m.loading.View()
+	state := utils.GetCurrentState[LaunchState](m.Ctx)
+	return state.weave.Render() + "\n" + m.loading.View()
 }
 
 type GenerateOrRecoverSystemKeysLoading struct {
-	state   *LaunchState
 	loading utils.Loading
+	utils.BaseModel
 }
 
-func NewGenerateOrRecoverSystemKeysLoading(state *LaunchState) *GenerateOrRecoverSystemKeysLoading {
+func NewGenerateOrRecoverSystemKeysLoading(ctx context.Context) *GenerateOrRecoverSystemKeysLoading {
+	state := utils.GetCurrentState[LaunchState](ctx)
 	var loadingText string
 	if state.generateKeys {
 		loadingText = "Generating new system keys..."
@@ -1873,8 +2194,8 @@ func NewGenerateOrRecoverSystemKeysLoading(state *LaunchState) *GenerateOrRecove
 		loadingText = "Recovering system keys..."
 	}
 	return &GenerateOrRecoverSystemKeysLoading{
-		state:   state,
-		loading: utils.NewLoading(loadingText, generateOrRecoverSystemKeys(state)),
+		loading:   utils.NewLoading(loadingText, generateOrRecoverSystemKeys(ctx)),
+		BaseModel: utils.BaseModel{Ctx: ctx},
 	}
 }
 
@@ -1882,8 +2203,9 @@ func (m *GenerateOrRecoverSystemKeysLoading) Init() tea.Cmd {
 	return m.loading.Init()
 }
 
-func generateOrRecoverSystemKeys(state *LaunchState) tea.Cmd {
+func generateOrRecoverSystemKeys(ctx context.Context) tea.Cmd {
 	return func() tea.Msg {
+		state := utils.GetCurrentState[LaunchState](ctx)
 		if state.generateKeys {
 			operatorKey := utils.MustGenerateNewKeyInfo(state.binaryPath, OperatorKeyName)
 			state.systemKeyOperatorMnemonic = operatorKey.Mnemonic
@@ -1929,39 +2251,49 @@ func generateOrRecoverSystemKeys(state *LaunchState) tea.Cmd {
 		state.FinalizeGenesisAccounts()
 		time.Sleep(1500 * time.Millisecond)
 
-		return utils.EndLoading{}
+		return utils.EndLoading{
+			Ctx: utils.SetCurrentState(ctx, state),
+		}
 	}
 }
 
 func (m *GenerateOrRecoverSystemKeysLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := utils.HandleCommonCommands[LaunchState](m, msg); handled {
+		return model, cmd
+	}
+
 	loader, cmd := m.loading.Update(msg)
 	m.loading = loader
 	if m.loading.Completing {
-		if m.state.generateKeys {
-			m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "System keys have been successfully generated.", []string{}, ""))
-			return NewSystemKeysMnemonicDisplayInput(m.state), nil
+		m.Ctx = utils.CloneStateAndPushPage[LaunchState](m.loading.EndContext, m)
+		state := utils.GetCurrentState[LaunchState](m.Ctx)
+
+		if state.generateKeys {
+			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "System keys have been successfully generated.", []string{}, ""))
+			return NewSystemKeysMnemonicDisplayInput(utils.SetCurrentState(m.Ctx, state)), nil
 		} else {
-			m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "System keys have been successfully recovered.", []string{}, ""))
-			return NewFundGasStationConfirmationInput(m.state), nil
+			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "System keys have been successfully recovered.", []string{}, ""))
+			return NewFundGasStationConfirmationInput(utils.SetCurrentState(m.Ctx, state)), nil
 		}
 	}
 	return m, cmd
 }
 
 func (m *GenerateOrRecoverSystemKeysLoading) View() string {
-	return m.state.weave.Render() + "\n" + m.loading.View()
+	state := utils.GetCurrentState[LaunchState](m.Ctx)
+	return state.weave.Render() + "\n" + m.loading.View()
 }
 
 type SystemKeysMnemonicDisplayInput struct {
 	utils.TextInput
-	state    *LaunchState
+	utils.BaseModel
 	question string
 }
 
-func NewSystemKeysMnemonicDisplayInput(state *LaunchState) *SystemKeysMnemonicDisplayInput {
+func NewSystemKeysMnemonicDisplayInput(ctx context.Context) *SystemKeysMnemonicDisplayInput {
 	model := &SystemKeysMnemonicDisplayInput{
 		TextInput: utils.NewTextInput(),
-		state:     state,
+		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  "Please type `continue` to proceed after you have securely stored the mnemonic.",
 	}
 	model.WithPlaceholder("Type `continue` to continue, Ctrl+C to quit.")
@@ -1978,23 +2310,30 @@ func (m *SystemKeysMnemonicDisplayInput) Init() tea.Cmd {
 }
 
 func (m *SystemKeysMnemonicDisplayInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := utils.HandleCommonCommands[LaunchState](m, msg); handled {
+		return model, cmd
+	}
+
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-		return NewFundGasStationConfirmationInput(m.state), nil
+		m.Ctx = utils.CloneStateAndPushPage[LaunchState](m.Ctx, m)
+		return NewFundGasStationConfirmationInput(m.Ctx), nil
 	}
 	m.TextInput = input
 	return m, cmd
 }
 
 func (m *SystemKeysMnemonicDisplayInput) View() string {
-	var mnemonicText string
-	mnemonicText += renderMnemonic("Operator", m.state.systemKeyOperatorAddress, m.state.systemKeyOperatorMnemonic)
-	mnemonicText += renderMnemonic("Bridge Executor", m.state.systemKeyBridgeExecutorAddress, m.state.systemKeyBridgeExecutorMnemonic)
-	mnemonicText += renderMnemonic("Output Submitter", m.state.systemKeyOutputSubmitterAddress, m.state.systemKeyOutputSubmitterMnemonic)
-	mnemonicText += renderMnemonic("Batch Submitter", m.state.systemKeyBatchSubmitterAddress, m.state.systemKeyBatchSubmitterMnemonic)
-	mnemonicText += renderMnemonic("Challenger", m.state.systemKeyChallengerAddress, m.state.systemKeyChallengerMnemonic)
+	state := utils.GetCurrentState[LaunchState](m.Ctx)
 
-	return m.state.weave.Render() + "\n" +
+	var mnemonicText string
+	mnemonicText += renderMnemonic("Operator", state.systemKeyOperatorAddress, state.systemKeyOperatorMnemonic)
+	mnemonicText += renderMnemonic("Bridge Executor", state.systemKeyBridgeExecutorAddress, state.systemKeyBridgeExecutorMnemonic)
+	mnemonicText += renderMnemonic("Output Submitter", state.systemKeyOutputSubmitterAddress, state.systemKeyOutputSubmitterMnemonic)
+	mnemonicText += renderMnemonic("Batch Submitter", state.systemKeyBatchSubmitterAddress, state.systemKeyBatchSubmitterMnemonic)
+	mnemonicText += renderMnemonic("Challenger", state.systemKeyChallengerAddress, state.systemKeyChallengerMnemonic)
+
+	return state.weave.Render() + "\n" +
 		styles.BoldUnderlineText("Important", styles.Yellow) + "\n" +
 		styles.Text("Write down these mnemonic phrases and store them in a safe place. \nIt is the only way to recover your system keys.", styles.Yellow) + "\n\n" +
 		mnemonicText + styles.RenderPrompt(m.GetQuestion(), []string{"`continue`"}, styles.Question) + m.TextInput.View()
@@ -2008,17 +2347,18 @@ func renderMnemonic(keyName, address, mnemonic string) string {
 
 type FundGasStationConfirmationInput struct {
 	utils.TextInput
-	state                     *LaunchState
+	utils.BaseModel
 	initiaGasStationAddress   string
 	celestiaGasStationAddress string
 	question                  string
 }
 
-func NewFundGasStationConfirmationInput(state *LaunchState) *FundGasStationConfirmationInput {
+func NewFundGasStationConfirmationInput(ctx context.Context) *FundGasStationConfirmationInput {
+	state := utils.GetCurrentState[LaunchState](ctx)
 	gasStationMnemonic := utils.GetGasStationMnemonic()
 	model := &FundGasStationConfirmationInput{
 		TextInput:                 utils.NewTextInput(),
-		state:                     state,
+		BaseModel:                 utils.BaseModel{Ctx: ctx},
 		initiaGasStationAddress:   utils.MustGetAddressFromMnemonic(state.binaryPath, gasStationMnemonic),
 		celestiaGasStationAddress: utils.MustGetAddressFromMnemonic(state.celestiaBinaryPath, gasStationMnemonic),
 		question:                  "Confirm to proceed with signing and broadcasting the following transactions? [y]:",
@@ -2037,9 +2377,14 @@ func (m *FundGasStationConfirmationInput) Init() tea.Cmd {
 }
 
 func (m *FundGasStationConfirmationInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := utils.HandleCommonCommands[LaunchState](m, msg); handled {
+		return model, cmd
+	}
+
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-		model := NewFundGasStationBroadcastLoading(m.state)
+		m.Ctx = utils.CloneStateAndPushPage[LaunchState](m.Ctx, m)
+		model := NewFundGasStationBroadcastLoading(m.Ctx)
 		return model, model.Init()
 	}
 	m.TextInput = input
@@ -2047,6 +2392,7 @@ func (m *FundGasStationConfirmationInput) Update(msg tea.Msg) (tea.Model, tea.Cm
 }
 
 func (m *FundGasStationConfirmationInput) View() string {
+	state := utils.GetCurrentState[LaunchState](m.Ctx)
 	formatSendMsg := func(coins, denom, keyName, address string) string {
 		return fmt.Sprintf(
 			"> Send %s to %s %s\n",
@@ -2060,37 +2406,37 @@ func (m *FundGasStationConfirmationInput) View() string {
 	}
 	batchSubmitterText := map[bool]string{
 		true:  "",
-		false: formatSendMsg(m.state.systemKeyL1BatchSubmitterBalance, "uinit", "Batch Submitter on Initia L1", m.state.systemKeyBatchSubmitterAddress),
+		false: formatSendMsg(state.systemKeyL1BatchSubmitterBalance, "uinit", "Batch Submitter on Initia L1", state.systemKeyBatchSubmitterAddress),
 	}
 	celestiaText := map[bool]string{
-		true:  fmt.Sprintf("\nSending tokens from the Gas Station account on Celestia Testnet %s ⛽️\n%s", styles.Text(fmt.Sprintf("(%s)", m.celestiaGasStationAddress), styles.Gray), formatSendMsg(m.state.systemKeyL1BatchSubmitterBalance, "utia", "Batch Submitter on Celestia Testnet", m.state.systemKeyBatchSubmitterAddress)),
+		true:  fmt.Sprintf("\nSending tokens from the Gas Station account on Celestia Testnet %s ⛽️\n%s", styles.Text(fmt.Sprintf("(%s)", m.celestiaGasStationAddress), styles.Gray), formatSendMsg(state.systemKeyL1BatchSubmitterBalance, "utia", "Batch Submitter on Celestia Testnet", state.systemKeyBatchSubmitterAddress)),
 		false: "",
 	}
-	return m.state.weave.Render() + "\n" +
+	return state.weave.Render() + "\n" +
 		styles.Text("i ", styles.Yellow) +
 		styles.RenderPrompt(
-			styles.BoldUnderlineText(headerText[m.state.batchSubmissionIsCelestia], styles.Yellow),
+			styles.BoldUnderlineText(headerText[state.batchSubmissionIsCelestia], styles.Yellow),
 			[]string{}, styles.Empty,
 		) + "\n\n" +
 		fmt.Sprintf("Sending tokens from the Gas Station account on Initia L1 %s ⛽️\n", styles.Text(fmt.Sprintf("(%s)", m.initiaGasStationAddress), styles.Gray)) +
-		formatSendMsg(m.state.systemKeyL1OperatorBalance, "uinit", "Operator on Initia L1", m.state.systemKeyOperatorAddress) +
-		formatSendMsg(m.state.systemKeyL1BridgeExecutorBalance, "uinit", "Bridge Executor on Initia L1", m.state.systemKeyBridgeExecutorAddress) +
-		formatSendMsg(m.state.systemKeyL1OutputSubmitterBalance, "uinit", "Output Submitter on Initia L1", m.state.systemKeyOutputSubmitterAddress) +
-		batchSubmitterText[m.state.batchSubmissionIsCelestia] +
-		formatSendMsg(m.state.systemKeyL1ChallengerBalance, "uinit", "Challenger on Initia L1", m.state.systemKeyChallengerAddress) +
-		celestiaText[m.state.batchSubmissionIsCelestia] +
+		formatSendMsg(state.systemKeyL1OperatorBalance, "uinit", "Operator on Initia L1", state.systemKeyOperatorAddress) +
+		formatSendMsg(state.systemKeyL1BridgeExecutorBalance, "uinit", "Bridge Executor on Initia L1", state.systemKeyBridgeExecutorAddress) +
+		formatSendMsg(state.systemKeyL1OutputSubmitterBalance, "uinit", "Output Submitter on Initia L1", state.systemKeyOutputSubmitterAddress) +
+		batchSubmitterText[state.batchSubmissionIsCelestia] +
+		formatSendMsg(state.systemKeyL1ChallengerBalance, "uinit", "Challenger on Initia L1", state.systemKeyChallengerAddress) +
+		celestiaText[state.batchSubmissionIsCelestia] +
 		styles.RenderPrompt(m.GetQuestion(), []string{"`continue`"}, styles.Question) + m.TextInput.View()
 }
 
 type FundGasStationBroadcastLoading struct {
-	state   *LaunchState
 	loading utils.Loading
+	utils.BaseModel
 }
 
-func NewFundGasStationBroadcastLoading(state *LaunchState) *FundGasStationBroadcastLoading {
+func NewFundGasStationBroadcastLoading(ctx context.Context) *FundGasStationBroadcastLoading {
 	return &FundGasStationBroadcastLoading{
-		state:   state,
-		loading: utils.NewLoading("Broadcasting transactions...", broadcastFundingFromGasStation(state)),
+		loading:   utils.NewLoading("Broadcasting transactions...", broadcastFundingFromGasStation(ctx)),
+		BaseModel: utils.BaseModel{Ctx: ctx},
 	}
 }
 
@@ -2098,8 +2444,9 @@ func (m *FundGasStationBroadcastLoading) Init() tea.Cmd {
 	return m.loading.Init()
 }
 
-func broadcastFundingFromGasStation(state *LaunchState) tea.Cmd {
+func broadcastFundingFromGasStation(ctx context.Context) tea.Cmd {
 	return func() tea.Msg {
+		state := utils.GetCurrentState[LaunchState](ctx)
 		txResult, err := NewL1SystemKeys(
 			&types.GenesisAccount{
 				Address: state.systemKeyOperatorAddress,
@@ -2121,7 +2468,7 @@ func broadcastFundingFromGasStation(state *LaunchState) tea.Cmd {
 				Address: state.systemKeyChallengerAddress,
 				Coins:   state.systemKeyL1ChallengerBalance,
 			},
-		).FundAccountsWithGasStation(state)
+		).FundAccountsWithGasStation(&state)
 		if err != nil {
 			panic(err)
 		}
@@ -2132,26 +2479,36 @@ func broadcastFundingFromGasStation(state *LaunchState) tea.Cmd {
 		state.systemKeyL1FundingTxHash = txResult.InitiaTx.TxHash
 		time.Sleep(1500 * time.Millisecond)
 
-		return utils.EndLoading{}
+		return utils.EndLoading{
+			Ctx: utils.SetCurrentState(ctx, state),
+		}
 	}
 }
 
 func (m *FundGasStationBroadcastLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := utils.HandleCommonCommands[LaunchState](m, msg); handled {
+		return model, cmd
+	}
+
 	loader, cmd := m.loading.Update(msg)
 	m.loading = loader
 	if m.loading.Completing {
-		if m.state.systemKeyCelestiaFundingTxHash != "" {
-			m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, "Batch Submitter on Celestia funded via Gas Station, with Tx Hash", []string{}, m.state.systemKeyCelestiaFundingTxHash))
+		m.Ctx = utils.CloneStateAndPushPage[LaunchState](m.loading.EndContext, m)
+		state := utils.GetCurrentState[LaunchState](m.Ctx)
+
+		if state.systemKeyCelestiaFundingTxHash != "" {
+			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, "Batch Submitter on Celestia funded via Gas Station, with Tx Hash", []string{}, state.systemKeyCelestiaFundingTxHash))
 		}
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, "System keys on Initia L1 funded via Gas Station, with Tx Hash", []string{}, m.state.systemKeyL1FundingTxHash))
-		model := NewLaunchingNewMinitiaLoading(m.state)
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, "System keys on Initia L1 funded via Gas Station, with Tx Hash", []string{}, state.systemKeyL1FundingTxHash))
+		model := NewLaunchingNewMinitiaLoading(utils.SetCurrentState(m.Ctx, state))
 		return model, model.Init()
 	}
 	return m, cmd
 }
 
 func (m *FundGasStationBroadcastLoading) View() string {
-	return m.state.weave.Render() + "\n" + m.loading.View()
+	state := utils.GetCurrentState[LaunchState](m.Ctx)
+	return state.weave.Render() + "\n" + m.loading.View()
 }
 
 type ScanPayload struct {
@@ -2175,19 +2532,19 @@ func (sp *ScanPayload) EncodeToBase64() (string, error) {
 }
 
 type LaunchingNewMinitiaLoading struct {
-	state   *LaunchState
 	loading utils.Loading
+	utils.BaseModel
 }
 
-func NewLaunchingNewMinitiaLoading(state *LaunchState) *LaunchingNewMinitiaLoading {
+func NewLaunchingNewMinitiaLoading(ctx context.Context) *LaunchingNewMinitiaLoading {
 	return &LaunchingNewMinitiaLoading{
-		state: state,
 		loading: utils.NewLoading(
 			styles.RenderPrompt(
 				"Running `minitiad launch` with the specified config...",
 				[]string{"`minitiad launch`"},
 				styles.Empty,
-			), launchingMinitia(state)),
+			), launchingMinitia(ctx)),
+		BaseModel: utils.BaseModel{Ctx: ctx},
 	}
 }
 
@@ -2202,8 +2559,10 @@ func isJSONLog(line string) bool {
 	return timestampRegex.MatchString(line) || initPrefixRegex.MatchString(line)
 }
 
-func launchingMinitia(state *LaunchState) tea.Cmd {
+func launchingMinitia(ctx context.Context) tea.Cmd {
 	return func() tea.Msg {
+		state := utils.GetCurrentState[LaunchState](ctx)
+
 		var configFilePath string
 		if state.launchFromExistingConfig {
 			configFilePath = state.existingConfigPath
@@ -2330,27 +2689,36 @@ func launchingMinitia(state *LaunchState) tea.Cmd {
 			panic(fmt.Sprintf("failed to create service: %v", err))
 		}
 
-		return utils.EndLoading{}
+		return utils.EndLoading{
+			Ctx: utils.SetCurrentState(ctx, state),
+		}
 	}
 }
 
 func (m *LaunchingNewMinitiaLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := utils.HandleCommonCommands[LaunchState](m, msg); handled {
+		return model, cmd
+	}
+
 	loader, cmd := m.loading.Update(msg)
 	m.loading = loader
 	if m.loading.Completing {
-		m.state.minitiadLaunchStreamingLogs = []string{}
-		m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "New Minitia has been launched. (More details about your Minitia in ~/.minitia/artifacts/artifacts.json & ~/.minitia/artifacts/config.json)", []string{}, ""))
+		m.Ctx = utils.CloneStateAndPushPage[LaunchState](m.loading.EndContext, m)
+		state := utils.GetCurrentState[LaunchState](m.Ctx)
+
+		state.minitiadLaunchStreamingLogs = []string{}
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "New Minitia has been launched. (More details about your Minitia in ~/.minitia/artifacts/artifacts.json & ~/.minitia/artifacts/config.json)", []string{}, ""))
 
 		var jsonRpc string
-		if m.state.vmType == string(EVM) {
+		if state.vmType == string(EVM) {
 			jsonRpc = DefaultMinitiaJsonRPC
 		}
 
 		payload := &ScanPayload{
-			Vm:          strings.ToLower(m.state.vmType),
-			ChainId:     m.state.chainId,
+			Vm:          strings.ToLower(state.vmType),
+			ChainId:     state.chainId,
 			MinGasPrice: 0,
-			Denom:       m.state.gasDenom,
+			Denom:       state.gasDenom,
 			Lcd:         DefaultMinitiaLCD,
 			Rpc:         DefaultMinitiaRPC,
 			JsonRpc:     jsonRpc,
@@ -2368,24 +2736,25 @@ func (m *LaunchingNewMinitiaLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			styles.BoldText("weave minitia start", styles.White),
 			utils.WrapText(link),
 		)
-		m.state.weave.PushPreviousResponse(scanText)
+		state.weave.PushPreviousResponse(scanText)
 
-		return NewTerminalState(m.state), tea.Quit
+		return NewTerminalState(utils.SetCurrentState(m.Ctx, state)), tea.Quit
 	}
 	return m, cmd
 }
 
 func (m *LaunchingNewMinitiaLoading) View() string {
-	return m.state.weave.Render() + "\n" + m.loading.View() + "\n" + strings.Join(m.state.minitiadLaunchStreamingLogs, "\n")
+	state := utils.GetCurrentState[LaunchState](m.Ctx)
+	return state.weave.Render() + "\n" + m.loading.View() + "\n" + strings.Join(state.minitiadLaunchStreamingLogs, "\n")
 }
 
 type TerminalState struct {
-	state *LaunchState
+	utils.BaseModel
 }
 
-func NewTerminalState(state *LaunchState) *TerminalState {
+func NewTerminalState(ctx context.Context) *TerminalState {
 	return &TerminalState{
-		state: state,
+		BaseModel: utils.BaseModel{Ctx: ctx},
 	}
 }
 
@@ -2398,5 +2767,6 @@ func (m *TerminalState) Update(_ tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *TerminalState) View() string {
-	return m.state.weave.Render()
+	state := utils.GetCurrentState[LaunchState](m.Ctx)
+	return state.weave.Render()
 }

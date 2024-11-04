@@ -2,10 +2,10 @@ package weaveinit
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/initia-labs/weave/models/minitia"
 
 	"github.com/initia-labs/weave/flags"
 	"github.com/initia-labs/weave/models/initia"
-	"github.com/initia-labs/weave/models/minitia"
 	"github.com/initia-labs/weave/styles"
 	"github.com/initia-labs/weave/utils"
 )
@@ -63,7 +63,7 @@ func (m *WeaveInit) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case RunL1NodeOption:
 			return initia.NewRunL1NodeNetworkSelect(&initia.RunL1NodeState{}), nil
 		case LaunchNewMinitiaOption:
-			minitiaChecker := minitia.NewExistingMinitiaChecker(&minitia.LaunchState{})
+			minitiaChecker := minitia.NewExistingMinitiaChecker(utils.NewAppContext(*minitia.NewLaunchState()))
 			return minitiaChecker, minitiaChecker.Init()
 		}
 	}

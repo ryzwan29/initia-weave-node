@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/initia-labs/weave/models"
 	"os"
 	"path/filepath"
 	"strings"
@@ -11,7 +12,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 
-	"github.com/initia-labs/weave/models"
 	"github.com/initia-labs/weave/models/minitia"
 	"github.com/initia-labs/weave/service"
 	"github.com/initia-labs/weave/types"
@@ -100,7 +100,7 @@ func minitiaLaunchCommand() *cobra.Command {
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if utils.IsFirstTimeSetup() {
-				finalModel, err := tea.NewProgram(models.NewExistingAppChecker(minitia.NewExistingMinitiaChecker(minitia.NewLaunchState()))).Run()
+				finalModel, err := tea.NewProgram(models.NewExistingAppChecker(minitia.NewExistingMinitiaChecker(utils.NewAppContext(*minitia.NewLaunchState())))).Run()
 				if err != nil {
 					return err
 				}
@@ -141,7 +141,7 @@ func minitiaLaunchCommand() *cobra.Command {
 				}
 			}
 
-			_, err := tea.NewProgram(minitia.NewExistingMinitiaChecker(state)).Run()
+			_, err := tea.NewProgram(minitia.NewExistingMinitiaChecker(utils.NewAppContext(*minitia.NewLaunchState()))).Run()
 			if err != nil {
 				return err
 			}
