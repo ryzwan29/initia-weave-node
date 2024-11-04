@@ -14,10 +14,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/initia-labs/weave/registry"
-
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/initia-labs/weave/registry"
 	"github.com/initia-labs/weave/service"
 	"github.com/initia-labs/weave/styles"
 	"github.com/initia-labs/weave/types"
