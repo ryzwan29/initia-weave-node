@@ -87,41 +87,4 @@ func GetGasStationMnemonic() string {
 	return GetConfig("common.gas_station_mnemonic").(string)
 }
 
-const DefaultConfigTemplate = `
-{
-  "constants": {
-    "chain_id": {
-      "mainnet": "initia-1",
-      "testnet": "initiation-2"
-    },
-    "endpoints": {
-      "mainnet": {
-        "rpc": "https://rpc.initia.xyz:443",
-        "lcd": "https://lcd.initia.xyz",
-        "genesis": "https://initia.s3.ap-southeast-1.amazonaws.com/initia-1/genesis.json"
-      },
-      "testnet": {
-        "rpc": "https://rpc.initiation-2.initia.xyz:443",
-        "lcd": "https://lcd.initiation-2.initia.xyz",
-        "genesis": "https://storage.googleapis.com/initia-binaries/genesis.json"
-      }
-    },
-    "da_layer": {
-      "celestia_testnet": {
-        "chain_id": "mocha-4",
-        "rpc": "https://celestia-testnet-rpc.publicnode.com:443",
-		"lcd": "https://celestia-mocha-rest.publicnode.com",
-        "bech32_prefix": "celestia",
-        "gas_price": "0.02utia"
-      },
-      "celestia_mainnet": {
-        "chain_id": "celestia",
-        "rpc": "https://celestia-rpc.mesa.newmetric.xyz",
-		"lcd": "https://celestia-rest.publicnode.com",
-        "bech32_prefix": "celestia",
-        "gas_price": "0.02utia"
-      }
-    }
-  }
-}
-`
+const DefaultConfigTemplate = `{}`

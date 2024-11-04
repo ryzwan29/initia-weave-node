@@ -2,6 +2,8 @@ package utils
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"runtime"
 	"sort"
 	"strconv"
@@ -180,4 +182,16 @@ func splitVersion(version string) (mainVersion, preRelease string) {
 		return parts[0], parts[1]
 	}
 	return version, ""
+}
+
+func GetOPInitVersions() (BinaryVersionWithDownloadURL, string) {
+	versions := ListBinaryReleases("https://api.github.com/repos/initia-labs/opinit-bots/releases")
+	userHome, err := os.UserHomeDir()
+	if err != nil {
+		panic(err)
+	}
+	binaryPath := filepath.Join(userHome, WeaveDataDirectory, OPinitAppName)
+	currentVersion, _ := GetBinaryVersion(binaryPath)
+
+	return versions, currentVersion
 }

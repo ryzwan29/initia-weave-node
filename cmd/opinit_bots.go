@@ -63,13 +63,7 @@ func OPInitBotsCommand() *cobra.Command {
 }
 
 func Setup() error {
-	versions := utils.ListBinaryReleases("https://api.github.com/repos/initia-labs/opinit-bots/releases")
-	userHome, err := os.UserHomeDir()
-	if err != nil {
-		panic(err)
-	}
-	binaryPath := filepath.Join(userHome, utils.WeaveDataDirectory, "opinitd")
-	currentVersion, _ := utils.GetBinaryVersion(binaryPath)
+	versions, currentVersion := utils.GetOPInitVersions()
 
 	// Initialize the context with OPInitBotsState
 	ctx := utils.NewAppContext(opinit_bots.NewOPInitBotsState())
@@ -78,7 +72,7 @@ func Setup() error {
 	versionSelector := opinit_bots.NewOPInitBotVersionSelector(ctx, versions, currentVersion)
 
 	// Start the program
-	_, err = tea.NewProgram(versionSelector).Run()
+	_, err := tea.NewProgram(versionSelector).Run()
 	if err != nil {
 		fmt.Println("Error running program:", err)
 	}
@@ -131,7 +125,7 @@ Example: weave opinit-bots init executor`,
 					return fmt.Errorf("invalid bot name provided: %s", botName)
 				}
 			} else {
-				// Start the version selector program if no bot name is provided
+				// Start the bot selector program if no bot name is provided
 				_, err := tea.NewProgram(opinit_bots.NewOPInitBotInitSelector(ctx)).Run()
 				return err
 			}

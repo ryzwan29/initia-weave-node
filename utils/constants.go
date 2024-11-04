@@ -19,4 +19,5 @@ const (
 	MinitiaArtifactsDirectory = MinitiaDirectory + "/artifacts"
 
 	OPinitDirectory = ".opinit"
+	OPinitAppName   = "opinitd"
 )

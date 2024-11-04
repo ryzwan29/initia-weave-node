@@ -6,6 +6,7 @@ import (
 	"github.com/initia-labs/weave/flags"
 	"github.com/initia-labs/weave/models/initia"
 	"github.com/initia-labs/weave/models/minitia"
+	"github.com/initia-labs/weave/models/opinit_bots"
 	"github.com/initia-labs/weave/styles"
 	"github.com/initia-labs/weave/utils"
 )
@@ -19,7 +20,8 @@ type WeaveInitOption string
 const (
 	RunL1NodeOption        WeaveInitOption = "Run L1 Node"
 	LaunchNewMinitiaOption WeaveInitOption = "Launch New Minitia"
-	InitializeOPBotsOption WeaveInitOption = "Initialize OP Bots"
+	SetupOPBotsKeys        WeaveInitOption = "Setup OPInit Bots Keys"
+	InitializeOPBotsOption WeaveInitOption = "Initialize OPInit Bots"
 	StartRelayerOption     WeaveInitOption = "Start a Relayer"
 )
 
@@ -33,6 +35,7 @@ func GetWeaveInitOptions() []WeaveInitOption {
 	}
 
 	if flags.IsEnabled(flags.OPInitBots) {
+		options = append(options, SetupOPBotsKeys)
 		options = append(options, InitializeOPBotsOption)
 	}
 
@@ -46,8 +49,9 @@ func GetWeaveInitOptions() []WeaveInitOption {
 func NewWeaveInit() *WeaveInit {
 	return &WeaveInit{
 		Selector: utils.Selector[WeaveInitOption]{
-			Options: GetWeaveInitOptions(),
-			Cursor:  0,
+			Options:    GetWeaveInitOptions(),
+			Cursor:     0,
+			CannotBack: true,
 		},
 	}
 }
@@ -66,6 +70,12 @@ func (m *WeaveInit) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case LaunchNewMinitiaOption:
 			minitiaChecker := minitia.NewExistingMinitiaChecker(utils.NewAppContext(*minitia.NewLaunchState()))
 			return minitiaChecker, minitiaChecker.Init()
+		case SetupOPBotsKeys:
+			versions, currentVersion := utils.GetOPInitVersions()
+			ctx := utils.NewAppContext(opinit_bots.NewOPInitBotsState())
+			return opinit_bots.NewOPInitBotVersionSelector(ctx, versions, currentVersion), nil
+		case InitializeOPBotsOption:
+			return opinit_bots.NewOPInitBotInitSelector(utils.NewAppContext(opinit_bots.NewOPInitBotsState())), nil
 		}
 	}
 

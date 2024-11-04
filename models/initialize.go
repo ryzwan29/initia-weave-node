@@ -35,6 +35,7 @@ func NewExistingAppChecker(skipToModel tea.Model) *ExistingWeaveChecker {
 				Yes,
 				No,
 			},
+			CannotBack: true,
 		},
 		skipToModel: skipToModel,
 	}
