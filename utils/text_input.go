@@ -5,6 +5,7 @@ import (
 	"unicode"
 
 	tea "github.com/charmbracelet/bubbletea"
+
 	"github.com/initia-labs/weave/styles"
 )
 

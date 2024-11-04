@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/initia-labs/weave/models"
 	"os"
 	"path/filepath"
 	"strings"
@@ -12,6 +11,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 
+	"github.com/initia-labs/weave/models"
 	"github.com/initia-labs/weave/models/minitia"
 	"github.com/initia-labs/weave/service"
 	"github.com/initia-labs/weave/types"

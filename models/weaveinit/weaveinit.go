@@ -2,10 +2,10 @@ package weaveinit
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/initia-labs/weave/models/minitia"
 
 	"github.com/initia-labs/weave/flags"
 	"github.com/initia-labs/weave/models/initia"
+	"github.com/initia-labs/weave/models/minitia"
 	"github.com/initia-labs/weave/styles"
 	"github.com/initia-labs/weave/utils"
 )

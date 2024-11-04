@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+
 	"github.com/initia-labs/weave/styles"
 	"github.com/initia-labs/weave/utils"
 )

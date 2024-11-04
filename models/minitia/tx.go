@@ -3,11 +3,11 @@ package minitia
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/initia-labs/weave/registry"
 	"os"
 	"os/exec"
 	"path/filepath"
 
+	"github.com/initia-labs/weave/registry"
 	"github.com/initia-labs/weave/types"
 	"github.com/initia-labs/weave/utils"
 )

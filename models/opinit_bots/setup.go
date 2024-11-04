@@ -2,7 +2,6 @@ package opinit_bots
 
 import (
 	"context"
-
 	"encoding/json"
 	"fmt"
 	"os"
