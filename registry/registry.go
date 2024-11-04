@@ -77,6 +77,15 @@ func (cr *ChainRegistry) GetMinGasPriceByDenom(denom string) (string, error) {
 	return "", fmt.Errorf("denomination %s not found in fee tokens", denom)
 }
 
+func (cr *ChainRegistry) MustGetMinGasPriceByDenom(denom string) string {
+	minGasPrice, err := cr.GetMinGasPriceByDenom(denom)
+	if err != nil {
+		panic(err)
+	}
+
+	return minGasPrice
+}
+
 func checkAndAddPort(addr string) (string, error) {
 	u, err := url.Parse(addr)
 	if err != nil {
@@ -220,4 +229,13 @@ func GetOPInitBotsSpecVersion(chainId string) (int, error) {
 	}
 
 	return version, nil
+}
+
+func MustGetOPInitBotsSpecVersion(chainId string) int {
+	version, err := GetOPInitBotsSpecVersion(chainId)
+	if err != nil {
+		panic(err)
+	}
+
+	return version
 }

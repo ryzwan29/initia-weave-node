@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/initia-labs/weave/registry"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -13,6 +12,8 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/initia-labs/weave/registry"
 
 	tea "github.com/charmbracelet/bubbletea"
 
@@ -417,7 +418,8 @@ func NewGasDenomInput(state *LaunchState) *GasDenomInput {
 		state:     state,
 		question:  "Please specify the L2 Gas Token Denom",
 	}
-	model.WithPlaceholder("Enter the denom")
+	model.WithPlaceholder(`Press tab to use "umin"`)
+	model.WithDefaultValue("umin")
 	model.WithValidatorFn(utils.ValidateDenom)
 	return model
 }
@@ -457,7 +459,8 @@ func NewMonikerInput(state *LaunchState) *MonikerInput {
 		state:     state,
 		question:  "Please specify the moniker",
 	}
-	model.WithPlaceholder("Enter the moniker")
+	model.WithPlaceholder(`Press tab to use "operator"`)
+	model.WithDefaultValue("operator")
 	model.WithValidatorFn(utils.ValidateNonEmptyAndLengthString("Moniker", MaxMonikerLength))
 	return model
 }
@@ -2211,6 +2214,11 @@ func launchingMinitia(state *LaunchState) tea.Cmd {
 				panic(fmt.Sprintf("failed to get user home directory: %v", err))
 			}
 
+			// TODO: Remove this once new metric enables archival query for minitia launch
+			if state.l1ChainId == "initiation-2" {
+				state.l1RPC = "http://34.143.179.242:26657"
+			}
+
 			config := &types.MinitiaConfig{
 				L1Config: &types.L1Config{
 					ChainID:   state.l1ChainId,
@@ -2362,6 +2370,14 @@ func (m *LaunchingNewMinitiaLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			utils.WrapText(link),
 		)
 		m.state.weave.PushPreviousResponse(scanText)
+
+		srv, err := service.NewService(service.Minitia)
+		if err != nil {
+			m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "Invalid OS: only Linux and Darwin are supported", []string{}, fmt.Sprintf("%v", err)))
+		}
+		if err = srv.Start(); err != nil {
+			m.state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "Failed to start Minitia service", []string{}, fmt.Sprintf("%v", err)))
+		}
 
 		return NewTerminalState(m.state), tea.Quit
 	}

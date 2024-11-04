@@ -11,6 +11,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/initia-labs/weave/registry"
 	"github.com/initia-labs/weave/service"
 	"github.com/initia-labs/weave/styles"
 	"github.com/initia-labs/weave/types"
@@ -440,7 +441,8 @@ type L1PrefillSelector struct {
 }
 
 func NewL1PrefillSelector(ctx context.Context) *L1PrefillSelector {
-	L1PrefillOptionTestnet = L1PrefillOption(fmt.Sprintf("Testnet (%s)", utils.GetConfig("constants.chain_id.testnet")))
+	initiaTestnetRegistry := registry.MustGetChainRegistry(registry.InitiaL1Testnet)
+	L1PrefillOptionTestnet = L1PrefillOption(fmt.Sprintf("Testnet (%s)", initiaTestnetRegistry.GetChainId()))
 	return &L1PrefillSelector{
 		Selector: utils.Selector[L1PrefillOption]{
 			Options: []L1PrefillOption{
@@ -475,8 +477,9 @@ func (m *L1PrefillSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch *selected {
 
 		case L1PrefillOptionTestnet:
-			chainId = fmt.Sprintf("%s", utils.GetConfig("constants.chain_id.testnet"))
-			rpc = fmt.Sprintf("%s", utils.GetConfig("constants.endpoints.testnet.rpc"))
+			chainRegistry := registry.MustGetChainRegistry(registry.InitiaL1Testnet)
+			chainId = chainRegistry.GetChainId()
+			rpc = chainRegistry.MustGetActiveRpc()
 		}
 		state.botConfig["l1_node.chain_id"] = chainId
 
@@ -557,15 +560,19 @@ func (m *SetDALayer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			state.botConfig["da.bech32_prefix"] = "init"
 			state.botConfig["da.gas_price"] = state.botConfig["l1_node.gas_price"]
 		case CelestiaMainnet:
-			state.botConfig["da.chain_id"] = fmt.Sprintf("%s", utils.GetConfig("constants.da_layer.celestia_mainnet.chain_id"))
-			state.botConfig["da.rpc_address"] = fmt.Sprintf("%s", utils.GetConfig("constants.da_layer.celestia_mainnet.rpc"))
-			state.botConfig["da.bech32_prefix"] = fmt.Sprintf("%s", utils.GetConfig("constants.da_layer.celestia_mainnet.bech32_prefix"))
-			state.botConfig["da.gas_price"] = fmt.Sprintf("%s", utils.GetConfig("constants.da_layer.celestia_mainnet.gas_price"))
+			chainRegistry := registry.MustGetChainRegistry(registry.CelestiaMainnet)
+			state.botConfig["da.chain_id"] = chainRegistry.GetChainId()
+			state.botConfig["da.rpc_address"] = chainRegistry.MustGetActiveRpc()
+			state.botConfig["da.bech32_prefix"] = chainRegistry.GetBech32Prefix()
+			state.botConfig["da.gas_price"] = chainRegistry.MustGetMinGasPriceByDenom(DefaultCelestiaGasDenom)
+			state.daIsCelestia = true
 		case CelestiaTestnet:
-			state.botConfig["da.chain_id"] = fmt.Sprintf("%s", utils.GetConfig("constants.da_layer.celestia_testnet.chain_id"))
-			state.botConfig["da.rpc_address"] = fmt.Sprintf("%s", utils.GetConfig("constants.da_layer.celestia_testnet.rpc"))
-			state.botConfig["da.bech32_prefix"] = fmt.Sprintf("%s", utils.GetConfig("constants.da_layer.celestia_testnet.bech32_prefix"))
-			state.botConfig["da.gas_price"] = fmt.Sprintf("%s", utils.GetConfig("constants.da_layer.celestia_testnet.gas_price"))
+			chainRegistry := registry.MustGetChainRegistry(registry.CelestiaTestnet)
+			state.botConfig["da.chain_id"] = chainRegistry.GetChainId()
+			state.botConfig["da.rpc_address"] = chainRegistry.MustGetActiveRpc()
+			state.botConfig["da.bech32_prefix"] = chainRegistry.GetBech32Prefix()
+			state.botConfig["da.gas_price"] = chainRegistry.MustGetMinGasPriceByDenom(DefaultCelestiaGasDenom)
+			state.daIsCelestia = true
 		}
 		m.Ctx = utils.SetCurrentState(m.Ctx, state)
 		model := NewStartingInitBot(m.Ctx)
@@ -595,8 +602,7 @@ func NewStartingInitBot(ctx context.Context) tea.Model {
 		bot = "challenger"
 	}
 
-	// default config
-	state.botConfig["version"] = "1"
+	state.botConfig["version"] = strconv.Itoa(registry.MustGetOPInitBotsSpecVersion(state.botConfig["l1_node.chain_id"]))
 
 	return &StartingInitBot{
 		BaseModel: utils.BaseModel{Ctx: ctx, CannotBack: true},
@@ -631,6 +637,14 @@ func WaitStartingInitBot(state *OPInitBotsState) tea.Cmd {
 		err = utils.CopyDirectory(weaveDummyKeyPath, l2KeyPath)
 		if err != nil {
 			panic(err)
+		}
+
+		if state.daIsCelestia {
+			daKeyPath := filepath.Join(userHome, utils.OPinitDirectory, configMap["da.chain_id"])
+			err = utils.CopyDirectory(weaveDummyKeyPath, daKeyPath)
+			if err != nil {
+				panic(err)
+			}
 		}
 
 		if state.InitExecutorBot {

@@ -424,7 +424,7 @@ func TestGasDenomInput_View(t *testing.T) {
 
 	view := input.View()
 	assert.Contains(t, view, "Please specify the L2 Gas Token Denom", "Expected question prompt in the view")
-	assert.Contains(t, view, "Enter the denom", "Expected placeholder in the view")
+	assert.Contains(t, view, `Press tab to use "umin"`, "Expected placeholder in the view")
 }
 
 func TestMonikerInput_Init(t *testing.T) {
@@ -457,7 +457,7 @@ func TestMonikerInput_View(t *testing.T) {
 
 	view := input.View()
 	assert.Contains(t, view, "Please specify the moniker", "Expected question prompt in the view")
-	assert.Contains(t, view, "Enter the moniker", "Expected placeholder in the view")
+	assert.Contains(t, view, `Press tab to use "operator"`, "Expected placeholder in the view")
 }
 
 func TestNewOpBridgeSubmissionIntervalInput(t *testing.T) {
