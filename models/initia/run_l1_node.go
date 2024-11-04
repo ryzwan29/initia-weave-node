@@ -1316,11 +1316,20 @@ type StateSyncEndpointInput struct {
 }
 
 func NewStateSyncEndpointInput(ctx context.Context) *StateSyncEndpointInput {
-	return &StateSyncEndpointInput{
+	state := utils.GetCurrentState[RunL1NodeState](ctx)
+	defaultStateSync, err := utils.FetchPolkachuStateSyncURL(PolkachuChainIdSlugMap[state.chainId])
+	if err != nil {
+		panic(fmt.Sprintf("failed to fetch state sync rpc server from Polkachu: %v", err))
+	}
+	model := &StateSyncEndpointInput{
 		TextInput: utils.NewTextInput(false),
 		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  "Please specify the state sync RPC server url",
 	}
+	model.WithPlaceholder(fmt.Sprintf("Press tab to use the latest state sync RPC server provided by Polkachu (%s)", defaultStateSync))
+	model.WithDefaultValue(defaultStateSync)
+
+	return model
 }
 
 func (m *StateSyncEndpointInput) GetQuestion() string {
@@ -1341,9 +1350,7 @@ func (m *StateSyncEndpointInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
 		state.stateSyncEndpoint = input.Text
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"state sync RPC"}, input.Text))
-		m.Ctx = utils.SetCurrentState(m.Ctx, state)
-		newLoader := NewStateSyncSetupLoading(m.Ctx)
-		return newLoader, newLoader.Init()
+		return NewAdditionalStateSyncPeersInput(utils.SetCurrentState(m.Ctx, state)), nil
 	}
 	m.TextInput = input
 	return m, cmd
@@ -1356,6 +1363,67 @@ func (m *StateSyncEndpointInput) View() string {
 		return view + "\n" + m.TextInput.ViewErr(m.err)
 	}
 	return view + m.TextInput.View()
+}
+
+type AdditionalStateSyncPeersInput struct {
+	utils.TextInput
+	utils.BaseModel
+	question string
+}
+
+func NewAdditionalStateSyncPeersInput(ctx context.Context) *AdditionalStateSyncPeersInput {
+	state := utils.GetCurrentState[RunL1NodeState](ctx)
+	defaultStateSyncPeers, err := utils.FetchPolkachuStateSyncPeers(PolkachuChainIdSlugMap[state.chainId])
+	if err != nil {
+		panic(fmt.Sprintf("failed to fetch state sync peer from Polkachu: %v", err))
+	}
+	model := &AdditionalStateSyncPeersInput{
+		TextInput: utils.NewTextInput(false),
+		BaseModel: utils.BaseModel{Ctx: ctx},
+		question:  "Please specify the additional peers for state sync",
+	}
+	model.WithValidatorFn(utils.IsValidPeerOrSeed)
+	model.WithPlaceholder(fmt.Sprintf("Press tab to use the latest state sync peers provided by Polkachu (%s)", defaultStateSyncPeers))
+	model.WithDefaultValue(defaultStateSyncPeers)
+
+	return model
+}
+
+func (m *AdditionalStateSyncPeersInput) GetQuestion() string {
+	return m.question
+}
+
+func (m *AdditionalStateSyncPeersInput) Init() tea.Cmd {
+	return nil
+}
+
+func (m *AdditionalStateSyncPeersInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := utils.HandleCommonCommands[RunL1NodeState](m, msg); handled {
+		return model, cmd
+	}
+	input, cmd, done := m.TextInput.Update(msg)
+	if done {
+		m.Ctx = utils.CloneStateAndPushPage[RunL1NodeState](m.Ctx, m)
+		state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
+		state.additionalStateSyncPeers = input.Text
+		var prevAnswer string
+		if input.Text == "" {
+			prevAnswer = "None"
+		} else {
+			prevAnswer = input.Text
+		}
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"additional peers"}, prevAnswer))
+		m.Ctx = utils.SetCurrentState(m.Ctx, state)
+		newLoader := NewStateSyncSetupLoading(m.Ctx)
+		return newLoader, newLoader.Init()
+	}
+	m.TextInput = input
+	return m, cmd
+}
+
+func (m *AdditionalStateSyncPeersInput) View() string {
+	state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"additional peers"}, styles.Question) + m.TextInput.View()
 }
 
 type SnapshotDownloadLoading struct {
@@ -1534,7 +1602,7 @@ func (m *StateSyncSetupLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.Loading.Completing {
 		m.Ctx = utils.CloneStateAndPushPage[RunL1NodeState](m.Ctx, m)
 		state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "Snapshot setup successfully.", []string{}, ""))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "State syncg setup successfully.", []string{}, ""))
 		m.Ctx = utils.SetCurrentState(m.Ctx, state)
 		return m, tea.Quit
 	}
@@ -1562,6 +1630,17 @@ func setupStateSync(state *RunL1NodeState) tea.Cmd {
 		}
 
 		initiaConfigPath := filepath.Join(userHome, utils.InitiaConfigDirectory)
+
+		var persistentPeers string
+		if state.persistentPeers != "" && state.additionalStateSyncPeers != "" {
+			persistentPeers = fmt.Sprintf("%s,%s", state.persistentPeers, state.additionalStateSyncPeers)
+		} else {
+			persistentPeers = state.persistentPeers + state.additionalStateSyncPeers
+		}
+		if err = utils.UpdateTomlValue(filepath.Join(initiaConfigPath, "config.toml"), "p2p.persistent_peers", persistentPeers); err != nil {
+			return utils.ErrorLoading{Err: fmt.Errorf("[error] Failed to setup state sync persistent peers: %v", err)}
+		}
+
 		if err = utils.UpdateTomlValue(filepath.Join(initiaConfigPath, "config.toml"), "statesync.enable", "true"); err != nil {
 			return utils.ErrorLoading{Err: fmt.Errorf("[error] Failed to setup state sync enable: %v", err)}
 		}

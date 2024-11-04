@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	PolkachuSnapshotURL   string = "https://www.polkachu.com/testnets/%s/snapshots"
+	PolkachuSnapshotURL   string = "https://www.polkachu.com/%s/snapshots"
 	SnapshotFileExtension string = ".tar.lz4"
 )
 

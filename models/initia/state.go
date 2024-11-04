@@ -29,6 +29,7 @@ type RunL1NodeState struct {
 	replaceExistingGenesisWithDefault bool
 	snapshotEndpoint                  string
 	stateSyncEndpoint                 string
+	additionalStateSyncPeers          string
 }
 
 // NewRunL1NodeState initializes a new RunL1NodeState with default values.
@@ -63,5 +64,6 @@ func (s RunL1NodeState) Clone() RunL1NodeState {
 		replaceExistingGenesisWithDefault: s.replaceExistingGenesisWithDefault,
 		snapshotEndpoint:                  s.snapshotEndpoint,
 		stateSyncEndpoint:                 s.stateSyncEndpoint,
+		additionalStateSyncPeers:          s.additionalStateSyncPeers,
 	}
 }
