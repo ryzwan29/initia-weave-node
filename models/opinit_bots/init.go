@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strconv"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -618,8 +617,6 @@ func NewStartingInitBot(ctx context.Context) tea.Model {
 		bot = "challenger"
 	}
 
-	state.botConfig["version"] = strconv.Itoa(registry.MustGetOPInitBotsSpecVersion(state.botConfig["l1_node.chain_id"]))
-
 	return &StartingInitBot{
 		BaseModel: utils.BaseModel{Ctx: ctx, CannotBack: true},
 		loading:   utils.NewLoading(fmt.Sprintf("Setting up OPinit bot %s...", bot), WaitStartingInitBot(&state)),
@@ -677,7 +674,7 @@ func WaitStartingInitBot(state *OPInitBotsState) tea.Cmd {
 				return utils.EndLoading{}
 			}
 
-			version, _ := strconv.Atoi(configMap["version"])
+			version := registry.MustGetOPInitBotsSpecVersion(state.botConfig["l1_node.chain_id"])
 
 			config := ExecutorConfig{
 				Version:       version,
@@ -738,7 +735,7 @@ func WaitStartingInitBot(state *OPInitBotsState) tea.Cmd {
 				return utils.EndLoading{}
 			}
 
-			version, _ := strconv.Atoi(configMap["version"])
+			version := registry.MustGetOPInitBotsSpecVersion(state.botConfig["l1_node.chain_id"])
 			config := ChallengerConfig{
 				Version:       version,
 				ListenAddress: configMap["listen_address"],
