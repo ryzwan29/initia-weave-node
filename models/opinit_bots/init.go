@@ -571,8 +571,9 @@ func NewSetDALayer(ctx context.Context) tea.Model {
 				CelestiaMainnet,
 				CelestiaTestnet,
 			},
+			CannotBack: true,
 		},
-		BaseModel: utils.BaseModel{Ctx: ctx},
+		BaseModel: utils.BaseModel{Ctx: ctx, CannotBack: true},
 		question:  "Which DA Layer would you like to use?",
 	}
 }
