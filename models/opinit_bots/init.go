@@ -283,9 +283,35 @@ func (m *DeleteDBSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case DeleteDBOptionYes:
 			state.isDeleteDB = true
 		}
-		m.Ctx = utils.SetCurrentState(m.Ctx, state)
-		return NewUseCurrentConfigSelector(m.Ctx, m.bot), cmd
 
+		userHome, _ := os.UserHomeDir()
+		executorJsonPath := filepath.Join(userHome, utils.OPinitDirectory, fmt.Sprintf("%s.json", m.bot))
+		if utils.FileOrFolderExists(executorJsonPath) {
+			file, err := os.ReadFile(executorJsonPath)
+			if err != nil {
+				panic(err)
+			}
+
+			var botConfigChainId BotConfigChainId
+
+			err = json.Unmarshal(file, &botConfigChainId)
+			if err != nil {
+				panic(err)
+			}
+			state.botConfig["l1_node.chain_id"] = botConfigChainId.L1Node.ChainID
+			state.botConfig["l2_node.chain_id"] = botConfigChainId.L2Node.ChainID
+			m.Ctx = utils.SetCurrentState(m.Ctx, state)
+			return NewUseCurrentConfigSelector(utils.SetCurrentState(m.Ctx, state), m.bot), cmd
+		}
+
+		m.Ctx = utils.SetCurrentState(m.Ctx, state)
+		state.ReplaceBotConfig = true
+		if state.MinitiaConfig != nil {
+			m.Ctx = utils.SetCurrentState(m.Ctx, state)
+			return NewPrefillMinitiaConfig(m.Ctx), cmd
+		}
+		m.Ctx = utils.SetCurrentState(m.Ctx, state)
+		return NewL1PrefillSelector(m.Ctx), cmd
 	}
 
 	return m, cmd
