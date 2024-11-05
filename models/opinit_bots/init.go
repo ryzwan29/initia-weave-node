@@ -157,6 +157,22 @@ func OPInitBotInitSelectChallenger(ctx context.Context) tea.Model {
 	state := utils.GetCurrentState[OPInitBotsState](ctx)
 	state.InitChallengerBot = true
 
+	minitiaConfigPath := filepath.Join(homeDir, utils.MinitiaArtifactsDirectory, "config.json")
+	if utils.FileOrFolderExists(minitiaConfigPath) {
+		configData, err := os.ReadFile(minitiaConfigPath)
+		if err != nil {
+			panic(err)
+		}
+
+		var minitiaConfig types.MinitiaConfig
+		err = json.Unmarshal(configData, &minitiaConfig)
+		if err != nil {
+			panic(err)
+		}
+
+		state.MinitiaConfig = &minitiaConfig
+	}
+
 	state.dbPath = filepath.Join(homeDir, utils.OPinitDirectory, "challenger.db")
 	if utils.FileOrFolderExists(state.dbPath) {
 		ctx = utils.SetCurrentState(ctx, state)

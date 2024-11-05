@@ -7,11 +7,13 @@ type NodeConfig struct {
 }
 
 type ChallengerConfig struct {
-	Version       int        `json:"version"`
-	ListenAddress string     `json:"listen_address"`
-	L1Node        NodeConfig `json:"l1_node"`
-	L2Node        NodeConfig `json:"l2_node"`
-	L2StartHeight int        `json:"l2_start_height"`
+	Version                int        `json:"version"`
+	ListenAddress          string     `json:"listen_address"`
+	L1Node                 NodeConfig `json:"l1_node"`
+	L2Node                 NodeConfig `json:"l2_node"`
+	L1StartHeight          int        `json:"l1_start_height"`
+	L2StartHeight          int        `json:"l2_start_height"`
+	DisableAutoSetL1Height bool       `json:"disable_auto_set_l1_height"`
 }
 
 type NodeSettings struct {
