@@ -551,9 +551,8 @@ func (m *L1PrefillSelector) View() string {
 type DALayerNetwork string
 
 const (
-	Initia          DALayerNetwork = "Initia"
-	CelestiaMainnet DALayerNetwork = "Celestia Mainnet"
-	CelestiaTestnet DALayerNetwork = "Celestia Testnet"
+	Initia   DALayerNetwork = "Initia"
+	Celestia DALayerNetwork = "Celestia"
 	// Add other types as needed
 )
 
@@ -568,8 +567,7 @@ func NewSetDALayer(ctx context.Context) tea.Model {
 		Selector: utils.Selector[DALayerNetwork]{
 			Options: []DALayerNetwork{
 				Initia,
-				CelestiaMainnet,
-				CelestiaTestnet,
+				Celestia,
 			},
 			CannotBack: true,
 		},
@@ -601,15 +599,14 @@ func (m *SetDALayer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			state.botConfig["da.rpc_address"] = state.botConfig["l1_node.rpc_address"]
 			state.botConfig["da.bech32_prefix"] = "init"
 			state.botConfig["da.gas_price"] = state.botConfig["l1_node.gas_price"]
-		case CelestiaMainnet:
-			chainRegistry := registry.MustGetChainRegistry(registry.CelestiaMainnet)
-			state.botConfig["da.chain_id"] = chainRegistry.GetChainId()
-			state.botConfig["da.rpc_address"] = chainRegistry.MustGetActiveRpc()
-			state.botConfig["da.bech32_prefix"] = chainRegistry.GetBech32Prefix()
-			state.botConfig["da.gas_price"] = chainRegistry.MustGetMinGasPriceByDenom(DefaultCelestiaGasDenom)
-			state.daIsCelestia = true
-		case CelestiaTestnet:
-			chainRegistry := registry.MustGetChainRegistry(registry.CelestiaTestnet)
+		case Celestia:
+			var network registry.ChainType
+			if registry.MustGetChainRegistry(registry.InitiaL1Testnet).GetChainId() == state.botConfig["l1_node.chain_id"] {
+				network = registry.CelestiaTestnet
+			} else {
+				network = registry.CelestiaMainnet
+			}
+			chainRegistry := registry.MustGetChainRegistry(network)
 			state.botConfig["da.chain_id"] = chainRegistry.GetChainId()
 			state.botConfig["da.rpc_address"] = chainRegistry.MustGetActiveRpc()
 			state.botConfig["da.bech32_prefix"] = chainRegistry.GetBech32Prefix()
