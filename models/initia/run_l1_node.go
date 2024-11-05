@@ -1524,7 +1524,7 @@ func (m *SnapshotExtractLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, fmt.Sprintf("Snapshot extracted to %s successfully.", utils.InitiaDataDirectory), []string{}, ""))
 		m.Ctx = utils.SetCurrentState(m.Ctx, state)
-		return m, tea.Quit
+		return NewTerminalState(m.Ctx), tea.Quit
 	}
 	return m, cmd
 }
@@ -1605,7 +1605,7 @@ func (m *StateSyncSetupLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "State sync setup successfully.", []string{}, ""))
 		m.Ctx = utils.SetCurrentState(m.Ctx, state)
-		return m, tea.Quit
+		return NewTerminalState(m.Ctx), tea.Quit
 	}
 	return m, cmd
 }
@@ -1688,5 +1688,5 @@ func (m *TerminalState) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *TerminalState) View() string {
 	// TODO: revisit congratulations text
 	state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
-	return state.weave.Render() + "🪢🪢🪢   " + styles.FadeText("Success") + "  🪢🪢🪢\n"
+	return state.weave.Render() + styles.RenderPrompt("Initia node setup successfully. Config files are saved at ~/.initia/config/config.toml and ~/.initia/config.app.toml. Feel free to modify them as needed.", []string{}, styles.Completed) + "\n" + styles.RenderPrompt("You can start the node by running `weave initia start`", []string{}, styles.Completed) + "\n"
 }

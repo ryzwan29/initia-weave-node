@@ -2738,9 +2738,8 @@ func (m *LaunchingNewMinitiaLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		link := fmt.Sprintf("%s/custom-network/add/link?config=%s", InitiaScanURL, encodedPayload)
 		scanText := fmt.Sprintf(
-			"\n✨ %s 🪄 (Don't forget to use %s to start the app)\n%s\n\n",
+			"\n✨ %s 🪄 (We already started the minitia app for you)\n%s\n\n",
 			styles.BoldText("Explore your new Minitia here", styles.White),
-			styles.BoldText("weave minitia start", styles.White),
 			utils.WrapText(link),
 		)
 		state.weave.PushPreviousResponse(scanText)

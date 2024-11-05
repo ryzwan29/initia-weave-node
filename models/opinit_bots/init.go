@@ -833,6 +833,5 @@ func (m *OPinitBotSuccessful) View() string {
 		botConfigFileName = "challenger"
 	}
 
-	return state.weave.Render() + styles.RenderPrompt("OPInit bot setup successfully. Config file is saved at ~/.opinit/"+botConfigFileName+".json", []string{}, styles.Completed) + "\n" + styles.RenderPrompt("You can start the bot by running `weave opinit-bots start "+botConfigFileName+"`", []string{}, styles.Completed) + "\n"
-
+	return state.weave.Render() + styles.RenderPrompt("OPInit bot setup successfully. Config file is saved at ~/.opinit/"+botConfigFileName+".json. Feel free to modify it as needed.", []string{}, styles.Completed) + "\n" + styles.RenderPrompt("You can start the bot by running `weave opinit-bots start "+botConfigFileName+"`", []string{}, styles.Completed) + "\n"
 }
