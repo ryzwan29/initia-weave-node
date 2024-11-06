@@ -9,9 +9,11 @@ import (
 )
 
 type Selector[T any] struct {
-	Options    []T
-	Cursor     int
-	CannotBack bool
+	Options       []T
+	Cursor        int
+	CannotBack    bool
+	ToggleTooltip bool
+	Tooltips      *[]styles.Tooltip
 }
 
 func (s *Selector[T]) Select(msg tea.Msg) (*T, tea.Cmd) {
@@ -35,10 +37,24 @@ func (s *Selector[T]) Select(msg tea.Msg) (*T, tea.Cmd) {
 
 // GetFooter returns the footer text based on the CannotBack flag.
 func (s *Selector[T]) GetFooter() string {
+	footer := ""
 	if s.CannotBack {
-		return styles.Text("\nPress Enter to select, Ctrl+C or q to quit.\n", styles.Gray)
+		footer += styles.Text("\nPress Enter to select, Ctrl+C or q to quit.\n", styles.Gray)
+	} else {
+		footer += styles.Text("\nPress Enter to select, Ctrl+Z to go back, Ctrl+C or q to quit.\n", styles.Gray)
 	}
-	return styles.Text("\nPress Enter to select, Ctrl+Z to go back, Ctrl+C or q to quit.\n", styles.Gray)
+
+	if s.Tooltips != nil {
+		if s.ToggleTooltip {
+			tooltip := *s.Tooltips
+			footer += styles.Text("-- Press Ctrl+T to hide information --", styles.Gray) + "\n" + tooltip[s.Cursor].View()
+		} else {
+			footer += styles.Text("-- Press Ctrl+T to see more info for each option --", styles.Gray) + "\n"
+		}
+	}
+
+	return footer
+
 }
 
 func (s *Selector[T]) View() string {
