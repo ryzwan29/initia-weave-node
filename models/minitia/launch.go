@@ -1157,7 +1157,7 @@ func (m *ExistingGasStationChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if !state.gasStationExist {
 			return NewGasStationMnemonicInput(utils.SetCurrentState(m.Ctx, state)), nil
 		} else {
-			return NewSystemKeyL1OperatorBalanceInput(utils.SetCurrentState(m.Ctx, state)), nil
+			return NewAccountsFundingPresetSelect(utils.SetCurrentState(m.Ctx, state)), nil
 		}
 	}
 	return m, cmd
@@ -1208,7 +1208,7 @@ func (m *GasStationMnemonicInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			panic(err)
 		}
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, "Please set up a Gas Station account", []string{"Gas Station account"}, styles.HiddenMnemonicText))
-		return NewSystemKeyL1OperatorBalanceInput(utils.SetCurrentState(m.Ctx, state)), nil
+		return NewAccountsFundingPresetSelect(utils.SetCurrentState(m.Ctx, state)), nil
 	}
 	m.TextInput = input
 	return m, cmd
@@ -1221,58 +1221,119 @@ func (m *GasStationMnemonicInput) View() string {
 		styles.RenderPrompt(m.GetQuestion(), []string{"Gas Station account"}, styles.Question) + m.TextInput.View()
 }
 
-type SystemKeyL1OperatorBalanceInput struct {
-	utils.TextInput
+type AccountsFundingPresetSelect struct {
+	utils.Selector[AccountsFundingPresetOption]
 	utils.BaseModel
 	question string
 }
 
-func NewSystemKeyL1OperatorBalanceInput(ctx context.Context) *SystemKeyL1OperatorBalanceInput {
+type AccountsFundingPresetOption string
+
+var DefaultPreset AccountsFundingPresetOption = ""
+
+const ManuallyFill AccountsFundingPresetOption = "○ Fill in an amount for each account manually"
+
+func NewAccountsFundingPresetSelect(ctx context.Context) *AccountsFundingPresetSelect {
 	state := utils.GetCurrentState[LaunchState](ctx)
-	state.preL1BalancesResponsesCount = len(state.weave.PreviousResponse)
-	model := &SystemKeyL1OperatorBalanceInput{
-		TextInput: utils.NewTextInput(true),
-		BaseModel: utils.BaseModel{Ctx: ctx, CannotBack: true},
-		question:  "Please specify initial balance for Operator on L1 (uinit)",
+	gasStationMnemonic := utils.GetGasStationMnemonic()
+	initiaGasStationAddress, err := utils.MnemonicToBech32Address("init", gasStationMnemonic)
+	if err != nil {
+		panic(fmt.Errorf("cannot recover gas station for init: %v", err))
 	}
-	model.WithPlaceholder("Enter the amount")
-	model.WithValidatorFn(utils.IsValidInteger)
-	model.Ctx = utils.SetCurrentState(model.Ctx, state)
-	return model
+	var batchSubmitterDenom, batchSubmitterText, initiaNeededBalance, celestiaNeededBalance string
+	if state.batchSubmissionIsCelestia {
+		batchSubmitterDenom = DefaultCelestiaGasDenom
+		batchSubmitterText = " on Celestia"
+		initiaNeededBalance = DefaultL1InitiaNeededBalanceIfCelestiaDA
+		var celestiaChainId string
+		if state.l1ChainId == registry.MustGetChainRegistry(registry.InitiaL1Testnet).GetChainId() {
+			celestiaChainId = registry.MustGetChainRegistry(registry.CelestiaTestnet).GetChainId()
+		} else {
+			celestiaChainId = registry.MustGetChainRegistry(registry.CelestiaMainnet).GetChainId()
+		}
+		celestiaGasStationAddress, err := utils.MnemonicToBech32Address("celestia", gasStationMnemonic)
+		if err != nil {
+			panic(fmt.Errorf("cannot recover gas station for celestia: %v", err))
+		}
+		celestiaNeededBalance = fmt.Sprintf("%s %s (%s)\n    ", styles.Text(fmt.Sprintf("• Celestia (%s):", celestiaChainId), styles.Cyan), styles.BoldText(fmt.Sprintf("%s%s", DefaultL1BatchSubmitterBalance, DefaultCelestiaGasDenom), styles.White), celestiaGasStationAddress)
+	} else {
+		batchSubmitterDenom = DefaultL1GasDenom
+		initiaNeededBalance = DefaultL1InitiaNeededBalanceIfInitiaDA
+	}
+	separator := styles.Text("------------------------------------------------------------------------------------", styles.Gray)
+	DefaultPreset = AccountsFundingPresetOption(fmt.Sprintf(
+		"○ Use the default preset\n    %s\n    %s %s on L1, %s will be minted on L2\n    %s %s\n    %s %s%s\n    %s %s\n    %s %s will be minted on L2 \n    %s\n    %s\n    %s %s (%s)\n    %s%s\n",
+		separator,
+		styles.BoldText("• Bridge Executor:", styles.Cyan), styles.BoldText(fmt.Sprintf("%s%s", DefaultL1BridgeExecutorBalance, DefaultL1GasDenom), styles.White), styles.BoldText(fmt.Sprintf("%s%s", DefaultL2BridgeExecutorBalance, state.gasDenom), styles.White),
+		styles.BoldText("• Output Submitter:", styles.Cyan), styles.BoldText(fmt.Sprintf("%s%s", DefaultL1OutputSubmitterBalance, DefaultL1GasDenom), styles.White),
+		styles.BoldText("• Batch Submitter:", styles.Cyan), styles.BoldText(fmt.Sprintf("%s%s", DefaultL1BatchSubmitterBalance, batchSubmitterDenom), styles.White), batchSubmitterText,
+		styles.BoldText("• Challenger:", styles.Cyan), styles.BoldText(fmt.Sprintf("%s%s", DefaultL1ChallengerBalance, DefaultL1GasDenom), styles.White),
+		styles.BoldText("• Operator:", styles.Cyan), styles.BoldText(fmt.Sprintf("%s%s", DefaultL2OperatorBalance, state.gasDenom), styles.White),
+		separator,
+		styles.Text("Total amount required from the Gas Station account:", styles.Ivory),
+		styles.Text(fmt.Sprintf("• L1 (%s):", state.l1ChainId), styles.Cyan), styles.BoldText(fmt.Sprintf("%s%s", initiaNeededBalance, DefaultL1GasDenom), styles.White),
+		initiaGasStationAddress,
+		celestiaNeededBalance,
+		separator,
+	))
+	return &AccountsFundingPresetSelect{
+		Selector: utils.Selector[AccountsFundingPresetOption]{
+			Options: []AccountsFundingPresetOption{
+				DefaultPreset,
+				ManuallyFill,
+			},
+			CannotBack: true,
+		},
+		BaseModel: utils.BaseModel{Ctx: ctx, CannotBack: true},
+		question:  "Please select the filling amount option",
+	}
 }
 
-func (m *SystemKeyL1OperatorBalanceInput) GetQuestion() string {
+func (m *AccountsFundingPresetSelect) GetQuestion() string {
 	return m.question
 }
 
-func (m *SystemKeyL1OperatorBalanceInput) Init() tea.Cmd {
+func (m *AccountsFundingPresetSelect) Init() tea.Cmd {
 	return nil
 }
 
-func (m *SystemKeyL1OperatorBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m *AccountsFundingPresetSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if model, cmd, handled := utils.HandleCommonCommands[LaunchState](m, msg); handled {
 		return model, cmd
 	}
 
-	input, cmd, done := m.TextInput.Update(msg)
-	if done {
+	selected, cmd := m.Select(msg)
+	if selected != nil {
 		m.Ctx = utils.CloneStateAndPushPage[LaunchState](m.Ctx, m)
 		state := utils.GetCurrentState[LaunchState](m.Ctx)
 
-		state.systemKeyL1OperatorBalance = input.Text
-		state.weave.PushPreviousResponse(fmt.Sprintf("\n%s\n", styles.RenderPrompt("Please fund the following accounts on L1:\n  • Operator\n  • Bridge Executor\n  • Output Submitter\n  • Batch Submitter\n  • Challenger\n", []string{"L1"}, styles.Information)))
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Operator", "L1"}, input.Text))
-		return NewSystemKeyL1BridgeExecutorBalanceInput(utils.SetCurrentState(m.Ctx, state)), nil
+		switch *selected {
+		case DefaultPreset:
+			state.FillDefaultBalances()
+			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, "Use the default preset"))
+			return NewAddGenesisAccountsSelect(false, utils.SetCurrentState(m.Ctx, state)), nil
+		case ManuallyFill:
+			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, "Fill in an amount for each account manually"))
+			return NewSystemKeyL1BridgeExecutorBalanceInput(utils.SetCurrentState(m.Ctx, state)), nil
+		}
 	}
-	m.TextInput = input
+
 	return m, cmd
 }
 
-func (m *SystemKeyL1OperatorBalanceInput) View() string {
+func (m *AccountsFundingPresetSelect) View() string {
 	state := utils.GetCurrentState[LaunchState](m.Ctx)
 	return state.weave.Render() + "\n" +
-		styles.RenderPrompt("Please fund the following accounts on L1:\n  • Operator\n  • Bridge Executor\n  • Output Submitter\n  • Batch Submitter\n  • Challenger", []string{"L1"}, styles.Information) + "\n" +
-		styles.RenderPrompt(m.GetQuestion(), []string{"Operator", "L1"}, styles.Question) + m.TextInput.View()
+		styles.RenderPrompt(
+			"You will need to fund the following accounts on ...\n  L1:\n  • Bridge Executor\n  • Output Submitter\n  • Batch Submitter\n  • Challenger\n  L2:\n  • Operator\n  • Bridge Executor",
+			[]string{"L1", "L2"},
+			styles.Information,
+		) + "\n" +
+		styles.RenderPrompt(
+			m.GetQuestion(),
+			[]string{},
+			styles.Question,
+		) + m.Selector.View()
 }
 
 type SystemKeyL1BridgeExecutorBalanceInput struct {
@@ -1282,13 +1343,16 @@ type SystemKeyL1BridgeExecutorBalanceInput struct {
 }
 
 func NewSystemKeyL1BridgeExecutorBalanceInput(ctx context.Context) *SystemKeyL1BridgeExecutorBalanceInput {
+	state := utils.GetCurrentState[LaunchState](ctx)
+	state.preL1BalancesResponsesCount = len(state.weave.PreviousResponse)
 	model := &SystemKeyL1BridgeExecutorBalanceInput{
-		TextInput: utils.NewTextInput(false),
-		BaseModel: utils.BaseModel{Ctx: ctx},
+		TextInput: utils.NewTextInput(true),
+		BaseModel: utils.BaseModel{Ctx: ctx, CannotBack: true},
 		question:  "Please specify initial balance for Bridge Executor on L1 (uinit)",
 	}
-	model.WithPlaceholder("Enter the balance")
+	model.WithPlaceholder("Enter the amount")
 	model.WithValidatorFn(utils.IsValidInteger)
+	model.Ctx = utils.SetCurrentState(model.Ctx, state)
 	return model
 }
 
@@ -1311,6 +1375,7 @@ func (m *SystemKeyL1BridgeExecutorBalanceInput) Update(msg tea.Msg) (tea.Model, 
 		state := utils.GetCurrentState[LaunchState](m.Ctx)
 
 		state.systemKeyL1BridgeExecutorBalance = input.Text
+		state.weave.PushPreviousResponse(fmt.Sprintf("\n%s\n", styles.RenderPrompt("Please fund the following accounts on L1:\n  • Bridge Executor\n  • Output Submitter\n  • Batch Submitter\n  • Challenger\n", []string{"L1"}, styles.Information)))
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Bridge Executor", "L1"}, input.Text))
 		return NewSystemKeyL1OutputSubmitterBalanceInput(utils.SetCurrentState(m.Ctx, state)), nil
 	}
@@ -1320,7 +1385,8 @@ func (m *SystemKeyL1BridgeExecutorBalanceInput) Update(msg tea.Msg) (tea.Model, 
 
 func (m *SystemKeyL1BridgeExecutorBalanceInput) View() string {
 	state := utils.GetCurrentState[LaunchState](m.Ctx)
-	return state.weave.Render() +
+	return state.weave.Render() + "\n" +
+		styles.RenderPrompt("Please fund the following accounts on L1:\n  • Bridge Executor\n  • Output Submitter\n  • Batch Submitter\n  • Challenger", []string{"L1"}, styles.Information) + "\n" +
 		styles.RenderPrompt(m.GetQuestion(), []string{"Bridge Executor", "L1"}, styles.Question) + m.TextInput.View()
 }
 
@@ -1383,10 +1449,10 @@ func NewSystemKeyL1BatchSubmitterBalanceInput(ctx context.Context) *SystemKeyL1B
 	state := utils.GetCurrentState[LaunchState](ctx)
 	var denom, network string
 	if state.batchSubmissionIsCelestia {
-		denom = "utia"
+		denom = DefaultCelestiaGasDenom
 		network = "Celestia Testnet"
 	} else {
-		denom = "uinit"
+		denom = DefaultL1GasDenom
 		network = "L1"
 	}
 
@@ -1521,7 +1587,7 @@ func (m *SystemKeyL2OperatorBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cm
 		state := utils.GetCurrentState[LaunchState](m.Ctx)
 
 		state.systemKeyL2OperatorBalance = fmt.Sprintf("%s%s", input.Text, state.gasDenom)
-		state.weave.PushPreviousResponse(fmt.Sprintf("\n%s\n", styles.RenderPrompt(fmt.Sprintf("Please fund the following accounts on L2:\n  • Operator\n  • Bridge Executor\n  • Output Submitter %[1]s\n  • Batch Submitter %[1]s\n  • Challenger %[1]s\n", styles.Text("(Optional)", styles.Gray)), []string{"L2"}, styles.Information)))
+		state.weave.PushPreviousResponse(fmt.Sprintf("\n%s\n", styles.RenderPrompt("Please fund the following accounts on L2:\n  • Operator\n  • Bridge Executor\n", []string{"L2"}, styles.Information)))
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Operator", "L2"}, input.Text))
 		return NewSystemKeyL2BridgeExecutorBalanceInput(utils.SetCurrentState(m.Ctx, state)), nil
 	}
@@ -1532,7 +1598,7 @@ func (m *SystemKeyL2OperatorBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cm
 func (m *SystemKeyL2OperatorBalanceInput) View() string {
 	state := utils.GetCurrentState[LaunchState](m.Ctx)
 	return state.weave.Render() + "\n" +
-		styles.RenderPrompt(fmt.Sprintf("Please fund the following accounts on L2:\n  • Operator\n  • Bridge Executor\n  • Output Submitter %[1]s\n  • Batch Submitter %[1]s\n  • Challenger %[1]s", styles.Text("(Optional)", styles.Gray)), []string{"L2"}, styles.Information) + "\n" +
+		styles.RenderPrompt("Please fund the following accounts on L2:\n  • Operator\n  • Bridge Executor", []string{"L2"}, styles.Information) + "\n" +
 		styles.RenderPrompt(m.GetQuestion(), []string{"Operator", "L2"}, styles.Question) + m.TextInput.View()
 }
 
@@ -1573,8 +1639,9 @@ func (m *SystemKeyL2BridgeExecutorBalanceInput) Update(msg tea.Msg) (tea.Model, 
 		state := utils.GetCurrentState[LaunchState](m.Ctx)
 
 		state.systemKeyL2BridgeExecutorBalance = fmt.Sprintf("%s%s", input.Text, state.gasDenom)
+		state.weave.PopPreviousResponseAtIndex(state.preL2BalancesResponsesCount)
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Bridge Executor", "L2"}, input.Text))
-		return NewSystemKeyL2OutputSubmitterBalanceInput(utils.SetCurrentState(m.Ctx, state)), nil
+		return NewAddGenesisAccountsSelect(false, utils.SetCurrentState(m.Ctx, state)), nil
 	}
 	m.TextInput = input
 	return m, cmd
@@ -1584,175 +1651,6 @@ func (m *SystemKeyL2BridgeExecutorBalanceInput) View() string {
 	state := utils.GetCurrentState[LaunchState](m.Ctx)
 	return state.weave.Render() +
 		styles.RenderPrompt(m.GetQuestion(), []string{"Bridge Executor", "L2"}, styles.Question) + m.TextInput.View()
-}
-
-type SystemKeyL2OutputSubmitterBalanceInput struct {
-	utils.TextInput
-	utils.BaseModel
-	question string
-}
-
-func NewSystemKeyL2OutputSubmitterBalanceInput(ctx context.Context) *SystemKeyL2OutputSubmitterBalanceInput {
-	state := utils.GetCurrentState[LaunchState](ctx)
-	model := &SystemKeyL2OutputSubmitterBalanceInput{
-		TextInput: utils.NewTextInput(false),
-		BaseModel: utils.BaseModel{Ctx: ctx},
-		question:  fmt.Sprintf("Please specify initial balance for Output Submitter on L2 (%s)", state.gasDenom),
-	}
-	model.WithPlaceholder("Enter the balance (Press Enter to skip)")
-	return model
-}
-
-func (m *SystemKeyL2OutputSubmitterBalanceInput) GetQuestion() string {
-	return m.question
-}
-
-func (m *SystemKeyL2OutputSubmitterBalanceInput) Init() tea.Cmd {
-	return nil
-}
-
-func (m *SystemKeyL2OutputSubmitterBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	if model, cmd, handled := utils.HandleCommonCommands[LaunchState](m, msg); handled {
-		return model, cmd
-	}
-
-	input, cmd, done := m.TextInput.Update(msg)
-	if done {
-		m.Ctx = utils.CloneStateAndPushPage[LaunchState](m.Ctx, m)
-		state := utils.GetCurrentState[LaunchState](m.Ctx)
-
-		var text string
-		if input.Text == "" {
-			state.systemKeyL2OutputSubmitterBalance = ""
-			text = "None"
-		} else {
-			state.systemKeyL2OutputSubmitterBalance = fmt.Sprintf("%s%s", input.Text, state.gasDenom)
-			text = input.Text
-		}
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Output Submitter", "L2"}, text))
-		return NewSystemKeyL2BatchSubmitterBalanceInput(utils.SetCurrentState(m.Ctx, state)), nil
-	}
-	m.TextInput = input
-	return m, cmd
-}
-
-func (m *SystemKeyL2OutputSubmitterBalanceInput) View() string {
-	state := utils.GetCurrentState[LaunchState](m.Ctx)
-	return state.weave.Render() +
-		styles.RenderPrompt(m.GetQuestion(), []string{"Output Submitter", "L2"}, styles.Question) + m.TextInput.View()
-}
-
-type SystemKeyL2BatchSubmitterBalanceInput struct {
-	utils.TextInput
-	utils.BaseModel
-	question string
-}
-
-func NewSystemKeyL2BatchSubmitterBalanceInput(ctx context.Context) *SystemKeyL2BatchSubmitterBalanceInput {
-	state := utils.GetCurrentState[LaunchState](ctx)
-	model := &SystemKeyL2BatchSubmitterBalanceInput{
-		TextInput: utils.NewTextInput(false),
-		BaseModel: utils.BaseModel{Ctx: ctx},
-		question:  fmt.Sprintf("Please specify initial balance for Batch Submitter on L2 (%s)", state.gasDenom),
-	}
-	model.WithPlaceholder("Enter the balance (Press Enter to skip)")
-	return model
-}
-
-func (m *SystemKeyL2BatchSubmitterBalanceInput) GetQuestion() string {
-	return m.question
-}
-
-func (m *SystemKeyL2BatchSubmitterBalanceInput) Init() tea.Cmd {
-	return nil
-}
-
-func (m *SystemKeyL2BatchSubmitterBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	if model, cmd, handled := utils.HandleCommonCommands[LaunchState](m, msg); handled {
-		return model, cmd
-	}
-
-	input, cmd, done := m.TextInput.Update(msg)
-	if done {
-		m.Ctx = utils.CloneStateAndPushPage[LaunchState](m.Ctx, m)
-		state := utils.GetCurrentState[LaunchState](m.Ctx)
-
-		var text string
-		if input.Text == "" {
-			state.systemKeyL2BatchSubmitterBalance = ""
-			text = "None"
-		} else {
-			state.systemKeyL2BatchSubmitterBalance = fmt.Sprintf("%s%s", input.Text, state.gasDenom)
-			text = input.Text
-		}
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Batch Submitter", "L2"}, text))
-		return NewSystemKeyL2ChallengerBalanceInput(utils.SetCurrentState(m.Ctx, state)), nil
-	}
-	m.TextInput = input
-	return m, cmd
-}
-
-func (m *SystemKeyL2BatchSubmitterBalanceInput) View() string {
-	state := utils.GetCurrentState[LaunchState](m.Ctx)
-	return state.weave.Render() +
-		styles.RenderPrompt(m.GetQuestion(), []string{"Batch Submitter", "L2"}, styles.Question) + m.TextInput.View()
-}
-
-type SystemKeyL2ChallengerBalanceInput struct {
-	utils.TextInput
-	utils.BaseModel
-	question string
-}
-
-func NewSystemKeyL2ChallengerBalanceInput(ctx context.Context) *SystemKeyL2ChallengerBalanceInput {
-	state := utils.GetCurrentState[LaunchState](ctx)
-	model := &SystemKeyL2ChallengerBalanceInput{
-		TextInput: utils.NewTextInput(false),
-		BaseModel: utils.BaseModel{Ctx: ctx},
-		question:  fmt.Sprintf("Please specify initial balance for Challenger on L2 (%s)", state.gasDenom),
-	}
-	model.WithPlaceholder("Enter the balance (Press Enter to skip)")
-	return model
-}
-
-func (m *SystemKeyL2ChallengerBalanceInput) GetQuestion() string {
-	return m.question
-}
-
-func (m *SystemKeyL2ChallengerBalanceInput) Init() tea.Cmd {
-	return nil
-}
-
-func (m *SystemKeyL2ChallengerBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	if model, cmd, handled := utils.HandleCommonCommands[LaunchState](m, msg); handled {
-		return model, cmd
-	}
-
-	input, cmd, done := m.TextInput.Update(msg)
-	if done {
-		m.Ctx = utils.CloneStateAndPushPage[LaunchState](m.Ctx, m)
-		state := utils.GetCurrentState[LaunchState](m.Ctx)
-
-		var text string
-		if input.Text == "" {
-			state.systemKeyL2ChallengerBalance = ""
-			text = "None"
-		} else {
-			state.systemKeyL2ChallengerBalance = fmt.Sprintf("%s%s", input.Text, state.gasDenom)
-			text = input.Text
-		}
-		state.weave.PopPreviousResponseAtIndex(state.preL2BalancesResponsesCount)
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Challenger", "L2"}, text))
-		return NewAddGenesisAccountsSelect(false, utils.SetCurrentState(m.Ctx, state)), nil
-	}
-	m.TextInput = input
-	return m, cmd
-}
-
-func (m *SystemKeyL2ChallengerBalanceInput) View() string {
-	state := utils.GetCurrentState[LaunchState](m.Ctx)
-	return state.weave.Render() +
-		styles.RenderPrompt(m.GetQuestion(), []string{"Challenger", "L2"}, styles.Question) + m.TextInput.View()
 }
 
 type AddGenesisAccountsSelect struct {
@@ -2415,7 +2313,7 @@ func (m *FundGasStationConfirmationInput) View() string {
 		false: formatSendMsg(state.systemKeyL1BatchSubmitterBalance, "uinit", "Batch Submitter on Initia L1", state.systemKeyBatchSubmitterAddress),
 	}
 	celestiaText := map[bool]string{
-		true:  fmt.Sprintf("\nSending tokens from the Gas Station account on Celestia Testnet %s ⛽️\n%s", styles.Text(fmt.Sprintf("(%s)", m.celestiaGasStationAddress), styles.Gray), formatSendMsg(state.systemKeyL1BatchSubmitterBalance, "utia", "Batch Submitter on Celestia Testnet", state.systemKeyBatchSubmitterAddress)),
+		true:  fmt.Sprintf("\nSending tokens from the Gas Station account on Celestia Testnet %s ⛽️\n%s", styles.Text(fmt.Sprintf("(%s)", m.celestiaGasStationAddress), styles.Gray), formatSendMsg(state.systemKeyL1BatchSubmitterBalance, DefaultCelestiaGasDenom, "Batch Submitter on Celestia Testnet", state.systemKeyBatchSubmitterAddress)),
 		false: "",
 	}
 	return state.weave.Render() + "\n" +
@@ -2425,7 +2323,6 @@ func (m *FundGasStationConfirmationInput) View() string {
 			[]string{}, styles.Empty,
 		) + "\n\n" +
 		fmt.Sprintf("Sending tokens from the Gas Station account on Initia L1 %s ⛽️\n", styles.Text(fmt.Sprintf("(%s)", m.initiaGasStationAddress), styles.Gray)) +
-		formatSendMsg(state.systemKeyL1OperatorBalance, "uinit", "Operator on Initia L1", state.systemKeyOperatorAddress) +
 		formatSendMsg(state.systemKeyL1BridgeExecutorBalance, "uinit", "Bridge Executor on Initia L1", state.systemKeyBridgeExecutorAddress) +
 		formatSendMsg(state.systemKeyL1OutputSubmitterBalance, "uinit", "Output Submitter on Initia L1", state.systemKeyOutputSubmitterAddress) +
 		batchSubmitterText[state.batchSubmissionIsCelestia] +
@@ -2454,10 +2351,6 @@ func broadcastFundingFromGasStation(ctx context.Context) tea.Cmd {
 	return func() tea.Msg {
 		state := utils.GetCurrentState[LaunchState](ctx)
 		txResult, err := NewL1SystemKeys(
-			&types.GenesisAccount{
-				Address: state.systemKeyOperatorAddress,
-				Coins:   state.systemKeyL1OperatorBalance,
-			},
 			&types.GenesisAccount{
 				Address: state.systemKeyBridgeExecutorAddress,
 				Coins:   state.systemKeyL1BridgeExecutorBalance,

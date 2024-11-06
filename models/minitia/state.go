@@ -1,6 +1,8 @@
 package minitia
 
 import (
+	"fmt"
+
 	"github.com/initia-labs/weave/types"
 )
 
@@ -37,7 +39,6 @@ type LaunchState struct {
 	systemKeyL2BatchSubmitterAddress string
 	systemKeyChallengerAddress       string
 
-	systemKeyL1OperatorBalance        string
 	systemKeyL1BridgeExecutorBalance  string
 	systemKeyL1OutputSubmitterBalance string
 	systemKeyL1BatchSubmitterBalance  string
@@ -45,11 +46,8 @@ type LaunchState struct {
 	systemKeyL1FundingTxHash          string
 	systemKeyCelestiaFundingTxHash    string
 
-	systemKeyL2OperatorBalance        string
-	systemKeyL2BridgeExecutorBalance  string
-	systemKeyL2OutputSubmitterBalance string
-	systemKeyL2BatchSubmitterBalance  string
-	systemKeyL2ChallengerBalance      string
+	systemKeyL2OperatorBalance       string
+	systemKeyL2BridgeExecutorBalance string
 
 	gasStationExist             bool
 	downloadedNewBinary         bool
@@ -96,7 +94,6 @@ func (ls LaunchState) Clone() LaunchState {
 		systemKeyBatchSubmitterAddress:    ls.systemKeyBatchSubmitterAddress,
 		systemKeyL2BatchSubmitterAddress:  ls.systemKeyL2BatchSubmitterAddress,
 		systemKeyChallengerAddress:        ls.systemKeyChallengerAddress,
-		systemKeyL1OperatorBalance:        ls.systemKeyL1OperatorBalance,
 		systemKeyL1BridgeExecutorBalance:  ls.systemKeyL1BridgeExecutorBalance,
 		systemKeyL1OutputSubmitterBalance: ls.systemKeyL1OutputSubmitterBalance,
 		systemKeyL1BatchSubmitterBalance:  ls.systemKeyL1BatchSubmitterBalance,
@@ -105,9 +102,6 @@ func (ls LaunchState) Clone() LaunchState {
 		systemKeyCelestiaFundingTxHash:    ls.systemKeyCelestiaFundingTxHash,
 		systemKeyL2OperatorBalance:        ls.systemKeyL2OperatorBalance,
 		systemKeyL2BridgeExecutorBalance:  ls.systemKeyL2BridgeExecutorBalance,
-		systemKeyL2OutputSubmitterBalance: ls.systemKeyL2OutputSubmitterBalance,
-		systemKeyL2BatchSubmitterBalance:  ls.systemKeyL2BatchSubmitterBalance,
-		systemKeyL2ChallengerBalance:      ls.systemKeyL2ChallengerBalance,
 		gasStationExist:                   ls.gasStationExist,
 		downloadedNewBinary:               ls.downloadedNewBinary,
 		downloadedNewCelestiaBinary:       ls.downloadedNewCelestiaBinary,
@@ -131,18 +125,28 @@ func NewLaunchState() *LaunchState {
 	}
 }
 
+func (ls *LaunchState) FillDefaultBalances() {
+	ls.systemKeyL1BridgeExecutorBalance = DefaultL1BridgeExecutorBalance
+	ls.systemKeyL1OutputSubmitterBalance = DefaultL1OutputSubmitterBalance
+	ls.systemKeyL1BatchSubmitterBalance = DefaultL1BatchSubmitterBalance
+	ls.systemKeyL1ChallengerBalance = DefaultL1ChallengerBalance
+	ls.systemKeyL2OperatorBalance = fmt.Sprintf("%s%s", DefaultL2OperatorBalance, ls.gasDenom)
+	ls.systemKeyL2BridgeExecutorBalance = fmt.Sprintf("%s%s", DefaultL2BridgeExecutorBalance, ls.gasDenom)
+}
+
 func (ls *LaunchState) FinalizeGenesisAccounts() {
+	emptyCoins := fmt.Sprintf("0%s", ls.gasDenom)
 	accounts := []types.GenesisAccount{
 		{Address: ls.systemKeyOperatorAddress, Coins: ls.systemKeyL2OperatorBalance},
 		{Address: ls.systemKeyBridgeExecutorAddress, Coins: ls.systemKeyL2BridgeExecutorBalance},
-		{Address: ls.systemKeyOutputSubmitterAddress, Coins: ls.systemKeyL2OutputSubmitterBalance},
-		{Address: ls.systemKeyChallengerAddress, Coins: ls.systemKeyL2ChallengerBalance},
+		{Address: ls.systemKeyOutputSubmitterAddress, Coins: emptyCoins},
+		{Address: ls.systemKeyChallengerAddress, Coins: emptyCoins},
 	}
 
 	if !ls.batchSubmissionIsCelestia {
 		accounts = append(accounts, types.GenesisAccount{
 			Address: ls.systemKeyBatchSubmitterAddress,
-			Coins:   ls.systemKeyL2BatchSubmitterBalance,
+			Coins:   emptyCoins,
 		})
 	}
 

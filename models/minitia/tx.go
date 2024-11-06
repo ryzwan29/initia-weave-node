@@ -13,16 +13,14 @@ import (
 )
 
 type L1SystemKeys struct {
-	Operator        *types.GenesisAccount
 	BridgeExecutor  *types.GenesisAccount
 	OutputSubmitter *types.GenesisAccount
 	BatchSubmitter  *types.GenesisAccount
 	Challenger      *types.GenesisAccount
 }
 
-func NewL1SystemKeys(operator, bridgeExecutor, outputSubmitter, batchSubmitter, challenger *types.GenesisAccount) *L1SystemKeys {
+func NewL1SystemKeys(bridgeExecutor, outputSubmitter, batchSubmitter, challenger *types.GenesisAccount) *L1SystemKeys {
 	return &L1SystemKeys{
-		Operator:        operator,
 		BridgeExecutor:  bridgeExecutor,
 		OutputSubmitter: outputSubmitter,
 		BatchSubmitter:  batchSubmitter,
@@ -51,8 +49,6 @@ func (lsk *L1SystemKeys) FundAccountsWithGasStation(state *LaunchState) (*FundAc
 		rawTxContent = fmt.Sprintf(
 			FundMinitiaAccountsWithoutBatchTxInterface,
 			gasStationKey.Address,
-			lsk.Operator.Address,
-			lsk.Operator.Coins,
 			lsk.BridgeExecutor.Address,
 			lsk.BridgeExecutor.Coins,
 			lsk.OutputSubmitter.Address,
@@ -97,8 +93,6 @@ func (lsk *L1SystemKeys) FundAccountsWithGasStation(state *LaunchState) (*FundAc
 		rawTxContent = fmt.Sprintf(
 			FundMinitiaAccountsDefaultTxInterface,
 			gasStationKey.Address,
-			lsk.Operator.Address,
-			lsk.Operator.Coins,
 			lsk.BridgeExecutor.Address,
 			lsk.BridgeExecutor.Coins,
 			lsk.OutputSubmitter.Address,
@@ -193,17 +187,6 @@ const FundMinitiaAccountsDefaultTxInterface = `
             "amount":"%[9]s"
           }
         ]
-      },
-      {
-        "@type":"/cosmos.bank.v1beta1.MsgSend",
-        "from_address":"%[1]s",
-        "to_address":"%[10]s",
-        "amount":[
-          {
-            "denom":"uinit",
-            "amount":"%[11]s"
-          }
-        ]
       }
     ],
     "memo":"Sent from Weave Gas Station!",
@@ -264,17 +247,6 @@ const FundMinitiaAccountsWithoutBatchTxInterface = `
           {
             "denom":"uinit",
             "amount":"%[7]s"
-          }
-        ]
-      },
-      {
-        "@type":"/cosmos.bank.v1beta1.MsgSend",
-        "from_address":"%[1]s",
-        "to_address":"%[8]s",
-        "amount":[
-          {
-            "denom":"uinit",
-            "amount":"%[9]s"
           }
         ]
       }
