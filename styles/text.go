@@ -8,6 +8,7 @@ import (
 )
 
 var (
+	FooterLine         = BoldText("│", Gray)
 	HiddenMnemonicText = Text("*Mnemonic has been entered and is now hidden for security purposes.*", Ivory)
 )
 

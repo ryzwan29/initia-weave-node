@@ -159,16 +159,16 @@ func (ti TextInput) View() string {
 	var beforeCursor, cursorChar, afterCursor, bottomText string
 
 	if ti.CannotBack {
-		bottomText = styles.Text("Press Enter to submit or Ctrl+C to quit.", styles.Gray)
+		bottomText = fmt.Sprintf("%s %s", styles.FooterLine, styles.Text("Press Enter to submit or Ctrl+C to quit.", styles.Gray))
 	} else {
-		bottomText = styles.Text("Press Enter to submit, Ctrl+Z to go back or Ctrl+C to quit.", styles.Gray)
+		bottomText = fmt.Sprintf("%s %s", styles.FooterLine, styles.Text("Press Enter to submit, Ctrl+Z to go back or Ctrl+C to quit.", styles.Gray))
 	}
 
 	if ti.Tooltip != nil {
 		if ti.ToggleTooltip {
-			bottomText += "\n" + styles.Text("--- Press Ctrl+T to hide information ---", styles.Gray) + "\n" + ti.Tooltip.View()
+			bottomText += "\n" + fmt.Sprintf("%s %s", styles.FooterLine, styles.Text("Press Ctrl+T to hide information", styles.Gray)) + "\n" + ti.Tooltip.View()
 		} else {
-			bottomText += "\n" + styles.Text("--- Press Ctrl+T to see more information ---", styles.Gray) + "\n"
+			bottomText += "\n" + fmt.Sprintf("%s %s", styles.FooterLine, styles.Text("Press Ctrl+T to see more information", styles.Gray)) + "\n"
 		}
 	}
 
@@ -198,7 +198,7 @@ func (ti TextInput) View() string {
 
 func (ti TextInput) ViewErr(err error) string {
 	var beforeCursor, cursorChar, afterCursor string
-	bottomText := styles.Text("Press Enter to submit or Ctrl+C to quit.", styles.Gray)
+	bottomText := fmt.Sprintf("%s %s", styles.FooterLine, styles.Text("Press Enter to submit or Ctrl+C to quit.", styles.Gray))
 	if len(ti.Text) == 0 {
 		return "\n" + styles.Text("> ", styles.Cyan) + styles.Text(ti.Placeholder, styles.Gray) + styles.Cursor(" ") + "\n\n" + styles.RenderError(err) + bottomText
 	} else if ti.Cursor < len(ti.Text) {

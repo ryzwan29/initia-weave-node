@@ -39,17 +39,17 @@ func (s *Selector[T]) Select(msg tea.Msg) (*T, tea.Cmd) {
 func (s *Selector[T]) GetFooter() string {
 	footer := ""
 	if s.CannotBack {
-		footer += styles.Text("\nPress Enter to select, Ctrl+C or q to quit.\n", styles.Gray)
+		footer += fmt.Sprintf("\n%s %s \n", styles.FooterLine, styles.Text("Press Enter to select, Ctrl+C or q to quit.", styles.Gray))
 	} else {
-		footer += styles.Text("\nPress Enter to select, Ctrl+Z to go back, Ctrl+C or q to quit.\n", styles.Gray)
+		footer += fmt.Sprintf("\n%s %s\n", styles.FooterLine, styles.Text("Press Enter to select, Ctrl+Z to go back, Ctrl+C or q to quit.", styles.Gray))
 	}
 
 	if s.Tooltips != nil {
 		if s.ToggleTooltip {
 			tooltip := *s.Tooltips
-			footer += styles.Text("--- Press Ctrl+T to hide information ---", styles.Gray) + "\n" + tooltip[s.Cursor].View()
+			footer += fmt.Sprintf("%s %s", styles.FooterLine, styles.Text("Press Ctrl+T to hide information.", styles.Gray)) + "\n" + tooltip[s.Cursor].View()
 		} else {
-			footer += styles.Text("--- Press Ctrl+T to see more info for each option ---", styles.Gray) + "\n"
+			footer += fmt.Sprintf("%s %s ", styles.FooterLine, styles.Text("Press Ctrl+T to see more info for each option.", styles.Gray)) + "\n"
 		}
 	}
 

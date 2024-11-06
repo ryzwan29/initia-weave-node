@@ -10,9 +10,11 @@ import (
 )
 
 type CheckBox[T any] struct {
-	Options  []T
-	Cursor   int
-	Selected map[int]bool // Tracks selected indices
+	Options       []T
+	Cursor        int
+	Selected      map[int]bool // Tracks selected indices
+	ToggleTooltip bool
+	Tooltips      *[]styles.Tooltip
 }
 
 func NewCheckBox[T any](options []T) *CheckBox[T] {
@@ -65,7 +67,17 @@ func (s *CheckBox[T]) View() string {
 		}
 		b.WriteString(fmt.Sprintf("%s %s %v\n", cursor, selectedMark, option))
 	}
-	b.WriteString(styles.Text("\nUse arrow-keys. Space to select. Return to submit, Ctrl+Z to go back, or q to quit.\n", styles.White))
+	b.WriteString(fmt.Sprintf("\n%s %s\n", styles.FooterLine, styles.Text("Use arrow-keys. Space to select. Return to submit, Ctrl+Z to go back, or q to quit.", styles.Gray)))
+
+	if s.Tooltips != nil {
+		if s.ToggleTooltip {
+			tooltip := *s.Tooltips
+			b.WriteString(fmt.Sprintf("%s %s\n", styles.FooterLine, styles.Text("Press Ctrl+T to hide information", styles.Gray)) + tooltip[s.Cursor].View())
+		} else {
+			b.WriteString(fmt.Sprintf("%s %s\n", styles.FooterLine, styles.Text("Press Ctrl+T to see more info for each option", styles.Gray)))
+		}
+	}
+
 	return b.String()
 }
 

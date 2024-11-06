@@ -31,7 +31,6 @@ func NewTooltip(title, body, warning string, boldTexts, links, highlightTexts []
 		if minWidth > l {
 			minWidth = l
 		}
-
 	}
 
 	return Tooltip{
@@ -59,17 +58,27 @@ func visibleLength(text string) int {
 	return len(ansi.ReplaceAllString(text, ""))
 }
 
-func createFrame(title, text string, maxWidth int) string {
+func (t *Tooltip) createFrame() string {
+	var text string
+	if t.warning != "" {
+		text = wrapText(t.body, MaxTooltipWidth) + "\n" + TextWithoutOverridingStyledText(wrapText(t.warning, MaxTooltipWidth), Yellow)
+	} else {
+		text = wrapText(t.body, MaxTooltipWidth)
+	}
 	lines := strings.Split(text, "\n")
 
-	// Create top border with title aligned to the left
-	titleLength := visibleLength(title)
-	top := "┌ " + BoldText(title, White) + " " + strings.Repeat("─", maxWidth-titleLength) + "┐"
-	bottom := "└" + strings.Repeat("─", maxWidth+2) + "┘"
+	titleLength := visibleLength(t.title)
+	top := "┌ " + BoldText(t.title, White) + " " + strings.Repeat("─", MaxTooltipWidth-titleLength) + "┐"
+	bottom := "└" + strings.Repeat("─", MaxTooltipWidth+2) + "┘"
 
 	var framedContent strings.Builder
 	for _, line := range lines {
-		linePadding := maxWidth - visibleLength(line)
+		for _, boldText := range t.boldTexts {
+			if strings.Contains(line, boldText) {
+				line = strings.ReplaceAll(line, boldText, BoldText(boldText, Ivory))
+			}
+		}
+		linePadding := MaxTooltipWidth - visibleLength(line)
 		framedContent.WriteString(fmt.Sprintf("│ %s%s │\n", line, strings.Repeat(" ", linePadding)))
 	}
 
@@ -78,25 +87,30 @@ func createFrame(title, text string, maxWidth int) string {
 
 func wrapText(text string, maxLength int) string {
 	var result strings.Builder
-	var line strings.Builder
 
-	words := strings.Fields(text)
-	for _, word := range words {
-		// Check if adding the word would exceed maxLength
-		if line.Len()+len(word)+1 > maxLength {
-			// Add the current line to the result and start a new line
-			result.WriteString(line.String() + "\n")
-			line.Reset()
+	paragraphs := strings.Split(text, "\n")
+	for i, paragraph := range paragraphs {
+		var line strings.Builder
+		words := strings.Fields(paragraph)
+
+		for _, word := range words {
+			if line.Len()+len(word)+1 > maxLength {
+				result.WriteString(line.String() + "\n")
+				line.Reset()
+			}
+			if line.Len() > 0 {
+				line.WriteString(" ")
+			}
+			line.WriteString(word)
 		}
-		// Add a space before appending the word if the line is not empty
+
 		if line.Len() > 0 {
-			line.WriteString(" ")
+			result.WriteString(line.String())
 		}
-		line.WriteString(word)
-	}
-	// Add the last line to the result
-	if line.Len() > 0 {
-		result.WriteString(line.String())
+
+		if i < len(paragraphs)-1 {
+			result.WriteString("\n")
+		}
 	}
 
 	return result.String()
@@ -104,7 +118,7 @@ func wrapText(text string, maxLength int) string {
 
 func (t *Tooltip) View() string {
 	if t.warning == "" {
-		return "\n" + createFrame(t.title, wrapText(t.body, MaxTooltipWidth), MaxTooltipWidth) + "\n"
+		return "\n" + t.createFrame() + "\n"
 	}
-	return "\n" + createFrame(t.title, wrapText(t.body, MaxTooltipWidth)+"\n"+TextWithoutOverridingStyledText(wrapText(t.warning, MaxTooltipWidth), Yellow), MaxTooltipWidth) + "\n"
+	return "\n" + t.createFrame() + "\n"
 }
