@@ -438,6 +438,7 @@ func (m *PrefillMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case PrefillMinitiaConfigYes:
 			minitiaConfig := state.MinitiaConfig
 			state.botConfig["l1_node.chain_id"] = minitiaConfig.L1Config.ChainID
+			state.botConfig["l1_node.gas_price"] = minitiaConfig.L1Config.GasPrices
 			GetField(defaultExecutorFields, "l1_node.rpc_address").PrefillValue = minitiaConfig.L1Config.RpcUrl
 			GetField(defaultExecutorFields, "l2_node.chain_id").PrefillValue = minitiaConfig.L2Config.ChainID
 			GetField(defaultExecutorFields, "l2_node.gas_price").PrefillValue = "0.015" + minitiaConfig.L2Config.Denom
