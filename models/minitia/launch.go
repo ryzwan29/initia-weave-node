@@ -1262,13 +1262,14 @@ func NewAccountsFundingPresetSelect(ctx context.Context) *AccountsFundingPresetS
 	}
 	separator := styles.Text("------------------------------------------------------------------------------------", styles.Gray)
 	DefaultPreset = AccountsFundingPresetOption(fmt.Sprintf(
-		"○ Use the default preset\n    %s\n    %s %s on L1, %s will be minted on L2\n    %s %s\n    %s %s%s\n    %s %s\n    %s %s will be minted on L2 \n    %s\n    %s\n    %s %s (%s)\n    %s%s\n",
+		"○ Use the default preset\n    %s\n    %s\n    %s %s on L1, %s will be minted on L2\n    %s %s\n    %s %s%s\n    %s %s\n    %s %s will be minted on L2 \n    %s\n    %s\n    %s %s (%s)\n    %s%s\n",
 		separator,
-		styles.BoldText("• Bridge Executor:", styles.Cyan), styles.BoldText(fmt.Sprintf("%s%s", DefaultL1BridgeExecutorBalance, DefaultL1GasDenom), styles.White), styles.BoldText(fmt.Sprintf("%s%s", DefaultL2BridgeExecutorBalance, state.gasDenom), styles.White),
-		styles.BoldText("• Output Submitter:", styles.Cyan), styles.BoldText(fmt.Sprintf("%s%s", DefaultL1OutputSubmitterBalance, DefaultL1GasDenom), styles.White),
-		styles.BoldText("• Batch Submitter:", styles.Cyan), styles.BoldText(fmt.Sprintf("%s%s", DefaultL1BatchSubmitterBalance, batchSubmitterDenom), styles.White), batchSubmitterText,
+		styles.BoldText("• Executor", styles.Cyan),
+		styles.BoldText("  • Bridge Executor:", styles.Cyan), styles.BoldText(fmt.Sprintf("%s%s", DefaultL1BridgeExecutorBalance, DefaultL1GasDenom), styles.White), styles.BoldText(fmt.Sprintf("%s%s", DefaultL2BridgeExecutorBalance, state.gasDenom), styles.White),
+		styles.BoldText("  • Output Submitter:", styles.Cyan), styles.BoldText(fmt.Sprintf("%s%s", DefaultL1OutputSubmitterBalance, DefaultL1GasDenom), styles.White),
+		styles.BoldText("  • Batch Submitter:", styles.Cyan), styles.BoldText(fmt.Sprintf("%s%s", DefaultL1BatchSubmitterBalance, batchSubmitterDenom), styles.White), batchSubmitterText,
 		styles.BoldText("• Challenger:", styles.Cyan), styles.BoldText(fmt.Sprintf("%s%s", DefaultL1ChallengerBalance, DefaultL1GasDenom), styles.White),
-		styles.BoldText("• Operator:", styles.Cyan), styles.BoldText(fmt.Sprintf("%s%s", DefaultL2OperatorBalance, state.gasDenom), styles.White),
+		styles.BoldText("• L2 Operator:", styles.Cyan), styles.BoldText(fmt.Sprintf("%s%s", DefaultL2OperatorBalance, state.gasDenom), styles.White),
 		separator,
 		styles.Text("Total amount required from the Gas Station account:", styles.Ivory),
 		styles.Text(fmt.Sprintf("• L1 (%s):", state.l1ChainId), styles.Cyan), styles.BoldText(fmt.Sprintf("%s%s", initiaNeededBalance, DefaultL1GasDenom), styles.White),
