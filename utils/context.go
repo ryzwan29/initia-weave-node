@@ -205,8 +205,20 @@ func (b *BaseModel) CanGoPreviousPage() bool {
 	return !b.CannotBack
 }
 
+// func (b *BaseModel) RenderTooltip() string {
+// 	if b.Tooltip != nil && GetTooltip(b.GetContext()) {
+// 		return b.Tooltip.View()
+// 	}
+// 	return ""
+// }
+
 func HandleCommonCommands[S CloneableState[S]](model BaseModelInterface, msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 	ctx := model.GetContext()
+	if newCtx, handled := ToggleTooltip(ctx, msg); handled {
+		model.SetContext(newCtx)
+		return model, nil, true
+	}
+
 	if model.CanGoPreviousPage() {
 		if newCtx, returnedModel, cmd, handled := Undo[S](ctx, msg); handled {
 			if baseModel, ok := returnedModel.(BaseModelInterface); ok {
@@ -215,11 +227,6 @@ func HandleCommonCommands[S CloneableState[S]](model BaseModelInterface, msg tea
 				return baseModel, cmd, true
 			}
 		}
-	}
-
-	if newCtx, handled := ToggleTooltip(ctx, msg); handled {
-		model.SetContext(newCtx)
-		return model, nil, true
 	}
 
 	return nil, nil, false

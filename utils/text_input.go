@@ -10,24 +10,28 @@ import (
 )
 
 type TextInput struct {
-	Text         string
-	Cursor       int // Cursor position within the text
-	Placeholder  string
-	DefaultValue string
-	ValidationFn func(string) error
-	IsEntered    bool
-	CannotBack   bool
+	Text          string
+	Cursor        int // Cursor position within the text
+	Placeholder   string
+	DefaultValue  string
+	ValidationFn  func(string) error
+	IsEntered     bool
+	CannotBack    bool
+	ToggleTooltip bool
+	Tooltip       *styles.Tooltip
 }
 
 func NewTextInput(cannotBack bool) TextInput {
 	return TextInput{
-		Text:         "",
-		Cursor:       0,
-		Placeholder:  "",
-		DefaultValue: "",
-		ValidationFn: NoOps,
-		IsEntered:    false,
-		CannotBack:   cannotBack,
+		Text:          "",
+		Cursor:        0,
+		Placeholder:   "",
+		DefaultValue:  "",
+		ValidationFn:  NoOps,
+		IsEntered:     false,
+		CannotBack:    cannotBack,
+		ToggleTooltip: false,
+		Tooltip:       nil,
 	}
 }
 
@@ -46,6 +50,10 @@ func (ti *TextInput) WithDefaultValue(value string) {
 func (ti *TextInput) WithPrefillValue(value string) {
 	ti.Text = value
 	ti.Cursor = len(ti.Text)
+}
+
+func (ti *TextInput) WithTooltip(t *styles.Tooltip) {
+	ti.Tooltip = t
 }
 
 func (ti TextInput) Update(msg tea.Msg) (TextInput, tea.Cmd, bool) {
@@ -154,6 +162,14 @@ func (ti TextInput) View() string {
 		bottomText = styles.Text("Press Enter to submit or Ctrl+C to quit.", styles.Gray)
 	} else {
 		bottomText = styles.Text("Press Enter to submit, Ctrl+Z to go back or Ctrl+C to quit.", styles.Gray)
+	}
+
+	if ti.Tooltip != nil {
+		if ti.ToggleTooltip {
+			bottomText += "\n" + styles.Text("-- ℹ️  Press Ctrl+T to hide information --", styles.Gray) + "\n" + ti.Tooltip.View()
+		} else {
+			bottomText += "\n" + styles.Text("-- ℹ️  Press Ctrl+T to see more information --", styles.Gray)
+		}
 	}
 
 	feedback := ""

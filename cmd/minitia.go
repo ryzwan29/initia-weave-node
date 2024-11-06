@@ -100,7 +100,7 @@ func minitiaLaunchCommand() *cobra.Command {
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if utils.IsFirstTimeSetup() {
-				finalModel, err := tea.NewProgram(models.NewExistingAppChecker(minitia.NewExistingMinitiaChecker(utils.NewAppContext(*minitia.NewLaunchState())))).Run()
+				finalModel, err := tea.NewProgram(models.NewExistingAppChecker(utils.NewAppContext(models.NewExistingCheckerState()), minitia.NewExistingMinitiaChecker(utils.NewAppContext(*minitia.NewLaunchState())))).Run()
 				if err != nil {
 					return err
 				}

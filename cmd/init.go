@@ -15,8 +15,10 @@ func InitCommand() *cobra.Command {
 		Short: "Initialize Weave CLI, funding gas station and setting up config.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if utils.IsFirstTimeSetup() {
+				ctx := utils.NewAppContext(models.NewExistingCheckerState())
+
 				// Capture both the final model and the error from Run()
-				finalModel, err := tea.NewProgram(models.NewExistingAppChecker(weaveinit.NewWeaveInit())).Run()
+				finalModel, err := tea.NewProgram(models.NewExistingAppChecker(ctx, weaveinit.NewWeaveInit())).Run()
 				if err != nil {
 					return err
 				}
