@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	MAX_TOOLTIP_WIDHT = 108
+	MaxTooltipWidth = 108
 )
 
 type Tooltip struct {
@@ -24,7 +24,7 @@ type Tooltip struct {
 
 func NewTooltip(title, body, warning string, boldTexts, links, highlightTexts []string) Tooltip {
 
-	minWidth := MAX_TOOLTIP_WIDHT
+	minWidth := MaxTooltipWidth
 
 	for _, word := range strings.Split(body, " ") {
 		l := len(word)
@@ -95,5 +95,8 @@ func wrapText(text string, maxLength int) string {
 }
 
 func (t *Tooltip) View() string {
-	return "\n" + createFrame(t.title, wrapText(t.body, MAX_TOOLTIP_WIDHT)+"\n"+TextWithoutOverridingStyledText(wrapText(t.warning, MAX_TOOLTIP_WIDHT), Yellow), MAX_TOOLTIP_WIDHT) + "\n"
+	if t.warning == "" {
+		return "\n" + createFrame(t.title, wrapText(t.body, MaxTooltipWidth), MaxTooltipWidth) + "\n"
+	}
+	return "\n" + createFrame(t.title, wrapText(t.body, MaxTooltipWidth)+"\n"+TextWithoutOverridingStyledText(wrapText(t.warning, MaxTooltipWidth), Yellow), MaxTooltipWidth) + "\n"
 }

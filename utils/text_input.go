@@ -166,9 +166,9 @@ func (ti TextInput) View() string {
 
 	if ti.Tooltip != nil {
 		if ti.ToggleTooltip {
-			bottomText += "\n" + styles.Text("-- ℹ️  Press Ctrl+T to hide information --", styles.Gray) + "\n" + ti.Tooltip.View()
+			bottomText += "\n" + styles.Text("--- Press Ctrl+T to hide information ---", styles.Gray) + "\n" + ti.Tooltip.View()
 		} else {
-			bottomText += "\n" + styles.Text("-- ℹ️  Press Ctrl+T to see more information --", styles.Gray)
+			bottomText += "\n" + styles.Text("--- Press Ctrl+T to see more information ---", styles.Gray) + "\n"
 		}
 	}
 
