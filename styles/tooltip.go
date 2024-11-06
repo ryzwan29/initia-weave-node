@@ -45,6 +45,14 @@ func NewTooltip(title, body, warning string, boldTexts, links, highlightTexts []
 	}
 }
 
+func NewTooltipSlice(tooltip Tooltip, size int) []Tooltip {
+	tooltips := make([]Tooltip, size)
+	for i := range tooltips {
+		tooltips[i] = tooltip
+	}
+	return tooltips
+}
+
 func visibleLength(text string) int {
 	// Use regex to strip out ANSI escape codes (e.g., for colors)
 	ansi := regexp.MustCompile(`\x1b\[[0-9;]*m`)

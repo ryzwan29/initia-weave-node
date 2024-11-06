@@ -49,6 +49,12 @@ func NewRunL1NodeNetworkSelect(ctx context.Context) *RunL1NodeNetworkSelect {
 	//mainnetRegistry := registry.MustGetChainRegistry(registry.InitiaL1Mainnet)
 	Testnet = L1NodeNetworkOption(fmt.Sprintf("Testnet (%s)", testnetRegistry.GetChainId()))
 	//Mainnet = L1NodeNetworkOption(fmt.Sprintf("Mainnet (%s)", mainnetRegistry.GetChainId()))
+	tooltips := styles.NewTooltipSlice(styles.NewTooltip(
+		"Network to participate",
+		"Available options are Mainnet, Testnet, and local which means no network participation, no state syncing needed, but fully customizable (often used for development and testing purposes)",
+		"", []string{}, []string{}, []string{},
+	), 3)
+
 	return &RunL1NodeNetworkSelect{
 		Selector: utils.Selector[L1NodeNetworkOption]{
 			Options: []L1NodeNetworkOption{
@@ -57,6 +63,7 @@ func NewRunL1NodeNetworkSelect(ctx context.Context) *RunL1NodeNetworkSelect {
 				Local,
 			},
 			CannotBack: true,
+			Tooltips:   &tooltips,
 		},
 		BaseModel: utils.BaseModel{Ctx: ctx, CannotBack: true},
 		question:  "Which network will your node participate in?",
@@ -112,6 +119,7 @@ func (m *RunL1NodeNetworkSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *RunL1NodeNetworkSelect) View() string {
+	m.Selector.ToggleTooltip = utils.GetTooltip(m.Ctx)
 	return styles.RenderPrompt("Which network will your node participate in?", []string{"network"}, styles.Question) + m.Selector.View()
 }
 
@@ -124,9 +132,15 @@ type RunL1NodeVersionSelect struct {
 
 func NewRunL1NodeVersionSelect(ctx context.Context) *RunL1NodeVersionSelect {
 	versions := utils.ListBinaryReleases("https://api.github.com/repos/initia-labs/initia/releases")
+	tooltips := styles.NewTooltipSlice(styles.NewTooltip(
+		"initiad version",
+		"Initiad version refers to the version of the Initia Daemon, which is software used to run an Initia Layer 1 node.",
+		"", []string{}, []string{}, []string{},
+	), len(versions))
 	return &RunL1NodeVersionSelect{
 		Selector: utils.Selector[string]{
-			Options: utils.SortVersions(versions),
+			Options:  utils.SortVersions(versions),
+			Tooltips: &tooltips,
 		},
 		BaseModel: utils.BaseModel{Ctx: ctx},
 		versions:  versions,
@@ -164,6 +178,7 @@ func (m *RunL1NodeVersionSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *RunL1NodeVersionSelect) View() string {
 	state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
+	m.Selector.ToggleTooltip = utils.GetTooltip(m.Ctx)
 	return state.weave.Render() + styles.RenderPrompt("Which initiad version would you like to use?", []string{"initiad version"}, styles.Question) + m.Selector.View()
 }
 
@@ -174,12 +189,17 @@ type RunL1NodeChainIdInput struct {
 }
 
 func NewRunL1NodeChainIdInput(ctx context.Context) *RunL1NodeChainIdInput {
+	tooltip := styles.NewTooltip(
+		"Chain ID",
+		"Chain ID is the identifier of your blockchain network. For local development and testing purposes, you can choose whatever you like.",
+		"", []string{}, []string{}, []string{})
 	model := &RunL1NodeChainIdInput{
 		TextInput: utils.NewTextInput(false),
 		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  "Please specify the chain id",
 	}
 	model.WithPlaceholder("Enter in alphanumeric format")
+	model.WithTooltip(&tooltip)
 	return model
 }
 
@@ -222,6 +242,7 @@ func (m *RunL1NodeChainIdInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *RunL1NodeChainIdInput) View() string {
 	state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
+	m.TextInput.ToggleTooltip = utils.GetTooltip(m.Ctx)
 	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"chain id"}, styles.Question) + m.TextInput.View()
 }
 
@@ -315,6 +336,10 @@ type RunL1NodeMonikerInput struct {
 }
 
 func NewRunL1NodeMonikerInput(ctx context.Context) *RunL1NodeMonikerInput {
+	tooltip := styles.NewTooltip(
+		"Moniker",
+		"The moniker is a unique name assigned to a node in a blockchain network, used primarily for identification and distinction among nodes.",
+		"", []string{}, []string{}, []string{})
 	model := &RunL1NodeMonikerInput{
 		TextInput: utils.NewTextInput(false),
 		BaseModel: utils.BaseModel{Ctx: ctx},
@@ -322,6 +347,7 @@ func NewRunL1NodeMonikerInput(ctx context.Context) *RunL1NodeMonikerInput {
 	}
 	model.WithPlaceholder("Enter moniker")
 	model.WithValidatorFn(utils.ValidateEmptyString)
+	model.WithTooltip(&tooltip)
 	return model
 }
 
@@ -358,6 +384,7 @@ func (m *RunL1NodeMonikerInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *RunL1NodeMonikerInput) View() string {
 	state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
+	m.TextInput.ToggleTooltip = utils.GetTooltip(m.Ctx)
 	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"moniker"}, styles.Question) + m.TextInput.View()
 }
 

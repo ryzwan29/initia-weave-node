@@ -47,9 +47,9 @@ func (s *Selector[T]) GetFooter() string {
 	if s.Tooltips != nil {
 		if s.ToggleTooltip {
 			tooltip := *s.Tooltips
-			footer += styles.Text("-- Press Ctrl+T to hide information --", styles.Gray) + "\n" + tooltip[s.Cursor].View()
+			footer += styles.Text("--- Press Ctrl+T to hide information ---", styles.Gray) + "\n" + tooltip[s.Cursor].View()
 		} else {
-			footer += styles.Text("-- Press Ctrl+T to see more info for each option --", styles.Gray) + "\n"
+			footer += styles.Text("--- Press Ctrl+T to see more info for each option ---", styles.Gray) + "\n"
 		}
 	}
 
