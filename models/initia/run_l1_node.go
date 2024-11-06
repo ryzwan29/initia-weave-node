@@ -272,12 +272,18 @@ const (
 )
 
 func NewExistingAppReplaceSelect(ctx context.Context) *ExistingAppReplaceSelect {
+	tooltips := styles.NewTooltipSlice(styles.NewTooltip(
+		"app.toml / config.toml",
+		"app.toml contains application-specific configurations for the blockchain node, such as transaction limits, gas price, state pruning strategy.\n\nconfig.toml includes core network and protocol settings for the node, such as peers to connect to, timeouts, consensus configurations, etc.",
+		"", []string{"app.toml", "config.toml"}, []string{}, []string{},
+	), 2)
 	return &ExistingAppReplaceSelect{
 		Selector: utils.Selector[ExistingAppReplaceOption]{
 			Options: []ExistingAppReplaceOption{
 				UseCurrentApp,
 				ReplaceApp,
 			},
+			Tooltips: &tooltips,
 		},
 		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  "Existing config/app.toml and config/config.toml detected. Would you like to use the current files or replace them",
@@ -326,6 +332,7 @@ func (m *ExistingAppReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *ExistingAppReplaceSelect) View() string {
 	state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
+	m.Selector.ToggleTooltip = utils.GetTooltip(m.Ctx)
 	return state.weave.Render() + styles.RenderPrompt("Existing config/app.toml and config/config.toml detected. Would you like to use the current files or replace them", []string{"config/app.toml", "config/config.toml"}, styles.Question) + m.Selector.View()
 }
 
@@ -395,6 +402,11 @@ type MinGasPriceInput struct {
 }
 
 func NewMinGasPriceInput(ctx context.Context) *MinGasPriceInput {
+	tooltip := styles.NewTooltip(
+		"Minimum Gas Price",
+		"Set the minimum gas price, that the node will accept for processing transactions. This helps prevent spam by ensuring only transactions with a minimum fee are processed.",
+		"", []string{}, []string{}, []string{},
+	)
 	model := &MinGasPriceInput{
 		TextInput: utils.NewTextInput(false),
 		BaseModel: utils.BaseModel{Ctx: ctx},
@@ -402,6 +414,7 @@ func NewMinGasPriceInput(ctx context.Context) *MinGasPriceInput {
 	}
 	model.WithPlaceholder("Enter a number with its denom")
 	model.WithValidatorFn(utils.ValidateDecCoin)
+	model.WithTooltip(&tooltip)
 	return model
 }
 
@@ -432,6 +445,7 @@ func (m *MinGasPriceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *MinGasPriceInput) View() string {
 	state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
+	m.TextInput.ToggleTooltip = utils.GetTooltip(m.Ctx)
 	preText := "\n"
 	if !state.existingApp {
 		preText += styles.RenderPrompt("There is no config/app.toml or config/config.toml available. You will need to enter the required information to proceed.\n", []string{"config/app.toml", "config/config.toml"}, styles.Information)
@@ -453,11 +467,27 @@ const (
 )
 
 func NewEnableFeaturesCheckbox(ctx context.Context) *EnableFeaturesCheckbox {
-	return &EnableFeaturesCheckbox{
+	tooltips := []styles.Tooltip{
+		styles.NewTooltip(
+			"LCD API",
+			"Enabling this option allows REST API calls for querying data, submitting transactions, and more to your node. \n\nEnabling this is recommended.",
+			"", []string{}, []string{}, []string{},
+		),
+		styles.NewTooltip(
+			"gRPC",
+			"Enabling this option allows gRPC calls to your node.",
+			"", []string{}, []string{}, []string{},
+		),
+	}
+
+	model := &EnableFeaturesCheckbox{
 		CheckBox:  *utils.NewCheckBox([]EnableFeaturesOption{LCD, gRPC}),
 		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  "Would you like to enable the following options?",
 	}
+	model.WithTooltip(&tooltips)
+
+	return model
 }
 
 func (m *EnableFeaturesCheckbox) GetQuestion() string {
@@ -502,6 +532,7 @@ func (m *EnableFeaturesCheckbox) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *EnableFeaturesCheckbox) View() string {
 	state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
+	m.ToggleTooltip = utils.GetTooltip(m.Ctx)
 	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{}, styles.Question) + "\n" + m.CheckBox.View()
 }
 

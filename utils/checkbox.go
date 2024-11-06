@@ -29,6 +29,10 @@ func NewCheckBox[T any](options []T) *CheckBox[T] {
 	}
 }
 
+func (s *CheckBox[T]) WithTooltip(tooltips *[]styles.Tooltip) {
+	s.Tooltips = tooltips
+}
+
 func (s *CheckBox[T]) Select(msg tea.Msg) (*CheckBox[T], tea.Cmd, bool) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
