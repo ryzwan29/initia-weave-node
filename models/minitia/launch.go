@@ -259,6 +259,13 @@ func ParseVMType(vmType string) (VMTypeSelectOption, error) {
 }
 
 func NewVMTypeSelect(ctx context.Context) *VMTypeSelect {
+	tooltips := styles.NewTooltipSlice(
+		styles.NewTooltip(
+			"Smart Contract VM",
+			"We currently supports three VMs - Move, Wasm, and EVM. By selecting a VM, Weave will automatically use the latest version available for that VM, ensuring compatibility and access to recent updates.",
+			"", []string{}, []string{}, []string{},
+		), 3,
+	)
 	return &VMTypeSelect{
 		Selector: utils.Selector[VMTypeSelectOption]{
 			Options: []VMTypeSelectOption{
@@ -266,6 +273,7 @@ func NewVMTypeSelect(ctx context.Context) *VMTypeSelect {
 				Wasm,
 				EVM,
 			},
+			Tooltips: &tooltips,
 		},
 		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  "Which VM type would you like to select?",
@@ -302,6 +310,7 @@ func (m *VMTypeSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *VMTypeSelect) View() string {
 	state := utils.GetCurrentState[LaunchState](m.Ctx)
+	m.Selector.ToggleTooltip = utils.GetTooltip(m.Ctx)
 	return state.weave.Render() + styles.RenderPrompt(
 		m.GetQuestion(),
 		[]string{"VM type"},
@@ -428,6 +437,11 @@ type ChainIdInput struct {
 }
 
 func NewChainIdInput(ctx context.Context) *ChainIdInput {
+	tooltip := styles.NewTooltip(
+		"Chain ID",
+		"Chain ID is the identifier of your Minitia. It should be globally unique among all networks if this will be your production-ready public network, otherwise you can choose any name. However, creating Minitia with the same name from the same bridge executor account will result in an error. More on bridge executor later.",
+		"", []string{}, []string{}, []string{},
+	)
 	model := &ChainIdInput{
 		TextInput: utils.NewTextInput(true),
 		BaseModel: utils.BaseModel{Ctx: ctx, CannotBack: true},
@@ -435,6 +449,7 @@ func NewChainIdInput(ctx context.Context) *ChainIdInput {
 	}
 	model.WithPlaceholder("Enter in alphanumeric format")
 	model.WithValidatorFn(utils.ValidateNonEmptyAndLengthString("Chain id", MaxChainIDLength))
+	model.WithTooltip(&tooltip)
 	return model
 }
 
@@ -466,6 +481,7 @@ func (m *ChainIdInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *ChainIdInput) View() string {
 	state := utils.GetCurrentState[LaunchState](m.Ctx)
+	m.TextInput.ToggleTooltip = utils.GetTooltip(m.Ctx)
 	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"L2 chain id"}, styles.Question) + m.TextInput.View()
 }
 
@@ -476,6 +492,11 @@ type GasDenomInput struct {
 }
 
 func NewGasDenomInput(ctx context.Context) *GasDenomInput {
+	tooltip := styles.NewTooltip(
+		"Gas Token denom",
+		"Enter the token denomination for gas fees on your Minitia (e.g., umin). This defines the token used to pay transaction fees on your Layer 2 network.",
+		"", []string{}, []string{}, []string{},
+	)
 	model := &GasDenomInput{
 		TextInput: utils.NewTextInput(false),
 		BaseModel: utils.BaseModel{Ctx: ctx},
@@ -484,6 +505,7 @@ func NewGasDenomInput(ctx context.Context) *GasDenomInput {
 	model.WithPlaceholder(`Press tab to use "umin"`)
 	model.WithDefaultValue("umin")
 	model.WithValidatorFn(utils.ValidateDenom)
+	model.WithTooltip(&tooltip)
 	return model
 }
 
@@ -515,6 +537,7 @@ func (m *GasDenomInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *GasDenomInput) View() string {
 	state := utils.GetCurrentState[LaunchState](m.Ctx)
+	m.TextInput.ToggleTooltip = utils.GetTooltip(m.Ctx)
 	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"L2 Gas Token Denom"}, styles.Question) + m.TextInput.View()
 }
 
@@ -525,6 +548,11 @@ type MonikerInput struct {
 }
 
 func NewMonikerInput(ctx context.Context) *MonikerInput {
+	tooltip := styles.NewTooltip(
+		"Moniker",
+		"The moniker is a unique name assigned to a node in a blockchain network, used primarily for identification and distinction among nodes.",
+		"", []string{}, []string{}, []string{},
+	)
 	model := &MonikerInput{
 		TextInput: utils.NewTextInput(false),
 		BaseModel: utils.BaseModel{Ctx: ctx},
@@ -533,6 +561,7 @@ func NewMonikerInput(ctx context.Context) *MonikerInput {
 	model.WithPlaceholder(`Press tab to use "operator"`)
 	model.WithDefaultValue("operator")
 	model.WithValidatorFn(utils.ValidateNonEmptyAndLengthString("Moniker", MaxMonikerLength))
+	model.WithTooltip(&tooltip)
 	return model
 }
 
@@ -564,6 +593,7 @@ func (m *MonikerInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *MonikerInput) View() string {
 	state := utils.GetCurrentState[LaunchState](m.Ctx)
+	m.TextInput.ToggleTooltip = utils.GetTooltip(m.Ctx)
 	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"moniker"}, styles.Question) + m.TextInput.View()
 }
 
@@ -574,6 +604,11 @@ type OpBridgeSubmissionIntervalInput struct {
 }
 
 func NewOpBridgeSubmissionIntervalInput(ctx context.Context) *OpBridgeSubmissionIntervalInput {
+	tooltip := styles.NewTooltip(
+		"Submission Interval",
+		"The maximum waiting time before submitting the L2 output root to L1 again. However, if there is a transaction in a new block, it automatically triggers the submission of the output root.",
+		"", []string{}, []string{}, []string{},
+	)
 	model := &OpBridgeSubmissionIntervalInput{
 		TextInput: utils.NewTextInput(false),
 		BaseModel: utils.BaseModel{Ctx: ctx},
@@ -582,6 +617,7 @@ func NewOpBridgeSubmissionIntervalInput(ctx context.Context) *OpBridgeSubmission
 	model.WithPlaceholder("Press tab to use “1m”")
 	model.WithDefaultValue("1m")
 	model.WithValidatorFn(utils.IsValidTimestamp)
+	model.WithTooltip(&tooltip)
 	return model
 }
 
@@ -613,6 +649,7 @@ func (m *OpBridgeSubmissionIntervalInput) Update(msg tea.Msg) (tea.Model, tea.Cm
 
 func (m *OpBridgeSubmissionIntervalInput) View() string {
 	state := utils.GetCurrentState[LaunchState](m.Ctx)
+	m.TextInput.ToggleTooltip = utils.GetTooltip(m.Ctx)
 	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"Submission Interval"}, styles.Question) + m.TextInput.View()
 }
 
@@ -623,6 +660,11 @@ type OpBridgeOutputFinalizationPeriodInput struct {
 }
 
 func NewOpBridgeOutputFinalizationPeriodInput(ctx context.Context) *OpBridgeOutputFinalizationPeriodInput {
+	tooltip := styles.NewTooltip(
+		"Output Finalization Period",
+		"Also known as Challenge Period, is the time frame during which an output must remain unchallenged before it is deemed finalized and immutable on L1.",
+		"", []string{}, []string{}, []string{},
+	)
 	model := &OpBridgeOutputFinalizationPeriodInput{
 		TextInput: utils.NewTextInput(false),
 		BaseModel: utils.BaseModel{Ctx: ctx},
@@ -631,6 +673,7 @@ func NewOpBridgeOutputFinalizationPeriodInput(ctx context.Context) *OpBridgeOutp
 	model.WithPlaceholder("Press tab to use “168h” (7 days)")
 	model.WithDefaultValue("168h")
 	model.WithValidatorFn(utils.IsValidTimestamp)
+	model.WithTooltip(&tooltip)
 	return model
 }
 
@@ -662,6 +705,7 @@ func (m *OpBridgeOutputFinalizationPeriodInput) Update(msg tea.Msg) (tea.Model, 
 
 func (m *OpBridgeOutputFinalizationPeriodInput) View() string {
 	state := utils.GetCurrentState[LaunchState](m.Ctx)
+	m.TextInput.ToggleTooltip = utils.GetTooltip(m.Ctx)
 	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"Output Finalization Period"}, styles.Question) + m.TextInput.View()
 }
 
@@ -679,12 +723,20 @@ const (
 )
 
 func NewOpBridgeBatchSubmissionTargetSelect(ctx context.Context) *OpBridgeBatchSubmissionTargetSelect {
+	tooltips := styles.NewTooltipSlice(
+		styles.NewTooltip(
+			"Batch Submission Target",
+			"The target chain for submitting L2 blocks and transaction data to ensure Data Availability. Currently, submissions can be made to Initia L1 or Celestia.\n\nFor production use, we recommend Celestia due to its cost-effective block space and faster query capabilities.",
+			"", []string{}, []string{}, []string{},
+		), 2,
+	)
 	return &OpBridgeBatchSubmissionTargetSelect{
 		Selector: utils.Selector[OpBridgeBatchSubmissionTargetOption]{
 			Options: []OpBridgeBatchSubmissionTargetOption{
 				Celestia,
 				Initia,
 			},
+			Tooltips: &tooltips,
 		},
 		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  "Which OP bridge config: Batch Submission Target would you like to select?",
@@ -722,6 +774,7 @@ func (m *OpBridgeBatchSubmissionTargetSelect) Update(msg tea.Msg) (tea.Model, te
 
 func (m *OpBridgeBatchSubmissionTargetSelect) View() string {
 	state := utils.GetCurrentState[LaunchState](m.Ctx)
+	m.Selector.ToggleTooltip = utils.GetTooltip(m.Ctx)
 	return state.weave.Render() + styles.RenderPrompt(
 		m.GetQuestion(),
 		[]string{"Batch Submission Target"},
@@ -743,12 +796,20 @@ const (
 )
 
 func NewOracleEnableSelect(ctx context.Context) *OracleEnableSelect {
+	tooltips := styles.NewTooltipSlice(
+		styles.NewTooltip(
+			"Oracle",
+			"The Oracle fetches and submits real-world price data to the blockchain, with validators running both an on-chain component and a sidecar process to gather and relay prices.",
+			"", []string{}, []string{}, []string{},
+		), 2,
+	)
 	return &OracleEnableSelect{
 		Selector: utils.Selector[OracleEnableOption]{
 			Options: []OracleEnableOption{
 				Enable,
 				Disable,
 			},
+			Tooltips: &tooltips,
 		},
 		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  "Would you like to enable the oracle?",
@@ -787,6 +848,7 @@ func (m *OracleEnableSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *OracleEnableSelect) View() string {
 	state := utils.GetCurrentState[LaunchState](m.Ctx)
+	m.Selector.ToggleTooltip = utils.GetTooltip(m.Ctx)
 	return state.weave.Render() + styles.RenderPrompt(
 		m.GetQuestion(),
 		[]string{"oracle"},
@@ -874,6 +936,11 @@ type SystemKeyOperatorMnemonicInput struct {
 }
 
 func NewSystemKeyOperatorMnemonicInput(ctx context.Context) *SystemKeyOperatorMnemonicInput {
+	tooltip := styles.NewTooltip(
+		"L2 Operator",
+		"Also known as Sequencer, is responsible for creating blocks, ordering and including transactions within each block, and maintaining the operation of the L2 network.",
+		"", []string{}, []string{}, []string{},
+	)
 	model := &SystemKeyOperatorMnemonicInput{
 		TextInput: utils.NewTextInput(false),
 		BaseModel: utils.BaseModel{Ctx: ctx},
@@ -881,6 +948,7 @@ func NewSystemKeyOperatorMnemonicInput(ctx context.Context) *SystemKeyOperatorMn
 	}
 	model.WithPlaceholder("Enter the mnemonic")
 	model.WithValidatorFn(utils.ValidateMnemonic)
+	model.WithTooltip(&tooltip)
 	return model
 }
 
@@ -913,6 +981,7 @@ func (m *SystemKeyOperatorMnemonicInput) Update(msg tea.Msg) (tea.Model, tea.Cmd
 
 func (m *SystemKeyOperatorMnemonicInput) View() string {
 	state := utils.GetCurrentState[LaunchState](m.Ctx)
+	m.TextInput.ToggleTooltip = utils.GetTooltip(m.Ctx)
 	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"Operator"}, styles.Question) + m.TextInput.View()
 }
 
@@ -923,6 +992,11 @@ type SystemKeyBridgeExecutorMnemonicInput struct {
 }
 
 func NewSystemKeyBridgeExecutorMnemonicInput(ctx context.Context) *SystemKeyBridgeExecutorMnemonicInput {
+	tooltip := styles.NewTooltip(
+		"Bridge Executor",
+		"Monitors the L1 and L2 transactions, facilitates token bridging and withdrawals between the Minitia and Initia L1 chain, and also relays oracle price feed to L2.",
+		"", []string{}, []string{}, []string{},
+	)
 	model := &SystemKeyBridgeExecutorMnemonicInput{
 		TextInput: utils.NewTextInput(false),
 		BaseModel: utils.BaseModel{Ctx: ctx},
@@ -930,6 +1004,7 @@ func NewSystemKeyBridgeExecutorMnemonicInput(ctx context.Context) *SystemKeyBrid
 	}
 	model.WithPlaceholder("Enter the mnemonic")
 	model.WithValidatorFn(utils.ValidateMnemonic)
+	model.WithTooltip(&tooltip)
 	return model
 }
 
@@ -961,6 +1036,7 @@ func (m *SystemKeyBridgeExecutorMnemonicInput) Update(msg tea.Msg) (tea.Model, t
 
 func (m *SystemKeyBridgeExecutorMnemonicInput) View() string {
 	state := utils.GetCurrentState[LaunchState](m.Ctx)
+	m.TextInput.ToggleTooltip = utils.GetTooltip(m.Ctx)
 	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"Bridge Executor"}, styles.Question) + m.TextInput.View()
 }
 
@@ -971,6 +1047,11 @@ type SystemKeyOutputSubmitterMnemonicInput struct {
 }
 
 func NewSystemKeyOutputSubmitterMnemonicInput(ctx context.Context) *SystemKeyOutputSubmitterMnemonicInput {
+	tooltip := styles.NewTooltip(
+		"Output Submitter",
+		"Submits L2 output roots to L1 for verification and potential challenges. If the submitted output remains unchallenged beyond the output finalization period, it is considered finalized and immutable.",
+		"", []string{}, []string{}, []string{},
+	)
 	model := &SystemKeyOutputSubmitterMnemonicInput{
 		TextInput: utils.NewTextInput(false),
 		BaseModel: utils.BaseModel{Ctx: ctx},
@@ -978,6 +1059,7 @@ func NewSystemKeyOutputSubmitterMnemonicInput(ctx context.Context) *SystemKeyOut
 	}
 	model.WithPlaceholder("Enter the mnemonic")
 	model.WithValidatorFn(utils.ValidateMnemonic)
+	model.WithTooltip(&tooltip)
 	return model
 }
 
@@ -1009,6 +1091,7 @@ func (m *SystemKeyOutputSubmitterMnemonicInput) Update(msg tea.Msg) (tea.Model, 
 
 func (m *SystemKeyOutputSubmitterMnemonicInput) View() string {
 	state := utils.GetCurrentState[LaunchState](m.Ctx)
+	m.TextInput.ToggleTooltip = utils.GetTooltip(m.Ctx)
 	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"Output Submitter"}, styles.Question) + m.TextInput.View()
 }
 
@@ -1019,6 +1102,11 @@ type SystemKeyBatchSubmitterMnemonicInput struct {
 }
 
 func NewSystemKeyBatchSubmitterMnemonicInput(ctx context.Context) *SystemKeyBatchSubmitterMnemonicInput {
+	tooltip := styles.NewTooltip(
+		"Batch Submitter",
+		"Submits block and transactions data in batches into a chain to ensure Data Availability. Currently, submissions can be made to Initia L1 or Celestia.",
+		"", []string{}, []string{}, []string{},
+	)
 	model := &SystemKeyBatchSubmitterMnemonicInput{
 		TextInput: utils.NewTextInput(false),
 		BaseModel: utils.BaseModel{Ctx: ctx},
@@ -1026,6 +1114,7 @@ func NewSystemKeyBatchSubmitterMnemonicInput(ctx context.Context) *SystemKeyBatc
 	}
 	model.WithPlaceholder("Enter the mnemonic")
 	model.WithValidatorFn(utils.ValidateMnemonic)
+	model.WithTooltip(&tooltip)
 	return model
 }
 
@@ -1057,6 +1146,7 @@ func (m *SystemKeyBatchSubmitterMnemonicInput) Update(msg tea.Msg) (tea.Model, t
 
 func (m *SystemKeyBatchSubmitterMnemonicInput) View() string {
 	state := utils.GetCurrentState[LaunchState](m.Ctx)
+	m.TextInput.ToggleTooltip = utils.GetTooltip(m.Ctx)
 	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"Batch Submitter"}, styles.Question) + m.TextInput.View()
 }
 
@@ -1067,6 +1157,11 @@ type SystemKeyChallengerMnemonicInput struct {
 }
 
 func NewSystemKeyChallengerMnemonicInput(ctx context.Context) *SystemKeyChallengerMnemonicInput {
+	tooltip := styles.NewTooltip(
+		"Challenger",
+		"Prevents misconduct and invalid Minitia state submissions by monitoring for output proposals and challenging any that are invalid.",
+		"", []string{}, []string{}, []string{},
+	)
 	model := &SystemKeyChallengerMnemonicInput{
 		TextInput: utils.NewTextInput(false),
 		BaseModel: utils.BaseModel{Ctx: ctx},
@@ -1074,6 +1169,7 @@ func NewSystemKeyChallengerMnemonicInput(ctx context.Context) *SystemKeyChalleng
 	}
 	model.WithPlaceholder("Enter the mnemonic")
 	model.WithValidatorFn(utils.ValidateMnemonic)
+	model.WithTooltip(&tooltip)
 	return model
 }
 
@@ -1106,6 +1202,7 @@ func (m *SystemKeyChallengerMnemonicInput) Update(msg tea.Msg) (tea.Model, tea.C
 
 func (m *SystemKeyChallengerMnemonicInput) View() string {
 	state := utils.GetCurrentState[LaunchState](m.Ctx)
+	m.TextInput.ToggleTooltip = utils.GetTooltip(m.Ctx)
 	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"Challenger"}, styles.Question) + m.TextInput.View()
 }
 
@@ -1175,6 +1272,10 @@ type GasStationMnemonicInput struct {
 }
 
 func NewGasStationMnemonicInput(ctx context.Context) *GasStationMnemonicInput {
+	tooltip := styles.NewTooltip(
+		"Gas station account",
+		"Gas Station account is the account from which Weave will use to fund necessary system accounts, enabling easier and more seamless experience while setting up things using Weave.",
+		"** Weave will NOT automatically send transactions without asking for your confirmation. **", []string{}, []string{}, []string{})
 	model := &GasStationMnemonicInput{
 		TextInput: utils.NewTextInput(false),
 		BaseModel: utils.BaseModel{Ctx: ctx},
@@ -1182,6 +1283,7 @@ func NewGasStationMnemonicInput(ctx context.Context) *GasStationMnemonicInput {
 	}
 	model.WithPlaceholder("Enter the mnemonic")
 	model.WithValidatorFn(utils.ValidateMnemonic)
+	model.WithTooltip(&tooltip)
 	return model
 }
 
@@ -1216,8 +1318,9 @@ func (m *GasStationMnemonicInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *GasStationMnemonicInput) View() string {
 	state := utils.GetCurrentState[LaunchState](m.Ctx)
+	m.TextInput.ToggleTooltip = utils.GetTooltip(m.Ctx)
 	return state.weave.Render() + "\n" +
-		styles.RenderPrompt(fmt.Sprintf("%s %s", styles.BoldUnderlineText("Please note that", styles.Yellow), styles.Text("you will need to set up a Gas Station account to fund the following accounts in order to run the weave minitia launch command:\n  • Operator\n  • Bridge Executor\n  • Output Submitter\n  • Batch Submitter\n  • Challenger", styles.Yellow)), []string{}, styles.Information) + "\n" +
+		styles.RenderPrompt(fmt.Sprintf("%s %s", styles.BoldUnderlineText("Please note that", styles.Yellow), styles.Text("you will need to set up a Gas Station account to fund the following accounts in order to run the weave minitia launch command:\n  • Bridge Executor\n  • Output Submitter\n  • Batch Submitter\n  • Challenger", styles.Yellow)), []string{}, styles.Information) + "\n" +
 		styles.RenderPrompt(m.GetQuestion(), []string{"Gas Station account"}, styles.Question) + m.TextInput.View()
 }
 
@@ -1235,6 +1338,14 @@ const ManuallyFill AccountsFundingPresetOption = "○ Fill in an amount for each
 
 func NewAccountsFundingPresetSelect(ctx context.Context) *AccountsFundingPresetSelect {
 	state := utils.GetCurrentState[LaunchState](ctx)
+	tooltips := styles.NewTooltipSlice(
+		styles.NewTooltip(
+			"OPInit Bots",
+			"Bridge Executor: Monitors the L1 and L2 transactions, facilitates token bridging and withdrawals between the minitia and Initia L1 chain, and also relays oracle price feed to L2.\n\nOutput Submitter: Submits L2 output roots to L1 for verification and potential challenges. If the submitted output remains unchallenged beyond the output finalization period, it is considered finalized and immutable.\n\nBatch Submitter: Submits block and transactions data in batches into a chain to ensure Data Availability. Currently, submissions can be made to Initia L1 or Celestia.\n\nChallenger: Prevents misconduct and invalid minitia state submissions by monitoring for output proposals and challenging any that are invalid.\n\nL2 Operator: Also known as Sequencer, is responsible for creating blocks, ordering and including transactions within each block, and maintaining the operation of the L2 network.",
+			"", []string{"Bridge Executor:", "Output Submitter:", "Batch Submitter:", "Challenger:", "L2 Operator:"}, []string{}, []string{},
+		), 2,
+	)
+
 	gasStationMnemonic := utils.GetGasStationMnemonic()
 	initiaGasStationAddress, err := utils.MnemonicToBech32Address("init", gasStationMnemonic)
 	if err != nil {
@@ -1284,6 +1395,7 @@ func NewAccountsFundingPresetSelect(ctx context.Context) *AccountsFundingPresetS
 				ManuallyFill,
 			},
 			CannotBack: true,
+			Tooltips:   &tooltips,
 		},
 		BaseModel: utils.BaseModel{Ctx: ctx, CannotBack: true},
 		question:  "Please select the filling amount option",
@@ -1324,6 +1436,7 @@ func (m *AccountsFundingPresetSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *AccountsFundingPresetSelect) View() string {
 	state := utils.GetCurrentState[LaunchState](m.Ctx)
+	m.Selector.ToggleTooltip = utils.GetTooltip(m.Ctx)
 	return state.weave.Render() + "\n" +
 		styles.RenderPrompt(
 			"You will need to fund the following accounts on ...\n  L1:\n  • Bridge Executor\n  • Output Submitter\n  • Batch Submitter\n  • Challenger\n  L2:\n  • Operator\n  • Bridge Executor",
@@ -1675,6 +1788,14 @@ func NewAddGenesisAccountsSelect(recurring bool, ctx context.Context) *AddGenesi
 		state.preGenesisAccountsResponsesCount = len(state.weave.PreviousResponse)
 	}
 
+	tooltips := styles.NewTooltipSlice(
+		styles.NewTooltip(
+			"Genesis Account",
+			"Adding genesis accounts grants initial balances to specific accounts at network launch, enabling early operations without later funding.\n\nWeave has already added L2 operator & bridge executor accounts to genesis accounts for you. No need to add those two again.",
+			"", []string{}, []string{}, []string{},
+		), 2,
+	)
+
 	return &AddGenesisAccountsSelect{
 		Selector: utils.Selector[AddGenesisAccountsOption]{
 			Options: []AddGenesisAccountsOption{
@@ -1682,6 +1803,7 @@ func NewAddGenesisAccountsSelect(recurring bool, ctx context.Context) *AddGenesi
 				No,
 			},
 			CannotBack: true,
+			Tooltips:   &tooltips,
 		},
 		BaseModel:         utils.BaseModel{Ctx: utils.SetCurrentState(ctx, state), CannotBack: true},
 		recurring:         recurring,
@@ -1740,6 +1862,7 @@ func (m *AddGenesisAccountsSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *AddGenesisAccountsSelect) View() string {
 	state := utils.GetCurrentState[LaunchState](m.Ctx)
+	m.Selector.ToggleTooltip = utils.GetTooltip(m.Ctx)
 	preText := ""
 	if !m.recurring {
 		preText += "\n" + styles.RenderPrompt("You can add extra genesis accounts by first entering the addresses, then assigning the initial balance one by one.", []string{"genesis accounts"}, styles.Information) + "\n"
@@ -1807,6 +1930,11 @@ type GenesisAccountsBalanceInput struct {
 }
 
 func NewGenesisAccountsBalanceInput(address string, ctx context.Context) *GenesisAccountsBalanceInput {
+	tooltip := styles.NewTooltip(
+		"Genesis Initial Balance",
+		"A genesis initial balance is the amount of tokens allocated to specific accounts when a blockchain network launches. It allows these accounts to have immediate resources for transactions, testing, or operational roles without needing to acquire tokens afterward.",
+		"", []string{}, []string{}, []string{},
+	)
 	state := utils.GetCurrentState[LaunchState](ctx)
 	model := &GenesisAccountsBalanceInput{
 		TextInput: utils.NewTextInput(false),
@@ -1816,6 +1944,7 @@ func NewGenesisAccountsBalanceInput(address string, ctx context.Context) *Genesi
 	}
 	model.WithPlaceholder("Enter the desired balance")
 	model.WithValidatorFn(utils.IsValidInteger)
+	model.WithTooltip(&tooltip)
 	return model
 }
 
@@ -1850,6 +1979,7 @@ func (m *GenesisAccountsBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *GenesisAccountsBalanceInput) View() string {
 	state := utils.GetCurrentState[LaunchState](m.Ctx)
+	m.TextInput.ToggleTooltip = utils.GetTooltip(m.Ctx)
 	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{m.address}, styles.Question) + m.TextInput.View()
 }
 
