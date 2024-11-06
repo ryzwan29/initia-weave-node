@@ -532,7 +532,7 @@ func (m *EnableFeaturesCheckbox) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *EnableFeaturesCheckbox) View() string {
 	state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
-	m.ToggleTooltip = utils.GetTooltip(m.Ctx)
+	m.CheckBox.ToggleTooltip = utils.GetTooltip(m.Ctx)
 	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{}, styles.Question) + "\n" + m.CheckBox.View()
 }
 
@@ -543,12 +543,18 @@ type SeedsInput struct {
 }
 
 func NewSeedsInput(ctx context.Context) *SeedsInput {
+	tooltip := styles.NewTooltip(
+		"Seeds",
+		"Specify known nodes (<node-id>@<IP>:<port>) as initial contact points, mainly used to discover other nodes. If you're only running a single node, seeds may be unnecessary.\n\nThis is optional but can quickly get your node up to date.",
+		"", []string{}, []string{}, []string{},
+	)
 	model := &SeedsInput{
 		TextInput: utils.NewTextInput(false),
 		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  "Please specify the seeds",
 	}
 	model.WithValidatorFn(utils.IsValidPeerOrSeed)
+	model.WithTooltip(&tooltip)
 
 	state := utils.GetCurrentState[RunL1NodeState](ctx)
 	if state.network != string(Local) {
@@ -594,6 +600,7 @@ func (m *SeedsInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *SeedsInput) View() string {
 	state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
+	m.TextInput.ToggleTooltip = utils.GetTooltip(m.Ctx)
 	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"seeds"}, styles.Question) + m.TextInput.View()
 }
 
@@ -604,12 +611,18 @@ type PersistentPeersInput struct {
 }
 
 func NewPersistentPeersInput(ctx context.Context) *PersistentPeersInput {
+	tooltip := styles.NewTooltip(
+		"Persistent Peers",
+		"Set up nodes (<node-id>@<IP>:<port>) to maintain constant connections, keeping the network stable. This is useful for fast syncing if you know a trusted, valid node.\n\nThis is optional but can quickly get your node up to date.",
+		"", []string{}, []string{}, []string{},
+	)
 	model := &PersistentPeersInput{
 		TextInput: utils.NewTextInput(false),
 		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  "Please specify the persistent_peers",
 	}
 	model.WithValidatorFn(utils.IsValidPeerOrSeed)
+	model.WithTooltip(&tooltip)
 
 	state := utils.GetCurrentState[RunL1NodeState](ctx)
 	if state.network != string(Local) {
@@ -662,6 +675,7 @@ func (m *PersistentPeersInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *PersistentPeersInput) View() string {
 	state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
+	m.TextInput.ToggleTooltip = utils.GetTooltip(m.Ctx)
 	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"persistent_peers"}, styles.Question) + m.TextInput.View()
 }
 
@@ -812,6 +826,11 @@ type GenesisEndpointInput struct {
 }
 
 func NewGenesisEndpointInput(ctx context.Context) *GenesisEndpointInput {
+	tooltip := styles.NewTooltip(
+		"genesis.json",
+		"Provide the URL or network address where the genesis.json file can be accessed. This file should contains the initial state and configuration of the blockchain network, which is essential for new nodes to sync and participate in the network correctly.",
+		"", []string{}, []string{}, []string{},
+	)
 	model := &GenesisEndpointInput{
 		TextInput: utils.NewTextInput(true),
 		BaseModel: utils.BaseModel{Ctx: ctx, CannotBack: true},
@@ -819,6 +838,7 @@ func NewGenesisEndpointInput(ctx context.Context) *GenesisEndpointInput {
 		err:       nil,
 	}
 	model.WithPlaceholder("Enter endpoint URL")
+	model.WithTooltip(&tooltip)
 	return model
 }
 
@@ -854,6 +874,7 @@ func (m *GenesisEndpointInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *GenesisEndpointInput) View() string {
 	state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
+	m.TextInput.ToggleTooltip = utils.GetTooltip(m.Ctx)
 	preText := "\n"
 	if !state.existingApp {
 		preText += styles.RenderPrompt("There is no config/genesis.json available. You will need to enter the required information to proceed.\n", []string{"config/genesis.json"}, styles.Information)
@@ -1114,6 +1135,22 @@ func NewSyncMethodSelect(ctx context.Context) *SyncMethodSelect {
 				NoSync,
 			},
 			CannotBack: true,
+			Tooltips: &[]styles.Tooltip{
+				styles.NewTooltip(
+					"Snapshot",
+					"Downloads a recent state snapshot to quickly catch up without replaying all history. This is faster than full sync but relies on a trusted source for the snapshot.\n\nThis is necessary to participate in an existing network.",
+					"", []string{}, []string{}, []string{},
+				),
+				styles.NewTooltip(
+					"State Sync",
+					"Retrieves the latest blockchain state from peers without downloading the entire history. It's faster than syncing from genesis but may miss some historical data.\n\nThis is necessary to participate in an existing network.",
+					"", []string{}, []string{}, []string{},
+				), styles.NewTooltip(
+					"No Sync",
+					"The node will not download data from any sources to replace the existing (if any). The node will start syncing from its current state, potentially genesis state if this is the first run.\n\nThis is best for local development / testing.",
+					"", []string{}, []string{}, []string{},
+				),
+			},
 		},
 		BaseModel: utils.BaseModel{Ctx: ctx, CannotBack: true},
 		question:  "Please select a sync option",
@@ -1156,6 +1193,7 @@ func (m *SyncMethodSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *SyncMethodSelect) View() string {
 	state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
+	m.Selector.ToggleTooltip = utils.GetTooltip(m.Ctx)
 	return state.weave.Render() + styles.RenderPrompt(
 		m.GetQuestion(),
 		[]string{""},
