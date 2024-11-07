@@ -39,9 +39,11 @@ func (m *FieldInputModel) Init() tea.Cmd {
 // Update delegates the update logic to the current active submodel
 func (m *FieldInputModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if model, cmd, handled := utils.HandleCommonCommands[OPInitBotsState](m, msg); handled {
-		m.subModels[m.currentIndex].Text = ""
-		m.subModels[m.currentIndex].Cursor = 0
-		m.currentIndex--
+		if keyMsg, ok := msg.(tea.KeyMsg); ok && keyMsg.String() != "ctrl+t" {
+			m.subModels[m.currentIndex].Text = ""
+			m.subModels[m.currentIndex].Cursor = 0
+			m.currentIndex--
+		}
 		return model, cmd
 	}
 
@@ -65,5 +67,6 @@ func (m *FieldInputModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 // View delegates the view logic to the current active submodel
 func (m *FieldInputModel) View() string {
 	state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
+	m.subModels[m.currentIndex].TextInput.ToggleTooltip = utils.GetTooltip(m.Ctx)
 	return state.weave.Render() + m.subModels[m.currentIndex].View()
 }

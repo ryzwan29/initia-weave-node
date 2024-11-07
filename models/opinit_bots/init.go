@@ -30,29 +30,39 @@ type OPInitBotInitSelector struct {
 	question string
 }
 
+var (
+	ListenAddressTooltip          = styles.NewTooltip("listen_address", "The listen_address specifies the network address and port where the bot listens for incoming transaction execution requests, often formatted as tcp://0.0.0.0:<port>.", "", []string{}, []string{}, []string{})
+	L1RPCAddressTooltip           = styles.NewTooltip("L1 rpc_address", "The rpc_address for the Executor defines the network address and port where the bot's RPC interface listens. This allows other network components to communicate with the Executor via RPC calls, typically formatted as tcp://0.0.0.0:<port>.", "", []string{}, []string{}, []string{})
+	L2RPCAddressTooltip           = styles.NewTooltip("L2 rpc_address", "The rpc_address for the Executor defines the network address and port where the bot's RPC interface listens. This allows other network components to communicate with the Executor via RPC calls, typically formatted as tcp://0.0.0.0:<port>.", "", []string{}, []string{}, []string{})
+	L2GasPriceTooltip             = styles.NewTooltip("L2 gas_price", "The L2 gas_price specifies the minimum gas price for transactions submitted on the Layer 2 (L2) network. This value helps ensure that L2 transactions are processed with adequate priority and aligns with  Minitias or other L2 environments.", "", []string{}, []string{}, []string{})
+	InitiaDALayerTooltip          = styles.NewTooltip("Initia", "Ideal for projects that require close integration within the Initia network, offering streamlined communication and data handling within the Initia ecosystem.", "", []string{}, []string{}, []string{})
+	CelestiaMainnetDALayerTooltip = styles.NewTooltip("Celestia Mainnet", "Suitable for production environments that need reliable and secure data availability with Celestia's decentralized architecture, ensuring robust support for live applications.", "", []string{}, []string{}, []string{})
+	CelestiaTestnetDALayerTooltip = styles.NewTooltip("Celestia Testnet", "Best for testing purposes, allowing you to validate functionality and performance in a non-production setting before deploying to a mainnet environment.", "", []string{}, []string{}, []string{})
+)
+
 var defaultExecutorFields = []*Field{
 	// Listen Address
-	{Name: "listen_address", Type: StringField, Question: "Please specify the listen_address", Placeholder: `Press tab to use "localhost:3000"`, DefaultValue: "localhost:3000", ValidateFn: utils.ValidateEmptyString},
+	{Name: "listen_address", Type: StringField, Question: "Please specify the listen_address", Placeholder: `Press tab to use "localhost:3000"`, DefaultValue: "localhost:3000", ValidateFn: utils.ValidateEmptyString, Tooltip: &ListenAddressTooltip},
 
 	// L1 Node Configuration
-	{Name: "l1_node.rpc_address", Type: StringField, Question: "Please specify the L1 rpc_address", Placeholder: "Add RPC address ex. http://localhost:26657", ValidateFn: utils.ValidateURL},
+	{Name: "l1_node.rpc_address", Type: StringField, Question: "Please specify the L1 rpc_address", Placeholder: "Add RPC address ex. http://localhost:26657", ValidateFn: utils.ValidateURL, Tooltip: &L1RPCAddressTooltip},
 
 	// L2 Node Configuration
 	{Name: "l2_node.chain_id", Type: StringField, Question: "Please specify the L2 chain_id", Placeholder: "Add alphanumeric", ValidateFn: utils.ValidateEmptyString},
-	{Name: "l2_node.rpc_address", Type: StringField, Question: "Please specify the L2 rpc_address", Placeholder: `Press tab to use "http://localhost:26657"`, DefaultValue: "http://localhost:26657", ValidateFn: utils.ValidateURL},
-	{Name: "l2_node.gas_price", Type: StringField, Question: "Please specify the L2 gas_price", Placeholder: `Press tab to use "0.015umin"`, DefaultValue: "0.015umin", ValidateFn: utils.ValidateDecCoin},
+	{Name: "l2_node.rpc_address", Type: StringField, Question: "Please specify the L2 rpc_address", Placeholder: `Press tab to use "http://localhost:26657"`, DefaultValue: "http://localhost:26657", ValidateFn: utils.ValidateURL, Tooltip: &L2RPCAddressTooltip},
+	{Name: "l2_node.gas_price", Type: StringField, Question: "Please specify the L2 gas_price", Placeholder: `Press tab to use "0.015umin"`, DefaultValue: "0.015umin", ValidateFn: utils.ValidateDecCoin, Tooltip: &L2GasPriceTooltip},
 }
 
 var defaultChallengerFields = []*Field{
 	// Listen Address
-	{Name: "listen_address", Type: StringField, Question: "Please specify the listen_address", Placeholder: `Press tab to use "localhost:3000"`, DefaultValue: "localhost:3000", ValidateFn: utils.ValidateEmptyString},
+	{Name: "listen_address", Type: StringField, Question: "Please specify the listen_address", Placeholder: `Press tab to use "localhost:3000"`, DefaultValue: "localhost:3000", ValidateFn: utils.ValidateEmptyString, Tooltip: &ListenAddressTooltip},
 
 	// L1 Node Configuration
-	{Name: "l1_node.rpc_address", Type: StringField, Question: "Please specify the L1 rpc_address", Placeholder: "Add RPC address ex. http://localhost:26657", ValidateFn: utils.ValidateURL},
+	{Name: "l1_node.rpc_address", Type: StringField, Question: "Please specify the L1 rpc_address", Placeholder: "Add RPC address ex. http://localhost:26657", ValidateFn: utils.ValidateURL, Tooltip: &L1RPCAddressTooltip},
 
 	// L2 Node Configuration
 	{Name: "l2_node.chain_id", Type: StringField, Question: "Please specify the L2 chain_id", Placeholder: "Add alphanumeric", ValidateFn: utils.ValidateEmptyString},
-	{Name: "l2_node.rpc_address", Type: StringField, Question: "Please specify the L2 rpc_address", Placeholder: `Press tab to use "http://localhost:26657"`, DefaultValue: "http://localhost:26657", ValidateFn: utils.ValidateURL},
+	{Name: "l2_node.rpc_address", Type: StringField, Question: "Please specify the L2 rpc_address", Placeholder: `Press tab to use "http://localhost:26657"`, DefaultValue: "http://localhost:26657", ValidateFn: utils.ValidateURL, Tooltip: &L2RPCAddressTooltip},
 }
 
 func GetField(fields []*Field, name string) *Field {
@@ -65,10 +75,15 @@ func GetField(fields []*Field, name string) *Field {
 }
 
 func NewOPInitBotInitSelector(ctx context.Context) tea.Model {
+	tooltips := []styles.Tooltip{
+		styles.NewTooltip("Executor", "Executes cross-chain transactions, ensuring that assets and data move securely between Initia and Minitias.", "", []string{}, []string{}, []string{}),
+		styles.NewTooltip("Challenger", "Monitors for potential fraud, submitting proofs to dispute invalid state updates and maintaining network security.", "", []string{}, []string{}, []string{}),
+	}
 	return &OPInitBotInitSelector{
 		Selector: utils.Selector[OPInitBotInitOption]{
 			Options:    []OPInitBotInitOption{ExecutorOPInitBotInitOption, ChallengerOPInitBotInitOption},
 			CannotBack: true,
+			Tooltips:   &tooltips,
 		},
 		BaseModel: utils.BaseModel{Ctx: ctx, CannotBack: true},
 		question:  "Which bot would you like to run?",
@@ -208,6 +223,9 @@ func OPInitBotInitSelectChallenger(ctx context.Context) tea.Model {
 }
 
 func (m *OPInitBotInitSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := utils.HandleCommonCommands[OPInitBotsState](m, msg); handled {
+		return model, cmd
+	}
 	selected, cmd := m.Select(msg)
 	if selected != nil {
 		m.Ctx = utils.CloneStateAndPushPage[OPInitBotsState](m.Ctx, m)
@@ -229,6 +247,7 @@ func (m *OPInitBotInitSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *OPInitBotInitSelector) View() string {
+	m.ToggleTooltip = utils.GetTooltip(m.Ctx)
 	return styles.RenderPrompt(m.GetQuestion(), []string{"bot"}, styles.Question) + m.Selector.View()
 }
 
@@ -561,9 +580,26 @@ type SetDALayer struct {
 	utils.Selector[DALayerNetwork]
 	utils.BaseModel
 	question string
+
+	chainRegistry *registry.ChainRegistry
 }
 
 func NewSetDALayer(ctx context.Context) tea.Model {
+	tooltips := []styles.Tooltip{
+		InitiaDALayerTooltip,
+	}
+	state := utils.GetCurrentState[OPInitBotsState](ctx)
+	var network registry.ChainType
+	if registry.MustGetChainRegistry(registry.InitiaL1Testnet).GetChainId() == state.botConfig["l1_node.chain_id"] {
+		network = registry.CelestiaTestnet
+		tooltips = append(tooltips, CelestiaTestnetDALayerTooltip)
+	} else {
+		network = registry.CelestiaMainnet
+		tooltips = append(tooltips, CelestiaMainnetDALayerTooltip)
+	}
+
+	chainRegistry := registry.MustGetChainRegistry(network)
+
 	return &SetDALayer{
 		Selector: utils.Selector[DALayerNetwork]{
 			Options: []DALayerNetwork{
@@ -571,9 +607,11 @@ func NewSetDALayer(ctx context.Context) tea.Model {
 				Celestia,
 			},
 			CannotBack: true,
+			Tooltips:   &tooltips,
 		},
-		BaseModel: utils.BaseModel{Ctx: ctx, CannotBack: true},
-		question:  "Which DA Layer would you like to use?",
+		BaseModel:     utils.BaseModel{Ctx: ctx, CannotBack: true},
+		question:      "Which DA Layer would you like to use?",
+		chainRegistry: chainRegistry,
 	}
 }
 
@@ -601,17 +639,10 @@ func (m *SetDALayer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			state.botConfig["da.bech32_prefix"] = "init"
 			state.botConfig["da.gas_price"] = state.botConfig["l1_node.gas_price"]
 		case Celestia:
-			var network registry.ChainType
-			if registry.MustGetChainRegistry(registry.InitiaL1Testnet).GetChainId() == state.botConfig["l1_node.chain_id"] {
-				network = registry.CelestiaTestnet
-			} else {
-				network = registry.CelestiaMainnet
-			}
-			chainRegistry := registry.MustGetChainRegistry(network)
-			state.botConfig["da.chain_id"] = chainRegistry.GetChainId()
-			state.botConfig["da.rpc_address"] = chainRegistry.MustGetActiveRpc()
-			state.botConfig["da.bech32_prefix"] = chainRegistry.GetBech32Prefix()
-			state.botConfig["da.gas_price"] = chainRegistry.MustGetMinGasPriceByDenom(DefaultCelestiaGasDenom)
+			state.botConfig["da.chain_id"] = m.chainRegistry.GetChainId()
+			state.botConfig["da.rpc_address"] = m.chainRegistry.MustGetActiveRpc()
+			state.botConfig["da.bech32_prefix"] = m.chainRegistry.GetBech32Prefix()
+			state.botConfig["da.gas_price"] = m.chainRegistry.MustGetMinGasPriceByDenom(DefaultCelestiaGasDenom)
 			state.daIsCelestia = true
 		}
 		m.Ctx = utils.SetCurrentState(m.Ctx, state)
@@ -625,6 +656,7 @@ func (m *SetDALayer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *SetDALayer) View() string {
 	state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
+	m.Selector.ToggleTooltip = utils.GetTooltip(m.Ctx)
 	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"DA Layer"}, styles.Question) + m.Selector.View()
 }
 

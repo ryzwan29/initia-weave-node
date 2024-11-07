@@ -101,6 +101,16 @@ func (s *CheckBox[T]) ViewWithBottom(text string) string {
 	}
 	b.WriteString("\n" + styles.RenderFooter(text))
 	b.WriteString("\n" + styles.RenderFooter("Use arrow-keys, Space to select, Enter to submit, Ctrl+z to go back, Ctrl+c or q to quit.") + "\n")
+
+	if s.Tooltips != nil {
+		if s.ToggleTooltip {
+			tooltip := *s.Tooltips
+			b.WriteString(styles.RenderFooter("Ctrl+t to hide information.") + "\n" + tooltip[s.Cursor].View())
+		} else {
+			b.WriteString(styles.RenderFooter("Ctrl+t to see more info for each option." + "\n"))
+		}
+	}
+
 	return b.String()
 }
 

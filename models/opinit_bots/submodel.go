@@ -28,6 +28,7 @@ type Field struct {
 	DefaultValue string
 	PrefillValue string
 	ValidateFn   func(string) error
+	Tooltip      *styles.Tooltip
 }
 
 type SubModel struct {
@@ -42,6 +43,7 @@ func NewSubModel(field Field) SubModel {
 	textInput.WithDefaultValue(field.DefaultValue)
 	textInput.WithPrefillValue(field.PrefillValue)
 	textInput.WithValidatorFn(field.ValidateFn)
+	textInput.WithTooltip(field.Tooltip)
 	switch field.Type {
 	case NumberField:
 		textInput.WithValidatorFn(func(input string) error {

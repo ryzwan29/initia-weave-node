@@ -250,6 +250,7 @@ func (m *ProcessingMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *ProcessingMinitiaConfig) View() string {
 	state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
+	m.Selector.ToggleTooltip = utils.GetTooltip(m.Ctx)
 	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{".minitia/artifacts/config.json"}, styles.Question) + m.Selector.View()
 }
 
@@ -273,14 +274,14 @@ type SetupBotCheckbox struct {
 
 func NewSetupBotCheckbox(ctx context.Context, addKeyRing bool, noMinitia bool) *SetupBotCheckbox {
 	state := utils.GetCurrentState[OPInitBotsState](ctx)
-	checkBlock := make([]string, 0)
+	checkBoxOptions := make([]string, 0)
 	for idx, botInfo := range state.BotInfos {
 		if !botInfo.IsNotExist && noMinitia {
-			checkBlock = append(checkBlock, fmt.Sprintf("%s (key exists)", BotNames[idx]))
+			checkBoxOptions = append(checkBoxOptions, fmt.Sprintf("%s (key exists)", BotNames[idx]))
 		} else if !botInfo.IsNotExist && addKeyRing {
-			checkBlock = append(checkBlock, fmt.Sprintf("%s (key exists)", BotNames[idx]))
+			checkBoxOptions = append(checkBoxOptions, fmt.Sprintf("%s (key exists)", BotNames[idx]))
 		} else {
-			checkBlock = append(checkBlock, string(BotNames[idx]))
+			checkBoxOptions = append(checkBoxOptions, string(BotNames[idx]))
 		}
 	}
 
@@ -291,8 +292,17 @@ func NewSetupBotCheckbox(ctx context.Context, addKeyRing bool, noMinitia bool) *
 		question = "Which bots would you like to set?"
 	}
 
+	tooltips := []styles.Tooltip{
+		styles.NewTooltip("Bridge Executor", "Monitors the L1 and L2 transactions, facilitates token bridging and withdrawals between the minitia and Initia L1 chain, and also relays oracle price feed to L2.", "", []string{}, []string{}, []string{}),
+		styles.NewTooltip("Output Submitter", "Submits L2 output roots to L1 for verification and potential challenges. If the submitted output remains unchallenged beyond the output finalization period, it is considered finalized and immutable.", "", []string{}, []string{}, []string{}),
+		styles.NewTooltip("Batch Submitter", "Submits block and transactions data in batches into a chain to ensure Data Availability. Currently, submissions can be made to Initia L1 or Celestia.", "", []string{}, []string{}, []string{}),
+		styles.NewTooltip("Challenger", "Prevents misconduct and invalid minitia state submissions by monitoring for output proposals and challenging any that are invalid.", "", []string{}, []string{}, []string{}),
+	}
+
+	checkBox := utils.NewCheckBox(checkBoxOptions)
+	checkBox.WithTooltip(&tooltips)
 	return &SetupBotCheckbox{
-		CheckBox:  *utils.NewCheckBox(checkBlock),
+		CheckBox:  *checkBox,
 		BaseModel: utils.BaseModel{Ctx: ctx},
 		question:  question,
 	}
@@ -348,6 +358,7 @@ func (m *SetupBotCheckbox) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 // View renders the current prompt and selection options
 func (m *SetupBotCheckbox) View() string {
 	state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
+	m.CheckBox.ToggleTooltip = utils.GetTooltip(m.Ctx)
 	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"bots", "set", "override", "~/.minitia/artifacts/config.json"}, styles.Question) + "\n\n" + m.CheckBox.ViewWithBottom("For bots with an existing key, selecting them will override the key.")
 }
 
