@@ -465,10 +465,32 @@ func (m *PrefillMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			GetField(defaultChallengerFields, "l1_node.rpc_address").PrefillValue = minitiaConfig.L1Config.RpcUrl
 			GetField(defaultChallengerFields, "l2_node.chain_id").PrefillValue = minitiaConfig.L2Config.ChainID
+
+			if minitiaConfig.OpBridge.BatchSubmissionTarget == "CELESTIA" {
+				var network registry.ChainType
+				if registry.MustGetChainRegistry(registry.InitiaL1Testnet).GetChainId() == minitiaConfig.L1Config.ChainID {
+					network = registry.CelestiaTestnet
+				} else {
+					network = registry.CelestiaMainnet
+				}
+
+				chainRegistry := registry.MustGetChainRegistry(network)
+
+				state.botConfig["da.chain_id"] = chainRegistry.GetChainId()
+				state.botConfig["da.rpc_address"] = chainRegistry.MustGetActiveRpc()
+				state.botConfig["da.bech32_prefix"] = chainRegistry.GetBech32Prefix()
+				state.botConfig["da.gas_price"] = chainRegistry.MustGetMinGasPriceByDenom(DefaultCelestiaGasDenom)
+				state.daIsCelestia = true
+			} else {
+				state.botConfig["da.chain_id"] = state.botConfig["l1_node.chain_id"]
+				state.botConfig["da.rpc_address"] = state.botConfig["l1_node.rpc_address"]
+				state.botConfig["da.bech32_prefix"] = "init"
+				state.botConfig["da.gas_price"] = state.botConfig["l1_node.gas_price"]
+			}
 			m.Ctx = utils.SetCurrentState(m.Ctx, state)
 
 			if state.InitExecutorBot {
-				return NewFieldInputModel(m.Ctx, defaultExecutorFields, NewSetDALayer), cmd
+				return NewFieldInputModel(m.Ctx, defaultExecutorFields, NewStartingInitBot), cmd
 			} else if state.InitChallengerBot {
 				return NewFieldInputModel(m.Ctx, defaultChallengerFields, NewStartingInitBot), cmd
 
