@@ -156,19 +156,19 @@ func moveToNextWord(text string, cursor int) int {
 }
 
 func (ti TextInput) View() string {
-	var beforeCursor, cursorChar, afterCursor, bottomText string
+	var beforeCursor, cursorChar, afterCursor, footerText string
 
 	if ti.CannotBack {
-		bottomText = fmt.Sprintf("%s %s", styles.FooterLine, styles.Text("Press Enter to submit or Ctrl+C to quit.", styles.Gray))
+		footerText = styles.RenderFooter("Enter to submit, or Ctrl+c to quit.")
 	} else {
-		bottomText = fmt.Sprintf("%s %s", styles.FooterLine, styles.Text("Press Enter to submit, Ctrl+Z to go back or Ctrl+C to quit.", styles.Gray))
+		footerText = styles.RenderFooter("Enter to submit, Ctrl+z to go back, or Ctrl+c to quit.")
 	}
 
 	if ti.Tooltip != nil {
 		if ti.ToggleTooltip {
-			bottomText += "\n" + fmt.Sprintf("%s %s", styles.FooterLine, styles.Text("Press Ctrl+T to hide information", styles.Gray)) + "\n" + ti.Tooltip.View()
+			footerText += "\n" + styles.RenderFooter("Ctrl+t to hide information.") + "\n" + ti.Tooltip.View()
 		} else {
-			bottomText += "\n" + fmt.Sprintf("%s %s", styles.FooterLine, styles.Text("Press Ctrl+T to see more information", styles.Gray)) + "\n"
+			footerText += "\n" + styles.RenderFooter("Ctrl+t to see more information.") + "\n"
 		}
 	}
 
@@ -180,7 +180,7 @@ func (ti TextInput) View() string {
 	}
 
 	if len(ti.Text) == 0 {
-		return fmt.Sprintf("\n%s %s\n\n%s%s", styles.Text(">", styles.Cyan), styles.Text(ti.Placeholder, styles.Gray), feedback, bottomText)
+		return fmt.Sprintf("\n%s %s\n\n%s%s", styles.Text(">", styles.Cyan), styles.Text(ti.Placeholder, styles.Gray), feedback, footerText)
 	} else if ti.Cursor < len(ti.Text) {
 		// Cursor is within the text
 		beforeCursor = styles.Text(ti.Text[:ti.Cursor], styles.White)
@@ -193,14 +193,14 @@ func (ti TextInput) View() string {
 	}
 
 	// Compose the full view string
-	return fmt.Sprintf("\n%s %s%s%s\n\n%s%s", styles.Text(">", styles.Cyan), beforeCursor, cursorChar, afterCursor, feedback, bottomText)
+	return fmt.Sprintf("\n%s %s%s%s\n\n%s%s", styles.Text(">", styles.Cyan), beforeCursor, cursorChar, afterCursor, feedback, footerText)
 }
 
 func (ti TextInput) ViewErr(err error) string {
 	var beforeCursor, cursorChar, afterCursor string
-	bottomText := fmt.Sprintf("%s %s", styles.FooterLine, styles.Text("Press Enter to submit or Ctrl+C to quit.", styles.Gray))
+	footerText := styles.RenderFooter("Enter to submit, or Ctrl+c to quit.")
 	if len(ti.Text) == 0 {
-		return "\n" + styles.Text("> ", styles.Cyan) + styles.Text(ti.Placeholder, styles.Gray) + styles.Cursor(" ") + "\n\n" + styles.RenderError(err) + bottomText
+		return "\n" + styles.Text("> ", styles.Cyan) + styles.Text(ti.Placeholder, styles.Gray) + styles.Cursor(" ") + "\n\n" + styles.RenderError(err) + footerText
 	} else if ti.Cursor < len(ti.Text) {
 		// Cursor is within the text
 		beforeCursor = styles.Text(ti.Text[:ti.Cursor], styles.White)
@@ -220,5 +220,5 @@ func (ti TextInput) ViewErr(err error) string {
 	}
 
 	// Compose the full view string
-	return fmt.Sprintf("\n%s %s%s%s\n\n%s%s%s", styles.Text(">", styles.Cyan), beforeCursor, cursorChar, afterCursor, feedback, styles.RenderError(err), bottomText)
+	return fmt.Sprintf("\n%s %s%s%s\n\n%s%s%s", styles.Text(">", styles.Cyan), beforeCursor, cursorChar, afterCursor, feedback, styles.RenderError(err), footerText)
 }

@@ -2,13 +2,15 @@ package styles
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
 )
 
 var (
-	FooterLine         = BoldText("│", Gray)
+	FooterLine         = BoldText("│ ", Gray)
+	FooterCommands     = []string{"Enter", "Ctrl+c", "q", "Ctrl+z", "Ctrl+t", "Space", "arrow-keys"}
 	HiddenMnemonicText = Text("*Mnemonic has been entered and is now hidden for security purposes.*", Ivory)
 )
 
@@ -221,4 +223,19 @@ func RenderPreviousResponse(separator string, question string, highlights []stri
 
 func RenderError(err error) string {
 	return TextWithoutOverridingStyledText(fmt.Sprintf("%v\n", err), Yellow)
+}
+
+func RenderFooter(text string) string {
+	words := strings.Fields(text)
+
+	for i, word := range words {
+		if slices.Contains(FooterCommands, word) {
+			words[i] = BoldText(word, LightGray)
+		} else {
+			words[i] = Text(word, Gray)
+		}
+	}
+
+	styledText := strings.Join(words, " ")
+	return FooterLine + styledText
 }
