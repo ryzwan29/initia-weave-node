@@ -62,7 +62,7 @@ func OPInitBotsCommand() *cobra.Command {
 	return cmd
 }
 
-func Setup() error {
+func Setup() (tea.Model, error) {
 	versions, currentVersion := utils.GetOPInitVersions()
 
 	// Initialize the context with OPInitBotsState
@@ -72,11 +72,11 @@ func Setup() error {
 	versionSelector := opinit_bots.NewOPInitBotVersionSelector(ctx, versions, currentVersion)
 
 	// Start the program
-	_, err := tea.NewProgram(versionSelector).Run()
+	finalModel, err := tea.NewProgram(versionSelector).Run()
 	if err != nil {
 		fmt.Println("Error running program:", err)
 	}
-	return err
+	return finalModel, err
 }
 
 func OPInitBotsKeysSetupCommand() *cobra.Command {
@@ -84,7 +84,8 @@ func OPInitBotsKeysSetupCommand() *cobra.Command {
 		Use:   "setup",
 		Short: "Setup keys for OPInit bots",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return Setup()
+			_, err := Setup()
+			return err
 		},
 	}
 	return cmd
@@ -106,7 +107,14 @@ Example: weave opinit-bots init executor`,
 			binaryPath := filepath.Join(userHome, utils.WeaveDataDirectory, opinit_bots.AppName)
 			_, err = utils.GetBinaryVersion(binaryPath)
 			if err != nil {
-				Setup()
+				finalModel, err := Setup()
+				if err != nil {
+					return err
+				}
+
+				if _, ok := finalModel.(*opinit_bots.TerminalState); !ok {
+					return nil
+				}
 			}
 			// Initialize the context with OPInitBotsState
 			ctx := utils.NewAppContext(opinit_bots.NewOPInitBotsState())

@@ -99,7 +99,7 @@ func (s *CheckBox[T]) ViewWithBottom(text string) string {
 		}
 		b.WriteString(fmt.Sprintf("%s %s %v\n", cursor, selectedMark, option))
 	}
-	b.WriteString(styles.Text(fmt.Sprintf("\n%s", text), styles.Gray))
+	b.WriteString("\n" + styles.RenderFooter(text))
 	b.WriteString("\n" + styles.RenderFooter("Use arrow-keys, Space to select, Enter to submit, Ctrl+z to go back, Ctrl+c or q to quit.") + "\n")
 	return b.String()
 }

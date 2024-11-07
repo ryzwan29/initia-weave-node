@@ -509,7 +509,7 @@ func (m *SetupOPInitBots) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	loader, cmd := m.loading.Update(msg)
 	m.loading = loader
 	if m.loading.Completing {
-		return m, tea.Quit
+		return NewTerminalState(m.Ctx), tea.Quit
 	}
 	return m, cmd
 }
@@ -699,4 +699,27 @@ func WaitSetupOPInitBots(state *OPInitBotsState) tea.Cmd {
 
 		return utils.EndLoading{}
 	}
+}
+
+type TerminalState struct {
+	utils.BaseModel
+}
+
+func NewTerminalState(ctx context.Context) *TerminalState {
+	return &TerminalState{
+		utils.BaseModel{Ctx: ctx, CannotBack: true},
+	}
+}
+
+func (m *TerminalState) Init() tea.Cmd {
+	return nil
+}
+
+func (m *TerminalState) Update(_ tea.Msg) (tea.Model, tea.Cmd) {
+	return m, nil
+}
+
+func (m *TerminalState) View() string {
+	state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
+	return state.weave.Render() + "\n"
 }
