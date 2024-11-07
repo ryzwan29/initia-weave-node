@@ -18,21 +18,9 @@ type Tooltip struct {
 	boldTexts      []string
 	links          []string
 	highlightTexts []string
-
-	minWidth int
 }
 
 func NewTooltip(title, body, warning string, boldTexts, links, highlightTexts []string) Tooltip {
-
-	minWidth := MaxTooltipWidth
-
-	for _, word := range strings.Split(body, " ") {
-		l := len(word)
-		if minWidth > l {
-			minWidth = l
-		}
-	}
-
 	return Tooltip{
 		title:          title,
 		body:           body,
@@ -40,7 +28,6 @@ func NewTooltip(title, body, warning string, boldTexts, links, highlightTexts []
 		boldTexts:      boldTexts,
 		links:          links,
 		highlightTexts: highlightTexts,
-		minWidth:       minWidth,
 	}
 }
 
