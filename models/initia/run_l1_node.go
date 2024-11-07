@@ -274,7 +274,7 @@ const (
 func NewExistingAppReplaceSelect(ctx context.Context) *ExistingAppReplaceSelect {
 	tooltips := styles.NewTooltipSlice(styles.NewTooltip(
 		"app.toml / config.toml",
-		"app.toml contains application-specific configurations for the blockchain node, such as transaction limits, gas price, state pruning strategy.\n\nconfig.toml includes core network and protocol settings for the node, such as peers to connect to, timeouts, consensus configurations, etc.",
+		"app.toml contains application-specific configurations for the blockchain node, such as transaction limits, gas price, state pruning strategy.\n\nconfig.toml contains core network and protocol settings for the node, such as peers to connect to, timeouts, consensus configurations, etc.",
 		"", []string{"app.toml", "config.toml"}, []string{}, []string{},
 	), 2)
 	return &ExistingAppReplaceSelect{
@@ -345,7 +345,7 @@ type RunL1NodeMonikerInput struct {
 func NewRunL1NodeMonikerInput(ctx context.Context) *RunL1NodeMonikerInput {
 	tooltip := styles.NewTooltip(
 		"Moniker",
-		"The moniker is a unique name assigned to a node in a blockchain network, used primarily for identification and distinction among nodes.",
+		"A unique name assigned to a node in a blockchain network, used primarily for identification and distinction among nodes.",
 		"", []string{}, []string{}, []string{})
 	model := &RunL1NodeMonikerInput{
 		TextInput: utils.NewTextInput(false),
@@ -404,7 +404,7 @@ type MinGasPriceInput struct {
 func NewMinGasPriceInput(ctx context.Context) *MinGasPriceInput {
 	tooltip := styles.NewTooltip(
 		"Minimum Gas Price",
-		"Set the minimum gas price, that the node will accept for processing transactions. This helps prevent spam by ensuring only transactions with a minimum fee are processed.",
+		"Set the minimum gas price that the node will accept for processing transactions. This helps prevent spam by ensuring only transactions with a minimum fee are processed.",
 		"", []string{}, []string{}, []string{},
 	)
 	model := &MinGasPriceInput{
@@ -470,7 +470,7 @@ func NewEnableFeaturesCheckbox(ctx context.Context) *EnableFeaturesCheckbox {
 	tooltips := []styles.Tooltip{
 		styles.NewTooltip(
 			"LCD API",
-			"Enabling this option allows REST API calls for querying data, submitting transactions, and more to your node. \n\nEnabling this is recommended.",
+			"Enabling this option allows REST API calls to query data and submit transactions to your node. \n\nEnabling this is recommended.",
 			"", []string{}, []string{}, []string{},
 		),
 		styles.NewTooltip(
@@ -545,7 +545,7 @@ type SeedsInput struct {
 func NewSeedsInput(ctx context.Context) *SeedsInput {
 	tooltip := styles.NewTooltip(
 		"Seeds",
-		"Specify known nodes (<node-id>@<IP>:<port>) as initial contact points, mainly used to discover other nodes. If you're only running a single node, seeds may be unnecessary.\n\nThis is optional but can quickly get your node up to date.",
+		"Configure known nodes (<node-id>@<IP>:<port>) as initial contact points, mainly used to discover other nodes. If you're don't need your node to participate in the network, seeds may be unnecessary.\n\nThis step is optional but can quickly get your node up to date.",
 		"", []string{}, []string{}, []string{},
 	)
 	model := &SeedsInput{
@@ -613,7 +613,7 @@ type PersistentPeersInput struct {
 func NewPersistentPeersInput(ctx context.Context) *PersistentPeersInput {
 	tooltip := styles.NewTooltip(
 		"Persistent Peers",
-		"Set up nodes (<node-id>@<IP>:<port>) to maintain constant connections, keeping the network stable. This is useful for fast syncing if you know a trusted, valid node.\n\nThis is optional but can quickly get your node up to date.",
+		"Configure nodes (<node-id>@<IP>:<port>) to maintain constant connections. This is particularly useful for fast syncing if you have access to a trusted, reliable node.\n\nThis step is optional but can expedite the process of getting your node up to date.",
 		"", []string{}, []string{}, []string{},
 	)
 	model := &PersistentPeersInput{

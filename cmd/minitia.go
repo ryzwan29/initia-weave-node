@@ -169,7 +169,7 @@ func minitiaStartCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			fmt.Println("Started Minitia full node application. You can see the logs with `minitia log`")
+			fmt.Println("Started Minitia full node application. You can see the logs with `weave minitia log`")
 			return nil
 		},
 	}
@@ -212,7 +212,7 @@ func minitiaRestartCommand() *cobra.Command {
 				return err
 			}
 
-			fmt.Println("Restart Minitia full node application. You can see the logs with `minitia log`")
+			fmt.Println("Restart Minitia full node application. You can see the logs with `weave minitia log`")
 			return nil
 		},
 	}

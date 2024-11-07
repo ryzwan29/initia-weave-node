@@ -161,7 +161,7 @@ Valid options are [executor, challenger] eg. weave opinit-bots start executor
 			if err != nil {
 				return err
 			}
-			fmt.Println(fmt.Sprintf("Started the OPinit %[1]s bot. You can see the logs with `opinit-bots log %[1]s`", botName))
+			fmt.Printf("Started the OPinit %[1]s bot. You can see the logs with `weave opinit-bots log %[1]s`\n", botName)
 			return nil
 		},
 	}
@@ -213,7 +213,7 @@ Valid options are [executor, challenger] eg. weave opinit-bots restart executor`
 			if err != nil {
 				return err
 			}
-			fmt.Println(fmt.Sprintf("Restart the OPinit %[1]s bot process. You can see the logs with `opinit-bots log %[1]s`", botName))
+			fmt.Printf("Restart the OPinit %[1]s bot process. You can see the logs with `weave opinit-bots log %[1]s`\n", botName)
 			return nil
 		},
 	}

@@ -76,7 +76,7 @@ func initiaStartCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			fmt.Println("Started Initia full node application. You can see the logs with `initia log`")
+			fmt.Println("Started Initia full node application. You can see the logs with `weave initia log`")
 			return nil
 		},
 	}
@@ -119,7 +119,7 @@ func initiaRestartCommand() *cobra.Command {
 				return err
 			}
 
-			fmt.Println("Started Initia full node application. You can see the logs with `initia log`")
+			fmt.Println("Started Initia full node application. You can see the logs with `weave initia log`")
 			return nil
 		},
 	}

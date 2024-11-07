@@ -439,7 +439,7 @@ type ChainIdInput struct {
 func NewChainIdInput(ctx context.Context) *ChainIdInput {
 	tooltip := styles.NewTooltip(
 		"Chain ID",
-		"Chain ID is the identifier of your Minitia. It should be globally unique among all networks if this will be your production-ready public network, otherwise you can choose any name. However, creating Minitia with the same name from the same bridge executor account will result in an error. More on bridge executor later.",
+		"Identifier of your Minitia. It should be globally unique among all networks if this will be your production-ready public network, otherwise you can choose any name. However, creating Minitia with the same name from the same bridge executor account will result in an error. More on bridge executor later.",
 		"", []string{}, []string{}, []string{},
 	)
 	model := &ChainIdInput{
@@ -550,7 +550,7 @@ type MonikerInput struct {
 func NewMonikerInput(ctx context.Context) *MonikerInput {
 	tooltip := styles.NewTooltip(
 		"Moniker",
-		"The moniker is a unique name assigned to a node in a blockchain network, used primarily for identification and distinction among nodes.",
+		"A unique name assigned to a node in a blockchain network, used primarily for identification and distinction among nodes.",
 		"", []string{}, []string{}, []string{},
 	)
 	model := &MonikerInput{
@@ -606,7 +606,7 @@ type OpBridgeSubmissionIntervalInput struct {
 func NewOpBridgeSubmissionIntervalInput(ctx context.Context) *OpBridgeSubmissionIntervalInput {
 	tooltip := styles.NewTooltip(
 		"Submission Interval",
-		"The maximum waiting time before submitting the L2 output root to L1 again. However, if there is a transaction in a new block, it automatically triggers the submission of the output root.",
+		"The maximum waiting time before submitting the L2 output root to L1 again.",
 		"", []string{}, []string{}, []string{},
 	)
 	model := &OpBridgeSubmissionIntervalInput{
@@ -799,7 +799,7 @@ func NewOracleEnableSelect(ctx context.Context) *OracleEnableSelect {
 	tooltips := styles.NewTooltipSlice(
 		styles.NewTooltip(
 			"Oracle",
-			"The Oracle fetches and submits real-world price data to the blockchain, with validators running both an on-chain component and a sidecar process to gather and relay prices.",
+			"Oracle fetches and submits real-world price data to the blockchain, with validators running both an on-chain component and a sidecar process to gather and relay prices. \nEnabling this is recommended.",
 			"", []string{}, []string{}, []string{},
 		), 2,
 	)
@@ -918,7 +918,7 @@ func (m *SystemKeysSelect) View() string {
 	state := utils.GetCurrentState[LaunchState](m.Ctx)
 	return state.weave.Render() + "\n" +
 		styles.RenderPrompt(
-			"System keys are required for each of the following roles:\nOperator, Bridge Executor, Output Submitter, Batch Submitter, Challenger",
+			"System keys are required for each of the following roles:\nL2 Operator, Bridge Executor, Output Submitter, Batch Submitter, Challenger",
 			[]string{"System keys"},
 			styles.Information,
 		) + "\n" +
