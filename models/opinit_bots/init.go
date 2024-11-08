@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -746,6 +747,14 @@ func WaitStartingInitBot(state *OPInitBotsState) tea.Cmd {
 			if err != nil {
 				panic(err)
 			}
+		}
+
+		// TODO: Remove these once our rpcs are compatible
+		if strings.Contains(configMap["l1_node.rpc_address"], "initia.xyz") {
+			configMap["l1_node.rpc_address"] = DefaultInitiaL1Rpc
+		}
+		if strings.Contains(configMap["da_node.rpc_address"], "initia.xyz") {
+			configMap["da_node.rpc_address"] = DefaultInitiaL1Rpc
 		}
 
 		if state.InitExecutorBot {
