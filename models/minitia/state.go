@@ -32,12 +32,11 @@ type LaunchState struct {
 	systemKeyBatchSubmitterMnemonic  string
 	systemKeyChallengerMnemonic      string
 
-	systemKeyOperatorAddress         string
-	systemKeyBridgeExecutorAddress   string
-	systemKeyOutputSubmitterAddress  string
-	systemKeyBatchSubmitterAddress   string
-	systemKeyL2BatchSubmitterAddress string
-	systemKeyChallengerAddress       string
+	systemKeyOperatorAddress        string
+	systemKeyBridgeExecutorAddress  string
+	systemKeyOutputSubmitterAddress string
+	systemKeyBatchSubmitterAddress  string
+	systemKeyChallengerAddress      string
 
 	systemKeyL1BridgeExecutorBalance  string
 	systemKeyL1OutputSubmitterBalance string
@@ -92,7 +91,6 @@ func (ls LaunchState) Clone() LaunchState {
 		systemKeyBridgeExecutorAddress:    ls.systemKeyBridgeExecutorAddress,
 		systemKeyOutputSubmitterAddress:   ls.systemKeyOutputSubmitterAddress,
 		systemKeyBatchSubmitterAddress:    ls.systemKeyBatchSubmitterAddress,
-		systemKeyL2BatchSubmitterAddress:  ls.systemKeyL2BatchSubmitterAddress,
 		systemKeyChallengerAddress:        ls.systemKeyChallengerAddress,
 		systemKeyL1BridgeExecutorBalance:  ls.systemKeyL1BridgeExecutorBalance,
 		systemKeyL1OutputSubmitterBalance: ls.systemKeyL1OutputSubmitterBalance,

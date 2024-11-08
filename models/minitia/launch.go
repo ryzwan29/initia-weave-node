@@ -2254,12 +2254,10 @@ func generateOrRecoverSystemKeys(ctx context.Context) tea.Cmd {
 				batchSubmitterKey := utils.MustGenerateNewKeyInfo(state.celestiaBinaryPath, BatchSubmitterKeyName)
 				state.systemKeyBatchSubmitterMnemonic = batchSubmitterKey.Mnemonic
 				state.systemKeyBatchSubmitterAddress = batchSubmitterKey.Address
-				state.systemKeyL2BatchSubmitterAddress = utils.MustGetAddressFromMnemonic(state.binaryPath, batchSubmitterKey.Mnemonic)
 			} else {
 				batchSubmitterKey := utils.MustGenerateNewKeyInfo(state.binaryPath, BatchSubmitterKeyName)
 				state.systemKeyBatchSubmitterMnemonic = batchSubmitterKey.Mnemonic
 				state.systemKeyBatchSubmitterAddress = batchSubmitterKey.Address
-				state.systemKeyL2BatchSubmitterAddress = batchSubmitterKey.Address
 			}
 
 			challengerKey := utils.MustGenerateNewKeyInfo(state.binaryPath, ChallengerKeyName)
@@ -2271,10 +2269,8 @@ func generateOrRecoverSystemKeys(ctx context.Context) tea.Cmd {
 			state.systemKeyOutputSubmitterAddress = utils.MustGetAddressFromMnemonic(state.binaryPath, state.systemKeyOutputSubmitterMnemonic)
 			if state.batchSubmissionIsCelestia {
 				state.systemKeyBatchSubmitterAddress = utils.MustGetAddressFromMnemonic(state.celestiaBinaryPath, state.systemKeyBatchSubmitterMnemonic)
-				state.systemKeyL2BatchSubmitterAddress = utils.MustGetAddressFromMnemonic(state.binaryPath, state.systemKeyBatchSubmitterMnemonic)
 			} else {
 				state.systemKeyBatchSubmitterAddress = utils.MustGetAddressFromMnemonic(state.binaryPath, state.systemKeyBatchSubmitterMnemonic)
-				state.systemKeyL2BatchSubmitterAddress = state.systemKeyBatchSubmitterAddress
 			}
 			state.systemKeyChallengerAddress = utils.MustGetAddressFromMnemonic(state.binaryPath, state.systemKeyChallengerMnemonic)
 		}
@@ -2641,10 +2637,9 @@ func launchingMinitia(ctx context.Context, streamingLogs *[]string) tea.Cmd {
 						state.systemKeyOutputSubmitterMnemonic,
 						state.systemKeyOutputSubmitterAddress,
 					),
-					BatchSubmitter: types.NewSystemAccount(
+					BatchSubmitter: types.NewBatchSubmitterAccount(
 						state.systemKeyBatchSubmitterMnemonic,
 						state.systemKeyBatchSubmitterAddress,
-						state.systemKeyL2BatchSubmitterAddress,
 					),
 					Challenger: types.NewSystemAccount(
 						state.systemKeyChallengerMnemonic,

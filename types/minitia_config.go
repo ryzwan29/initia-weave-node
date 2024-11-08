@@ -32,22 +32,24 @@ type OpBridge struct {
 type SystemAccount struct {
 	L1Address string `json:"l1_address,omitempty"`
 	L2Address string `json:"l2_address,omitempty"`
+	DAAddress string `json:"da_address,omitempty"`
 	Mnemonic  string `json:"mnemonic,omitempty"`
 }
 
-func NewSystemAccount(mnemonic string, addresses ...string) *SystemAccount {
-	if len(addresses) < 1 || len(addresses) > 2 {
-		panic("NewSystemAccount requires 2 or 3 parameters: mnemonic and 1 or 2 addresses")
-	}
-
+func NewSystemAccount(mnemonic, addresses string) *SystemAccount {
 	account := &SystemAccount{
 		Mnemonic:  mnemonic,
-		L1Address: addresses[0],
-		L2Address: addresses[0],
+		L1Address: addresses,
+		L2Address: addresses,
 	}
 
-	if len(addresses) == 2 {
-		account.L2Address = addresses[1]
+	return account
+}
+
+func NewBatchSubmitterAccount(mnemonic, address string) *SystemAccount {
+	account := &SystemAccount{
+		DAAddress: address,
+		Mnemonic:  mnemonic,
 	}
 
 	return account
