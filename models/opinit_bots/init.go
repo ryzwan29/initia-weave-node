@@ -154,7 +154,7 @@ func OPInitBotInitSelectExecutor(ctx context.Context) tea.Model {
 		}
 		state.botConfig["l1_node.chain_id"] = botConfigChainId.L1Node.ChainID
 		state.botConfig["l2_node.chain_id"] = botConfigChainId.L2Node.ChainID
-		state.botConfig["da_node.chain_id"] = botConfigChainId.L2Node.ChainID
+		state.botConfig["da_node.chain_id"] = botConfigChainId.DANode.ChainID
 		state.daIsCelestia = botConfigChainId.DANode.Bech32Prefix == "celestia"
 		ctx = utils.SetCurrentState(ctx, state)
 		return NewUseCurrentConfigSelector(ctx, "executor")
