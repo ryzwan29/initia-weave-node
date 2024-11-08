@@ -105,6 +105,10 @@ type BotConfigChainId struct {
 	L2Node struct {
 		ChainID string `json:"chain_id"`
 	} `json:"l2_node"`
+	DANode struct {
+		ChainID      string `json:"chain_id"`
+		Bech32Prefix string `json:"bech32_prefix"`
+	} `json:"da_node"`
 }
 
 func OPInitBotInitSelectExecutor(ctx context.Context) tea.Model {
@@ -150,6 +154,8 @@ func OPInitBotInitSelectExecutor(ctx context.Context) tea.Model {
 		}
 		state.botConfig["l1_node.chain_id"] = botConfigChainId.L1Node.ChainID
 		state.botConfig["l2_node.chain_id"] = botConfigChainId.L2Node.ChainID
+		state.botConfig["da_node.chain_id"] = botConfigChainId.L2Node.ChainID
+		state.daIsCelestia = botConfigChainId.DANode.Bech32Prefix == "celestia"
 		ctx = utils.SetCurrentState(ctx, state)
 		return NewUseCurrentConfigSelector(ctx, "executor")
 	}
@@ -319,6 +325,8 @@ func (m *DeleteDBSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			state.botConfig["l1_node.chain_id"] = botConfigChainId.L1Node.ChainID
 			state.botConfig["l2_node.chain_id"] = botConfigChainId.L2Node.ChainID
+			state.botConfig["da_node.chain_id"] = botConfigChainId.DANode.ChainID
+			state.daIsCelestia = botConfigChainId.DANode.Bech32Prefix == "celestia"
 			m.Ctx = utils.SetCurrentState(m.Ctx, state)
 			return NewUseCurrentConfigSelector(utils.SetCurrentState(m.Ctx, state), m.bot), cmd
 		}
@@ -477,16 +485,16 @@ func (m *PrefillMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 				chainRegistry := registry.MustGetChainRegistry(network)
 
-				state.botConfig["da.chain_id"] = chainRegistry.GetChainId()
-				state.botConfig["da.rpc_address"] = chainRegistry.MustGetActiveRpc()
-				state.botConfig["da.bech32_prefix"] = chainRegistry.GetBech32Prefix()
-				state.botConfig["da.gas_price"] = chainRegistry.MustGetMinGasPriceByDenom(DefaultCelestiaGasDenom)
+				state.botConfig["da_node.chain_id"] = chainRegistry.GetChainId()
+				state.botConfig["da_node.rpc_address"] = chainRegistry.MustGetActiveRpc()
+				state.botConfig["da_node.bech32_prefix"] = chainRegistry.GetBech32Prefix()
+				state.botConfig["da_node.gas_price"] = chainRegistry.MustGetMinGasPriceByDenom(DefaultCelestiaGasDenom)
 				state.daIsCelestia = true
 			} else {
-				state.botConfig["da.chain_id"] = state.botConfig["l1_node.chain_id"]
-				state.botConfig["da.rpc_address"] = state.botConfig["l1_node.rpc_address"]
-				state.botConfig["da.bech32_prefix"] = "init"
-				state.botConfig["da.gas_price"] = state.botConfig["l1_node.gas_price"]
+				state.botConfig["da_node.chain_id"] = state.botConfig["l1_node.chain_id"]
+				state.botConfig["da_node.rpc_address"] = state.botConfig["l1_node.rpc_address"]
+				state.botConfig["da_node.bech32_prefix"] = "init"
+				state.botConfig["da_node.gas_price"] = state.botConfig["l1_node.gas_price"]
 			}
 			m.Ctx = utils.SetCurrentState(m.Ctx, state)
 
@@ -657,15 +665,15 @@ func (m *SetDALayer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"DA Layer"}, string(*selected)))
 		switch *selected {
 		case Initia:
-			state.botConfig["da.chain_id"] = state.botConfig["l1_node.chain_id"]
-			state.botConfig["da.rpc_address"] = state.botConfig["l1_node.rpc_address"]
-			state.botConfig["da.bech32_prefix"] = "init"
-			state.botConfig["da.gas_price"] = state.botConfig["l1_node.gas_price"]
+			state.botConfig["da_node.chain_id"] = state.botConfig["l1_node.chain_id"]
+			state.botConfig["da_node.rpc_address"] = state.botConfig["l1_node.rpc_address"]
+			state.botConfig["da_node.bech32_prefix"] = "init"
+			state.botConfig["da_node.gas_price"] = state.botConfig["l1_node.gas_price"]
 		case Celestia:
-			state.botConfig["da.chain_id"] = m.chainRegistry.GetChainId()
-			state.botConfig["da.rpc_address"] = m.chainRegistry.MustGetActiveRpc()
-			state.botConfig["da.bech32_prefix"] = m.chainRegistry.GetBech32Prefix()
-			state.botConfig["da.gas_price"] = m.chainRegistry.MustGetMinGasPriceByDenom(DefaultCelestiaGasDenom)
+			state.botConfig["da_node.chain_id"] = m.chainRegistry.GetChainId()
+			state.botConfig["da_node.rpc_address"] = m.chainRegistry.MustGetActiveRpc()
+			state.botConfig["da_node.bech32_prefix"] = m.chainRegistry.GetBech32Prefix()
+			state.botConfig["da_node.gas_price"] = m.chainRegistry.MustGetMinGasPriceByDenom(DefaultCelestiaGasDenom)
 			state.daIsCelestia = true
 		}
 		m.Ctx = utils.SetCurrentState(m.Ctx, state)
@@ -733,7 +741,7 @@ func WaitStartingInitBot(state *OPInitBotsState) tea.Cmd {
 		}
 
 		if state.daIsCelestia {
-			daKeyPath := filepath.Join(userHome, utils.OPinitDirectory, configMap["da.chain_id"])
+			daKeyPath := filepath.Join(userHome, utils.OPinitDirectory, configMap["da_node.chain_id"])
 			err = utils.CopyDirectory(weaveDummyKeyPath, daKeyPath)
 			if err != nil {
 				panic(err)
@@ -776,10 +784,10 @@ func WaitStartingInitBot(state *OPInitBotsState) tea.Cmd {
 					TxTimeout:     60,
 				},
 				DANode: NodeSettings{
-					ChainID:       configMap["da.chain_id"],
-					RPCAddress:    configMap["da.rpc_address"],
-					Bech32Prefix:  configMap["da.bech32_prefix"],
-					GasPrice:      configMap["da.gas_price"],
+					ChainID:       configMap["da_node.chain_id"],
+					RPCAddress:    configMap["da_node.rpc_address"],
+					Bech32Prefix:  configMap["da_node.bech32_prefix"],
+					GasPrice:      configMap["da_node.gas_price"],
 					GasAdjustment: 1.5,
 					TxTimeout:     60,
 				},
