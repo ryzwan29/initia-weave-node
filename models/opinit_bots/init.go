@@ -488,7 +488,7 @@ func (m *PrefillMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				state.botConfig["da_node.chain_id"] = chainRegistry.GetChainId()
 				state.botConfig["da_node.rpc_address"] = chainRegistry.MustGetActiveRpc()
 				state.botConfig["da_node.bech32_prefix"] = chainRegistry.GetBech32Prefix()
-				state.botConfig["da_node.gas_price"] = chainRegistry.MustGetMinGasPriceByDenom(DefaultCelestiaGasDenom)
+				state.botConfig["da_node.gas_price"] = DefaultCelestiaGasPrices
 				state.daIsCelestia = true
 			} else {
 				state.botConfig["da_node.chain_id"] = state.botConfig["l1_node.chain_id"]
@@ -673,7 +673,7 @@ func (m *SetDALayer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			state.botConfig["da_node.chain_id"] = m.chainRegistry.GetChainId()
 			state.botConfig["da_node.rpc_address"] = m.chainRegistry.MustGetActiveRpc()
 			state.botConfig["da_node.bech32_prefix"] = m.chainRegistry.GetBech32Prefix()
-			state.botConfig["da_node.gas_price"] = m.chainRegistry.MustGetMinGasPriceByDenom(DefaultCelestiaGasDenom)
+			state.botConfig["da_node.gas_price"] = DefaultCelestiaGasPrices
 			state.daIsCelestia = true
 		}
 		m.Ctx = utils.SetCurrentState(m.Ctx, state)
