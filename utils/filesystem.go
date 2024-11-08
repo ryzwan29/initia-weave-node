@@ -127,8 +127,18 @@ func DeleteDirectory(path string) error {
 	return nil
 }
 
-// CopyDirectory uses the `cp -r` command to copy files or directories from src to des.
+// CopyDirectory uses the cp -r command to copy files or directories from src to des.
 func CopyDirectory(src, des string) error {
+	// Check if destination exists
+	if _, err := os.Stat(des); err == nil {
+		// Remove the contents of the destination directory
+		err := os.RemoveAll(des)
+		if err != nil {
+			return fmt.Errorf("could not clear destination directory: %v", err)
+		}
+	}
+
+	// Now, perform the copy
 	cmd := exec.Command("cp", "-r", src, des)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
