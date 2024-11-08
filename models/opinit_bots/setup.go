@@ -237,7 +237,9 @@ func (m *ProcessingMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 			m.Ctx = utils.SetCurrentState(m.Ctx, state)
-			return NewSetupBotCheckbox(m.Ctx, true, false), nil
+			model := NewSetupOPInitBots(m.Ctx)
+			return model, model.Init()
+			//return NewSetupBotCheckbox(m.Ctx, true, false), nil
 
 		case "No, skip":
 			m.Ctx = utils.SetCurrentState(m.Ctx, state)
