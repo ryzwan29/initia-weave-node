@@ -97,9 +97,9 @@ package minitia
 //
 //	assert.Nil(t, model.Init(), "Expected Init command to be returned")
 //	assert.NotNil(t, model, "Expected DeleteExistingMinitiaInput to be created")
-//	assert.Equal(t, "Please type `delete existing minitia` to delete the .minitia folder and proceed with weave minitia launch", model.GetQuestion())
+//	assert.Equal(t, "Please type `delete` to delete the .minitia folder and proceed with weave minitia launch", model.GetQuestion())
 //	assert.NotNil(t, model.TextInput, "Expected TextInput to be initialized")
-//	assert.Equal(t, "Type `delete existing minitia` to delete, Ctrl+C to keep the folder and quit this command.", model.TextInput.Placeholder, "Expected placeholder to be set correctly")
+//	assert.Equal(t, "Type `delete` to delete, Ctrl+C to keep the folder and quit this command.", model.TextInput.Placeholder, "Expected placeholder to be set correctly")
 //	assert.NotNil(t, model.TextInput.ValidationFn, "Expected validation function to be set")
 //}
 //
@@ -110,7 +110,7 @@ package minitia
 //	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("incorrect input")})
 //	updatedModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
 //
-//	assert.Contains(t, updatedModel.View(), "please type `delete existing minitia` to proceed")
+//	assert.Contains(t, updatedModel.View(), "please type `delete` to proceed")
 //	assert.IsType(t, &DeleteExistingMinitiaInput{}, updatedModel, "Expected model to stay in DeleteExistingMinitiaInput")
 //}
 //
@@ -121,7 +121,7 @@ package minitia
 //	view := model.View()
 //	assert.Contains(t, view, "🚨 Existing .minitia folder detected.", "Expected warning message for existing folder")
 //	assert.Contains(t, view, "permanently deleted and cannot be reversed.", "Expected deletion warning")
-//	assert.Contains(t, view, "Please type `delete existing minitia` to delete", "Expected prompt for deletion confirmation")
+//	assert.Contains(t, view, "Please type `delete` to delete", "Expected prompt for deletion confirmation")
 //}
 //
 //func TestNewNetworkSelect(t *testing.T) {

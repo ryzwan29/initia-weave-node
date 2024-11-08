@@ -100,10 +100,10 @@ func NewDeleteExistingMinitiaInput(ctx context.Context) *DeleteExistingMinitiaIn
 	model := &DeleteExistingMinitiaInput{
 		TextInput: utils.NewTextInput(true),
 		BaseModel: utils.BaseModel{Ctx: ctx, CannotBack: true},
-		question:  "Please type `delete existing minitia` to delete the .minitia folder and proceed with weave minitia launch",
+		question:  "Please type `delete` to delete the .minitia folder and proceed with weave minitia launch",
 	}
-	model.WithPlaceholder("Type `delete existing minitia` to delete, Ctrl+C to keep the folder and quit this command.")
-	model.WithValidatorFn(utils.ValidateExactString("delete existing minitia"))
+	model.WithPlaceholder("Type `delete` to delete, Ctrl+C to keep the folder and quit this command.")
+	model.WithValidatorFn(utils.ValidateExactString("delete"))
 	return model
 }
 
@@ -146,7 +146,7 @@ func (m *DeleteExistingMinitiaInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *DeleteExistingMinitiaInput) View() string {
 	return styles.RenderPrompt("🚨 Existing .minitia folder detected.\nTo proceed with weave minitia launch, you must confirm the deletion of the .minitia folder.\nIf you do not confirm the deletion, the command will not run, and you will be returned to the homepage.\n\n", []string{".minitia", "weave minitia launch"}, styles.Empty) +
 		styles.Text("Please note that once you delete, all configurations, state, keys, and other data will be \n", styles.Yellow) + styles.BoldText("permanently deleted and cannot be reversed.\n", styles.Yellow) +
-		styles.RenderPrompt(m.GetQuestion(), []string{"`delete existing minitia`", ".minitia", "weave minitia launch"}, styles.Question) + m.TextInput.View()
+		styles.RenderPrompt(m.GetQuestion(), []string{"`delete`", ".minitia", "weave minitia launch"}, styles.Question) + m.TextInput.View()
 }
 
 type NetworkSelect struct {
@@ -2599,11 +2599,6 @@ func launchingMinitia(ctx context.Context, streamingLogs *[]string) tea.Cmd {
 			userHome, err := os.UserHomeDir()
 			if err != nil {
 				panic(fmt.Sprintf("failed to get user home directory: %v", err))
-			}
-
-			// TODO: Remove this once new metric enables archival query for minitia launch
-			if state.l1ChainId == "initiation-2" {
-				state.l1RPC = "http://34.143.179.242:26657"
 			}
 
 			config := &types.MinitiaConfig{
