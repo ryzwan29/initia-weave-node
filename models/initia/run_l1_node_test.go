@@ -320,6 +320,83 @@ func TestMinGasPriceInputUpdate(t *testing.T) {
 	}
 }
 
+func TestEnableFeaturesCheckboxUpdate(t *testing.T) {
+	// Define test cases with actions for each scenario
+	tests := []struct {
+		name       string
+		action     []tea.KeyMsg
+		expectLCD  bool
+		expectGRPC bool
+	}{
+		{
+			name: "EnableBoth",
+			action: []tea.KeyMsg{
+				{Type: tea.KeyDown},  // Navigate to LCD
+				{Type: tea.KeySpace}, // Select LCD
+				{Type: tea.KeyDown},  // Navigate to gRPC
+				{Type: tea.KeySpace}, // Select gRPC
+			},
+			expectLCD:  true,
+			expectGRPC: true,
+		},
+		{
+			name: "EnableLCDOnly",
+			action: []tea.KeyMsg{
+				{Type: tea.KeyDown},
+				{Type: tea.KeyDown},
+				{Type: tea.KeySpace},
+			},
+			expectLCD:  true,
+			expectGRPC: false,
+		},
+		{
+			name: "EnableGRPCOnly",
+			action: []tea.KeyMsg{
+				{Type: tea.KeyDown},
+				{Type: tea.KeySpace},
+			},
+			expectLCD:  false,
+			expectGRPC: true,
+		},
+		{
+			name:       "EnableNone",
+			action:     []tea.KeyMsg{}, // No selection
+			expectLCD:  false,
+			expectGRPC: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := utils.NewAppContext(NewRunL1NodeState())
+			// Set the network to Mainnet
+			state := utils.GetCurrentState[RunL1NodeState](ctx)
+			state.network = string(Mainnet)
+
+			state.chainRegistry = registry.MustGetChainRegistry(registry.InitiaL1Testnet)
+			ctx = utils.SetCurrentState(ctx, state)
+			model := NewEnableFeaturesCheckbox(ctx)
+
+			// Execute actions defined in the test case
+			for _, msg := range tc.action {
+				model.Update(msg)
+			}
+
+			// Simulate pressing Enter to submit the selections
+			nextModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+
+			// Verify the next model type is NewSeedsInput
+			if m, ok := nextModel.(*SeedsInput); !ok {
+				t.Errorf("Expected model to be of type *SeedsInput, but got %T", nextModel)
+			} else {
+				state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
+				assert.Equal(t, tc.expectLCD, state.enableLCD)   // Check enableLCD state
+				assert.Equal(t, tc.expectGRPC, state.enableGRPC) // Check enableGRPC state
+			}
+		})
+	}
+}
+
 // func TestRunL1NodeVersionSelect(t *testing.T) {
 // 	mockState := &RunL1NodeState{
 // 		moniker: "",
