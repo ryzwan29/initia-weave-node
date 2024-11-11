@@ -569,8 +569,7 @@ func (m *SeedsInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			prevAnswer = input.Text
 		}
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"seeds"}, prevAnswer))
-		m.Ctx = utils.SetCurrentState(m.Ctx, state)
-		return NewPersistentPeersInput(m.Ctx), cmd
+		return NewPersistentPeersInput(utils.SetCurrentState(m.Ctx, state)), cmd
 	}
 	m.TextInput = input
 	return m, cmd

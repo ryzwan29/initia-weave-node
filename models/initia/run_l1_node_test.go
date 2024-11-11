@@ -397,6 +397,77 @@ func TestEnableFeaturesCheckboxUpdate(t *testing.T) {
 	}
 }
 
+func TestSeedsInputUpdate(t *testing.T) {
+	ctx := utils.NewAppContext(NewRunL1NodeState())
+	state := utils.GetCurrentState[RunL1NodeState](ctx)
+
+	state.chainRegistry = registry.MustGetChainRegistry(registry.InitiaL1Testnet)
+	ctx = utils.SetCurrentState(ctx, state)
+
+	// Define test cases
+	tests := []struct {
+		name               string
+		input              string
+		expectTransition   bool
+		expectedSeeds      string
+		expectedPrevAnswer string
+	}{
+		{
+			name:               "ValidInput",
+			input:              "7a4f10fbdedbb50354163bd43ea6bc4357dd2632@34.87.159.32:26656",
+			expectTransition:   true,
+			expectedSeeds:      "7a4f10fbdedbb50354163bd43ea6bc4357dd2632@34.87.159.32:26656",
+			expectedPrevAnswer: "7a4f10fbdedbb50354163bd43ea6bc4357dd2632@34.87.159.32:26656",
+		},
+		{
+			name:               "InvalidInput",
+			input:              "invalid-seed",
+			expectTransition:   false,
+			expectedSeeds:      "",
+			expectedPrevAnswer: "",
+		},
+		{
+			name:               "EmptyInput",
+			input:              "",
+			expectTransition:   true,
+			expectedSeeds:      "",
+			expectedPrevAnswer: "None",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			model := NewSeedsInput(ctx)
+
+			// Simulate entering the input
+			model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(tc.input)})
+			assert.Equal(t, tc.input, model.TextInput.Text) // Verify input is set
+
+			// Simulate pressing Enter to submit the input
+			nextModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+
+			// Check if transition should occur
+			if tc.expectTransition {
+				// Expect transition to NewPersistentPeersInput
+				if m, ok := nextModel.(*PersistentPeersInput); !ok {
+					t.Errorf("Expected model to be of type *PersistentPeersInput, but got %T", nextModel)
+				} else {
+					state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
+					assert.Equal(t, tc.expectedSeeds, state.seeds)                  // Verify seeds in state
+					assert.Contains(t, state.weave.Render(), tc.expectedPrevAnswer) // Check previous response
+				}
+			} else {
+				// Expect no transition
+				assert.Equal(t, model, nextModel) // Should remain in SeedsInput
+
+				// Verify that seeds are not set in the state
+				state := utils.GetCurrentState[RunL1NodeState](model.Ctx)
+				assert.Empty(t, state.seeds) // Seeds should remain empty due to validation failure
+			}
+		})
+	}
+}
+
 // func TestRunL1NodeVersionSelect(t *testing.T) {
 // 	mockState := &RunL1NodeState{
 // 		moniker: "",
