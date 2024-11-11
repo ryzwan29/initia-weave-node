@@ -468,6 +468,110 @@ func TestSeedsInputUpdate(t *testing.T) {
 	}
 }
 
+func TestPersistentPeersInputUpdate_ValidInput_LocalNetwork(t *testing.T) {
+	ctx := utils.NewAppContext(NewRunL1NodeState())
+	state := utils.GetCurrentState[RunL1NodeState](ctx)
+	state.network = string(Local)
+	ctx = utils.SetCurrentState(ctx, state)
+
+	model := NewPersistentPeersInput(ctx)
+
+	// Simulate entering a valid persistent peer input
+	validPeer := "7a4f10fbdedbb50354163bd43ea6bc4357dd2632@34.87.159.32:26656"
+	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(validPeer)})
+	assert.Equal(t, validPeer, model.TextInput.Text) // Verify input is set
+
+	// Simulate pressing Enter to submit the valid input
+	nextModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Expect transition to ExistingGenesisChecker for Local network
+	if m, ok := nextModel.(*ExistingGenesisChecker); !ok {
+		t.Errorf("Expected model to be of type *ExistingGenesisChecker, but got %T", nextModel)
+	} else {
+		state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
+		assert.Equal(t, validPeer, state.persistentPeers)   // Verify persistent peers in state
+		assert.Contains(t, state.weave.Render(), validPeer) // Check previous response
+	}
+}
+
+func TestPersistentPeersInputUpdate_ValidInput_MainnetNetwork(t *testing.T) {
+	ctx := utils.NewAppContext(NewRunL1NodeState())
+	state := utils.GetCurrentState[RunL1NodeState](ctx)
+	state.network = string(Mainnet)
+	state.chainRegistry = registry.MustGetChainRegistry(registry.InitiaL1Testnet)
+	ctx = utils.SetCurrentState(ctx, state)
+
+	model := NewPersistentPeersInput(ctx)
+
+	// Simulate entering a valid persistent peer input
+	validPeer := "7a4f10fbdedbb50354163bd43ea6bc4357dd2632@34.87.159.32:26656"
+	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(validPeer)})
+	assert.Equal(t, validPeer, model.TextInput.Text) // Verify input is set
+
+	// Simulate pressing Enter to submit the valid input
+	nextModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Expect transition to InitializingAppLoading for Mainnet network
+	if m, ok := nextModel.(*InitializingAppLoading); !ok {
+		t.Errorf("Expected model to be of type *InitializingAppLoading, but got %T", nextModel)
+	} else {
+		state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
+		assert.Equal(t, validPeer, state.persistentPeers)   // Verify persistent peers in state
+		assert.Contains(t, state.weave.Render(), validPeer) // Check previous response
+	}
+}
+
+func TestPersistentPeersInputUpdate_InvalidInput(t *testing.T) {
+	ctx := utils.NewAppContext(NewRunL1NodeState())
+	state := utils.GetCurrentState[RunL1NodeState](ctx)
+	state.network = string(Testnet)
+	state.chainRegistry = registry.MustGetChainRegistry(registry.InitiaL1Testnet)
+	ctx = utils.SetCurrentState(ctx, state)
+
+	model := NewPersistentPeersInput(ctx)
+
+	// Simulate entering an invalid persistent peer input
+	invalidPeer := "invalid-peer"
+	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(invalidPeer)})
+	assert.Equal(t, invalidPeer, model.TextInput.Text) // Verify input is set
+
+	// Simulate pressing Enter to submit the invalid input
+	nextModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Expect no transition, should remain in PersistentPeersInput
+	assert.Equal(t, model, nextModel) // Should remain in PersistentPeersInput
+
+	// Verify that persistent peers are not set in the state
+	utils.GetCurrentState[RunL1NodeState](model.Ctx)
+	assert.Empty(t, state.persistentPeers) // persistent_peers should remain empty due to validation failure
+}
+
+func TestPersistentPeersInputUpdate_EmptyInput_LocalNetwork(t *testing.T) {
+	ctx := utils.NewAppContext(NewRunL1NodeState())
+	state := utils.GetCurrentState[RunL1NodeState](ctx)
+	state.network = string(Local)
+	state.chainRegistry = registry.MustGetChainRegistry(registry.InitiaL1Testnet)
+	ctx = utils.SetCurrentState(ctx, state)
+
+	model := NewPersistentPeersInput(ctx)
+
+	// Simulate entering an empty input
+	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("")})
+	assert.Equal(t, "", model.TextInput.Text) // Verify input is empty
+
+	// Simulate pressing Enter to submit the empty input
+	nextModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Expect transition to ExistingGenesisChecker for Local network
+	if m, ok := nextModel.(*ExistingGenesisChecker); !ok {
+		t.Errorf("Expected model to be of type *ExistingGenesisChecker, but got %T", nextModel)
+	} else {
+		state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
+		assert.Equal(t, "", state.persistentPeers)       // Verify persistent_peers in state as empty
+		assert.Contains(t, state.weave.Render(), "None") // Check previous response as "None"
+	}
+}
+
 // func TestRunL1NodeVersionSelect(t *testing.T) {
 // 	mockState := &RunL1NodeState{
 // 		moniker: "",
