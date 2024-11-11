@@ -18,6 +18,13 @@ import (
 	"github.com/initia-labs/weave/utils"
 )
 
+func GetNextModelByExistingApp(ctx context.Context, existingApp bool) tea.Model {
+	if existingApp {
+		return NewExistingAppReplaceSelect(ctx)
+	}
+	return NewRunL1NodeMonikerInput(ctx)
+}
+
 type RunL1NodeNetworkSelect struct {
 	utils.BaseModel
 	utils.Selector[L1NodeNetworkOption]
@@ -97,20 +104,11 @@ func (m *RunL1NodeNetworkSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			state.chainRegistry = chainRegistry
 			state.chainId = state.chainRegistry.GetChainId()
 			state.genesisEndpoint = state.chainRegistry.GetGenesisUrl()
+			state.existingApp = IsExistApp()
 
-			if !IsExistApp() {
-				state.existingApp = false
-				m.Ctx = utils.SetCurrentState(m.Ctx, state)
-				return NewRunL1NodeMonikerInput(m.Ctx), nil
-
-			} else {
-				state.existingApp = true
-				m.Ctx = utils.SetCurrentState(m.Ctx, state)
-				return NewExistingAppReplaceSelect(m.Ctx), nil
-			}
+			return GetNextModelByExistingApp(utils.SetCurrentState(m.Ctx, state), state.existingApp), nil
 		case Local:
-			m.Ctx = utils.SetCurrentState(m.Ctx, state)
-			return NewRunL1NodeVersionSelect(m.Ctx), nil
+			return NewRunL1NodeVersionSelect(utils.SetCurrentState(m.Ctx, state)), nil
 		}
 		return m, tea.Quit
 	}
@@ -165,12 +163,11 @@ func (m *RunL1NodeVersionSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.Ctx = utils.CloneStateAndPushPage[RunL1NodeState](m.Ctx, m)
 		state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
 
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"initiad version"}, state.initiadVersion))
 		state.initiadVersion = *selected
 		state.initiadEndpoint = m.versions[*selected]
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"initiad version"}, state.initiadVersion))
-		m.Ctx = utils.SetCurrentState(m.Ctx, state)
 
-		return NewRunL1NodeChainIdInput(m.Ctx), cmd
+		return NewRunL1NodeChainIdInput(utils.SetCurrentState(m.Ctx, state)), cmd
 	}
 
 	return m, cmd
@@ -222,19 +219,9 @@ func (m *RunL1NodeChainIdInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		state.chainId = input.Text
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"chain id"}, input.Text))
+		state.existingApp = IsExistApp()
 
-		if !IsExistApp() {
-			state.existingApp = false
-			m.Ctx = utils.SetCurrentState(m.Ctx, state)
-			return NewRunL1NodeMonikerInput(m.Ctx), nil
-
-		} else {
-			state.existingApp = true
-			m.Ctx = utils.SetCurrentState(m.Ctx, state)
-
-			return NewExistingAppReplaceSelect(m.Ctx), nil
-
-		}
+		return GetNextModelByExistingApp(utils.SetCurrentState(m.Ctx, state), state.existingApp), nil
 	}
 	m.TextInput = input
 	return m, cmd

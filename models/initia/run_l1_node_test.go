@@ -1,59 +1,97 @@
 package initia
 
-// import (
-// 	"errors"
-// 	"fmt"
-// 	"strings"
-// 	"testing"
+import (
+	"strings"
+	"testing"
 
-// 	tea "github.com/charmbracelet/bubbletea"
-// 	"github.com/spf13/viper"
-// 	"github.com/test-go/testify/assert"
+	"github.com/spf13/viper"
+	"github.com/stretchr/testify/assert"
 
-// 	"github.com/initia-labs/weave/utils"
-// )
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/initia-labs/weave/utils"
+)
 
-// func InitializeViperForTest(t *testing.T) {
-// 	// Reset viper to ensure no previous state is carried over
-// 	viper.Reset()
+func InitializeViperForTest(t *testing.T) {
+	// Reset viper to ensure no previous state is carried over
+	viper.Reset()
 
-// 	// Load the default config template for testing
-// 	viper.SetConfigType("json")
-// 	err := viper.ReadConfig(strings.NewReader(utils.DefaultConfigTemplate))
+	// Load the default config template for testing
+	viper.SetConfigType("json")
+	err := viper.ReadConfig(strings.NewReader(utils.DefaultConfigTemplate))
 
-// 	if err != nil {
-// 		t.Fatalf("failed to initialize viper: %v", err)
-// 	}
-// }
+	if err != nil {
+		t.Fatalf("failed to initialize viper: %v", err)
+	}
+}
 
-// func TestRunL1NodeNetworkSelect_SaveToState(t *testing.T) {
+func TestRunL1NodeNetworkSelectInitialization(t *testing.T) {
+	ctx := utils.NewAppContext(NewRunL1NodeState())
+	model := NewRunL1NodeNetworkSelect(ctx)
 
-// 	InitializeViperForTest(t)
-// 	mockState := &RunL1NodeState{}
+	assert.Equal(t, "Which network will your node participate in?", model.GetQuestion())
+	assert.Contains(t, model.Selector.Options, Testnet)
+	assert.Contains(t, model.Selector.Options, Local)
+}
 
-// 	networkSelect := NewRunL1NodeNetworkSelect(mockState)
-// 	// m, _ := networkSelect.Update(tea.KeyMsg{Type: tea.KeyEnter})
+func TestRunL1NodeNetworkSelectLocalSelection(t *testing.T) {
+	ctx := utils.NewAppContext(NewRunL1NodeState())
+	model := NewRunL1NodeNetworkSelect(ctx)
 
-// 	// assert.Equal(t, "Mainnet", mockState.network)
-// 	// assert.Equal(t, "https://initia.s3.ap-southeast-1.amazonaws.com/initia-1/genesis.json", mockState.genesisEndpoint)
+	// Simulate pressing down to move to "Local" option and select it
+	_, _ = model.Update(tea.KeyMsg{Type: tea.KeyDown})
+	nextModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
 
-// 	// assert.IsType(t, m, &RunL1NodeMonikerInput{})
+	// Verify that the next model is of the expected type for Local selection
+	if m, ok := nextModel.(*RunL1NodeVersionSelect); !ok {
+		t.Errorf("Expected next model to be of type *RunL1NodeVersionSelect, but got %T", nextModel)
+	} else {
+		state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
 
-// 	// _, _ = networkSelect.Update(tea.KeyMsg{Type: tea.KeyDown})
-// 	m, _ := networkSelect.Update(tea.KeyMsg{Type: tea.KeyEnter})
+		// Verify the state after selecting "Local"
+		assert.Equal(t, string(Local), state.network)
+		assert.Nil(t, state.chainRegistry)
+		assert.Empty(t, state.chainId)
+		assert.Empty(t, state.genesisEndpoint)
+	}
+}
 
-// 	assert.Equal(t, "Testnet (initiation-2)", mockState.network)
-// 	assert.Equal(t, "https://storage.googleapis.com/init-common-genesis/initiation-2/genesis.json", mockState.genesisEndpoint)
+func TestRunL1NodeVersionSelectUpdate(t *testing.T) {
+	// Set up a mock context and initial state
+	ctx := utils.NewAppContext(NewRunL1NodeState())
 
-// 	assert.IsType(t, m, &ExistingAppChecker{})
+	// Define mock versions
+	mockVersions := utils.BinaryVersionWithDownloadURL{
+		"v1.0.0": "http://example.com/download/v1.0.0",
+		"v2.0.0": "http://example.com/download/v2.0.0",
+	}
 
-// 	_, _ = networkSelect.Update(tea.KeyMsg{Type: tea.KeyDown})
-// 	m, _ = networkSelect.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	// Initialize the model with mock versions and a question
+	model := &RunL1NodeVersionSelect{
+		Selector: utils.Selector[string]{Options: []string{"v1.0.0", "v2.0.0"}},
+		BaseModel: utils.BaseModel{
+			Ctx: ctx,
+		},
+		versions: mockVersions,
+		question: "Select the version of initiad to download",
+	}
 
-// 	assert.Equal(t, "Local", mockState.network)
+	// Simulate pressing down to move to "v2.0.0" and selecting it
+	_, _ = model.Update(tea.KeyMsg{Type: tea.KeyDown})
+	nextModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
 
-// 	assert.IsType(t, m, &RunL1NodeVersionSelect{})
-// }
+	// Verify the next model type
+	if m, ok := nextModel.(*RunL1NodeChainIdInput); !ok {
+		t.Errorf("Expected next model to be of type *RunL1NodeChainIdInput, but got %T", nextModel)
+	} else {
+		// Retrieve the updated state from the next model's context
+		state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
+
+		// Verify state fields after selection
+		assert.Equal(t, "v2.0.0", state.initiadVersion)
+		assert.Equal(t, "http://example.com/download/v2.0.0", state.initiadEndpoint)
+		assert.Equal(t, "Select the version of initiad to download", model.question)
+	}
+}
 
 // func TestRunL1NodeMonikerInput_Update(t *testing.T) {
 // 	// Create a mock state
