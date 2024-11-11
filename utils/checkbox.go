@@ -131,7 +131,7 @@ func (s *CheckBox[T]) GetSelectedString() string {
 			selected = append(selected, fmt.Sprintf("%v", s.Options[idx]))
 		}
 	}
-	if len(selected[:]) == 0 {
+	if len(selected) == 0 {
 		return "None"
 	}
 	return strings.Join(selected[:], ", ")

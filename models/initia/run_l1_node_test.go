@@ -264,6 +264,62 @@ func TestRunL1NodeMonikerInputUpdateMainnetNetwork(t *testing.T) {
 	}
 }
 
+func TestMinGasPriceInputUpdate(t *testing.T) {
+	ctx := utils.NewAppContext(NewRunL1NodeState())
+
+	// Define test cases
+	tests := []struct {
+		name                string
+		input               string
+		expectTransition    bool
+		expectedMinGasPrice string
+	}{
+		{
+			name:                "ValidInput",
+			input:               "0.01uatom",
+			expectTransition:    true,
+			expectedMinGasPrice: "0.01uatom",
+		},
+		{
+			name:                "InvalidInput",
+			input:               "invalid-input",
+			expectTransition:    false,
+			expectedMinGasPrice: "",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			model := NewMinGasPriceInput(ctx)
+
+			// Simulate entering the input
+			model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(tc.input)})
+			assert.Equal(t, tc.input, model.TextInput.Text) // Verify input is set
+
+			// Simulate pressing Enter to submit the input
+			nextModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+
+			// Check if transition should occur
+			if tc.expectTransition {
+				// Expect transition to EnableFeaturesCheckbox
+				if m, ok := nextModel.(*EnableFeaturesCheckbox); !ok {
+					t.Errorf("Expected model to be of type *EnableFeaturesCheckbox, but got %T", nextModel)
+				} else {
+					state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
+					assert.Equal(t, tc.expectedMinGasPrice, state.minGasPrice) // Verify min-gas-price is saved in the state
+				}
+			} else {
+				// Expect no transition
+				assert.Equal(t, model, nextModel) // Should remain in MinGasPriceInput
+
+				// Verify that minGasPrice is not set in the state
+				state := utils.GetCurrentState[RunL1NodeState](model.Ctx)
+				assert.Empty(t, state.minGasPrice) // minGasPrice should remain empty due to validation failure
+			}
+		})
+	}
+}
+
 // func TestRunL1NodeVersionSelect(t *testing.T) {
 // 	mockState := &RunL1NodeState{
 // 		moniker: "",

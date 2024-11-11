@@ -419,10 +419,10 @@ func (m *MinGasPriceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if done {
 		m.Ctx = utils.CloneStateAndPushPage[RunL1NodeState](m.Ctx, m)
 		state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
-		state.minGasPrice = input.Text
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"min-gas-price"}, input.Text))
+		state.minGasPrice = input.Text
 		m.Ctx = utils.SetCurrentState(m.Ctx, state)
-		return NewEnableFeaturesCheckbox(m.Ctx), cmd
+		return NewEnableFeaturesCheckbox(utils.SetCurrentState(m.Ctx, state)), cmd
 	}
 	m.TextInput = input
 	return m, cmd
@@ -491,10 +491,8 @@ func (m *EnableFeaturesCheckbox) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if done {
 		m.Ctx = utils.CloneStateAndPushPage[RunL1NodeState](m.Ctx, m)
 		state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
-		empty := true
 		for idx, isSelected := range cb.Selected {
 			if isSelected {
-				empty = false
 				switch cb.Options[idx] {
 				case LCD:
 					state.enableLCD = true
@@ -503,13 +501,8 @@ func (m *EnableFeaturesCheckbox) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 		}
-		if empty {
-			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, "None"))
-		} else {
-			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, cb.GetSelectedString()))
-		}
-		m.Ctx = utils.SetCurrentState(m.Ctx, state)
-		return NewSeedsInput(m.Ctx), nil
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, cb.GetSelectedString()))
+		return NewSeedsInput(utils.SetCurrentState(m.Ctx, state)), nil
 	}
 
 	return m, cmd
