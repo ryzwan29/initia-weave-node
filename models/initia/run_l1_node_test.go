@@ -24,6 +24,22 @@ func InitializeViperForTest(t *testing.T) {
 	}
 }
 
+func TestGetNextModelByExistingApp(t *testing.T) {
+	ctx := utils.NewAppContext(NewRunL1NodeState())
+
+	// Test case when existingApp is true
+	model := GetNextModelByExistingApp(ctx, true)
+	if _, ok := model.(*ExistingAppReplaceSelect); !ok {
+		t.Errorf("Expected model to be of type *ExistingAppReplaceSelect when existingApp is true, but got %T", model)
+	}
+
+	// Test case when existingApp is false
+	model = GetNextModelByExistingApp(ctx, false)
+	if _, ok := model.(*RunL1NodeMonikerInput); !ok {
+		t.Errorf("Expected model to be of type *RunL1NodeMonikerInput when existingApp is false, but got %T", model)
+	}
+}
+
 func TestRunL1NodeNetworkSelectInitialization(t *testing.T) {
 	ctx := utils.NewAppContext(NewRunL1NodeState())
 	model := NewRunL1NodeNetworkSelect(ctx)
@@ -90,6 +106,72 @@ func TestRunL1NodeVersionSelectUpdate(t *testing.T) {
 		assert.Equal(t, "v2.0.0", state.initiadVersion)
 		assert.Equal(t, "http://example.com/download/v2.0.0", state.initiadEndpoint)
 		assert.Equal(t, "Select the version of initiad to download", model.question)
+	}
+}
+
+func TestExistingAppReplaceSelectUseCurrentAppLocal(t *testing.T) {
+	ctx := utils.NewAppContext(NewRunL1NodeState())
+	model := NewExistingAppReplaceSelect(ctx)
+
+	// Set network to Local
+	state := utils.GetCurrentState[RunL1NodeState](model.Ctx)
+	state.network = string(Local)
+	model.Ctx = utils.SetCurrentState(model.Ctx, state)
+
+	nextModel, cmd := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Check that nextModel is ExistingGenesisChecker and verify state
+	if m, ok := nextModel.(*ExistingGenesisChecker); !ok {
+		t.Errorf("Expected model to be of type *ExistingGenesisChecker, but got %T", nextModel)
+	} else {
+		state = utils.GetCurrentState[RunL1NodeState](m.Ctx)
+		assert.False(t, state.replaceExistingApp)
+		assert.Equal(t, "Local", state.network)
+	}
+	assert.NotNil(t, cmd)
+}
+
+func TestExistingAppReplaceSelectUseCurrentAppMainnet(t *testing.T) {
+	ctx := utils.NewAppContext(NewRunL1NodeState())
+	model := NewExistingAppReplaceSelect(ctx)
+
+	// Set network to Mainnet
+	state := utils.GetCurrentState[RunL1NodeState](model.Ctx)
+	state.network = string(Mainnet)
+	model.Ctx = utils.SetCurrentState(model.Ctx, state)
+
+	// Simulate selecting "UseCurrentApp"
+	nextModel, cmd := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Check that nextModel is InitializingAppLoading and verify state
+	if m, ok := nextModel.(*InitializingAppLoading); !ok {
+		t.Errorf("Expected model to be of type *InitializingAppLoading, but got %T", nextModel)
+	} else {
+		state = utils.GetCurrentState[RunL1NodeState](m.Ctx)
+		assert.False(t, state.replaceExistingApp)
+	}
+	assert.NotNil(t, cmd)
+}
+
+func TestExistingAppReplaceSelectReplaceApp(t *testing.T) {
+	ctx := utils.NewAppContext(NewRunL1NodeState())
+	model := NewExistingAppReplaceSelect(ctx)
+
+	// Set network to Mainnet for consistency
+	state := utils.GetCurrentState[RunL1NodeState](model.Ctx)
+	state.network = string(Mainnet)
+	model.Ctx = utils.SetCurrentState(model.Ctx, state)
+
+	// Simulate selecting "ReplaceApp"
+	_, _ = model.Update(tea.KeyMsg{Type: tea.KeyDown}) // Move to ReplaceApp
+	nextModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Check that nextModel is RunL1NodeMonikerInput and verify state
+	if m, ok := nextModel.(*RunL1NodeMonikerInput); !ok {
+		t.Errorf("Expected model to be of type *RunL1NodeMonikerInput, but got %T", nextModel)
+	} else {
+		state = utils.GetCurrentState[RunL1NodeState](m.Ctx)
+		assert.True(t, state.replaceExistingApp)
 	}
 }
 

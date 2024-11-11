@@ -297,23 +297,20 @@ func (m *ExistingAppReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch *selected {
 		case UseCurrentApp:
 			state.replaceExistingApp = false
-			m.Ctx = utils.SetCurrentState(m.Ctx, state)
 			switch state.network {
 			case string(Local):
-				model := NewExistingGenesisChecker(m.Ctx)
+				model := NewExistingGenesisChecker(utils.SetCurrentState(m.Ctx, state))
 				return model, model.Init()
 			case string(Mainnet), string(Testnet):
-				newLoader := NewInitializingAppLoading(m.Ctx)
+				newLoader := NewInitializingAppLoading(utils.SetCurrentState(m.Ctx, state))
 				return newLoader, newLoader.Init()
 			}
 		case ReplaceApp:
 			state.replaceExistingApp = true
-			m.Ctx = utils.SetCurrentState(m.Ctx, state)
-			return NewRunL1NodeMonikerInput(m.Ctx), nil
+			return NewRunL1NodeMonikerInput(utils.SetCurrentState(m.Ctx, state)), nil
 		}
 		return m, tea.Quit
 	}
-
 	return m, cmd
 }
 
