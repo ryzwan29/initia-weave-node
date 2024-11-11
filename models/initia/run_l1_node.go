@@ -359,8 +359,9 @@ func (m *RunL1NodeMonikerInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.Ctx = utils.CloneStateAndPushPage[RunL1NodeState](m.Ctx, m)
 		state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
 
-		state.moniker = input.Text
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"moniker"}, input.Text))
+		state.moniker = input.Text
+
 		switch state.network {
 		case string(Local):
 			return NewMinGasPriceInput(utils.SetCurrentState(m.Ctx, state)), cmd

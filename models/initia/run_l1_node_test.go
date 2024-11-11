@@ -4,12 +4,20 @@ import (
 	"strings"
 	"testing"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 
-	tea "github.com/charmbracelet/bubbletea"
+	"github.com/initia-labs/weave/registry"
 	"github.com/initia-labs/weave/utils"
 )
+
+// func init() {
+// 	registry.GetChainRegistry(registry.CelestiaTestnet)
+// 	registry.GetChainRegistry(registry.CelestiaMainnet)
+// 	registry.GetChainRegistry(registry.InitiaL1Testnet)
+// 	registry.GetChainRegistry(registry.InitiaL1Mainnet)
+// }
 
 func InitializeViperForTest(t *testing.T) {
 	// Reset viper to ensure no previous state is carried over
@@ -175,23 +183,86 @@ func TestExistingAppReplaceSelectReplaceApp(t *testing.T) {
 	}
 }
 
-// func TestRunL1NodeMonikerInput_Update(t *testing.T) {
-// 	// Create a mock state
-// 	mockState := &RunL1NodeState{
-// 		moniker: "",
-// 	}
+func TestRunL1NodeMonikerInputUpdateLocalNetwork(t *testing.T) {
+	ctx := utils.NewAppContext(NewRunL1NodeState())
+	model := NewRunL1NodeMonikerInput(ctx)
 
-// 	model := NewRunL1NodeMonikerInput(mockState)
-// 	m, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
-// 	assert.IsType(t, m, &RunL1NodeMonikerInput{})
+	// Set the network to Local
+	state := utils.GetCurrentState[RunL1NodeState](model.Ctx)
+	state.network = string(Local)
+	model.Ctx = utils.SetCurrentState(model.Ctx, state)
 
-// 	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("Node1")})
-// 	assert.Equal(t, "Node1", model.TextInput.Text)
+	// Simulate entering the moniker "Node1"
+	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("Node1")})
+	assert.Equal(t, "Node1", model.TextInput.Text) // Verify input is set
 
-// 	m, _ = model.Update(tea.KeyMsg{Type: tea.KeyEnter})
-// 	assert.Equal(t, "Node1", mockState.moniker)
-// 	assert.IsType(t, m, &MinGasPriceInput{})
-// }
+	// Simulate pressing Enter to submit the moniker
+	nextModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Verify the next model type is MinGasPriceInput and retrieve updated state
+	if m, ok := nextModel.(*MinGasPriceInput); !ok {
+		t.Errorf("Expected model to be of type *MinGasPriceInput, but got %T", nextModel)
+	} else {
+		state = utils.GetCurrentState[RunL1NodeState](m.Ctx)
+	}
+	assert.Equal(t, "Node1", state.moniker)
+	assert.Empty(t, state.minGasPrice) // minGasPrice should be empty for Local
+}
+
+func TestRunL1NodeMonikerInputUpdateTestnetNetwork(t *testing.T) {
+	ctx := utils.NewAppContext(NewRunL1NodeState())
+	model := NewRunL1NodeMonikerInput(ctx)
+
+	// Set the network to Testnet
+	state := utils.GetCurrentState[RunL1NodeState](model.Ctx)
+	state.network = string(Testnet)
+	state.chainRegistry = registry.MustGetChainRegistry(registry.InitiaL1Testnet)
+	model.Ctx = utils.SetCurrentState(model.Ctx, state)
+
+	// Simulate entering the moniker "NodeTest"
+	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("NodeTest")})
+	assert.Equal(t, "NodeTest", model.TextInput.Text) // Verify input is set
+
+	// Simulate pressing Enter to submit the moniker
+	nextModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Verify the next model type is EnableFeaturesCheckbox and retrieve updated state
+	if m, ok := nextModel.(*EnableFeaturesCheckbox); !ok {
+		t.Errorf("Expected model to be of type *EnableFeaturesCheckbox, but got %T", nextModel)
+	} else {
+		state = utils.GetCurrentState[RunL1NodeState](m.Ctx)
+		assert.Equal(t, "NodeTest", state.moniker)
+	}
+}
+
+func TestRunL1NodeMonikerInputUpdateMainnetNetwork(t *testing.T) {
+	ctx := utils.NewAppContext(NewRunL1NodeState())
+	model := NewRunL1NodeMonikerInput(ctx)
+
+	// Set the network to Mainnet
+	state := utils.GetCurrentState[RunL1NodeState](model.Ctx)
+	state.network = string(Mainnet)
+
+	// TODO: change to mainnet after launch
+	state.chainRegistry = registry.MustGetChainRegistry(registry.InitiaL1Testnet)
+	model.Ctx = utils.SetCurrentState(model.Ctx, state)
+
+	// Simulate entering the moniker "NodeMain"
+	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("NodeMain")})
+	assert.Equal(t, "NodeMain", model.TextInput.Text) // Verify input is set
+
+	// Simulate pressing Enter to submit the moniker
+	nextModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Verify the next model type is EnableFeaturesCheckbox and retrieve updated state
+	if m, ok := nextModel.(*EnableFeaturesCheckbox); !ok {
+		t.Errorf("Expected model to be of type *EnableFeaturesCheckbox, but got %T", nextModel)
+	} else {
+		state = utils.GetCurrentState[RunL1NodeState](m.Ctx)
+		assert.Equal(t, "NodeMain", state.moniker)
+		assert.NotEmpty(t, state.minGasPrice) // minGasPrice should be set for Mainnet
+	}
+}
 
 // func TestRunL1NodeVersionSelect(t *testing.T) {
 // 	mockState := &RunL1NodeState{
