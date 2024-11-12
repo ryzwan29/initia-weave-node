@@ -693,6 +693,50 @@ func TestExistingGenesisReplaceSelect_Update_ReplaceGenesis_MainnetNetwork(t *te
 	}
 }
 
+func TestGenesisEndpointInputUpdate_ValidInput(t *testing.T) {
+	ctx := utils.NewAppContext(NewRunL1NodeState())
+	model := NewGenesisEndpointInput(ctx)
+
+	// Simulate entering a valid URL
+	validURL := "https://example.com/genesis.json"
+	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(validURL)})
+	assert.Equal(t, validURL, model.TextInput.Text) // Verify input is set
+
+	// Simulate pressing Enter to submit the valid URL
+	nextModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Expect transition to InitializingAppLoading for valid URL
+	if m, ok := nextModel.(*InitializingAppLoading); !ok {
+		t.Errorf("Expected model to be of type *InitializingAppLoading, but got %T", nextModel)
+	} else {
+		state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
+		assert.Equal(t, validURL, state.genesisEndpoint)                      // Verify genesis endpoint in state
+		assert.Contains(t, state.weave.Render(), utils.CleanString(validURL)) // Check previous response
+		assert.Nil(t, model.err)                                              // Error should be nil for valid URL
+	}
+}
+
+func TestGenesisEndpointInputUpdate_InvalidInput(t *testing.T) {
+	ctx := utils.NewAppContext(NewRunL1NodeState())
+	model := NewGenesisEndpointInput(ctx)
+
+	// Simulate entering an invalid URL
+	invalidURL := "invalid-url"
+	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(invalidURL)})
+	assert.Equal(t, invalidURL, model.TextInput.Text) // Verify input is set
+
+	// Simulate pressing Enter to submit the invalid URL
+	nextModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Expect no transition for invalid URL, should remain in GenesisEndpointInput
+	assert.Equal(t, model, nextModel) // Should remain in GenesisEndpointInput
+
+	// Verify error is set and state is not updated
+	assert.NotNil(t, model.err) // Error should be set for invalid URL
+	state := utils.GetCurrentState[RunL1NodeState](model.Ctx)
+	assert.Empty(t, state.genesisEndpoint) // genesisEndpoint should remain empty due to validation failure
+}
+
 // func TestRunL1NodeVersionSelect(t *testing.T) {
 // 	mockState := &RunL1NodeState{
 // 		moniker: "",

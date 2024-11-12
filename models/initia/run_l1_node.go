@@ -779,7 +779,6 @@ func (m *ExistingGenesisReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) 
 			newLoader := NewInitializingAppLoading(m.Ctx)
 			return newLoader, newLoader.Init()
 		}
-		return m, tea.Quit
 	}
 
 	return m, cmd
