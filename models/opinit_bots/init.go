@@ -237,17 +237,13 @@ func (m *OPInitBotInitSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"bot"}, string(*selected)))
 		m.Ctx = utils.SetCurrentState(m.Ctx, state)
-		var nextModel tea.Model
 		switch *selected {
 		case ExecutorOPInitBotInitOption:
-			nextModel = OPInitBotInitSelectExecutor(m.Ctx)
+			return OPInitBotInitSelectExecutor(m.Ctx), cmd
 		case ChallengerOPInitBotInitOption:
-			nextModel = OPInitBotInitSelectChallenger(m.Ctx)
+			return OPInitBotInitSelectChallenger(m.Ctx), cmd
 		}
-
-		return nextModel, cmd
 	}
-
 	return m, cmd
 }
 
@@ -326,18 +322,14 @@ func (m *DeleteDBSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			state.botConfig["l2_node.chain_id"] = botConfigChainId.L2Node.ChainID
 			state.botConfig["da_node.chain_id"] = botConfigChainId.DANode.ChainID
 			state.daIsCelestia = botConfigChainId.DANode.Bech32Prefix == "celestia"
-			m.Ctx = utils.SetCurrentState(m.Ctx, state)
 			return NewUseCurrentConfigSelector(utils.SetCurrentState(m.Ctx, state), m.bot), cmd
 		}
 
-		m.Ctx = utils.SetCurrentState(m.Ctx, state)
 		state.ReplaceBotConfig = true
 		if state.MinitiaConfig != nil {
-			m.Ctx = utils.SetCurrentState(m.Ctx, state)
-			return NewPrefillMinitiaConfig(m.Ctx), cmd
+			return NewPrefillMinitiaConfig(utils.SetCurrentState(m.Ctx, state)), cmd
 		}
-		m.Ctx = utils.SetCurrentState(m.Ctx, state)
-		return NewL1PrefillSelector(m.Ctx), cmd
+		return NewL1PrefillSelector(utils.SetCurrentState(m.Ctx, state)), cmd
 	}
 
 	return m, cmd
@@ -395,15 +387,13 @@ func (m *UseCurrentConfigSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return model, model.Init()
 		case "replace":
 			state.ReplaceBotConfig = true
+			m.Ctx = utils.SetCurrentState(m.Ctx, state)
 			if state.MinitiaConfig != nil {
-				m.Ctx = utils.SetCurrentState(m.Ctx, state)
 				return NewPrefillMinitiaConfig(m.Ctx), cmd
 			}
 			if state.InitExecutorBot || state.InitChallengerBot {
-				m.Ctx = utils.SetCurrentState(m.Ctx, state)
 				return NewL1PrefillSelector(m.Ctx), cmd
 			}
-			m.Ctx = utils.SetCurrentState(m.Ctx, state)
 			return m, cmd
 		}
 	}
@@ -496,7 +486,6 @@ func (m *PrefillMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				state.botConfig["da_node.gas_price"] = state.botConfig["l1_node.gas_price"]
 			}
 			m.Ctx = utils.SetCurrentState(m.Ctx, state)
-
 			if state.InitExecutorBot {
 				return NewFieldInputModel(m.Ctx, defaultExecutorFields, NewStartingInitBot), cmd
 			} else if state.InitChallengerBot {
@@ -564,27 +553,25 @@ func (m *L1PrefillSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"L1"}, string(*selected)))
 
-		var chainId, rpc string
+		var chainId, rpc, minGasPrice string
 		switch *selected {
-
 		case L1PrefillOptionTestnet:
 			chainRegistry := registry.MustGetChainRegistry(registry.InitiaL1Testnet)
 			chainId = chainRegistry.GetChainId()
 			rpc = chainRegistry.MustGetActiveRpc()
+			minGasPrice = chainRegistry.MustGetMinGasPriceByDenom(DefaultInitiaGasDenom)
 		}
-		state.botConfig["l1_node.chain_id"] = chainId
 
-		// To be replaced with information from registry
-		state.botConfig["l1_node.gas_price"] = "0.015uinit"
+		state.botConfig["l1_node.chain_id"] = chainId
+		state.botConfig["l1_node.gas_price"] = minGasPrice
 
 		GetField(defaultExecutorFields, "l1_node.rpc_address").PrefillValue = rpc
 		GetField(defaultChallengerFields, "l1_node.rpc_address").PrefillValue = rpc
 
+		m.Ctx = utils.SetCurrentState(m.Ctx, state)
 		if state.InitExecutorBot {
-			m.Ctx = utils.SetCurrentState(m.Ctx, state)
 			return NewFieldInputModel(m.Ctx, defaultExecutorFields, NewSetDALayer), cmd
 		} else if state.InitChallengerBot {
-			m.Ctx = utils.SetCurrentState(m.Ctx, state)
 			return NewFieldInputModel(m.Ctx, defaultChallengerFields, NewStartingInitBot), cmd
 		}
 
@@ -675,8 +662,7 @@ func (m *SetDALayer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			state.botConfig["da_node.gas_price"] = DefaultCelestiaGasPrices
 			state.daIsCelestia = true
 		}
-		m.Ctx = utils.SetCurrentState(m.Ctx, state)
-		model := NewStartingInitBot(m.Ctx)
+		model := NewStartingInitBot(utils.SetCurrentState(m.Ctx, state))
 		return model, model.Init()
 
 	}
