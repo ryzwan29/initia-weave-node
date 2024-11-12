@@ -1147,17 +1147,14 @@ func (m *SyncMethodSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if selected != nil {
 		m.Ctx = utils.CloneStateAndPushPage[RunL1NodeState](m.Ctx, m)
 		state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{""}, string(*selected)))
 		state.syncMethod = string(*selected)
 		switch *selected {
 		case NoSync:
-			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{""}, string(*selected)))
-			m.Ctx = utils.SetCurrentState(m.Ctx, state)
 			// TODO: What if there's existing /data. Should we also prune it here?
-			return NewTerminalState(m.Ctx), tea.Quit
+			return NewTerminalState(utils.SetCurrentState(m.Ctx, state)), tea.Quit
 		case Snapshot, StateSync:
-			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{""}, string(*selected)))
-			m.Ctx = utils.SetCurrentState(m.Ctx, state)
-			model := NewExistingDataChecker(m.Ctx)
+			model := NewExistingDataChecker(utils.SetCurrentState(m.Ctx, state))
 			return model, model.Init()
 		}
 	}

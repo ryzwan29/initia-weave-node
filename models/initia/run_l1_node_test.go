@@ -802,6 +802,54 @@ func TestInitializingAppLoading_Update_TestnetNetwork(t *testing.T) {
 	}
 }
 
+func TestSyncMethodSelect_Update_NoSync(t *testing.T) {
+	ctx := utils.NewAppContext(NewRunL1NodeState())
+	model := NewSyncMethodSelect(ctx)
+
+	// Simulate selecting "NoSync" option
+	model.Update(tea.KeyMsg{Type: tea.KeyDown})                  // Navigate to NoSync
+	model.Update(tea.KeyMsg{Type: tea.KeyDown})                  // Navigate to NoSync
+	nextModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter}) // Confirm selection with Enter
+
+	// Expect transition to TerminalState and command to quit
+	if _, ok := nextModel.(*TerminalState); !ok {
+		t.Errorf("Expected model to be of type *TerminalState, but got %T", nextModel)
+	}
+}
+
+func TestSyncMethodSelect_Update_Snapshot(t *testing.T) {
+	ctx := utils.NewAppContext(NewRunL1NodeState())
+	model := NewSyncMethodSelect(ctx)
+
+	// Simulate selecting "Snapshot" option
+	nextModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter}) // Confirm selection with Enter
+
+	// Expect transition to ExistingDataChecker
+	if m, ok := nextModel.(*ExistingDataChecker); !ok {
+		t.Errorf("Expected model to be of type *ExistingDataChecker, but got %T", nextModel)
+	} else {
+		state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
+		assert.Equal(t, string(Snapshot), state.syncMethod) // Verify sync method in state
+	}
+}
+
+func TestSyncMethodSelect_Update_StateSync(t *testing.T) {
+	ctx := utils.NewAppContext(NewRunL1NodeState())
+	model := NewSyncMethodSelect(ctx)
+
+	// Simulate selecting "StateSync" option
+	model.Update(tea.KeyMsg{Type: tea.KeyDown})                  // Move down to StateSync
+	nextModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter}) // Confirm selection with Enter
+
+	// Expect transition to ExistingDataChecker
+	if m, ok := nextModel.(*ExistingDataChecker); !ok {
+		t.Errorf("Expected model to be of type *ExistingDataChecker, but got %T", nextModel)
+	} else {
+		state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
+		assert.Equal(t, string(StateSync), state.syncMethod) // Verify sync method in state
+	}
+}
+
 // func TestRunL1NodeVersionSelect(t *testing.T) {
 // 	mockState := &RunL1NodeState{
 // 		moniker: "",
