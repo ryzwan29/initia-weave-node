@@ -8,15 +8,13 @@ const (
 	SnapshotFilename = "snapshot.weave"
 
 	InitiaDirectory       = ".initia"
-	InitiaConfigDirectory = InitiaDirectory + "/config"
-	InitiaDataDirectory   = InitiaDirectory + "/data"
+	InitiaConfigDirectory = "/config"
+	InitiaDataDirectory   = "/data"
 
-	RunL1NodeDarwinServiceName = "com.initia.daemon"
-	RunL1NodeLinuxServiceName  = "initia"
+	WeaveGasStationKeyName = "weave.GasStation"
 
-	WeaveGasStationKeyName    = "weave.GasStation"
-	MinitiaDirectory          = ".minitia"
-	MinitiaArtifactsDirectory = MinitiaDirectory + "/artifacts"
+	MinitiaDirectory           = ".minitia"
+	MinitiaArtifactsConfigJson = "/artifacts/config.json"
 
 	OPinitDirectory = ".opinit"
 	OPinitAppName   = "opinitd"

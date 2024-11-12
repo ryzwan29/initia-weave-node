@@ -62,11 +62,13 @@ func OPInitBotsCommand() *cobra.Command {
 	return cmd
 }
 
-func Setup() (tea.Model, error) {
+func Setup(minitiaHome, opInitHome string) (tea.Model, error) {
 	versions, currentVersion := utils.GetOPInitVersions()
 
 	// Initialize the context with OPInitBotsState
 	ctx := utils.NewAppContext(opinit_bots.NewOPInitBotsState())
+	ctx = utils.SetMinitiaHome(ctx, minitiaHome)
+	ctx = utils.SetOPInitHome(ctx, opInitHome)
 
 	// Initialize the OPInitBotVersionSelector with the current context and versions
 	versionSelector := opinit_bots.NewOPInitBotVersionSelector(ctx, versions, currentVersion)
@@ -80,19 +82,31 @@ func Setup() (tea.Model, error) {
 }
 
 func OPInitBotsKeysSetupCommand() *cobra.Command {
-	cmd := &cobra.Command{
+	setupCmd := &cobra.Command{
 		Use:   "setup",
 		Short: "Setup keys for OPInit bots",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			_, err := Setup()
+			minitiaHome, _ := cmd.Flags().GetString(FlagMinitiaHome)
+			opInitHome, _ := cmd.Flags().GetString(FlagOPInitHome)
+
+			_, err := Setup(minitiaHome, opInitHome)
 			return err
 		},
 	}
-	return cmd
+
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		panic(fmt.Errorf("cannot get user home directory: %v", err))
+	}
+
+	setupCmd.Flags().String(FlagMinitiaHome, filepath.Join(homeDir, utils.MinitiaDirectory), "Minitia application directory to fetch artifacts from if existed")
+	setupCmd.Flags().String(FlagOPInitHome, filepath.Join(homeDir, utils.OPinitDirectory), "OPInit bots home directory")
+
+	return setupCmd
 }
 
 func OPInitBotsInitCommand() *cobra.Command {
-	cmd := &cobra.Command{
+	initCmd := &cobra.Command{
 		Use:   "init [bot-name]",
 		Short: "Initialize OPinit bots",
 		Long: `Initialize the OPinit bot. The argument is optional, as you will be prompted to select a bot if no bot name is provided.
@@ -100,6 +114,9 @@ Alternatively, you can specify a bot name as an argument to skip the selection. 
 Example: weave opinit-bots init executor`,
 		Args: ValidateOPinitOptionalBotNameArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			minitiaHome, _ := cmd.Flags().GetString(FlagMinitiaHome)
+			opInitHome, _ := cmd.Flags().GetString(FlagOPInitHome)
+
 			userHome, err := os.UserHomeDir()
 			if err != nil {
 				panic(err)
@@ -107,7 +124,7 @@ Example: weave opinit-bots init executor`,
 			binaryPath := filepath.Join(userHome, utils.WeaveDataDirectory, opinit_bots.AppName)
 			_, err = utils.GetBinaryVersion(binaryPath)
 			if err != nil {
-				finalModel, err := Setup()
+				finalModel, err := Setup(minitiaHome, opInitHome)
 				if err != nil {
 					return err
 				}
@@ -118,6 +135,8 @@ Example: weave opinit-bots init executor`,
 			}
 			// Initialize the context with OPInitBotsState
 			ctx := utils.NewAppContext(opinit_bots.NewOPInitBotsState())
+			ctx = utils.SetMinitiaHome(ctx, minitiaHome)
+			ctx = utils.SetOPInitHome(ctx, opInitHome)
 
 			// Check if a bot name was provided as an argument
 			if len(args) == 1 {
@@ -139,7 +158,16 @@ Example: weave opinit-bots init executor`,
 			}
 		},
 	}
-	return cmd
+
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		panic(fmt.Errorf("cannot get user home directory: %v", err))
+	}
+
+	initCmd.Flags().String(FlagMinitiaHome, filepath.Join(homeDir, utils.MinitiaDirectory), "Minitia application directory to fetch artifacts from if existed")
+	initCmd.Flags().String(FlagOPInitHome, filepath.Join(homeDir, utils.OPinitDirectory), "OPInit bots home directory")
+
+	return initCmd
 }
 
 func OPInitBotsStartCommand() *cobra.Command {

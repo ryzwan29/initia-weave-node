@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
@@ -36,11 +38,21 @@ func initiaInitCommand() *cobra.Command {
 		Use:   "init",
 		Short: "Bootstrap your Initia full node",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			initiaHome, err := cmd.Flags().GetString(FlagInitiaHome)
+			if err != nil {
+				return err
+			}
+
+			ctx := utils.NewAppContext(initia.NewRunL1NodeState())
+			ctx = utils.SetInitiaHome(ctx, initiaHome)
+
 			if utils.IsFirstTimeSetup() {
 				// Capture both the final model and the error from Run()
 
-				ctx := utils.NewAppContext(initia.NewRunL1NodeState())
-				finalModel, err := tea.NewProgram(models.NewExistingAppChecker(utils.NewAppContext(models.NewExistingCheckerState()), initia.NewRunL1NodeNetworkSelect(ctx))).Run()
+				checkerCtx := utils.NewAppContext(models.NewExistingCheckerState())
+				checkerCtx = utils.SetInitiaHome(checkerCtx, initiaHome)
+
+				finalModel, err := tea.NewProgram(models.NewExistingAppChecker(checkerCtx, initia.NewRunL1NodeNetworkSelect(ctx))).Run()
 				if err != nil {
 					return err
 				}
@@ -51,14 +63,21 @@ func initiaInitCommand() *cobra.Command {
 					return nil
 				}
 			}
-			ctx := utils.NewAppContext(initia.NewRunL1NodeState())
-			_, err := tea.NewProgram(initia.NewRunL1NodeNetworkSelect(ctx)).Run()
+
+			_, err = tea.NewProgram(initia.NewRunL1NodeNetworkSelect(ctx)).Run()
 			if err != nil {
 				return err
 			}
 			return nil
 		},
 	}
+
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		panic(fmt.Errorf("cannot get user home directory: %v", err))
+	}
+
+	initCmd.Flags().String(FlagInitiaHome, filepath.Join(homeDir, utils.InitiaDirectory), "The Initia application home directory")
 
 	return initCmd
 }

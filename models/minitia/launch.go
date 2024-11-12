@@ -43,12 +43,7 @@ func waitExistingMinitiaChecker(ctx context.Context) tea.Cmd {
 	return func() tea.Msg {
 		state := utils.GetCurrentState[LaunchState](ctx)
 
-		homeDir, err := os.UserHomeDir()
-		if err != nil {
-			return utils.ErrorLoading{Err: err}
-		}
-
-		minitiaPath := filepath.Join(homeDir, utils.MinitiaDirectory)
+		minitiaPath := utils.GetMinitiaHome(ctx)
 		time.Sleep(1500 * time.Millisecond)
 
 		if !utils.FileOrFolderExists(minitiaPath) {
@@ -86,7 +81,7 @@ func (m *ExistingMinitiaChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *ExistingMinitiaChecker) View() string {
-	return styles.Text("🪢 For launching Minitia, once all required configurations are complete, \nit will run for a few blocks to set up neccesary components.\nPlease note that this may take a moment, and your patience is appreciated!\n\n", styles.Ivory) +
+	return styles.Text("🪢 For launching Minitia, once all required configurations are complete, \nit will run for a few blocks to set up necessary components.\nPlease note that this may take a moment, and your patience is appreciated!\n\n", styles.Ivory) +
 		m.loading.View()
 }
 
@@ -125,11 +120,7 @@ func (m *DeleteExistingMinitiaInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.Ctx = utils.CloneStateAndPushPage[LaunchState](m.Ctx, m)
 		state := utils.GetCurrentState[LaunchState](m.Ctx)
 
-		userHome, err := os.UserHomeDir()
-		if err != nil {
-			panic(fmt.Sprintf("failed to get user home directory: %v", err))
-		}
-		if err = utils.DeleteDirectory(filepath.Join(userHome, utils.MinitiaDirectory)); err != nil {
+		if err := utils.DeleteDirectory(utils.GetMinitiaHome(m.Ctx)); err != nil {
 			panic(fmt.Sprintf("failed to delete .minitia: %v", err))
 		}
 
@@ -144,7 +135,8 @@ func (m *DeleteExistingMinitiaInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *DeleteExistingMinitiaInput) View() string {
-	return styles.RenderPrompt("🚨 Existing .minitia folder detected.\nTo proceed with weave minitia launch, you must confirm the deletion of the .minitia folder.\nIf you do not confirm the deletion, the command will not run, and you will be returned to the homepage.\n\n", []string{".minitia", "weave minitia launch"}, styles.Empty) +
+	return styles.RenderPrompt(fmt.Sprintf("🚨 Existing %s folder detected.\n", utils.GetMinitiaHome(m.Ctx)), []string{utils.GetMinitiaHome(m.Ctx)}, styles.Empty) +
+		styles.RenderPrompt("To proceed with weave minitia launch, you must confirm the deletion of the .minitia folder.\nIf you do not confirm the deletion, the command will not run, and you will be returned to the homepage.\n\n", []string{".minitia", "weave minitia launch"}, styles.Empty) +
 		styles.Text("Please note that once you delete, all configurations, state, keys, and other data will be \n", styles.Yellow) + styles.BoldText("permanently deleted and cannot be reversed.\n", styles.Yellow) +
 		styles.RenderPrompt(m.GetQuestion(), []string{"`delete`", ".minitia", "weave minitia launch"}, styles.Question) + m.TextInput.View()
 }
@@ -2655,7 +2647,8 @@ func launchingMinitia(ctx context.Context, streamingLogs *[]string) tea.Cmd {
 			}
 		}
 
-		launchCmd := exec.Command(state.binaryPath, "launch", "--with-config", configFilePath)
+		minitiaHome := utils.GetMinitiaHome(ctx)
+		launchCmd := exec.Command(state.binaryPath, "launch", "--with-config", configFilePath, "--home", minitiaHome)
 
 		stdout, err := launchCmd.StdoutPipe()
 		if err != nil {
@@ -2708,7 +2701,7 @@ func launchingMinitia(ctx context.Context, streamingLogs *[]string) tea.Cmd {
 			panic(fmt.Sprintf("failed to initialize service: %v", err))
 		}
 
-		if err = srv.Create(fmt.Sprintf("mini%s@%s", strings.ToLower(state.vmType), state.minitiadVersion)); err != nil {
+		if err = srv.Create(fmt.Sprintf("mini%s@%s", strings.ToLower(state.vmType), state.minitiadVersion), minitiaHome); err != nil {
 			panic(fmt.Sprintf("failed to create service: %v", err))
 		}
 
@@ -2728,7 +2721,9 @@ func (m *LaunchingNewMinitiaLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.loading.Completing {
 		m.Ctx = utils.CloneStateAndPushPage[LaunchState](m.loading.EndContext, m)
 		state := utils.GetCurrentState[LaunchState](m.Ctx)
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "New Minitia has been launched. (More details about your Minitia in ~/.minitia/artifacts/artifacts.json & ~/.minitia/artifacts/config.json)", []string{}, ""))
+
+		artifactsDir := filepath.Dir(utils.GetMinitiaArtifactsConfigJson(m.Ctx))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, fmt.Sprintf("New Minitia has been launched. (More details about your Minitia in %[1]s/artifacts.json & %[1]s/config.json)", artifactsDir), []string{}, ""))
 
 		var jsonRpc string
 		if state.vmType == string(EVM) {

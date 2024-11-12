@@ -91,7 +91,7 @@ const DarwinOPinitBotTemplate Template = `<?xml version="1.0" encoding="UTF-8"?>
 </plist>
 `
 
-// LinuxRunBinaryTemplate should inject the arguments as follows: [binaryName, currentUser.Username, binaryPath, serviceName]
+// LinuxRunBinaryTemplate should inject the arguments as follows: [binaryName, currentUser.Username, binaryPath, serviceName, appHome]
 const LinuxRunBinaryTemplate Template = `
 [Unit]
 Description=%[1]s
@@ -100,7 +100,7 @@ After=network.target
 [Service]
 Type=exec
 User=%[2]s
-ExecStart=%[3]s/%[1]s start
+ExecStart=%[3]s/%[1]s start --home %[5]s
 KillSignal=SIGINT
 Environment="LD_LIBRARY_PATH=%[3]s"
 
@@ -111,16 +111,16 @@ WantedBy=multi-user.target
 LimitNOFILE=65535
 `
 
-// LinuxOPinitBotTemplate should inject the arguments as follows: [binaryName, currentUser.Username, binaryPath, serviceName]
+// LinuxOPinitBotTemplate should inject the arguments as follows: [binaryName, currentUser.Username, binaryPath, serviceName, appHome]
 const LinuxOPinitBotTemplate Template = `
 [Unit]
-Description=%[1]s %[6]s
+Description=%[1]s %[4]s
 After=network.target
 
 [Service]
 Type=exec
 User=%[2]s
-ExecStart=%[3]s/%[1]s start %[6]s
+ExecStart=%[3]s/%[1]s start %[4]s --home %[5]s
 KillSignal=SIGINT
 Environment="LD_LIBRARY_PATH=%[3]s"
 

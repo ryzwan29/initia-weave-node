@@ -28,7 +28,7 @@ func (j *Systemd) GetServiceName() string {
 	return j.commandName.MustGetServiceSlug() + ".service"
 }
 
-func (j *Systemd) Create(binaryVersion string) error {
+func (j *Systemd) Create(binaryVersion, appHome string) error {
 	currentUser, err := user.Current()
 	if err != nil {
 		return fmt.Errorf("failed to get current user: %v", err)
@@ -45,7 +45,7 @@ func (j *Systemd) Create(binaryVersion string) error {
 
 	cmd := exec.Command("sudo", "tee", fmt.Sprintf("/etc/systemd/system/%s", j.GetServiceName()))
 	template := LinuxTemplateMap[j.commandName]
-	cmd.Stdin = strings.NewReader(fmt.Sprintf(string(template), binaryName, currentUser.Username, binaryPath, j.GetServiceName()))
+	cmd.Stdin = strings.NewReader(fmt.Sprintf(string(template), binaryName, currentUser.Username, binaryPath, j.GetServiceName(), appHome))
 	if err = cmd.Run(); err != nil {
 		return fmt.Errorf("failed to create service: %v", err)
 	}

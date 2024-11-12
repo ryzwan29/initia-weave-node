@@ -6,7 +6,7 @@ import (
 )
 
 type Service interface {
-	Create(binaryVersion string) error
+	Create(binaryVersion, appHome string) error
 	Log(n int) error
 	Start() error
 	Stop() error

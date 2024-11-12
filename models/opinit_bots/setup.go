@@ -116,8 +116,7 @@ func (m *SetupOPInitBotKeySelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch *selected {
 		case "Yes":
 			// Handle "Yes" option
-			homeDir, _ := os.UserHomeDir()
-			minitiaConfigPath := filepath.Join(homeDir, utils.MinitiaArtifactsDirectory, "config.json")
+			minitiaConfigPath := utils.GetMinitiaArtifactsConfigJson(m.Ctx)
 
 			// Check if the config file exists
 			if !utils.FileOrFolderExists(minitiaConfigPath) {
@@ -173,17 +172,20 @@ const (
 
 type ProcessingMinitiaConfig struct {
 	utils.BaseModel
-	utils.Selector[string]
+	utils.Selector[AddMinitiaKeyOption]
 	question string
 }
 
 func NewProcessingMinitiaConfig(ctx context.Context) *ProcessingMinitiaConfig {
 	return &ProcessingMinitiaConfig{
-		Selector: utils.Selector[string]{
-			Options: []string{"Yes, use detected keys", "No, skip"},
+		Selector: utils.Selector[AddMinitiaKeyOption]{
+			Options: []AddMinitiaKeyOption{
+				YesAddMinitiaKeyOption,
+				NoAddMinitiaKeyOption,
+			},
 		},
 		BaseModel: utils.BaseModel{Ctx: ctx},
-		question:  "Existing keys in .minitia/artifacts/config.json detected. Would you like to add these to the keyring before proceeding?",
+		question:  fmt.Sprintf("Existing keys in %s detected. Would you like to add these to the keyring before proceeding?", utils.GetMinitiaArtifactsConfigJson(ctx)),
 	}
 }
 
@@ -208,11 +210,11 @@ func (m *ProcessingMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Retrieve the cloned state
 		state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
 		state.weave.PushPreviousResponse(
-			styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{".minitia/artifacts/config.json"}, string(*selected)),
+			styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{utils.GetMinitiaArtifactsConfigJson(m.Ctx)}, string(*selected)),
 		)
 
 		switch *selected {
-		case "Yes, use detected keys":
+		case YesAddMinitiaKeyOption:
 			// Iterate through botInfos and add relevant keys
 			for idx := range state.BotInfos {
 				botInfo := &state.BotInfos[idx]
@@ -241,7 +243,7 @@ func (m *ProcessingMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return model, model.Init()
 			//return NewSetupBotCheckbox(m.Ctx, true, false), nil
 
-		case "No, skip":
+		case NoAddMinitiaKeyOption:
 			m.Ctx = utils.SetCurrentState(m.Ctx, state)
 			return NewSetupBotCheckbox(m.Ctx, false, false), nil
 		}
@@ -253,7 +255,7 @@ func (m *ProcessingMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *ProcessingMinitiaConfig) View() string {
 	state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
 	m.Selector.ToggleTooltip = utils.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{".minitia/artifacts/config.json"}, styles.Question) + m.Selector.View()
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{utils.GetMinitiaArtifactsConfigJson(m.Ctx)}, styles.Question) + m.Selector.View()
 }
 
 func NextUpdateOpinitBotKey(ctx context.Context) (tea.Model, tea.Cmd) {
@@ -289,7 +291,7 @@ func NewSetupBotCheckbox(ctx context.Context, addKeyRing bool, noMinitia bool) *
 
 	var question string
 	if addKeyRing {
-		question = "Which bots would you like to override? (The ones that remain unselected will be imported from ~/.minitia/artifacts/config.json.)"
+		question = fmt.Sprintf("Which bots would you like to override? (The ones that remain unselected will be imported from %s)", utils.GetMinitiaArtifactsConfigJson(ctx))
 	} else {
 		question = "Which bots would you like to set?"
 	}
@@ -332,7 +334,7 @@ func (m *SetupBotCheckbox) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		// Save the selection response
 		state.weave.PushPreviousResponse(
-			styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"bots", "set", "override", "~/.minitia/artifacts/config.json"}, cb.GetSelectedString()),
+			styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"bots", "set", "override", utils.GetMinitiaArtifactsConfigJson(m.Ctx)}, cb.GetSelectedString()),
 		)
 
 		// Update the state based on the user's selections
@@ -361,7 +363,7 @@ func (m *SetupBotCheckbox) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *SetupBotCheckbox) View() string {
 	state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
 	m.CheckBox.ToggleTooltip = utils.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"bots", "set", "override", "~/.minitia/artifacts/config.json"}, styles.Question) + "\n\n" + m.CheckBox.ViewWithBottom("For bots with an existing key, selecting them will override the key.")
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"bots", "set", "override", utils.GetMinitiaArtifactsConfigJson(m.Ctx)}, styles.Question) + "\n\n" + m.CheckBox.ViewWithBottom("For bots with an existing key, selecting them will override the key.")
 }
 
 type RecoverKeySelector struct {
@@ -507,10 +509,9 @@ type SetupOPInitBots struct {
 
 // NewSetupOPInitBots initializes a new SetupOPInitBots with context
 func NewSetupOPInitBots(ctx context.Context) *SetupOPInitBots {
-	state := utils.GetCurrentState[OPInitBotsState](ctx)
 	return &SetupOPInitBots{
 		BaseModel: utils.BaseModel{Ctx: ctx, CannotBack: true},
-		loading:   utils.NewLoading("Downloading binary and adding keys...", WaitSetupOPInitBots(&state)),
+		loading:   utils.NewLoading("Downloading binary and adding keys...", WaitSetupOPInitBots(ctx)),
 	}
 }
 
@@ -649,8 +650,9 @@ func getBinaryURL(version, os, arch string) string {
 	panic("unsupported OS or architecture")
 }
 
-func WaitSetupOPInitBots(state *OPInitBotsState) tea.Cmd {
+func WaitSetupOPInitBots(ctx context.Context) tea.Cmd {
 	return func() tea.Msg {
+		state := utils.GetCurrentState[OPInitBotsState](ctx)
 		userHome, err := os.UserHomeDir()
 		if err != nil {
 			panic(fmt.Sprintf("failed to get user home directory: %v", err))
@@ -690,9 +692,10 @@ func WaitSetupOPInitBots(state *OPInitBotsState) tea.Cmd {
 			panic(err)
 		}
 
+		opInitHome := utils.GetOPInitHome(ctx)
 		for _, info := range state.BotInfos {
 			if info.Mnemonic != "" {
-				res, err := utils.OPInitRecoverKeyFromMnemonic(binaryPath, info.KeyName, info.Mnemonic, info.DALayer == string(CelestiaLayerOption))
+				res, err := utils.OPInitRecoverKeyFromMnemonic(binaryPath, info.KeyName, info.Mnemonic, info.DALayer == string(CelestiaLayerOption), opInitHome)
 				if err != nil {
 					return utils.ErrorLoading{Err: err}
 				}
@@ -700,7 +703,7 @@ func WaitSetupOPInitBots(state *OPInitBotsState) tea.Cmd {
 				continue
 			}
 			if info.IsGenerateKey {
-				res, err := utils.OPInitAddOrReplace(binaryPath, info.KeyName, info.DALayer == string(CelestiaLayerOption))
+				res, err := utils.OPInitAddOrReplace(binaryPath, info.KeyName, info.DALayer == string(CelestiaLayerOption), opInitHome)
 				if err != nil {
 					return utils.ErrorLoading{Err: err}
 

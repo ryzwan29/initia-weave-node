@@ -126,9 +126,9 @@ func MustGetAddressFromMnemonic(appName, mnemonic string) string {
 
 // RecoverKeyFromMnemonic recovers or replaces a key using a mnemonic phrase
 // If the key already exists, it will replace the key and confirm with 'y' before adding the mnemonic
-func OPInitRecoverKeyFromMnemonic(appName, keyname, mnemonic string, isCelestia bool) (string, error) {
+func OPInitRecoverKeyFromMnemonic(appName, keyname, mnemonic string, isCelestia bool, opInitHome string) (string, error) {
 	// Check if the key already exists
-	exists := OPInitKeyExist(appName, keyname)
+	exists := OPInitKeyExist(appName, keyname, opInitHome)
 
 	{
 		var cmd *exec.Cmd
@@ -136,7 +136,7 @@ func OPInitRecoverKeyFromMnemonic(appName, keyname, mnemonic string, isCelestia 
 		if exists {
 			// Simulate pressing 'y' for confirmation
 			inputBuffer.WriteString("y\n")
-			cmd = exec.Command(appName, "keys", "delete", "weave-dummy", keyname)
+			cmd = exec.Command(appName, "keys", "delete", "weave-dummy", keyname, "--home", opInitHome)
 			// Run the command and capture the output
 			outputBytes, err := cmd.CombinedOutput()
 			if err != nil {
@@ -151,9 +151,9 @@ func OPInitRecoverKeyFromMnemonic(appName, keyname, mnemonic string, isCelestia 
 	// Add the mnemonic input after the confirmation (if any)
 	inputBuffer.WriteString(mnemonic + "\n")
 	if isCelestia {
-		cmd = exec.Command(appName, "keys", "add", "weave-dummy", keyname, "--recover", "--bech32", "celestia")
+		cmd = exec.Command(appName, "keys", "add", "weave-dummy", keyname, "--recover", "--bech32", "celestia", "--home", opInitHome)
 	} else {
-		cmd = exec.Command(appName, "keys", "add", "weave-dummy", keyname, "--recover")
+		cmd = exec.Command(appName, "keys", "add", "weave-dummy", keyname, "--recover", "--home", opInitHome)
 	}
 	// Pass the combined confirmation and mnemonic as input to the command
 	cmd.Stdin = &inputBuffer
@@ -168,24 +168,24 @@ func OPInitRecoverKeyFromMnemonic(appName, keyname, mnemonic string, isCelestia 
 	return string(outputBytes), nil
 }
 
-func OPInitKeyExist(appName, keyname string) bool {
-	cmd := exec.Command(appName, "keys", "show", "weave-dummy", keyname)
+func OPInitKeyExist(appName, keyname, opInitHome string) bool {
+	cmd := exec.Command(appName, "keys", "show", "weave-dummy", keyname, "--home", opInitHome)
 	// Run the command and capture the output or error
 	err := cmd.Run()
 	return err == nil
 }
 
 // AddOrReplace adds or replaces a key using `initiad keys add <keyname> --keyring-backend test` with 'y' confirmation
-func OPInitAddOrReplace(appName, keyname string, isCelestia bool) (string, error) {
+func OPInitAddOrReplace(appName, keyname string, isCelestia bool, opInitHome string) (string, error) {
 	// Check if the key already exists
-	exists := OPInitKeyExist(appName, keyname)
+	exists := OPInitKeyExist(appName, keyname, opInitHome)
 	{
 		var cmd *exec.Cmd
 		var inputBuffer bytes.Buffer
 		if exists {
 			// Simulate pressing 'y' for confirmation
 			inputBuffer.WriteString("y\n")
-			cmd = exec.Command(appName, "keys", "delete", "weave-dummy", keyname)
+			cmd = exec.Command(appName, "keys", "delete", "weave-dummy", keyname, "--home", opInitHome)
 			// Run the command and capture the output
 			outputBytes, err := cmd.CombinedOutput()
 			if err != nil {
@@ -198,9 +198,9 @@ func OPInitAddOrReplace(appName, keyname string, isCelestia bool) (string, error
 	var cmd *exec.Cmd
 
 	if isCelestia {
-		cmd = exec.Command(appName, "keys", "add", "weave-dummy", keyname, "--bech32", "celestia")
+		cmd = exec.Command(appName, "keys", "add", "weave-dummy", keyname, "--bech32", "celestia", "--home", opInitHome)
 	} else {
-		cmd = exec.Command(appName, "keys", "add", "weave-dummy", keyname)
+		cmd = exec.Command(appName, "keys", "add", "weave-dummy", keyname, "--home", opInitHome)
 
 	}
 	// Simulate pressing 'y' for confirmation

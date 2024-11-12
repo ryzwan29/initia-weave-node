@@ -113,11 +113,9 @@ type BotConfigChainId struct {
 }
 
 func OPInitBotInitSelectExecutor(ctx context.Context) tea.Model {
-	homeDir, _ := os.UserHomeDir()
-
 	state := utils.GetCurrentState[OPInitBotsState](ctx)
 	state.InitExecutorBot = true
-	minitiaConfigPath := filepath.Join(homeDir, utils.MinitiaArtifactsDirectory, "config.json")
+	minitiaConfigPath := utils.GetMinitiaArtifactsConfigJson(ctx)
 
 	if utils.FileOrFolderExists(minitiaConfigPath) {
 		configData, err := os.ReadFile(minitiaConfigPath)
@@ -134,13 +132,14 @@ func OPInitBotInitSelectExecutor(ctx context.Context) tea.Model {
 		state.MinitiaConfig = &minitiaConfig
 	}
 
-	state.dbPath = filepath.Join(homeDir, utils.OPinitDirectory, "executor.db")
+	opInitHome := utils.GetOPInitHome(ctx)
+	state.dbPath = filepath.Join(opInitHome, "executor.db")
 	if utils.FileOrFolderExists(state.dbPath) {
 		ctx = utils.SetCurrentState(ctx, state)
 		return NewDeleteDBSelector(ctx, "executor")
 	}
 
-	executorJsonPath := filepath.Join(homeDir, utils.OPinitDirectory, "executor.json")
+	executorJsonPath := filepath.Join(opInitHome, "executor.json")
 	if utils.FileOrFolderExists(executorJsonPath) {
 		file, err := os.ReadFile(executorJsonPath)
 		if err != nil {
@@ -173,12 +172,10 @@ func OPInitBotInitSelectExecutor(ctx context.Context) tea.Model {
 }
 
 func OPInitBotInitSelectChallenger(ctx context.Context) tea.Model {
-	homeDir, _ := os.UserHomeDir()
-
 	state := utils.GetCurrentState[OPInitBotsState](ctx)
 	state.InitChallengerBot = true
 
-	minitiaConfigPath := filepath.Join(homeDir, utils.MinitiaArtifactsDirectory, "config.json")
+	minitiaConfigPath := utils.GetMinitiaArtifactsConfigJson(ctx)
 	if utils.FileOrFolderExists(minitiaConfigPath) {
 		configData, err := os.ReadFile(minitiaConfigPath)
 		if err != nil {
@@ -194,13 +191,14 @@ func OPInitBotInitSelectChallenger(ctx context.Context) tea.Model {
 		state.MinitiaConfig = &minitiaConfig
 	}
 
-	state.dbPath = filepath.Join(homeDir, utils.OPinitDirectory, "challenger.db")
+	opInitHome := utils.GetOPInitHome(ctx)
+	state.dbPath = filepath.Join(opInitHome, "challenger.db")
 	if utils.FileOrFolderExists(state.dbPath) {
 		ctx = utils.SetCurrentState(ctx, state)
 		return NewDeleteDBSelector(ctx, "challenger")
 	}
 
-	challengerJsonPath := filepath.Join(homeDir, utils.OPinitDirectory, "challenger.json")
+	challengerJsonPath := filepath.Join(opInitHome, "challenger.json")
 	if utils.FileOrFolderExists(challengerJsonPath) {
 		file, err := os.ReadFile(challengerJsonPath)
 		if err != nil {
@@ -310,8 +308,8 @@ func (m *DeleteDBSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			state.isDeleteDB = true
 		}
 
-		userHome, _ := os.UserHomeDir()
-		executorJsonPath := filepath.Join(userHome, utils.OPinitDirectory, fmt.Sprintf("%s.json", m.bot))
+		opInitHome := utils.GetOPInitHome(m.Ctx)
+		executorJsonPath := filepath.Join(opInitHome, fmt.Sprintf("%s.json", m.bot))
 		if utils.FileOrFolderExists(executorJsonPath) {
 			file, err := os.ReadFile(executorJsonPath)
 			if err != nil {
@@ -358,7 +356,7 @@ type UseCurrentConfigSelector struct {
 }
 
 func NewUseCurrentConfigSelector(ctx context.Context, bot string) *UseCurrentConfigSelector {
-	configPath := fmt.Sprintf(".opinit/%s.json", bot)
+	configPath := fmt.Sprintf("%s/%s.json", utils.GetOPInitHome(ctx), bot)
 	return &UseCurrentConfigSelector{
 		Selector: utils.Selector[string]{
 			Options: []string{
@@ -440,7 +438,7 @@ func NewPrefillMinitiaConfig(ctx context.Context) *PrefillMinitiaConfig {
 			},
 		},
 		BaseModel: utils.BaseModel{Ctx: ctx},
-		question:  "Existing .minitia/artifacts/config.json detected. Would you like to use the data in this file to pre-fill some fields?",
+		question:  fmt.Sprintf("Existing %s detected. Would you like to use the data in this file to pre-fill some fields?", utils.GetMinitiaArtifactsConfigJson(ctx)),
 	}
 }
 
@@ -460,7 +458,7 @@ func (m *PrefillMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if selected != nil {
 		m.Ctx = utils.CloneStateAndPushPage[OPInitBotsState](m.Ctx, m)
 		state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{".minitia/artifacts/config.json"}, string(*selected)))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{utils.GetMinitiaArtifactsConfigJson(m.Ctx)}, string(*selected)))
 
 		switch *selected {
 		case PrefillMinitiaConfigYes:
@@ -517,7 +515,7 @@ func (m *PrefillMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *PrefillMinitiaConfig) View() string {
 	state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{".minitia/artifacts/config.json"}, styles.Question) + m.Selector.View()
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{utils.GetMinitiaArtifactsConfigJson(m.Ctx)}, styles.Question) + m.Selector.View()
 }
 
 type L1PrefillOption string
@@ -708,18 +706,16 @@ func NewStartingInitBot(ctx context.Context) tea.Model {
 
 	return &StartingInitBot{
 		BaseModel: utils.BaseModel{Ctx: ctx, CannotBack: true},
-		loading:   utils.NewLoading(fmt.Sprintf("Setting up OPinit bot %s...", bot), WaitStartingInitBot(&state)),
+		loading:   utils.NewLoading(fmt.Sprintf("Setting up OPinit bot %s...", bot), WaitStartingInitBot(ctx)),
 	}
 }
 
-func WaitStartingInitBot(state *OPInitBotsState) tea.Cmd {
+func WaitStartingInitBot(ctx context.Context) tea.Cmd {
 	return func() tea.Msg {
 		time.Sleep(1500 * time.Millisecond)
+
+		state := utils.GetCurrentState[OPInitBotsState](ctx)
 		configMap := state.botConfig
-		userHome, err := os.UserHomeDir()
-		if err != nil {
-			panic(fmt.Sprintf("failed to get user home directory: %v", err))
-		}
 
 		if state.isDeleteDB {
 			err := utils.DeleteDirectory(state.dbPath)
@@ -728,11 +724,12 @@ func WaitStartingInitBot(state *OPInitBotsState) tea.Cmd {
 			}
 		}
 
-		weaveDummyKeyPath := filepath.Join(userHome, utils.OPinitDirectory, "weave-dummy")
-		l1KeyPath := filepath.Join(userHome, utils.OPinitDirectory, configMap["l1_node.chain_id"])
-		l2KeyPath := filepath.Join(userHome, utils.OPinitDirectory, configMap["l2_node.chain_id"])
+		opInitHome := utils.GetOPInitHome(ctx)
+		weaveDummyKeyPath := filepath.Join(opInitHome, "weave-dummy")
+		l1KeyPath := filepath.Join(opInitHome, configMap["l1_node.chain_id"])
+		l2KeyPath := filepath.Join(opInitHome, configMap["l2_node.chain_id"])
 
-		err = utils.CopyDirectory(weaveDummyKeyPath, l1KeyPath)
+		err := utils.CopyDirectory(weaveDummyKeyPath, l1KeyPath)
 		if err != nil {
 			panic(err)
 		}
@@ -742,7 +739,7 @@ func WaitStartingInitBot(state *OPInitBotsState) tea.Cmd {
 		}
 
 		if state.daIsCelestia {
-			daKeyPath := filepath.Join(userHome, utils.OPinitDirectory, configMap["da_node.chain_id"])
+			daKeyPath := filepath.Join(opInitHome, configMap["da_node.chain_id"])
 			err = utils.CopyDirectory(weaveDummyKeyPath, daKeyPath)
 			if err != nil {
 				panic(err)
@@ -763,7 +760,7 @@ func WaitStartingInitBot(state *OPInitBotsState) tea.Cmd {
 				panic(fmt.Sprintf("failed to initialize service: %v", err))
 			}
 
-			if err = srv.Create(""); err != nil {
+			if err = srv.Create("", opInitHome); err != nil {
 				panic(fmt.Sprintf("failed to create service: %v", err))
 			}
 
@@ -814,7 +811,7 @@ func WaitStartingInitBot(state *OPInitBotsState) tea.Cmd {
 				panic(fmt.Errorf("failed to marshal config: %v", err))
 			}
 
-			configFilePath := filepath.Join(userHome, utils.OPinitDirectory, "executor.json")
+			configFilePath := filepath.Join(opInitHome, "executor.json")
 			if err = os.WriteFile(configFilePath, configBz, 0600); err != nil {
 				panic(fmt.Errorf("failed to write config file: %v", err))
 			}
@@ -824,7 +821,7 @@ func WaitStartingInitBot(state *OPInitBotsState) tea.Cmd {
 				panic(fmt.Sprintf("failed to initialize service: %v", err))
 			}
 
-			if err = srv.Create(""); err != nil {
+			if err = srv.Create("", opInitHome); err != nil {
 				panic(fmt.Sprintf("failed to create service: %v", err))
 			}
 
@@ -853,7 +850,7 @@ func WaitStartingInitBot(state *OPInitBotsState) tea.Cmd {
 				panic(fmt.Errorf("failed to marshal config: %v", err))
 			}
 
-			configFilePath := filepath.Join(userHome, utils.OPinitDirectory, "challenger.json")
+			configFilePath := filepath.Join(opInitHome, "challenger.json")
 			if err = os.WriteFile(configFilePath, configBz, 0600); err != nil {
 				panic(fmt.Errorf("failed to write config file: %v", err))
 			}
@@ -906,5 +903,5 @@ func (m *OPinitBotSuccessful) View() string {
 		botConfigFileName = "challenger"
 	}
 
-	return state.weave.Render() + styles.RenderPrompt("OPInit bot setup successfully. Config file is saved at ~/.opinit/"+botConfigFileName+".json. Feel free to modify it as needed.", []string{}, styles.Completed) + "\n" + styles.RenderPrompt("You can start the bot by running `weave opinit-bots start "+botConfigFileName+"`", []string{}, styles.Completed) + "\n"
+	return state.weave.Render() + styles.RenderPrompt(fmt.Sprintf("OPInit bot setup successfully. Config file is saved at %s. Feel free to modify it as needed.", filepath.Join(utils.GetOPInitHome(m.Ctx), fmt.Sprintf("%s.json", botConfigFileName))), []string{}, styles.Completed) + "\n" + styles.RenderPrompt("You can start the bot by running `weave opinit-bots start "+botConfigFileName+"`", []string{}, styles.Completed) + "\n"
 }

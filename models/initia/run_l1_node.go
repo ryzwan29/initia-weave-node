@@ -104,7 +104,7 @@ func (m *RunL1NodeNetworkSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			state.chainRegistry = chainRegistry
 			state.chainId = state.chainRegistry.GetChainId()
 			state.genesisEndpoint = state.chainRegistry.GetGenesisUrl()
-			state.existingApp = IsExistApp()
+			state.existingApp = IsExistApp(utils.GetInitiaConfigDirectory(m.Ctx))
 
 			return GetNextModelByExistingApp(utils.SetCurrentState(m.Ctx, state), state.existingApp), nil
 		case Local:
@@ -219,7 +219,7 @@ func (m *RunL1NodeChainIdInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		state.chainId = input.Text
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"chain id"}, input.Text))
-		state.existingApp = IsExistApp()
+		state.existingApp = IsExistApp(utils.GetInitiaConfigDirectory(m.Ctx))
 
 		return GetNextModelByExistingApp(utils.SetCurrentState(m.Ctx, state), state.existingApp), nil
 	}
@@ -233,9 +233,7 @@ func (m *RunL1NodeChainIdInput) View() string {
 	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"chain id"}, styles.Question) + m.TextInput.View()
 }
 
-func IsExistApp() bool {
-	homeDir, _ := os.UserHomeDir()
-	initiaConfigPath := filepath.Join(homeDir, utils.InitiaConfigDirectory)
+func IsExistApp(initiaConfigPath string) bool {
 	appTomlPath := filepath.Join(initiaConfigPath, "app.toml")
 	configTomlPath := filepath.Join(initiaConfigPath, "config.toml")
 	if !utils.FileOrFolderExists(configTomlPath) || !utils.FileOrFolderExists(appTomlPath) {
@@ -273,7 +271,7 @@ func NewExistingAppReplaceSelect(ctx context.Context) *ExistingAppReplaceSelect 
 			Tooltips: &tooltips,
 		},
 		BaseModel: utils.BaseModel{Ctx: ctx},
-		question:  "Existing config/app.toml and config/config.toml detected. Would you like to use the current files or replace them",
+		question:  fmt.Sprintf("Existing %[1]s/app.toml and %[1]s/config.toml detected. Would you like to use the current files or replace them", utils.GetInitiaConfigDirectory(ctx)),
 	}
 }
 
@@ -317,7 +315,8 @@ func (m *ExistingAppReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *ExistingAppReplaceSelect) View() string {
 	state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
 	m.Selector.ToggleTooltip = utils.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt("Existing config/app.toml and config/config.toml detected. Would you like to use the current files or replace them", []string{"config/app.toml", "config/config.toml"}, styles.Question) + m.Selector.View()
+	initiaConfigDir := utils.GetInitiaConfigDirectory(m.Ctx)
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{fmt.Sprintf("%s/app.toml", initiaConfigDir), fmt.Sprintf("%s/config.toml", initiaConfigDir)}, styles.Question) + m.Selector.View()
 }
 
 type RunL1NodeMonikerInput struct {
@@ -433,7 +432,10 @@ func (m *MinGasPriceInput) View() string {
 	m.TextInput.ToggleTooltip = utils.GetTooltip(m.Ctx)
 	preText := "\n"
 	if !state.existingApp {
-		preText += styles.RenderPrompt("There is no config/app.toml or config/config.toml available. You will need to enter the required information to proceed.\n", []string{"config/app.toml", "config/config.toml"}, styles.Information)
+		initiaConfigDir := utils.GetInitiaConfigDirectory(m.Ctx)
+		initiaAppToml := filepath.Join(initiaConfigDir, "app.toml")
+		initiaConfigToml := filepath.Join(initiaConfigDir, "config.toml")
+		preText += styles.RenderPrompt(fmt.Sprintf("There is no %s or %s available. You will need to enter the required information to proceed.\n", initiaAppToml, initiaConfigToml), []string{initiaAppToml, initiaConfigToml}, styles.Information)
 	}
 	return state.weave.Render() + preText + styles.RenderPrompt(m.GetQuestion(), []string{"min-gas-price"}, styles.Question) + m.TextInput.View()
 }
@@ -675,11 +677,7 @@ func (m *ExistingGenesisChecker) Init() tea.Cmd {
 func WaitExistingGenesisChecker(ctx context.Context) tea.Cmd {
 	return func() tea.Msg {
 		state := utils.GetCurrentState[RunL1NodeState](ctx)
-		homeDir, err := os.UserHomeDir()
-		if err != nil {
-			return utils.ErrorLoading{Err: err}
-		}
-		initiaConfigPath := filepath.Join(homeDir, utils.InitiaConfigDirectory)
+		initiaConfigPath := utils.GetInitiaConfigDirectory(ctx)
 		genesisFilePath := filepath.Join(initiaConfigPath, "genesis.json")
 
 		time.Sleep(1500 * time.Millisecond)
@@ -981,7 +979,7 @@ func initializeApp(ctx context.Context) tea.Cmd {
 
 		utils.SetLibraryPaths(filepath.Dir(binaryPath))
 
-		initiaHome := filepath.Join(userHome, utils.InitiaDirectory)
+		initiaHome := utils.GetInitiaHome(ctx)
 		if _, err := os.Stat(initiaHome); os.IsNotExist(err) {
 			runCmd := exec.Command(binaryPath, "init", state.moniker, "--chain-id", state.chainId, "--home", initiaHome)
 			if err := runCmd.Run(); err != nil {
@@ -989,7 +987,7 @@ func initializeApp(ctx context.Context) tea.Cmd {
 			}
 		}
 
-		initiaConfigPath := filepath.Join(userHome, utils.InitiaConfigDirectory)
+		initiaConfigPath := utils.GetInitiaConfigDirectory(ctx)
 
 		if state.replaceExistingApp || !state.existingApp {
 			if err := utils.UpdateTomlValue(filepath.Join(initiaConfigPath, "config.toml"), "moniker", state.moniker); err != nil {
@@ -1032,7 +1030,7 @@ func initializeApp(ctx context.Context) tea.Cmd {
 			panic(fmt.Sprintf("failed to initialize service: %v", err))
 		}
 
-		if err = srv.Create(fmt.Sprintf("initia@%s", state.initiadVersion)); err != nil {
+		if err = srv.Create(fmt.Sprintf("initia@%s", state.initiadVersion), initiaHome); err != nil {
 			panic(fmt.Sprintf("failed to create service: %v", err))
 		}
 
@@ -1190,13 +1188,8 @@ func (m *ExistingDataChecker) Init() tea.Cmd {
 
 func WaitExistingDataChecker(ctx context.Context) tea.Cmd {
 	return func() tea.Msg {
-		homeDir, err := os.UserHomeDir()
-		if err != nil {
-			return utils.ErrorLoading{Err: err}
-		}
-
 		state := utils.GetCurrentState[RunL1NodeState](ctx)
-		initiaDataPath := filepath.Join(homeDir, utils.InitiaDataDirectory)
+		initiaDataPath := utils.GetInitiaDataDirectory(ctx)
 		time.Sleep(1500 * time.Millisecond)
 
 		if !utils.FileOrFolderExists(initiaDataPath) {
@@ -1266,7 +1259,7 @@ func NewExistingDataReplaceSelect(ctx context.Context) *ExistingDataReplaceSelec
 			CannotBack: true,
 		},
 		BaseModel: utils.BaseModel{Ctx: ctx, CannotBack: true},
-		question:  fmt.Sprintf("Existing %s detected. By syncing, the existing data will be replaced. Would you want to proceed ?", utils.InitiaDataDirectory),
+		question:  fmt.Sprintf("Existing %s detected. By syncing, the existing data will be replaced. Would you want to proceed ?", utils.GetInitiaDataDirectory(ctx)),
 	}
 }
 
@@ -1286,7 +1279,7 @@ func (m *ExistingDataReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if selected != nil {
 		m.Ctx = utils.CloneStateAndPushPage[RunL1NodeState](m.Ctx, m)
 		state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{utils.InitiaDataDirectory}, string(*selected)))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{utils.GetInitiaDataDirectory(m.Ctx)}, string(*selected)))
 		switch *selected {
 		case Skip:
 			state.replaceExistingData = false
@@ -1311,7 +1304,7 @@ func (m *ExistingDataReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *ExistingDataReplaceSelect) View() string {
 	state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{utils.InitiaDataDirectory}, styles.Question) + m.Selector.View()
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{utils.GetInitiaDataDirectory(m.Ctx)}, styles.Question) + m.Selector.View()
 }
 
 type SnapshotEndpointInput struct {
@@ -1589,7 +1582,7 @@ func (m *SnapshotExtractLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.Loading.Completing {
 		m.Ctx = utils.CloneStateAndPushPage[RunL1NodeState](m.Ctx, m)
 		state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, fmt.Sprintf("Snapshot extracted to %s successfully.", utils.InitiaDataDirectory), []string{}, ""))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, fmt.Sprintf("Snapshot extracted to %s successfully.", utils.GetInitiaDataDirectory(m.Ctx)), []string{}, ""))
 		m.Ctx = utils.SetCurrentState(m.Ctx, state)
 		return NewTerminalState(m.Ctx), tea.Quit
 	}
@@ -1612,7 +1605,7 @@ func snapshotExtractor(ctx context.Context) tea.Cmd {
 			return utils.ErrorLoading{Err: fmt.Errorf("[error] Failed to get user home: %v", err)}
 		}
 
-		initiaHome := filepath.Join(userHome, utils.InitiaDirectory)
+		initiaHome := utils.GetInitiaHome(ctx)
 		binaryPath := filepath.Join(userHome, utils.WeaveDataDirectory, fmt.Sprintf("initia@%s", state.initiadVersion), "initiad")
 
 		runCmd := exec.Command(binaryPath, "comet", "unsafe-reset-all", "--keep-addr-book", "--home", initiaHome)
@@ -1638,9 +1631,8 @@ type StateSyncSetupLoading struct {
 }
 
 func NewStateSyncSetupLoading(ctx context.Context) *StateSyncSetupLoading {
-	state := utils.GetCurrentState[RunL1NodeState](ctx)
 	return &StateSyncSetupLoading{
-		Loading:   utils.NewLoading("Setting up State Sync...", setupStateSync(&state)),
+		Loading:   utils.NewLoading("Setting up State Sync...", setupStateSync(ctx)),
 		BaseModel: utils.BaseModel{Ctx: ctx, CannotBack: true},
 	}
 }
@@ -1685,8 +1677,9 @@ func (m *StateSyncSetupLoading) View() string {
 	return state.weave.Render() + m.Loading.View()
 }
 
-func setupStateSync(state *RunL1NodeState) tea.Cmd {
+func setupStateSync(ctx context.Context) tea.Cmd {
 	return func() tea.Msg {
+		state := utils.GetCurrentState[RunL1NodeState](ctx)
 		userHome, err := os.UserHomeDir()
 		if err != nil {
 			return utils.ErrorLoading{Err: fmt.Errorf("[error] Failed to get user home: %v", err)}
@@ -1697,7 +1690,7 @@ func setupStateSync(state *RunL1NodeState) tea.Cmd {
 			return utils.ErrorLoading{Err: fmt.Errorf("[error] Failed to get state sync info: %v", err)}
 		}
 
-		initiaConfigPath := filepath.Join(userHome, utils.InitiaConfigDirectory)
+		initiaConfigPath := utils.GetInitiaConfigDirectory(ctx)
 
 		var persistentPeers string
 		if state.persistentPeers != "" && state.additionalStateSyncPeers != "" {
@@ -1722,7 +1715,7 @@ func setupStateSync(state *RunL1NodeState) tea.Cmd {
 			return utils.ErrorLoading{Err: fmt.Errorf("[error] Failed to setup state sync trust_hash: %v", err)}
 		}
 
-		initiaHome := filepath.Join(userHome, utils.InitiaDirectory)
+		initiaHome := utils.GetInitiaHome(ctx)
 		binaryPath := filepath.Join(userHome, utils.WeaveDataDirectory, fmt.Sprintf("initia@%s", state.initiadVersion), "initiad")
 
 		runCmd := exec.Command(binaryPath, "comet", "unsafe-reset-all", "--keep-addr-book", "--home", initiaHome)
@@ -1755,5 +1748,6 @@ func (m *TerminalState) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *TerminalState) View() string {
 	// TODO: revisit congratulations text
 	state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt("Initia node setup successfully. Config files are saved at ~/.initia/config/config.toml and ~/.initia/config.app.toml. Feel free to modify them as needed.", []string{}, styles.Completed) + "\n" + styles.RenderPrompt("You can start the node by running `weave initia start`", []string{}, styles.Completed) + "\n"
+	initiaConfigDir := utils.GetInitiaConfigDirectory(m.Ctx)
+	return state.weave.Render() + styles.RenderPrompt(fmt.Sprintf("Initia node setup successfully. Config files are saved at %[1]s/config.toml and %[1]s/app.toml. Feel free to modify them as needed.", initiaConfigDir), []string{}, styles.Completed) + "\n" + styles.RenderPrompt("You can start the node by running `weave initia start`", []string{}, styles.Completed) + "\n"
 }

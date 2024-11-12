@@ -31,21 +31,7 @@ func (j *Launchd) GetServiceName() string {
 	return fmt.Sprintf("com.%s.daemon", j.commandName.MustGetServiceSlug())
 }
 
-func (j *Launchd) GetAppHome() string {
-	switch j.commandName {
-	case Initia:
-		return utils.InitiaDirectory
-	case Minitia:
-		return utils.MinitiaDirectory
-	case OPinitExecutor:
-		return utils.OPinitDirectory
-	case OPinitChallenger:
-		return utils.OPinitDirectory
-	}
-	panic("unsupported app")
-}
-
-func (j *Launchd) Create(binaryVersion string) error {
+func (j *Launchd) Create(binaryVersion, appHome string) error {
 	userHome, err := os.UserHomeDir()
 	if err != nil {
 		return fmt.Errorf("failed to get user home directory: %v", err)
@@ -55,7 +41,6 @@ func (j *Launchd) Create(binaryVersion string) error {
 	weaveLogPath := filepath.Join(userHome, utils.WeaveLogDirectory)
 	binaryName := j.commandName.MustGetBinaryName()
 	binaryPath := filepath.Join(weaveDataPath, binaryVersion)
-	appHome := filepath.Join(userHome, j.GetAppHome())
 	if err = os.Setenv("DYLD_LIBRARY_PATH", binaryPath); err != nil {
 		panic(fmt.Errorf("failed to set DYLD_LIBRARY_PATH: %v", err))
 	}

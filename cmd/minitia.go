@@ -99,16 +99,9 @@ func minitiaLaunchCommand() *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if utils.IsFirstTimeSetup() {
-				finalModel, err := tea.NewProgram(models.NewExistingAppChecker(utils.NewAppContext(models.NewExistingCheckerState()), minitia.NewExistingMinitiaChecker(utils.NewAppContext(*minitia.NewLaunchState())))).Run()
-				if err != nil {
-					return err
-				}
-
-				if _, ok := finalModel.(*models.WeaveAppSuccessfullyInitialized); !ok {
-					// If the model is not of the expected type, return or handle as needed
-					return nil
-				}
+			minitiaHome, err := cmd.Flags().GetString(FlagMinitiaHome)
+			if err != nil {
+				return err
 			}
 
 			state := minitia.NewLaunchState()
@@ -132,16 +125,29 @@ func minitiaLaunchCommand() *cobra.Command {
 			force, _ := cmd.Flags().GetBool(FlagForce)
 
 			if force {
-				userHome, err := os.UserHomeDir()
-				if err != nil {
-					return fmt.Errorf("failed to get user home directory: %v", err)
-				}
-				if err = utils.DeleteDirectory(filepath.Join(userHome, utils.MinitiaDirectory)); err != nil {
-					return fmt.Errorf("failed to delete %s: %v", utils.MinitiaDirectory, err)
+				if err = utils.DeleteDirectory(minitiaHome); err != nil {
+					return fmt.Errorf("failed to delete %s: %v", minitiaHome, err)
 				}
 			}
 
-			_, err := tea.NewProgram(minitia.NewExistingMinitiaChecker(utils.NewAppContext(*state))).Run()
+			ctx := utils.NewAppContext(*state)
+			ctx = utils.SetMinitiaHome(ctx, minitiaHome)
+
+			if utils.IsFirstTimeSetup() {
+				checkerCtx := utils.NewAppContext(models.NewExistingCheckerState())
+				checkerCtx = utils.SetMinitiaHome(checkerCtx, minitiaHome)
+				finalModel, err := tea.NewProgram(models.NewExistingAppChecker(checkerCtx, minitia.NewExistingMinitiaChecker(ctx))).Run()
+				if err != nil {
+					return err
+				}
+
+				if _, ok := finalModel.(*models.WeaveAppSuccessfullyInitialized); !ok {
+					// If the model is not of the expected type, return or handle as needed
+					return nil
+				}
+			}
+
+			_, err = tea.NewProgram(minitia.NewExistingMinitiaChecker(ctx)).Run()
 			if err != nil {
 				return err
 			}
@@ -149,6 +155,12 @@ func minitiaLaunchCommand() *cobra.Command {
 		},
 	}
 
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		panic(fmt.Errorf("cannot get user home directory: %v", err))
+	}
+
+	launchCmd.Flags().String(FlagMinitiaHome, filepath.Join(homeDir, utils.MinitiaDirectory), "The Minitia application home directory")
 	launchCmd.Flags().String(FlagWithConfig, "", "launch using an existing Minitia config file. The argument should be the path to the config file.")
 	launchCmd.Flags().String(FlagVm, "", fmt.Sprintf("vm to be used. Required when using --with-config. Valid options are: %s", strings.Join(validVMOptions, ", ")))
 	launchCmd.Flags().BoolP(FlagForce, "f", false, "force the launch by deleting the existing .minitia directory if it exists.")
