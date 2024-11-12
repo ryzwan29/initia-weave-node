@@ -633,6 +633,66 @@ func TestExistingGenesisCheckerUpdate_ExistingGenesis(t *testing.T) {
 	}
 }
 
+func TestExistingGenesisReplaceSelect_Update_UseCurrentGenesis_LocalNetwork(t *testing.T) {
+	ctx := utils.NewAppContext(NewRunL1NodeState())
+	state := utils.GetCurrentState[RunL1NodeState](ctx)
+	state.network = string(Local)
+	ctx = utils.SetCurrentState(ctx, state)
+
+	model := NewExistingGenesisReplaceSelect(ctx)
+
+	// Simulate selecting "UseCurrentGenesis" option
+	model.Update(tea.KeyMsg{Type: tea.KeyDown})                  // Navigate to UseCurrentGenesis
+	model.Update(tea.KeyMsg{Type: tea.KeySpace})                 // Select UseCurrentGenesis
+	nextModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter}) // Confirm selection with Enter
+
+	// Expect transition to InitializingAppLoading for Local network
+	if _, ok := nextModel.(*InitializingAppLoading); !ok {
+		t.Errorf("Expected model to be of type *InitializingAppLoading, but got %T", nextModel)
+	}
+}
+
+func TestExistingGenesisReplaceSelect_Update_ReplaceGenesis_LocalNetwork(t *testing.T) {
+	ctx := utils.NewAppContext(NewRunL1NodeState())
+	state := utils.GetCurrentState[RunL1NodeState](ctx)
+	state.network = string(Local)
+	ctx = utils.SetCurrentState(ctx, state)
+
+	model := NewExistingGenesisReplaceSelect(ctx)
+
+	// Simulate selecting "ReplaceGenesis" option
+	model.Update(tea.KeyMsg{Type: tea.KeyDown})                  // Navigate to ReplaceGenesis
+	model.Update(tea.KeyMsg{Type: tea.KeySpace})                 // Select ReplaceGenesis
+	nextModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter}) // Confirm selection with Enter
+
+	// Expect transition to InitializingAppLoading and state update
+	if m, ok := nextModel.(*InitializingAppLoading); !ok {
+		t.Errorf("Expected model to be of type *InitializingAppLoading, but got %T", nextModel)
+	} else {
+		state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
+		assert.True(t, state.replaceExistingGenesisWithDefault) // Verify flag is set for Local network
+	}
+}
+
+func TestExistingGenesisReplaceSelect_Update_ReplaceGenesis_MainnetNetwork(t *testing.T) {
+	ctx := utils.NewAppContext(NewRunL1NodeState())
+	state := utils.GetCurrentState[RunL1NodeState](ctx)
+	state.network = string(Mainnet)
+	ctx = utils.SetCurrentState(ctx, state)
+
+	model := NewExistingGenesisReplaceSelect(ctx)
+
+	// Simulate selecting "ReplaceGenesis" option
+	model.Update(tea.KeyMsg{Type: tea.KeyDown})                  // Navigate to ReplaceGenesis
+	model.Update(tea.KeyMsg{Type: tea.KeySpace})                 // Select ReplaceGenesis
+	nextModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter}) // Confirm selection with Enter
+
+	// Expect transition to GenesisEndpointInput for Mainnet network
+	if _, ok := nextModel.(*GenesisEndpointInput); !ok {
+		t.Errorf("Expected model to be of type *GenesisEndpointInput, but got %T", nextModel)
+	}
+}
+
 // func TestRunL1NodeVersionSelect(t *testing.T) {
 // 	mockState := &RunL1NodeState{
 // 		moniker: "",

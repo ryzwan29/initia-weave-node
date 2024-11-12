@@ -839,8 +839,7 @@ func (m *GenesisEndpointInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.err = utils.ValidateURL(dns)
 		if m.err == nil {
 			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"endpoint"}, dns))
-			m.Ctx = utils.SetCurrentState(m.Ctx, state)
-			newLoader := NewInitializingAppLoading(m.Ctx)
+			newLoader := NewInitializingAppLoading(utils.SetCurrentState(m.Ctx, state))
 			return newLoader, newLoader.Init()
 		}
 	}
