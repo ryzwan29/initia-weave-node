@@ -572,6 +572,67 @@ func TestPersistentPeersInputUpdate_EmptyInput_LocalNetwork(t *testing.T) {
 	}
 }
 
+func TestExistingGenesisCheckerUpdate_NoExistingGenesis_LocalNetwork(t *testing.T) {
+	ctx := utils.NewAppContext(NewRunL1NodeState())
+	state := utils.GetCurrentState[RunL1NodeState](ctx)
+	state.existingGenesis = false
+	state.network = string(Local)
+	state.chainRegistry = registry.MustGetChainRegistry(registry.InitiaL1Testnet)
+
+	ctx = utils.SetCurrentState(ctx, state)
+
+	model := NewExistingGenesisChecker(ctx)
+
+	// Simulate the loading completion
+	model.loading.EndContext = ctx
+	model.loading.Completing = true
+	nextModel, _ := model.Update(tea.KeyMsg{})
+
+	// Expect transition to InitializingAppLoading for Local network
+	if _, ok := nextModel.(*InitializingAppLoading); !ok {
+		t.Errorf("Expected model to be of type *InitializingAppLoading, but got %T", nextModel)
+	}
+}
+
+func TestExistingGenesisCheckerUpdate_NoExistingGenesis_MainnetNetwork(t *testing.T) {
+	ctx := utils.NewAppContext(NewRunL1NodeState())
+	state := utils.GetCurrentState[RunL1NodeState](ctx)
+	state.existingGenesis = false
+	state.network = string(Mainnet)
+	ctx = utils.SetCurrentState(ctx, state)
+
+	model := NewExistingGenesisChecker(ctx)
+
+	// Simulate the loading completion
+	model.loading.EndContext = ctx
+	model.loading.Completing = true
+	nextModel, _ := model.Update(tea.KeyMsg{})
+
+	// Expect transition to GenesisEndpointInput for Mainnet network
+	if _, ok := nextModel.(*GenesisEndpointInput); !ok {
+		t.Errorf("Expected model to be of type *GenesisEndpointInput, but got %T", nextModel)
+	}
+}
+
+func TestExistingGenesisCheckerUpdate_ExistingGenesis(t *testing.T) {
+	ctx := utils.NewAppContext(NewRunL1NodeState())
+	state := utils.GetCurrentState[RunL1NodeState](ctx)
+	state.existingGenesis = true
+	ctx = utils.SetCurrentState(ctx, state)
+
+	model := NewExistingGenesisChecker(ctx)
+
+	// Simulate the loading completion
+	model.loading.EndContext = ctx
+	model.loading.Completing = true
+	nextModel, _ := model.Update(tea.KeyMsg{})
+
+	// Expect transition to ExistingGenesisReplaceSelect when existingGenesis is true
+	if _, ok := nextModel.(*ExistingGenesisReplaceSelect); !ok {
+		t.Errorf("Expected model to be of type *ExistingGenesisReplaceSelect, but got %T", nextModel)
+	}
+}
+
 // func TestRunL1NodeVersionSelect(t *testing.T) {
 // 	mockState := &RunL1NodeState{
 // 		moniker: "",

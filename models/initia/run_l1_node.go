@@ -672,7 +672,6 @@ func (m *ExistingGenesisChecker) Init() tea.Cmd {
 	return m.loading.Init()
 }
 
-// TODO: revisit
 func WaitExistingGenesisChecker(ctx context.Context) tea.Cmd {
 	return func() tea.Msg {
 		state := utils.GetCurrentState[RunL1NodeState](ctx)
