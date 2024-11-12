@@ -737,6 +737,71 @@ func TestGenesisEndpointInputUpdate_InvalidInput(t *testing.T) {
 	assert.Empty(t, state.genesisEndpoint) // genesisEndpoint should remain empty due to validation failure
 }
 
+func TestInitializingAppLoading_Update_LocalNetwork(t *testing.T) {
+	ctx := utils.NewAppContext(NewRunL1NodeState())
+	state := utils.GetCurrentState[RunL1NodeState](ctx)
+	state.network = string(Local)
+	ctx = utils.SetCurrentState(ctx, state)
+
+	model := NewInitializingAppLoading(ctx)
+
+	// Simulate loading completion
+	model.Loading.Completing = true
+	model.Loading.EndContext = ctx
+	nextModel, _ := model.Update(tea.KeyMsg{})
+
+	// Expect model to quit for Local network
+	assert.Equal(t, model, nextModel)
+
+	// Verify final state message
+	state = utils.GetCurrentState[RunL1NodeState](model.Ctx)
+	assert.Contains(t, state.weave.Render(), "Initialization successful.\n")
+}
+
+func TestInitializingAppLoading_Update_MainnetNetwork(t *testing.T) {
+	ctx := utils.NewAppContext(NewRunL1NodeState())
+	state := utils.GetCurrentState[RunL1NodeState](ctx)
+	state.network = string(Mainnet)
+	ctx = utils.SetCurrentState(ctx, state)
+
+	model := NewInitializingAppLoading(ctx)
+
+	// Simulate loading completion
+	model.Loading.Completing = true
+	model.Loading.EndContext = ctx
+	nextModel, _ := model.Update(tea.KeyMsg{})
+
+	// Expect transition to SyncMethodSelect for Mainnet network
+	if m, ok := nextModel.(*SyncMethodSelect); !ok {
+		t.Errorf("Expected model to be of type *SyncMethodSelect, but got %T", nextModel)
+	} else {
+		state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
+		assert.Contains(t, state.weave.Render(), "Initialization successful.\n") // Verify final state message
+	}
+}
+
+func TestInitializingAppLoading_Update_TestnetNetwork(t *testing.T) {
+	ctx := utils.NewAppContext(NewRunL1NodeState())
+	state := utils.GetCurrentState[RunL1NodeState](ctx)
+	state.network = string(Testnet)
+	ctx = utils.SetCurrentState(ctx, state)
+
+	model := NewInitializingAppLoading(ctx)
+
+	// Simulate loading completion
+	model.Loading.Completing = true
+	model.Loading.EndContext = ctx
+	nextModel, _ := model.Update(tea.KeyMsg{})
+
+	// Expect transition to SyncMethodSelect for Testnet network
+	if m, ok := nextModel.(*SyncMethodSelect); !ok {
+		t.Errorf("Expected model to be of type *SyncMethodSelect, but got %T", nextModel)
+	} else {
+		state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
+		assert.Contains(t, state.weave.Render(), "Initialization successful.\n") // Verify final state message
+	}
+}
+
 // func TestRunL1NodeVersionSelect(t *testing.T) {
 // 	mockState := &RunL1NodeState{
 // 		moniker: "",
