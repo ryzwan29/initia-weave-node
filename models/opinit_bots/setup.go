@@ -117,8 +117,7 @@ func (m *SetupOPInitBotKeySelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			// Check if the config file exists
 			if !utils.FileOrFolderExists(minitiaConfigPath) {
-				m.Ctx = utils.SetCurrentState(m.Ctx, state)
-				model := NewSetupBotCheckbox(m.Ctx, false, true)
+				model := NewSetupBotCheckbox(utils.SetCurrentState(m.Ctx, state), false, true)
 				return model, model.Init()
 			}
 
@@ -141,13 +140,11 @@ func (m *SetupOPInitBotKeySelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			// Set the loaded config to the state variable
 			state.MinitiaConfig = &minitiaConfig
-			m.Ctx = utils.SetCurrentState(m.Ctx, state)
-			return NewProcessingMinitiaConfig(m.Ctx), nil
+			return NewProcessingMinitiaConfig(utils.SetCurrentState(m.Ctx, state)), nil
 
 		case "No":
 			// Handle "No" option
-			m.Ctx = utils.SetCurrentState(m.Ctx, state)
-			model := NewSetupOPInitBots(m.Ctx)
+			model := NewSetupOPInitBots(utils.SetCurrentState(m.Ctx, state))
 			return model, model.Init()
 		}
 	}
@@ -171,6 +168,38 @@ type ProcessingMinitiaConfig struct {
 	utils.BaseModel
 	utils.Selector[AddMinitiaKeyOption]
 	question string
+}
+
+func assignBotInfo(botInfo *BotInfo, minitiaConfig *types.MinitiaConfig) {
+	botInfo.IsNotExist = false
+	botInfo.Mnemonic = getMnemonicForBot(botInfo.BotName, minitiaConfig)
+
+	// Set DA Layer for BatchSubmitter
+	if botInfo.BotName == BatchSubmitter {
+		botInfo.DALayer = getDALayer(minitiaConfig.SystemKeys.BatchSubmitter.L1Address)
+	}
+}
+
+func getMnemonicForBot(botName BotName, minitiaConfig *types.MinitiaConfig) string {
+	switch botName {
+	case BridgeExecutor:
+		return minitiaConfig.SystemKeys.BridgeExecutor.Mnemonic
+	case OutputSubmitter:
+		return minitiaConfig.SystemKeys.OutputSubmitter.Mnemonic
+	case BatchSubmitter:
+		return minitiaConfig.SystemKeys.BatchSubmitter.Mnemonic
+	case Challenger:
+		return minitiaConfig.SystemKeys.Challenger.Mnemonic
+	default:
+		return ""
+	}
+}
+
+func getDALayer(address string) string {
+	if strings.HasPrefix(address, "initia") {
+		return string(InitiaLayerOption)
+	}
+	return string(CelestiaLayerOption)
 }
 
 func NewProcessingMinitiaConfig(ctx context.Context) *ProcessingMinitiaConfig {
@@ -214,35 +243,13 @@ func (m *ProcessingMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case YesAddMinitiaKeyOption:
 			// Iterate through botInfos and add relevant keys
 			for idx := range state.BotInfos {
-				botInfo := &state.BotInfos[idx]
-				botInfo.IsNotExist = false
-
-				// Assign mnemonics based on bot name
-				switch botInfo.BotName {
-				case BridgeExecutor:
-					botInfo.Mnemonic = state.MinitiaConfig.SystemKeys.BridgeExecutor.Mnemonic
-				case OutputSubmitter:
-					botInfo.Mnemonic = state.MinitiaConfig.SystemKeys.OutputSubmitter.Mnemonic
-				case BatchSubmitter:
-					botInfo.Mnemonic = state.MinitiaConfig.SystemKeys.BatchSubmitter.Mnemonic
-					// Determine Data Availability Layer (DA Layer)
-					if strings.HasPrefix(state.MinitiaConfig.SystemKeys.BatchSubmitter.L1Address, "initia") {
-						botInfo.DALayer = string(InitiaLayerOption)
-					} else {
-						botInfo.DALayer = string(CelestiaLayerOption)
-					}
-				case Challenger:
-					botInfo.Mnemonic = state.MinitiaConfig.SystemKeys.Challenger.Mnemonic
-				}
+				assignBotInfo(&state.BotInfos[idx], state.MinitiaConfig)
 			}
-			m.Ctx = utils.SetCurrentState(m.Ctx, state)
-			model := NewSetupOPInitBots(m.Ctx)
+			model := NewSetupOPInitBots(utils.SetCurrentState(m.Ctx, state))
 			return model, model.Init()
-			//return NewSetupBotCheckbox(m.Ctx, true, false), nil
 
 		case NoAddMinitiaKeyOption:
-			m.Ctx = utils.SetCurrentState(m.Ctx, state)
-			return NewSetupBotCheckbox(m.Ctx, false, false), nil
+			return NewSetupBotCheckbox(utils.SetCurrentState(m.Ctx, state), false, false), nil
 		}
 	}
 
@@ -263,7 +270,6 @@ func NextUpdateOpinitBotKey(ctx context.Context) (tea.Model, tea.Cmd) {
 		}
 	}
 	model := NewSetupOPInitBots(ctx)
-
 	return model, model.Init()
 }
 
@@ -324,7 +330,6 @@ func (m *SetupBotCheckbox) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	cb, cmd, done := m.Select(msg)
 	if done {
-		empty := true
 		// Clone the state before making any changes
 		m.Ctx = utils.CloneStateAndPushPage[OPInitBotsState](m.Ctx, m)
 		state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
@@ -334,6 +339,7 @@ func (m *SetupBotCheckbox) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"bots", "set", "override", utils.GetMinitiaArtifactsConfigJson(m.Ctx)}, cb.GetSelectedString()),
 		)
 
+		empty := true
 		// Update the state based on the user's selections
 		for idx, isSelected := range cb.Selected {
 			if isSelected {
@@ -342,6 +348,7 @@ func (m *SetupBotCheckbox) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 
+		m.Ctx = utils.SetCurrentState(m.Ctx, state)
 		// If no bots were selected, return to SetupOPInitBots
 		if empty {
 			model := NewSetupOPInitBots(m.Ctx)
@@ -349,7 +356,6 @@ func (m *SetupBotCheckbox) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		// Proceed to the next step
-		m.Ctx = utils.SetCurrentState(m.Ctx, state)
 		return NextUpdateOpinitBotKey(m.Ctx)
 	}
 
@@ -404,8 +410,7 @@ func (m *RecoverKeySelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.Ctx = utils.CloneStateAndPushPage[OPInitBotsState](m.Ctx, m)
 		state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
 
-		switch *selected {
-		case "Generate new system key":
+		if *selected == "Generate new system key" {
 			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{string(state.BotInfos[m.idx].BotName)}, *selected))
 
 			state.BotInfos[m.idx].IsGenerateKey = true
@@ -418,11 +423,9 @@ func (m *RecoverKeySelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 			return NextUpdateOpinitBotKey(m.Ctx)
-
-		case "Import existing key " + styles.Text("(you will be prompted to enter your mnemonic)", styles.Gray):
+		} else {
 			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{string(state.BotInfos[m.idx].BotName)}, "Import existing key"))
-			m.Ctx = utils.SetCurrentState(m.Ctx, state)
-			return NewRecoverFromMnemonic(m.Ctx, m.idx), nil
+			return NewRecoverFromMnemonic(utils.SetCurrentState(m.Ctx, state), m.idx), nil
 		}
 	}
 
@@ -472,16 +475,17 @@ func (m *RecoverFromMnemonic) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Clone the state before making any changes
 		m.Ctx = utils.CloneStateAndPushPage[OPInitBotsState](m.Ctx, m)
 		state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
-		// Update the state with the input mnemonic
-		state.BotInfos[m.idx].Mnemonic = strings.Trim(input.Text, "\n")
-		state.BotInfos[m.idx].IsSetup = false
 
 		// Save the response with hidden mnemonic text
 		state.weave.PushPreviousResponse(
 			styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{string(state.BotInfos[m.idx].BotName)}, styles.HiddenMnemonicText),
 		)
-		m.Ctx = utils.SetCurrentState(m.Ctx, state)
 
+		// Update the state with the input mnemonic
+		state.BotInfos[m.idx].Mnemonic = strings.Trim(input.Text, "\n")
+		state.BotInfos[m.idx].IsSetup = false
+
+		m.Ctx = utils.SetCurrentState(m.Ctx, state)
 		// Check if the bot is of type BatchSubmitter and move to the next step accordingly
 		if state.BotInfos[m.idx].BotName == BatchSubmitter {
 			return NewDALayerSelector(m.Ctx, m.idx), nil
@@ -520,7 +524,7 @@ func (m *SetupOPInitBots) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	loader, cmd := m.loading.Update(msg)
 	m.loading = loader
 	if m.loading.Completing {
-		return NewTerminalState(m.Ctx), tea.Quit
+		return NewTerminalState(m.loading.EndContext), tea.Quit
 	}
 	return m, cmd
 }
@@ -611,12 +615,11 @@ func (m *DALayerSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		// Save the response for the selected DA Layer
 		state.weave.PushPreviousResponse(
-			styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"DA Layer"}, string(*selected)),
+			styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"DA Layer"}, state.BotInfos[m.idx].DALayer),
 		)
 
-		m.Ctx = utils.SetCurrentState(m.Ctx, state)
 		// Proceed to the next step
-		return NextUpdateOpinitBotKey(m.Ctx)
+		return NextUpdateOpinitBotKey(utils.SetCurrentState(m.Ctx, state))
 	}
 
 	return m, cmd
