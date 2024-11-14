@@ -75,10 +75,10 @@ type VersionSelector struct {
 	currentVersion string
 }
 
-func NewVersionSelector(versions BinaryVersionWithDownloadURL, currentVersion string, cannotBack bool) VersionSelector {
+func NewVersionSelector(urlMap BinaryVersionWithDownloadURL, currentVersion string, cannotBack bool) VersionSelector {
 	return VersionSelector{
 		Selector: Selector[string]{
-			Options:    SortVersions(versions),
+			Options:    SortVersions(urlMap),
 			CannotBack: cannotBack,
 		},
 		currentVersion: currentVersion,

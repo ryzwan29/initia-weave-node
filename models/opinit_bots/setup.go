@@ -20,14 +20,14 @@ type OPInitBotVersionSelector struct {
 	utils.BaseModel
 	utils.VersionSelector
 	question string
-	versions utils.BinaryVersionWithDownloadURL
+	urlMap   utils.BinaryVersionWithDownloadURL
 }
 
-func NewOPInitBotVersionSelector(ctx context.Context, versions utils.BinaryVersionWithDownloadURL, currentVersion string) *OPInitBotVersionSelector {
+func NewOPInitBotVersionSelector(ctx context.Context, urlMap utils.BinaryVersionWithDownloadURL, currentVersion string) *OPInitBotVersionSelector {
 	return &OPInitBotVersionSelector{
-		VersionSelector: utils.NewVersionSelector(versions, currentVersion, true),
+		VersionSelector: utils.NewVersionSelector(urlMap, currentVersion, true),
 		BaseModel:       utils.BaseModel{Ctx: ctx, CannotBack: true},
-		versions:        versions,
+		urlMap:          urlMap,
 		question:        "Which OPinit bots version would you like to use?",
 	}
 }
@@ -52,17 +52,14 @@ func (m *OPInitBotVersionSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.Ctx = utils.CloneStateAndPushPage[OPInitBotsState](m.Ctx, m)
 		// Retrieve the cloned state
 		state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
-
 		state.weave.PushPreviousResponse(
 			styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"OPinit bots version"}, *selected),
 		)
 
-		state.OPInitBotEndpoint = m.versions[*selected]
 		state.OPInitBotVersion = *selected
+		state.OPInitBotEndpoint = m.urlMap[state.OPInitBotVersion]
 
-		m.Ctx = utils.SetCurrentState(m.Ctx, state)
-		newSelector := NewSetupOPInitBotKeySelector(m.Ctx)
-		return newSelector, nil
+		return NewSetupOPInitBotKeySelector(utils.SetCurrentState(m.Ctx, state)), nil
 	}
 
 	return m, cmd
