@@ -169,6 +169,12 @@ func CloneStateAndPushPage[S CloneableState[S]](ctx context.Context, page tea.Mo
 	return newCtx
 }
 
+func PushPageAndGetState[S CloneableState[S]](baseModel BaseModelInterface) S {
+	ctx := CloneStateAndPushPage[S](baseModel.GetContext(), baseModel)
+	baseModel.SetContext(ctx)
+	return GetCurrentState[S](ctx)
+}
+
 // SetCurrentModel updates the current model in the context
 func SetCurrentModel(ctx context.Context, currentModel tea.Model) context.Context {
 	return context.WithValue(ctx, PageKey, currentModel)

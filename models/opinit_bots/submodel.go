@@ -68,11 +68,10 @@ func (m *SubModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m *SubModel) UpdateWithContext(ctx context.Context, parent tea.Model, msg tea.Msg) (context.Context, *SubModel, tea.Cmd) {
+func (m *SubModel) UpdateWithContext(ctx context.Context, parent utils.BaseModelInterface, msg tea.Msg) (context.Context, *SubModel, tea.Cmd) {
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-		ctx = utils.CloneStateAndPushPage[OPInitBotsState](ctx, parent)
-		state := utils.GetCurrentState[OPInitBotsState](ctx)
+		state := utils.PushPageAndGetState[OPInitBotsState](parent)
 		res := strings.TrimSpace(input.Text)
 		state.botConfig[m.field.Name] = res
 		s := strings.Split(m.field.Name, ".")

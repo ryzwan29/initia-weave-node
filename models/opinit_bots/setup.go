@@ -48,10 +48,8 @@ func (m *OPInitBotVersionSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// Normal selection handling logic
 	selected, cmd := m.Select(msg)
 	if selected != nil {
-		// Clone the state before any modifications
-		m.Ctx = utils.CloneStateAndPushPage[OPInitBotsState](m.Ctx, m)
-		// Retrieve the cloned state
-		state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
+		state := utils.PushPageAndGetState[OPInitBotsState](m)
+
 		state.weave.PushPreviousResponse(
 			styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"OPinit bots version"}, *selected),
 		)
@@ -102,10 +100,8 @@ func (m *SetupOPInitBotKeySelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// Handle selection
 	selected, cmd := m.Select(msg)
 	if selected != nil {
-		// Clone the state before any modifications
-		m.Ctx = utils.CloneStateAndPushPage[OPInitBotsState](m.Ctx, m)
-		// Retrieve the cloned state
-		state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
+		state := utils.PushPageAndGetState[OPInitBotsState](m)
+
 		state.weave.PushPreviousResponse(
 			styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"OPinit bot keys"}, *selected),
 		)
@@ -231,10 +227,8 @@ func (m *ProcessingMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// Handle selection logic
 	selected, cmd := m.Select(msg)
 	if selected != nil {
-		// Clone the state before any modifications
-		m.Ctx = utils.CloneStateAndPushPage[OPInitBotsState](m.Ctx, m)
-		// Retrieve the cloned state
-		state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
+		state := utils.PushPageAndGetState[OPInitBotsState](m)
+
 		state.weave.PushPreviousResponse(
 			styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{utils.GetMinitiaArtifactsConfigJson(m.Ctx)}, string(*selected)),
 		)
@@ -330,9 +324,7 @@ func (m *SetupBotCheckbox) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	cb, cmd, done := m.Select(msg)
 	if done {
-		// Clone the state before making any changes
-		m.Ctx = utils.CloneStateAndPushPage[OPInitBotsState](m.Ctx, m)
-		state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
+		state := utils.PushPageAndGetState[OPInitBotsState](m)
 
 		// Save the selection response
 		state.weave.PushPreviousResponse(
@@ -406,9 +398,7 @@ func (m *RecoverKeySelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	selected, cmd := m.Select(msg)
 	if selected != nil {
-		// Clone the state before any modifications
-		m.Ctx = utils.CloneStateAndPushPage[OPInitBotsState](m.Ctx, m)
-		state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
+		state := utils.PushPageAndGetState[OPInitBotsState](m)
 
 		if *selected == "Generate new system key" {
 			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{string(state.BotInfos[m.idx].BotName)}, *selected))
@@ -472,9 +462,7 @@ func (m *RecoverFromMnemonic) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-		// Clone the state before making any changes
-		m.Ctx = utils.CloneStateAndPushPage[OPInitBotsState](m.Ctx, m)
-		state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
+		state := utils.PushPageAndGetState[OPInitBotsState](m)
 
 		// Save the response with hidden mnemonic text
 		state.weave.PushPreviousResponse(
@@ -606,9 +594,7 @@ func (m *DALayerSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	selected, cmd := m.Select(msg)
 	if selected != nil {
-		// Clone the state before making any changes
-		m.Ctx = utils.CloneStateAndPushPage[OPInitBotsState](m.Ctx, m)
-		state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
+		state := utils.PushPageAndGetState[OPInitBotsState](m)
 
 		// Update the DA Layer for the specific bot
 		state.BotInfos[m.idx].DALayer = string(*selected)
@@ -713,7 +699,9 @@ func WaitSetupOPInitBots(ctx context.Context) tea.Cmd {
 			}
 		}
 
-		return utils.EndLoading{}
+		return utils.EndLoading{
+			Ctx: ctx,
+		}
 	}
 }
 

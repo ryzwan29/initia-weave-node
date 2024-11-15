@@ -233,8 +233,7 @@ func (m *OPInitBotInitSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	selected, cmd := m.Select(msg)
 	if selected != nil {
-		m.Ctx = utils.CloneStateAndPushPage[OPInitBotsState](m.Ctx, m)
-		state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
+		state := utils.PushPageAndGetState[OPInitBotsState](m)
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"bot"}, string(*selected)))
 		m.Ctx = utils.SetCurrentState(m.Ctx, state)
 		switch *selected {
@@ -294,8 +293,7 @@ func (m *DeleteDBSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	selected, cmd := m.Select(msg)
 	if selected != nil {
-		m.Ctx = utils.CloneStateAndPushPage[OPInitBotsState](m.Ctx, m)
-		state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
+		state := utils.PushPageAndGetState[OPInitBotsState](m)
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, string(*selected)))
 		switch *selected {
 		case DeleteDBOptionNo:
@@ -376,8 +374,7 @@ func (m *UseCurrentConfigSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	selected, cmd := m.Select(msg)
 	if selected != nil {
-		m.Ctx = utils.CloneStateAndPushPage[OPInitBotsState](m.Ctx, m)
-		state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
+		state := utils.PushPageAndGetState[OPInitBotsState](m)
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{m.configPath}, *selected))
 		switch *selected {
 		case "use current file":
@@ -446,8 +443,7 @@ func (m *PrefillMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	selected, cmd := m.Select(msg)
 	if selected != nil {
-		m.Ctx = utils.CloneStateAndPushPage[OPInitBotsState](m.Ctx, m)
-		state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
+		state := utils.PushPageAndGetState[OPInitBotsState](m)
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{utils.GetMinitiaArtifactsConfigJson(m.Ctx)}, string(*selected)))
 
 		switch *selected {
@@ -549,8 +545,7 @@ func (m *L1PrefillSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	selected, cmd := m.Select(msg)
 	if selected != nil {
-		m.Ctx = utils.CloneStateAndPushPage[OPInitBotsState](m.Ctx, m)
-		state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
+		state := utils.PushPageAndGetState[OPInitBotsState](m)
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"L1"}, string(*selected)))
 
 		var chainId, rpc, minGasPrice string
@@ -646,8 +641,7 @@ func (m *SetDALayer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	selected, cmd := m.Select(msg)
 	if selected != nil {
-		m.Ctx = utils.CloneStateAndPushPage[OPInitBotsState](m.Ctx, m)
-		state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
+		state := utils.PushPageAndGetState[OPInitBotsState](m)
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"DA Layer"}, string(*selected)))
 		switch *selected {
 		case Initia:

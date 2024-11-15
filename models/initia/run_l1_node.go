@@ -91,8 +91,7 @@ func (m *RunL1NodeNetworkSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	selected, cmd := m.Select(msg)
 	if selected != nil {
-		m.Ctx = utils.CloneStateAndPushPage[RunL1NodeState](m.Ctx, m)
-		state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
+		state := utils.PushPageAndGetState[RunL1NodeState](m)
 
 		selectedString := string(*selected)
 		state.network = selectedString
@@ -160,8 +159,7 @@ func (m *RunL1NodeVersionSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	selected, cmd := m.Select(msg)
 	if selected != nil {
-		m.Ctx = utils.CloneStateAndPushPage[RunL1NodeState](m.Ctx, m)
-		state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
+		state := utils.PushPageAndGetState[RunL1NodeState](m)
 
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"initiad version"}, state.initiadVersion))
 		state.initiadVersion = *selected
@@ -214,8 +212,7 @@ func (m *RunL1NodeChainIdInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-		m.Ctx = utils.CloneStateAndPushPage[RunL1NodeState](m.Ctx, m)
-		state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
+		state := utils.PushPageAndGetState[RunL1NodeState](m)
 
 		state.chainId = input.Text
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"chain id"}, input.Text))
@@ -289,8 +286,7 @@ func (m *ExistingAppReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	selected, cmd := m.Select(msg)
 	if selected != nil {
-		m.Ctx = utils.CloneStateAndPushPage[RunL1NodeState](m.Ctx, m)
-		state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
+		state := utils.PushPageAndGetState[RunL1NodeState](m)
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"config/app.toml", "config/config.toml"}, string(*selected)))
 		switch *selected {
 		case UseCurrentApp:
@@ -355,8 +351,7 @@ func (m *RunL1NodeMonikerInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-		m.Ctx = utils.CloneStateAndPushPage[RunL1NodeState](m.Ctx, m)
-		state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
+		state := utils.PushPageAndGetState[RunL1NodeState](m)
 
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"moniker"}, input.Text))
 		state.moniker = input.Text
@@ -416,8 +411,7 @@ func (m *MinGasPriceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-		m.Ctx = utils.CloneStateAndPushPage[RunL1NodeState](m.Ctx, m)
-		state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
+		state := utils.PushPageAndGetState[RunL1NodeState](m)
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"min-gas-price"}, input.Text))
 		state.minGasPrice = input.Text
 		m.Ctx = utils.SetCurrentState(m.Ctx, state)
@@ -491,8 +485,7 @@ func (m *EnableFeaturesCheckbox) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	cb, cmd, done := m.Select(msg)
 	if done {
-		m.Ctx = utils.CloneStateAndPushPage[RunL1NodeState](m.Ctx, m)
-		state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
+		state := utils.PushPageAndGetState[RunL1NodeState](m)
 		for idx, isSelected := range cb.Selected {
 			if isSelected {
 				switch cb.Options[idx] {
@@ -561,8 +554,7 @@ func (m *SeedsInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-		m.Ctx = utils.CloneStateAndPushPage[RunL1NodeState](m.Ctx, m)
-		state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
+		state := utils.PushPageAndGetState[RunL1NodeState](m)
 		state.seeds = input.Text
 		var prevAnswer string
 		if input.Text == "" {
@@ -628,8 +620,7 @@ func (m *PersistentPeersInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-		m.Ctx = utils.CloneStateAndPushPage[RunL1NodeState](m.Ctx, m)
-		state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
+		state := utils.PushPageAndGetState[RunL1NodeState](m)
 		state.persistentPeers = input.Text
 		var prevAnswer string
 		if input.Text == "" {
@@ -698,8 +689,9 @@ func (m *ExistingGenesisChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	loader, cmd := m.loading.Update(msg)
 	m.loading = loader
 	if m.loading.Completing {
-		m.Ctx = utils.CloneStateAndPushPage[RunL1NodeState](m.loading.EndContext, m)
-		state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
+		m.Ctx = m.loading.EndContext
+		state := utils.PushPageAndGetState[RunL1NodeState](m)
+
 		if !state.existingGenesis {
 			m.Ctx = utils.SetCurrentState(m.Ctx, state)
 			if state.network == string(Local) {
@@ -757,8 +749,7 @@ func (m *ExistingGenesisReplaceSelect) Init() tea.Cmd {
 func (m *ExistingGenesisReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	selected, cmd := m.Select(msg)
 	if selected != nil {
-		m.Ctx = utils.CloneStateAndPushPage[RunL1NodeState](m.Ctx, m)
-		state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
+		state := utils.PushPageAndGetState[RunL1NodeState](m)
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"config/genesis.json"}, string(*selected)))
 		if state.network != string(Local) {
 			m.Ctx = utils.SetCurrentState(m.Ctx, state)
@@ -829,8 +820,7 @@ func (m *GenesisEndpointInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-		m.Ctx = utils.CloneStateAndPushPage[RunL1NodeState](m.Ctx, m)
-		state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
+		state := utils.PushPageAndGetState[RunL1NodeState](m)
 		state.genesisEndpoint = input.Text
 		dns := utils.CleanString(input.Text)
 		m.err = utils.ValidateURL(dns)
@@ -880,8 +870,9 @@ func (m *InitializingAppLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	loader, cmd := m.Loading.Update(msg)
 	m.Loading = loader
 	if m.Loading.Completing {
-		m.Ctx = utils.CloneStateAndPushPage[RunL1NodeState](m.Loading.EndContext, m)
-		state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
+		m.Ctx = m.Loading.EndContext
+		state := utils.PushPageAndGetState[RunL1NodeState](m)
+
 		state.weave.PushPreviousResponse(styles.RenderPrompt("Initialization successful.\n", []string{}, styles.Completed))
 		m.Ctx = utils.SetCurrentState(m.Ctx, state)
 		switch state.network {
@@ -1143,8 +1134,8 @@ func (m *SyncMethodSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	selected, cmd := m.Select(msg)
 	if selected != nil {
-		m.Ctx = utils.CloneStateAndPushPage[RunL1NodeState](m.Ctx, m)
-		state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
+		state := utils.PushPageAndGetState[RunL1NodeState](m)
+
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{""}, string(*selected)))
 		state.syncMethod = string(*selected)
 		switch *selected {
@@ -1209,8 +1200,9 @@ func (m *ExistingDataChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	loader, cmd := m.loading.Update(msg)
 	m.loading = loader
 	if m.loading.Completing {
-		m.Ctx = utils.CloneStateAndPushPage[RunL1NodeState](m.loading.EndContext, m)
-		state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
+		m.Ctx = m.loading.EndContext
+		state := utils.PushPageAndGetState[RunL1NodeState](m)
+
 		if !state.existingData {
 			switch state.syncMethod {
 			case string(Snapshot):
@@ -1277,8 +1269,8 @@ func (m *ExistingDataReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	selected, cmd := m.Select(msg)
 	if selected != nil {
-		m.Ctx = utils.CloneStateAndPushPage[RunL1NodeState](m.Ctx, m)
-		state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
+		state := utils.PushPageAndGetState[RunL1NodeState](m)
+
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{utils.GetInitiaDataDirectory(m.Ctx)}, string(*selected)))
 		switch *selected {
 		case Skip:
@@ -1344,8 +1336,8 @@ func (m *SnapshotEndpointInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-		m.Ctx = utils.CloneStateAndPushPage[RunL1NodeState](m.Ctx, m)
-		state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
+		state := utils.PushPageAndGetState[RunL1NodeState](m)
+
 		state.snapshotEndpoint = input.Text
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"snapshot url"}, input.Text))
 		m.Ctx = utils.SetCurrentState(m.Ctx, state)
@@ -1407,8 +1399,8 @@ func (m *StateSyncEndpointInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-		m.Ctx = utils.CloneStateAndPushPage[RunL1NodeState](m.Ctx, m)
-		state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
+		state := utils.PushPageAndGetState[RunL1NodeState](m)
+
 		state.stateSyncEndpoint = input.Text
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"state sync RPC"}, input.Text))
 		return NewAdditionalStateSyncPeersInput(utils.SetCurrentState(m.Ctx, state)), nil
@@ -1464,8 +1456,8 @@ func (m *AdditionalStateSyncPeersInput) Update(msg tea.Msg) (tea.Model, tea.Cmd)
 	}
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-		m.Ctx = utils.CloneStateAndPushPage[RunL1NodeState](m.Ctx, m)
-		state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
+		state := utils.PushPageAndGetState[RunL1NodeState](m)
+
 		state.additionalStateSyncPeers = input.Text
 		var prevAnswer string
 		if input.Text == "" {
@@ -1525,8 +1517,7 @@ func (m *SnapshotDownloadLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	if m.GetCompletion() {
-		m.Ctx = utils.CloneStateAndPushPage[RunL1NodeState](m.Ctx, m)
-		state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
+		state := utils.PushPageAndGetState[RunL1NodeState](m)
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "Snapshot download completed.", []string{}, ""))
 		m.Ctx = utils.SetCurrentState(m.Ctx, state)
 		newLoader := NewSnapshotExtractLoading(m.Ctx)
@@ -1569,8 +1560,7 @@ func (m *SnapshotExtractLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.Loading = loader
 	switch msg := msg.(type) {
 	case utils.ErrorLoading:
-		m.Ctx = utils.CloneStateAndPushPage[RunL1NodeState](m.Ctx, m)
-		state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
+		state := utils.PushPageAndGetState[RunL1NodeState](m)
 		state.weave.PopPreviousResponse()
 		state.weave.PopPreviousResponse()
 		m.Ctx = utils.SetCurrentState(m.Ctx, state)
@@ -1580,8 +1570,7 @@ func (m *SnapshotExtractLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	if m.Loading.Completing {
-		m.Ctx = utils.CloneStateAndPushPage[RunL1NodeState](m.Ctx, m)
-		state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
+		state := utils.PushPageAndGetState[RunL1NodeState](m)
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, fmt.Sprintf("Snapshot extracted to %s successfully.", utils.GetInitiaDataDirectory(m.Ctx)), []string{}, ""))
 		m.Ctx = utils.SetCurrentState(m.Ctx, state)
 		return NewTerminalState(m.Ctx), tea.Quit
@@ -1649,8 +1638,7 @@ func (m *StateSyncSetupLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.Loading = loader
 	switch msg := msg.(type) {
 	case utils.ErrorLoading:
-		m.Ctx = utils.CloneStateAndPushPage[RunL1NodeState](m.Ctx, m)
-		state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
+		state := utils.PushPageAndGetState[RunL1NodeState](m)
 		state.weave.PopPreviousResponse()
 		state.weave.PopPreviousResponse()
 		m.Ctx = utils.SetCurrentState(m.Ctx, state)
@@ -1660,8 +1648,7 @@ func (m *StateSyncSetupLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	if m.Loading.Completing {
-		m.Ctx = utils.CloneStateAndPushPage[RunL1NodeState](m.Ctx, m)
-		state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
+		state := utils.PushPageAndGetState[RunL1NodeState](m)
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "State sync setup successfully.", []string{}, ""))
 		m.Ctx = utils.SetCurrentState(m.Ctx, state)
 		return NewTerminalState(m.Ctx), tea.Quit

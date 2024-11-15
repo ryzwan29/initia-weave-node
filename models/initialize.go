@@ -73,10 +73,8 @@ func (m *ExistingWeaveChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	selected, cmd := m.Select(msg)
 	if selected != nil {
-		// Clone the state before any modifications
-		m.Ctx = utils.CloneStateAndPushPage[ExistingCheckerState](m.Ctx, m)
-		// Retrieve the cloned state
-		state := utils.GetCurrentState[ExistingCheckerState](m.Ctx)
+		state := utils.PushPageAndGetState[ExistingCheckerState](m)
+
 		state.weave.PushPreviousResponse(
 			styles.RenderPreviousResponse(styles.ArrowSeparator, "Would you like to set up a Gas Station account", []string{"Gas Station account"}, string(*selected)),
 		)
@@ -133,10 +131,8 @@ func (m *GasStationMnemonicInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-		// Clone the state before any modifications
-		m.Ctx = utils.CloneStateAndPushPage[ExistingCheckerState](m.Ctx, m)
-		// Retrieve the cloned state
-		state := utils.GetCurrentState[ExistingCheckerState](m.Ctx)
+		state := utils.PushPageAndGetState[ExistingCheckerState](m)
+
 		state.weave.PushPreviousResponse(
 			styles.RenderPreviousResponse(styles.DotsSeparator, "Please set up a Gas Station account", []string{"Gas Station account"}, styles.HiddenMnemonicText),
 		)
