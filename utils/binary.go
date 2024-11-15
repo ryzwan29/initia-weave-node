@@ -120,7 +120,7 @@ func SortVersions(versions BinaryVersionWithDownloadURL) []string {
 
 	// Sort based on major, minor, patch, and pre-release metadata
 	sort.Slice(versionTags, func(i, j int) bool {
-		return compareSemVer(versionTags[i], versionTags[j])
+		return CompareSemVer(versionTags[i], versionTags[j])
 	})
 
 	return versionTags
@@ -144,7 +144,7 @@ func compareDates(d1, d2 string) bool {
 }
 
 // compareSemVer compares two semantic version strings and returns true if v1 should be ordered before v2
-func compareSemVer(v1, v2 string) bool {
+func CompareSemVer(v1, v2 string) bool {
 	// Trim "v" prefix
 	v1 = strings.TrimPrefix(v1, "v")
 	v2 = strings.TrimPrefix(v2, "v")

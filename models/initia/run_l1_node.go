@@ -897,6 +897,9 @@ func (m *InitializingAppLoading) View() string {
 func getBinaryPath(extractedPath string, version string) string {
 	switch runtime.GOOS {
 	case "linux":
+		if utils.CompareSemVer(version, "v0.6.1") {
+			return filepath.Join(extractedPath, "initiad")
+		}
 		return filepath.Join(extractedPath, "initia_"+version, "initiad")
 	case "darwin":
 		return filepath.Join(extractedPath, "initiad")
