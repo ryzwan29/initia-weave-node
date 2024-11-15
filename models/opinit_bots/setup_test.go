@@ -172,6 +172,7 @@ func TestSetupBotCheckbox_SelectBots(t *testing.T) {
 	// Simulate selecting two bots (e.g., BridgeExecutor and BatchSubmitter)
 	model.Update(tea.KeyMsg{Type: tea.KeySpace})
 	model.Update(tea.KeyMsg{Type: tea.KeyDown})
+	model.Update(tea.KeyMsg{Type: tea.KeyDown})
 	model.Update(tea.KeyMsg{Type: tea.KeySpace})
 
 	// Press Enter to confirm selection
