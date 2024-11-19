@@ -1,7 +1,6 @@
 package integration
 
 import (
-	"fmt"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"path/filepath"
@@ -21,6 +20,10 @@ func TestInitiaInitTestnet(t *testing.T) {
 
 	firstModel := initia.NewRunL1NodeNetworkSelect(ctx)
 
+	// Ensure that there is no previous Initia home
+	_, err := os.Stat(TestInitiaHome)
+	assert.NotNil(t, err)
+
 	steps := []Step{
 		pressEnter,
 		typeText("Moniker"),
@@ -33,10 +36,8 @@ func TestInitiaInitTestnet(t *testing.T) {
 		pressEnter,
 		waitFor(func() bool {
 			if _, err := os.Stat(TestInitiaHome); os.IsNotExist(err) {
-				fmt.Println("There is no Home yet")
 				return false
 			}
-			fmt.Println("There is Home now")
 			return true
 		}),
 		pressDown,
@@ -55,7 +56,7 @@ func TestInitiaInitTestnet(t *testing.T) {
 	}
 
 	// Check if Initia home has been created
-	_, err := os.Stat(TestInitiaHome)
+	_, err = os.Stat(TestInitiaHome)
 	assert.Nil(t, err)
 
 	expectedPath := "testdata/expected_config.toml"

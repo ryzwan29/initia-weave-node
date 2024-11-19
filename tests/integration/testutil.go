@@ -3,14 +3,16 @@ package integration
 import (
 	"bytes"
 	"fmt"
-	tea "github.com/charmbracelet/bubbletea"
 	"os"
 	"testing"
 	"time"
+
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 const (
-	DefaultMaxWaitRetry = 300
+	DefaultMaxWaitRetry   = 300
+	DefaultPostWaitPeriod = 5 * time.Second
 )
 
 type Step interface {
@@ -73,7 +75,7 @@ func runProgramWithSteps(t *testing.T, program tea.Model, steps Steps) tea.Model
 				retryCount++
 				time.Sleep(100 * time.Millisecond)
 			}
-			time.Sleep(3 * time.Second)
+			time.Sleep(DefaultPostWaitPeriod)
 		}
 
 		step.Execute(*prog)
