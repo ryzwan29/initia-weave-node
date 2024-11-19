@@ -42,12 +42,8 @@ func (w WaitStep) Wait() bool {
 	return w.Check()
 }
 
-func isTTY() bool {
-	return os.Getenv("CI") == ""
-}
-
 func runProgramWithSteps(t *testing.T, program tea.Model, steps Steps) tea.Model {
-	prog := tea.NewProgram(program, tea.WithoutRenderer())
+	prog := tea.NewProgram(program, tea.WithInput(nil))
 	done := make(chan struct{})
 	finalModel := tea.Model(nil)
 
