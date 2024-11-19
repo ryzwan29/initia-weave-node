@@ -1,4 +1,4 @@
-name: Go Format and Test
+name: Go Format and Unit Tests
 
 on:
   push:
