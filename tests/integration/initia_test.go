@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"path/filepath"
@@ -32,8 +33,10 @@ func TestInitiaInitTestnet(t *testing.T) {
 		pressEnter,
 		waitFor(func() bool {
 			if _, err := os.Stat(TestInitiaHome); os.IsNotExist(err) {
+				fmt.Println("There is no Home yet")
 				return false
 			}
+			fmt.Println("There is Home now")
 			return true
 		}),
 		pressDown,

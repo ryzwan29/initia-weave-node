@@ -73,7 +73,7 @@ func runProgramWithSteps(t *testing.T, program tea.Model, steps Steps) tea.Model
 				retryCount++
 				time.Sleep(100 * time.Millisecond)
 			}
-			time.Sleep(2 * time.Second)
+			time.Sleep(3 * time.Second)
 		}
 
 		step.Execute(*prog)
