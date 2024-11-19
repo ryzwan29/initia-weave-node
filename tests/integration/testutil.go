@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	DefaultMaxWaitRetry = 200
+	DefaultMaxWaitRetry = 300
 )
 
 type Step interface {
@@ -42,8 +42,17 @@ func (w WaitStep) Wait() bool {
 	return w.Check()
 }
 
+func isTTY() bool {
+	return os.Getenv("CI") == ""
+}
+
 func runProgramWithSteps(t *testing.T, program tea.Model, steps Steps) tea.Model {
-	prog := tea.NewProgram(program)
+	var prog *tea.Program
+	if isTTY() {
+		prog = tea.NewProgram(program)
+	} else {
+		prog = tea.NewProgram(program, tea.WithoutRenderer())
+	}
 	done := make(chan struct{})
 	finalModel := tea.Model(nil)
 
