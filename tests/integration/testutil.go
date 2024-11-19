@@ -47,12 +47,7 @@ func isTTY() bool {
 }
 
 func runProgramWithSteps(t *testing.T, program tea.Model, steps Steps) tea.Model {
-	var prog *tea.Program
-	if isTTY() {
-		prog = tea.NewProgram(program)
-	} else {
-		prog = tea.NewProgram(program, tea.WithoutRenderer())
-	}
+	prog := tea.NewProgram(program, tea.WithoutRenderer())
 	done := make(chan struct{})
 	finalModel := tea.Model(nil)
 
