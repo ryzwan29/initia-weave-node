@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	TestInitiaHome = "~/.initia.weave.test"
+	TestInitiaHome = ".initia.weave.test"
 )
 
 func TestInitiaInitTestnet(t *testing.T) {
