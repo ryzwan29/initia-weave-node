@@ -2,9 +2,8 @@ package models
 
 import (
 	"context"
-	"time"
-
 	tea "github.com/charmbracelet/bubbletea"
+	"time"
 
 	"github.com/initia-labs/weave/styles"
 	"github.com/initia-labs/weave/types"

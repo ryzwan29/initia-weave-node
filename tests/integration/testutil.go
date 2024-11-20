@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -126,6 +127,42 @@ func getTomlValue(filePath, key string) (interface{}, error) {
 func compareTomlValue(t *testing.T, filePath, key string, expectedValue interface{}) {
 	value, err := getTomlValue(filePath, key)
 	assert.NoError(t, err, "Error loading TOML file or traversing key")
+
+	assert.Equal(t, expectedValue, value, "Mismatch for key %s", key)
+}
+
+func getJsonValue(filePath, key string) (interface{}, error) {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	var jsonData map[string]interface{}
+	if err := json.Unmarshal(data, &jsonData); err != nil {
+		return nil, err
+	}
+
+	parts := strings.Split(key, ".")
+	current := jsonData
+
+	for i, part := range parts {
+		if i == len(parts)-1 {
+			return current[part], nil
+		}
+
+		next, ok := current[part].(map[string]interface{})
+		if !ok {
+			return nil, nil
+		}
+		current = next
+	}
+
+	return nil, nil
+}
+
+func compareJsonValue(t *testing.T, filePath, key string, expectedValue interface{}) {
+	value, err := getJsonValue(filePath, key)
+	assert.NoError(t, err, "Error loading JSON file or traversing key")
 
 	assert.Equal(t, expectedValue, value, "Mismatch for key %s", key)
 }

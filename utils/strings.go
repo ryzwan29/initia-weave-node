@@ -7,6 +7,10 @@ import (
 	"github.com/charmbracelet/x/term"
 )
 
+const (
+	DefaultTerminalWidth = 80
+)
+
 func TransformFirstWordUpperCase(input string) string {
 	words := strings.Fields(input)
 	if len(words) > 0 {
@@ -26,7 +30,7 @@ func TransformFirstWordLowerCase(input string) string {
 func WrapText(text string) string {
 	width, _, err := term.GetSize(os.Stdout.Fd())
 	if err != nil {
-		panic(err)
+		width = DefaultTerminalWidth
 	}
 	return WrapTextWithLimit(text, width)
 }
