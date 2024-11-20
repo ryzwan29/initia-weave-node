@@ -1,13 +1,15 @@
 package integration
 
 import (
-	"bytes"
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/pelletier/go-toml/v2"
+	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -92,19 +94,38 @@ func clearTestDir(dir string) {
 	}
 }
 
-func compareFiles(t *testing.T, expectedPath, actualPath string) {
-	expectedContent, err := os.ReadFile(expectedPath)
+func getTomlValue(filePath, key string) (interface{}, error) {
+	data, err := os.ReadFile(filePath)
 	if err != nil {
-		t.Fatalf("Failed to read expected file: %v", err)
+		return nil, err
 	}
 
-	actualContent, err := os.ReadFile(actualPath)
-	if err != nil {
-		t.Fatalf("Failed to read actual file: %v", err)
+	var tomlData map[string]interface{}
+	if err := toml.Unmarshal(data, &tomlData); err != nil {
+		return nil, err
 	}
 
-	if !bytes.Equal(expectedContent, actualContent) {
-		t.Errorf("Files do not match:\nExpected (%s):\n%s\n\nActual (%s):\n%s\n",
-			expectedPath, expectedContent, actualPath, actualContent)
+	parts := strings.Split(key, ".")
+	current := tomlData
+
+	for i, part := range parts {
+		if i == len(parts)-1 {
+			return current[part], nil
+		}
+
+		next, ok := current[part].(map[string]interface{})
+		if !ok {
+			return nil, nil
+		}
+		current = next
 	}
+
+	return nil, nil
+}
+
+func compareTomlValue(t *testing.T, filePath, key string, expectedValue interface{}) {
+	value, err := getTomlValue(filePath, key)
+	assert.NoError(t, err, "Error loading TOML file or traversing key")
+
+	assert.Equal(t, expectedValue, value, "Mismatch for key %s", key)
 }

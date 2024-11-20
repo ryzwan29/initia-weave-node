@@ -1,6 +1,9 @@
 package integration
 
-import tea "github.com/charmbracelet/bubbletea"
+import (
+	tea "github.com/charmbracelet/bubbletea"
+	"time"
+)
 
 var (
 	pressEnter = InputStep{Msg: tea.KeyMsg{Type: tea.KeyEnter}}
@@ -8,6 +11,11 @@ var (
 	pressTab   = InputStep{Msg: tea.KeyMsg{Type: tea.KeyTab}}
 	pressUp    = InputStep{Msg: tea.KeyMsg{Type: tea.KeyUp}}
 	pressDown  = InputStep{Msg: tea.KeyMsg{Type: tea.KeyDown}}
+
+	waitFetching = WaitStep{Check: func() bool {
+		time.Sleep(5 * time.Second)
+		return true
+	}}
 )
 
 func typeText(text string) InputStep {
