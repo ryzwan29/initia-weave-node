@@ -287,7 +287,8 @@ func (m *ExistingAppReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	selected, cmd := m.Select(msg)
 	if selected != nil {
 		state := utils.PushPageAndGetState[RunL1NodeState](m)
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"config/app.toml", "config/config.toml"}, string(*selected)))
+		initiaConfigDir := utils.GetInitiaConfigDirectory(m.Ctx)
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{filepath.Join(initiaConfigDir, "app.toml"), filepath.Join(initiaConfigDir, "config.toml")}, string(*selected)))
 		switch *selected {
 		case UseCurrentApp:
 			state.replaceExistingApp = false
@@ -312,7 +313,7 @@ func (m *ExistingAppReplaceSelect) View() string {
 	state := utils.GetCurrentState[RunL1NodeState](m.Ctx)
 	m.Selector.ToggleTooltip = utils.GetTooltip(m.Ctx)
 	initiaConfigDir := utils.GetInitiaConfigDirectory(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{fmt.Sprintf("%s/app.toml", initiaConfigDir), fmt.Sprintf("%s/config.toml", initiaConfigDir)}, styles.Question) + m.Selector.View()
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{filepath.Join(initiaConfigDir, "app.toml"), filepath.Join(initiaConfigDir, "config.toml")}, styles.Question) + m.Selector.View()
 }
 
 type RunL1NodeMonikerInput struct {
