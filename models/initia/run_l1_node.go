@@ -1706,7 +1706,8 @@ func setupStateSync(ctx context.Context) tea.Cmd {
 		}
 
 		initiaHome := utils.GetInitiaHome(ctx)
-		binaryPath := filepath.Join(userHome, utils.WeaveDataDirectory, fmt.Sprintf("initia@%s", state.initiadVersion), "initiad")
+		weaveDataPath := filepath.Join(userHome, utils.WeaveDataDirectory, fmt.Sprintf("initia@%s", state.initiadVersion))
+		binaryPath := getBinaryPath(weaveDataPath, state.initiadVersion)
 
 		runCmd := exec.Command(binaryPath, "comet", "unsafe-reset-all", "--keep-addr-book", "--home", initiaHome)
 		if err := runCmd.Run(); err != nil {
