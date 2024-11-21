@@ -1,13 +1,15 @@
 package integration
 
 import (
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/initia-labs/weave/models"
-	"github.com/initia-labs/weave/utils"
-	"github.com/stretchr/testify/assert"
 	"os"
 	"path/filepath"
 	"testing"
+
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/initia-labs/weave/models"
+	"github.com/initia-labs/weave/utils"
 )
 
 const (
