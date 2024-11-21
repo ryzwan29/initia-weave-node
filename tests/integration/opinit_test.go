@@ -123,22 +123,22 @@ func TestOPInitBotsSetup(t *testing.T) {
 	userHome, _ := os.UserHomeDir()
 	opinitBinary := filepath.Join(userHome, utils.WeaveDataDirectory, "opinitd")
 
-	cmd := exec.Command(opinitBinary, "keys", "show", "weave-dummy", "weave_batch_submitter")
+	cmd := exec.Command(opinitBinary, "keys", "show", "weave-dummy", "weave_batch_submitter", "--home", TestOPInitHome)
 	outputBytes, err := cmd.CombinedOutput()
 	assert.Nil(t, err)
 	assert.Equal(t, "weave_batch_submitter: init1masuevcdvkra3nr7p2dkwa8lq2hga75ym279tr\n", string(outputBytes), "Mismatch for key weave_batch_submitter, expected init1masuevcdvkra3nr7p2dkwa8lq2hga75ym279tr but got %s", string(outputBytes))
 
-	cmd = exec.Command(opinitBinary, "keys", "show", "weave-dummy", "weave_bridge_executor")
+	cmd = exec.Command(opinitBinary, "keys", "show", "weave-dummy", "weave_bridge_executor", "--home", TestOPInitHome)
 	outputBytes, err = cmd.CombinedOutput()
 	assert.Nil(t, err)
 	assert.Equal(t, "weave_bridge_executor: init1eul78cxrljfn47l0f7qpgue7l3p9pa9j86w6hq\n", string(outputBytes), "Mismatch for key weave_bridge_executor, expected init1eul78cxrljfn47l0f7qpgue7l3p9pa9j86w6hq but got %s", string(outputBytes))
 
-	cmd = exec.Command(opinitBinary, "keys", "show", "weave-dummy", "weave_challenger")
+	cmd = exec.Command(opinitBinary, "keys", "show", "weave-dummy", "weave_challenger", "--home", TestOPInitHome)
 	outputBytes, err = cmd.CombinedOutput()
 	assert.Nil(t, err)
 	assert.Equal(t, "weave_challenger: init18njnzjugzjakzhm95v756f89yyarqyth5pymda\n", string(outputBytes), "Mismatch for key weave_challenger, expected init18njnzjugzjakzhm95v756f89yyarqyth5pymda but got %s", string(outputBytes))
 
-	cmd = exec.Command(opinitBinary, "keys", "show", "weave-dummy", "weave_output_submitter")
+	cmd = exec.Command(opinitBinary, "keys", "show", "weave-dummy", "weave_output_submitter", "--home", TestOPInitHome)
 	outputBytes, err = cmd.CombinedOutput()
 	assert.Nil(t, err)
 	assert.Equal(t, "weave_output_submitter: init1kd3fc4407sgaakguj4scvhzdv6r907ncdetd94\n", string(outputBytes), "Mismatch for key weave_output_submitter, expected init1kd3fc4407sgaakguj4scvhzdv6r907ncdetd94 but got %s", string(outputBytes))
