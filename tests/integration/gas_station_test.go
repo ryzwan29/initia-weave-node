@@ -8,8 +8,10 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/initia-labs/weave/common"
+	"github.com/initia-labs/weave/config"
+	"github.com/initia-labs/weave/context"
 	"github.com/initia-labs/weave/models"
-	"github.com/initia-labs/weave/utils"
 )
 
 const (
@@ -17,10 +19,10 @@ const (
 )
 
 func setupGasStation(t *testing.T) tea.Model {
-	err := utils.InitializeConfig()
+	err := config.InitializeConfig()
 	assert.Nil(t, err)
 
-	ctx := utils.NewAppContext(models.NewExistingCheckerState())
+	ctx := context.NewAppContext(models.NewExistingCheckerState())
 	firstModel := models.NewGasStationMnemonicInput(ctx)
 
 	steps := []Step{
@@ -43,7 +45,7 @@ func TestGasStationSetup(t *testing.T) {
 
 	// Check if Weave home has been created
 	userHome, _ := os.UserHomeDir()
-	weaveDir := filepath.Join(userHome, utils.WeaveDirectory)
+	weaveDir := filepath.Join(userHome, common.WeaveDirectory)
 	_, err := os.Stat(weaveDir)
 	assert.Nil(t, err)
 

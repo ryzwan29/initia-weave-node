@@ -5,12 +5,12 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/initia-labs/weave/utils"
+	weavecontext "github.com/initia-labs/weave/context"
 )
 
 type FieldInputModel struct {
 	currentIndex int // The index of the current active submodel
-	utils.BaseModel
+	weavecontext.BaseModel
 	newTerminalModel func(context.Context) tea.Model
 	subModels        []SubModel
 }
@@ -26,7 +26,7 @@ func NewFieldInputModel(ctx context.Context, fields []*Field, newTerminalModel f
 
 	return &FieldInputModel{
 		currentIndex:     0,
-		BaseModel:        utils.BaseModel{Ctx: ctx},
+		BaseModel:        weavecontext.BaseModel{Ctx: ctx},
 		newTerminalModel: newTerminalModel,
 		subModels:        subModels,
 	}
@@ -38,7 +38,7 @@ func (m *FieldInputModel) Init() tea.Cmd {
 
 // Update delegates the update logic to the current active submodel
 func (m *FieldInputModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	if model, cmd, handled := utils.HandleCommonCommands[OPInitBotsState](m, msg); handled {
+	if model, cmd, handled := weavecontext.HandleCommonCommands[OPInitBotsState](m, msg); handled {
 		if keyMsg, ok := msg.(tea.KeyMsg); ok && keyMsg.String() != "ctrl+t" {
 			m.subModels[m.currentIndex].Text = ""
 			m.subModels[m.currentIndex].Cursor = 0
@@ -66,7 +66,7 @@ func (m *FieldInputModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // View delegates the view logic to the current active submodel
 func (m *FieldInputModel) View() string {
-	state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
-	m.subModels[m.currentIndex].TextInput.ToggleTooltip = utils.GetTooltip(m.Ctx)
+	state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
+	m.subModels[m.currentIndex].TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
 	return state.weave.Render() + m.subModels[m.currentIndex].View()
 }

@@ -7,8 +7,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/initia-labs/weave/context"
 	"github.com/initia-labs/weave/models/minitia"
-	"github.com/initia-labs/weave/utils"
 )
 
 const (
@@ -18,8 +18,8 @@ const (
 func TestMinitiaLaunchWithExisting(t *testing.T) {
 	_ = setupGasStation(t)
 
-	ctx := utils.NewAppContext(*minitia.NewLaunchState())
-	ctx = utils.SetMinitiaHome(ctx, TestMinitiaHome)
+	ctx := context.NewAppContext(*minitia.NewLaunchState())
+	ctx = context.SetMinitiaHome(ctx, TestMinitiaHome)
 
 	firstModel := minitia.NewExistingMinitiaChecker(ctx)
 
@@ -116,8 +116,8 @@ func TestMinitiaLaunchWithExisting(t *testing.T) {
 	compareJsonValue(t, artifactsConfigPath, "op_bridge.enable_oracle", true)
 
 	// Try again with existing Minitia home
-	ctx = utils.NewAppContext(*minitia.NewLaunchState())
-	ctx = utils.SetMinitiaHome(ctx, TestMinitiaHome)
+	ctx = context.NewAppContext(*minitia.NewLaunchState())
+	ctx = context.SetMinitiaHome(ctx, TestMinitiaHome)
 
 	firstModel = minitia.NewExistingMinitiaChecker(ctx)
 

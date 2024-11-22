@@ -4,9 +4,10 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 
+	"github.com/initia-labs/weave/config"
+	weavecontext "github.com/initia-labs/weave/context"
 	"github.com/initia-labs/weave/models"
 	"github.com/initia-labs/weave/models/weaveinit"
-	"github.com/initia-labs/weave/utils"
 )
 
 func InitCommand() *cobra.Command {
@@ -14,8 +15,8 @@ func InitCommand() *cobra.Command {
 		Use:   "init",
 		Short: "Initialize Weave CLI, funding gas station and setting up config.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if utils.IsFirstTimeSetup() {
-				ctx := utils.NewAppContext(models.NewExistingCheckerState())
+			if config.IsFirstTimeSetup() {
+				ctx := weavecontext.NewAppContext(models.NewExistingCheckerState())
 
 				// Capture both the final model and the error from Run()
 				finalModel, err := tea.NewProgram(models.NewExistingAppChecker(ctx, weaveinit.NewWeaveInit())).Run()

@@ -8,7 +8,7 @@ import (
 
 // Test the creation of a new SystemAccount using NewSystemAccount function
 func TestNewSystemAccount(t *testing.T) {
-	// Create new system account with both L1 and L2 balances
+	// Create a new system account with both L1 and L2 balances
 	account := NewSystemAccount("some-mnemonic", "l1-address")
 
 	// Validate account has the correct L1 and L2 addresses
@@ -16,12 +16,12 @@ func TestNewSystemAccount(t *testing.T) {
 	assert.Equal(t, "some-mnemonic", account.Mnemonic, "Expected mnemonic to be 'some-mnemonic'")
 	assert.Equal(t, "l1-address", account.L2Address, "Expected L2 address to be 'l1-address'")
 
-	// Create system account with only L1 balance
+	// Create a system account with only L1 balance
 	accountL1 := NewSystemAccount("mnemonic-l1", "l1-only-address")
 	assert.Equal(t, "l1-only-address", accountL1.L1Address, "Expected L1 address to be 'l1-only-address'")
 	assert.Equal(t, "l1-only-address", accountL1.L2Address, "Expected L2 address to be empty")
 
-	// Create system account with only L2 balance
+	// Create a system account with only L2 balance
 	accountL2 := NewSystemAccount("mnemonic-l2", "l2-only-address")
 	assert.Equal(t, "l2-only-address", accountL2.L2Address, "Expected L2 address to be 'l2-only-address'")
 	assert.Equal(t, "l2-only-address", accountL2.L1Address, "Expected L1 address to be empty")

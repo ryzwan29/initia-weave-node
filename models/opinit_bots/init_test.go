@@ -6,13 +6,13 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/stretchr/testify/assert"
 
+	weavecontext "github.com/initia-labs/weave/context"
 	"github.com/initia-labs/weave/registry"
 	"github.com/initia-labs/weave/types"
-	"github.com/initia-labs/weave/utils"
 )
 
 func TestUseCurrentConfigSelector_Update_UseCurrentFile(t *testing.T) {
-	ctx := utils.NewAppContext(NewOPInitBotsState())
+	ctx := weavecontext.NewAppContext(NewOPInitBotsState())
 	model := NewUseCurrentConfigSelector(ctx, "test-bot")
 
 	// Simulate selecting "use current file"
@@ -22,16 +22,16 @@ func TestUseCurrentConfigSelector_Update_UseCurrentFile(t *testing.T) {
 	if m, ok := nextModel.(*StartingInitBot); !ok {
 		t.Errorf("Expected model to be of type *StartingInitBot, but got %T", nextModel)
 	} else {
-		state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
+		state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
 		assert.False(t, state.ReplaceBotConfig) // Verify ReplaceBotConfig is set to false
 	}
 }
 
 func TestUseCurrentConfigSelector_Update_ReplaceWithMinitiaConfig(t *testing.T) {
-	ctx := utils.NewAppContext(NewOPInitBotsState())
-	state := utils.GetCurrentState[OPInitBotsState](ctx)
+	ctx := weavecontext.NewAppContext(NewOPInitBotsState())
+	state := weavecontext.GetCurrentState[OPInitBotsState](ctx)
 	state.MinitiaConfig = &types.MinitiaConfig{} // Assume MinitiaConfig is defined
-	ctx = utils.SetCurrentState(ctx, state)
+	ctx = weavecontext.SetCurrentState(ctx, state)
 	model := NewUseCurrentConfigSelector(ctx, "test-bot")
 
 	// Simulate selecting "replace"
@@ -42,16 +42,16 @@ func TestUseCurrentConfigSelector_Update_ReplaceWithMinitiaConfig(t *testing.T) 
 	if m, ok := nextModel.(*PrefillMinitiaConfig); !ok {
 		t.Errorf("Expected model to be of type *PrefillMinitiaConfig, but got %T", nextModel)
 	} else {
-		state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
+		state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
 		assert.True(t, state.ReplaceBotConfig) // Verify ReplaceBotConfig is set to true
 	}
 }
 
 func TestUseCurrentConfigSelector_Update_ReplaceWithL1PrefillSelector(t *testing.T) {
-	ctx := utils.NewAppContext(NewOPInitBotsState())
-	state := utils.GetCurrentState[OPInitBotsState](ctx)
+	ctx := weavecontext.NewAppContext(NewOPInitBotsState())
+	state := weavecontext.GetCurrentState[OPInitBotsState](ctx)
 	state.InitExecutorBot = true // Example setup, assume InitExecutorBot is true
-	ctx = utils.SetCurrentState(ctx, state)
+	ctx = weavecontext.SetCurrentState(ctx, state)
 	model := NewUseCurrentConfigSelector(ctx, "test-bot")
 
 	// Simulate selecting "replace"
@@ -62,14 +62,14 @@ func TestUseCurrentConfigSelector_Update_ReplaceWithL1PrefillSelector(t *testing
 	if m, ok := nextModel.(*L1PrefillSelector); !ok {
 		t.Errorf("Expected model to be of type *L1PrefillSelector, but got %T", nextModel)
 	} else {
-		state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
+		state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
 		assert.True(t, state.ReplaceBotConfig) // Verify ReplaceBotConfig is set to true
 	}
 }
 
 func TestPrefillMinitiaConfig_Update_PrefillYes(t *testing.T) {
-	ctx := utils.NewAppContext(NewOPInitBotsState())
-	state := utils.GetCurrentState[OPInitBotsState](ctx)
+	ctx := weavecontext.NewAppContext(NewOPInitBotsState())
+	state := weavecontext.GetCurrentState[OPInitBotsState](ctx)
 	state.MinitiaConfig = &types.MinitiaConfig{
 		L1Config: &types.L1Config{
 			ChainID:   "l1-chain-id",
@@ -85,7 +85,7 @@ func TestPrefillMinitiaConfig_Update_PrefillYes(t *testing.T) {
 		},
 	}
 	state.InitExecutorBot = true
-	ctx = utils.SetCurrentState(ctx, state)
+	ctx = weavecontext.SetCurrentState(ctx, state)
 
 	model := NewPrefillMinitiaConfig(ctx)
 
@@ -95,7 +95,7 @@ func TestPrefillMinitiaConfig_Update_PrefillYes(t *testing.T) {
 	if m, ok := nextModel.(*FieldInputModel); !ok {
 		t.Errorf("Expected model to be of type *FieldInputModel, but got %T", nextModel)
 	} else {
-		state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
+		state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
 		assert.Equal(t, "l1-chain-id", state.botConfig["l1_node.chain_id"])
 		assert.Equal(t, "http://l1-rpc-url", state.botConfig["l1_node.rpc_address"])
 		assert.Equal(t, "0.01", state.botConfig["l1_node.gas_price"])
@@ -105,14 +105,14 @@ func TestPrefillMinitiaConfig_Update_PrefillYes(t *testing.T) {
 }
 
 func TestPrefillMinitiaConfig_Update_PrefillNo(t *testing.T) {
-	ctx := utils.NewAppContext(NewOPInitBotsState())
-	state := utils.GetCurrentState[OPInitBotsState](ctx)
+	ctx := weavecontext.NewAppContext(NewOPInitBotsState())
+	state := weavecontext.GetCurrentState[OPInitBotsState](ctx)
 	state.MinitiaConfig = &types.MinitiaConfig{}
-	ctx = utils.SetCurrentState(ctx, state)
+	ctx = weavecontext.SetCurrentState(ctx, state)
 
 	model := NewPrefillMinitiaConfig(ctx)
 
-	// Simulate selecting "No" for prefill option
+	// Simulate selecting "No" for a prefilled option
 	model.Update(tea.KeyMsg{Type: tea.KeyDown})                  // Navigate to "PrefillMinitiaConfigNo"
 	nextModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter}) // Confirm selection with Enter
 
@@ -120,14 +120,14 @@ func TestPrefillMinitiaConfig_Update_PrefillNo(t *testing.T) {
 	if m, ok := nextModel.(*L1PrefillSelector); !ok {
 		t.Errorf("Expected model to be of type *L1PrefillSelector, but got %T", nextModel)
 	} else {
-		state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
+		state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
 		assert.Empty(t, state.botConfig) // Ensure botConfig is not prefilled
 	}
 }
 
 func TestPrefillMinitiaConfig_Update_PrefillYes_NonCelestia(t *testing.T) {
-	ctx := utils.NewAppContext(NewOPInitBotsState())
-	state := utils.GetCurrentState[OPInitBotsState](ctx)
+	ctx := weavecontext.NewAppContext(NewOPInitBotsState())
+	state := weavecontext.GetCurrentState[OPInitBotsState](ctx)
 	state.MinitiaConfig = &types.MinitiaConfig{
 		L1Config: &types.L1Config{
 			ChainID:   "l1-chain-id",
@@ -143,18 +143,18 @@ func TestPrefillMinitiaConfig_Update_PrefillYes_NonCelestia(t *testing.T) {
 		},
 	}
 	state.InitExecutorBot = true
-	ctx = utils.SetCurrentState(ctx, state)
+	ctx = weavecontext.SetCurrentState(ctx, state)
 
 	model := NewPrefillMinitiaConfig(ctx)
 
-	// Simulate selecting "Yes" for prefill option
+	// Simulate selecting "Yes" for a prefilled option
 	nextModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter}) // Confirm selection with Enter
 
 	// Expect transition to FieldInputModel for Executor with defaultExecutorFields
 	if m, ok := nextModel.(*FieldInputModel); !ok {
 		t.Errorf("Expected model to be of type *FieldInputModel, but got %T", nextModel)
 	} else {
-		state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
+		state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
 
 		// Verify that botConfig fields are set according to the non-Celestia case
 		assert.Equal(t, "l1-chain-id", state.botConfig["l1_node.chain_id"])
@@ -173,14 +173,14 @@ func TestPrefillMinitiaConfig_Update_PrefillYes_NonCelestia(t *testing.T) {
 }
 
 func TestSetDALayer_Update_SelectInitia(t *testing.T) {
-	ctx := utils.NewAppContext(NewOPInitBotsState())
-	state := utils.GetCurrentState[OPInitBotsState](ctx)
+	ctx := weavecontext.NewAppContext(NewOPInitBotsState())
+	state := weavecontext.GetCurrentState[OPInitBotsState](ctx)
 	state.botConfig = map[string]string{
 		"l1_node.chain_id":    "initiation-2",
 		"l1_node.rpc_address": "http://l1-rpc-url",
 		"l1_node.gas_price":   "0.01",
 	}
-	ctx = utils.SetCurrentState(ctx, state)
+	ctx = weavecontext.SetCurrentState(ctx, state)
 
 	model := NewSetDALayer(ctx) // Assuming NewSetDALayer initializes SetDALayer
 
@@ -191,7 +191,7 @@ func TestSetDALayer_Update_SelectInitia(t *testing.T) {
 	if m, ok := nextModel.(*StartingInitBot); !ok {
 		t.Errorf("Expected model to be of type *StartingInitBot, but got %T", nextModel)
 	} else {
-		state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
+		state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
 		assert.Equal(t, state.botConfig["l1_node.chain_id"], state.botConfig["da_node.chain_id"])
 		assert.Equal(t, "init", state.botConfig["da_node.bech32_prefix"])
 		assert.Equal(t, state.botConfig["l1_node.gas_price"], state.botConfig["da_node.gas_price"])
@@ -200,11 +200,11 @@ func TestSetDALayer_Update_SelectInitia(t *testing.T) {
 }
 
 func TestSetDALayer_Update_SelectCelestia(t *testing.T) {
-	ctx := utils.NewAppContext(NewOPInitBotsState())
-	state := utils.GetCurrentState[OPInitBotsState](ctx)
+	ctx := weavecontext.NewAppContext(NewOPInitBotsState())
+	state := weavecontext.GetCurrentState[OPInitBotsState](ctx)
 	state.botConfig = map[string]string{}
 	state.botConfig["l1_node.chain_id"] = "initiation-2"
-	ctx = utils.SetCurrentState(ctx, state)
+	ctx = weavecontext.SetCurrentState(ctx, state)
 
 	chainRegistry := registry.MustGetChainRegistry(registry.CelestiaTestnet)
 	model := NewSetDALayer(ctx)
@@ -217,7 +217,7 @@ func TestSetDALayer_Update_SelectCelestia(t *testing.T) {
 	if m, ok := nextModel.(*StartingInitBot); !ok {
 		t.Errorf("Expected model to be of type *StartingInitBot, but got %T", nextModel)
 	} else {
-		state := utils.GetCurrentState[OPInitBotsState](m.Ctx)
+		state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
 		assert.Equal(t, chainRegistry.ChainId, state.botConfig["da_node.chain_id"])
 		assert.Equal(t, chainRegistry.Bech32Prefix, state.botConfig["da_node.bech32_prefix"])
 		assert.Equal(t, DefaultCelestiaGasPrices, state.botConfig["da_node.gas_price"])

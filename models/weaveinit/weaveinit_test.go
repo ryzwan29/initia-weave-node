@@ -7,7 +7,6 @@ import (
 )
 
 func TestGetWeaveInitOptions(t *testing.T) {
-	// Test with different flag combinations
 	testCases := []struct {
 		flags    string
 		expected []WeaveInitOption

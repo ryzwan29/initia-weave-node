@@ -1,16 +1,18 @@
 package integration
 
 import (
-	tea "github.com/charmbracelet/bubbletea"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"testing"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/initia-labs/weave/common"
+	"github.com/initia-labs/weave/context"
+	"github.com/initia-labs/weave/cosmosutils"
 	"github.com/initia-labs/weave/models/opinit_bots"
-	"github.com/initia-labs/weave/utils"
 )
 
 const (
@@ -18,10 +20,10 @@ const (
 )
 
 func setupOPInitBots(t *testing.T) tea.Model {
-	ctx := utils.NewAppContext(opinit_bots.NewOPInitBotsState())
-	ctx = utils.SetOPInitHome(ctx, TestOPInitHome)
+	ctx := context.NewAppContext(opinit_bots.NewOPInitBotsState())
+	ctx = context.SetOPInitHome(ctx, TestOPInitHome)
 
-	versions, currentVersion := utils.GetOPInitVersions()
+	versions, currentVersion := cosmosutils.GetOPInitVersions()
 	firstModel := opinit_bots.NewOPInitBotVersionSelector(ctx, versions, currentVersion)
 
 	// Ensure that there is no previous OPInit home
@@ -76,10 +78,10 @@ func TestOPInitBotsSetup(t *testing.T) {
 	_, err = os.Stat(filepath.Join(TestOPInitHome, "weave-dummy/keyring-test/weave_output_submitter.info"))
 	assert.Nil(t, err)
 
-	ctx := utils.NewAppContext(opinit_bots.NewOPInitBotsState())
-	ctx = utils.SetOPInitHome(ctx, TestOPInitHome)
+	ctx := context.NewAppContext(opinit_bots.NewOPInitBotsState())
+	ctx = context.SetOPInitHome(ctx, TestOPInitHome)
 
-	versions, currentVersion := utils.GetOPInitVersions()
+	versions, currentVersion := cosmosutils.GetOPInitVersions()
 	firstModel := opinit_bots.NewOPInitBotVersionSelector(ctx, versions, currentVersion)
 
 	// Ensure that there is an existing OPInit home
@@ -121,12 +123,12 @@ func TestOPInitBotsSetup(t *testing.T) {
 
 	// Let's test the keys
 	userHome, _ := os.UserHomeDir()
-	opinitBinary := filepath.Join(userHome, utils.WeaveDataDirectory, "opinitd")
+	opinitBinary := filepath.Join(userHome, common.WeaveDataDirectory, "opinitd")
 
 	cmd := exec.Command(opinitBinary, "keys", "show", "weave-dummy", "weave_batch_submitter", "--home", TestOPInitHome)
 	outputBytes, err := cmd.CombinedOutput()
 	assert.Nil(t, err)
-	assert.Equal(t, "weave_batch_submitter: init1masuevcdvkra3nr7p2dkwa8lq2hga75ym279tr\n", string(outputBytes), "Mismatch for key weave_batch_submitter, expected init1masuevcdvkra3nr7p2dkwa8lq2hga75ym279tr but got %s", string(outputBytes))
+	assert.Equal(t, "weave_batch_submitter: init1wzccyequn0yqc5mne6yev6u628yvyfwpr7y38d\n", string(outputBytes), "Mismatch for key weave_batch_submitter, expected init1wzccyequn0yqc5mne6yev6u628yvyfwpr7y38d but got %s", string(outputBytes))
 
 	cmd = exec.Command(opinitBinary, "keys", "show", "weave-dummy", "weave_bridge_executor", "--home", TestOPInitHome)
 	outputBytes, err = cmd.CombinedOutput()
@@ -136,7 +138,7 @@ func TestOPInitBotsSetup(t *testing.T) {
 	cmd = exec.Command(opinitBinary, "keys", "show", "weave-dummy", "weave_challenger", "--home", TestOPInitHome)
 	outputBytes, err = cmd.CombinedOutput()
 	assert.Nil(t, err)
-	assert.Equal(t, "weave_challenger: init18njnzjugzjakzhm95v756f89yyarqyth5pymda\n", string(outputBytes), "Mismatch for key weave_challenger, expected init18njnzjugzjakzhm95v756f89yyarqyth5pymda but got %s", string(outputBytes))
+	assert.Equal(t, "weave_challenger: init1masuevcdvkra3nr7p2dkwa8lq2hga75ym279tr\n", string(outputBytes), "Mismatch for key weave_challenger, expected init1masuevcdvkra3nr7p2dkwa8lq2hga75ym279tr but got %s", string(outputBytes))
 
 	cmd = exec.Command(opinitBinary, "keys", "show", "weave-dummy", "weave_output_submitter", "--home", TestOPInitHome)
 	outputBytes, err = cmd.CombinedOutput()

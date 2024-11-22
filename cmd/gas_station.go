@@ -8,9 +8,12 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 
+	"github.com/initia-labs/weave/config"
+	weavecontext "github.com/initia-labs/weave/context"
+	"github.com/initia-labs/weave/crypto"
+	"github.com/initia-labs/weave/http"
 	"github.com/initia-labs/weave/models"
 	"github.com/initia-labs/weave/registry"
-	"github.com/initia-labs/weave/utils"
 )
 
 const NoBalancesText string = "No Balances"
@@ -36,7 +39,7 @@ func gasStationSetupCommand() *cobra.Command {
 		Use:   "setup",
 		Short: "Setup Gas Station account on Initia and Celestia for funding the OPinit-bots or relayer to send transactions.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := utils.NewAppContext(models.NewExistingCheckerState())
+			ctx := weavecontext.NewAppContext(models.NewExistingCheckerState())
 			_, err := tea.NewProgram(models.NewGasStationMnemonicInput(ctx)).Run()
 			if err != nil {
 				return err
@@ -107,7 +110,7 @@ func getBalance(chainType registry.ChainType, address string) (*Coins, error) {
 		return nil, fmt.Errorf("failed to get active lcd for %s: %v", chainType, err)
 	}
 
-	client := utils.NewHTTPClient()
+	client := http.NewHTTPClient()
 	var result map[string]interface{}
 	_, err = client.Get(
 		baseUrl,
@@ -158,12 +161,12 @@ func getMaxWidth(coinGroups ...*Coins) int {
 }
 
 func showGasStationBalance() error {
-	gasStationMnemonic := utils.GetGasStationMnemonic()
-	initiaGasStationAddress, err := utils.MnemonicToBech32Address("init", gasStationMnemonic)
+	gasStationMnemonic := config.GetGasStationMnemonic()
+	initiaGasStationAddress, err := crypto.MnemonicToBech32Address("init", gasStationMnemonic)
 	if err != nil {
 		return err
 	}
-	celestiaGasStationAddress, err := utils.MnemonicToBech32Address("celestia", gasStationMnemonic)
+	celestiaGasStationAddress, err := crypto.MnemonicToBech32Address("celestia", gasStationMnemonic)
 	if err != nil {
 		return err
 	}
@@ -200,7 +203,7 @@ func gasStationShowCommand() *cobra.Command {
 		Use:   "show",
 		Short: "Show Initia and Celestia Gas Station addresses and balances",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if utils.IsFirstTimeSetup() {
+			if config.IsFirstTimeSetup() {
 				fmt.Println("Please setup Gas Station first, by running `gas-station setup`")
 				return nil
 			}

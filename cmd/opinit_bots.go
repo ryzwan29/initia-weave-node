@@ -9,9 +9,11 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 
+	"github.com/initia-labs/weave/common"
+	weavecontext "github.com/initia-labs/weave/context"
+	"github.com/initia-labs/weave/cosmosutils"
 	"github.com/initia-labs/weave/models/opinit_bots"
 	"github.com/initia-labs/weave/service"
-	"github.com/initia-labs/weave/utils"
 )
 
 func contains(slice []string, item string) bool {
@@ -63,12 +65,12 @@ func OPInitBotsCommand() *cobra.Command {
 }
 
 func Setup(minitiaHome, opInitHome string) (tea.Model, error) {
-	versions, currentVersion := utils.GetOPInitVersions()
+	versions, currentVersion := cosmosutils.GetOPInitVersions()
 
 	// Initialize the context with OPInitBotsState
-	ctx := utils.NewAppContext(opinit_bots.NewOPInitBotsState())
-	ctx = utils.SetMinitiaHome(ctx, minitiaHome)
-	ctx = utils.SetOPInitHome(ctx, opInitHome)
+	ctx := weavecontext.NewAppContext(opinit_bots.NewOPInitBotsState())
+	ctx = weavecontext.SetMinitiaHome(ctx, minitiaHome)
+	ctx = weavecontext.SetOPInitHome(ctx, opInitHome)
 
 	// Initialize the OPInitBotVersionSelector with the current context and versions
 	versionSelector := opinit_bots.NewOPInitBotVersionSelector(ctx, versions, currentVersion)
@@ -99,8 +101,8 @@ func OPInitBotsKeysSetupCommand() *cobra.Command {
 		panic(fmt.Errorf("cannot get user home directory: %v", err))
 	}
 
-	setupCmd.Flags().String(FlagMinitiaHome, filepath.Join(homeDir, utils.MinitiaDirectory), "Minitia application directory to fetch artifacts from if existed")
-	setupCmd.Flags().String(FlagOPInitHome, filepath.Join(homeDir, utils.OPinitDirectory), "OPInit bots home directory")
+	setupCmd.Flags().String(FlagMinitiaHome, filepath.Join(homeDir, common.MinitiaDirectory), "Minitia application directory to fetch artifacts from if existed")
+	setupCmd.Flags().String(FlagOPInitHome, filepath.Join(homeDir, common.OPinitDirectory), "OPInit bots home directory")
 
 	return setupCmd
 }
@@ -121,8 +123,8 @@ Example: weave opinit-bots init executor`,
 			if err != nil {
 				panic(err)
 			}
-			binaryPath := filepath.Join(userHome, utils.WeaveDataDirectory, opinit_bots.AppName)
-			_, err = utils.GetBinaryVersion(binaryPath)
+			binaryPath := filepath.Join(userHome, common.WeaveDataDirectory, opinit_bots.AppName)
+			_, err = cosmosutils.GetBinaryVersion(binaryPath)
 			if err != nil {
 				finalModel, err := Setup(minitiaHome, opInitHome)
 				if err != nil {
@@ -134,9 +136,9 @@ Example: weave opinit-bots init executor`,
 				}
 			}
 			// Initialize the context with OPInitBotsState
-			ctx := utils.NewAppContext(opinit_bots.NewOPInitBotsState())
-			ctx = utils.SetMinitiaHome(ctx, minitiaHome)
-			ctx = utils.SetOPInitHome(ctx, opInitHome)
+			ctx := weavecontext.NewAppContext(opinit_bots.NewOPInitBotsState())
+			ctx = weavecontext.SetMinitiaHome(ctx, minitiaHome)
+			ctx = weavecontext.SetOPInitHome(ctx, opInitHome)
 
 			// Check if a bot name was provided as an argument
 			if len(args) == 1 {
@@ -164,8 +166,8 @@ Example: weave opinit-bots init executor`,
 		panic(fmt.Errorf("cannot get user home directory: %v", err))
 	}
 
-	initCmd.Flags().String(FlagMinitiaHome, filepath.Join(homeDir, utils.MinitiaDirectory), "Minitia application directory to fetch artifacts from if existed")
-	initCmd.Flags().String(FlagOPInitHome, filepath.Join(homeDir, utils.OPinitDirectory), "OPInit bots home directory")
+	initCmd.Flags().String(FlagMinitiaHome, filepath.Join(homeDir, common.MinitiaDirectory), "Minitia application directory to fetch artifacts from if existed")
+	initCmd.Flags().String(FlagOPInitHome, filepath.Join(homeDir, common.OPinitDirectory), "OPInit bots home directory")
 
 	return initCmd
 }
@@ -289,8 +291,8 @@ Valid options are [executor, challenger] eg. weave opinit-bots reset challenger`
 			if err != nil {
 				panic(err)
 			}
-			binaryPath := filepath.Join(userHome, utils.WeaveDataDirectory, opinit_bots.AppName)
-			_, err = utils.GetBinaryVersion(binaryPath)
+			binaryPath := filepath.Join(userHome, common.WeaveDataDirectory, opinit_bots.AppName)
+			_, err = cosmosutils.GetBinaryVersion(binaryPath)
 			if err != nil {
 				panic("error getting the opinitd binary")
 			}

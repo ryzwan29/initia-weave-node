@@ -8,8 +8,9 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
+	weavecontext "github.com/initia-labs/weave/context"
 	"github.com/initia-labs/weave/styles"
-	"github.com/initia-labs/weave/utils"
+	"github.com/initia-labs/weave/ui"
 )
 
 type FieldType int
@@ -28,17 +29,17 @@ type Field struct {
 	DefaultValue string
 	PrefillValue string
 	ValidateFn   func(string) error
-	Tooltip      *styles.Tooltip
+	Tooltip      *ui.Tooltip
 }
 
 type SubModel struct {
-	utils.TextInput
+	ui.TextInput
 	field      Field
 	CannotBack bool
 }
 
 func NewSubModel(field Field) SubModel {
-	textInput := utils.NewTextInput(false)
+	textInput := ui.NewTextInput(false)
 	textInput.WithPlaceholder(field.Placeholder)
 	textInput.WithDefaultValue(field.DefaultValue)
 	textInput.WithPrefillValue(field.PrefillValue)
@@ -64,19 +65,19 @@ func (m *SubModel) Init() tea.Cmd {
 	return nil
 }
 
-func (m *SubModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m *SubModel) Update(_ tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m *SubModel) UpdateWithContext(ctx context.Context, parent utils.BaseModelInterface, msg tea.Msg) (context.Context, *SubModel, tea.Cmd) {
+func (m *SubModel) UpdateWithContext(ctx context.Context, parent weavecontext.BaseModelInterface, msg tea.Msg) (context.Context, *SubModel, tea.Cmd) {
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
-		state := utils.PushPageAndGetState[OPInitBotsState](parent)
+		state := weavecontext.PushPageAndGetState[OPInitBotsState](parent)
 		res := strings.TrimSpace(input.Text)
 		state.botConfig[m.field.Name] = res
 		s := strings.Split(m.field.Name, ".")
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.field.Question, []string{s[len(s)-1], "L1", "L2"}, res))
-		ctx = utils.SetCurrentState(ctx, state)
+		ctx = weavecontext.SetCurrentState(ctx, state)
 		return ctx, nil, nil // Done with this field, signal completion
 	}
 	m.TextInput = input

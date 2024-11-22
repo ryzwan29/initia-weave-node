@@ -7,9 +7,12 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/initia-labs/weave/common"
+	"github.com/initia-labs/weave/config"
+	"github.com/initia-labs/weave/cosmosutils"
+	"github.com/initia-labs/weave/io"
 	"github.com/initia-labs/weave/registry"
 	"github.com/initia-labs/weave/types"
-	"github.com/initia-labs/weave/utils"
 )
 
 type L1SystemKeys struct {
@@ -29,21 +32,21 @@ func NewL1SystemKeys(bridgeExecutor, outputSubmitter, batchSubmitter, challenger
 }
 
 type FundAccountsResponse struct {
-	CelestiaTx *utils.CliTxResponse
-	InitiaTx   *utils.CliTxResponse
+	CelestiaTx *cosmosutils.CliTxResponse
+	InitiaTx   *cosmosutils.CliTxResponse
 }
 
 func (lsk *L1SystemKeys) FundAccountsWithGasStation(state *LaunchState) (*FundAccountsResponse, error) {
 	var resp FundAccountsResponse
 
-	gasStationMnemonic := utils.GetGasStationMnemonic()
-	rawKey, err := utils.RecoverKeyFromMnemonic(state.binaryPath, utils.WeaveGasStationKeyName, gasStationMnemonic)
+	gasStationMnemonic := config.GetGasStationMnemonic()
+	rawKey, err := cosmosutils.RecoverKeyFromMnemonic(state.binaryPath, common.WeaveGasStationKeyName, gasStationMnemonic)
 	if err != nil {
 		return nil, fmt.Errorf("failed to recover gas station key: %v", err)
 	}
-	defer utils.MustDeleteKey(state.binaryPath, utils.WeaveGasStationKeyName)
+	defer cosmosutils.MustDeleteKey(state.binaryPath, common.WeaveGasStationKeyName)
 
-	gasStationKey := utils.MustUnmarshalKeyInfo(rawKey)
+	gasStationKey := cosmosutils.MustUnmarshalKeyInfo(rawKey)
 	var rawTxContent string
 	if state.batchSubmissionIsCelestia {
 		rawTxContent = fmt.Sprintf(
@@ -56,8 +59,8 @@ func (lsk *L1SystemKeys) FundAccountsWithGasStation(state *LaunchState) (*FundAc
 			lsk.Challenger.Address,
 			lsk.Challenger.Coins,
 		)
-		_ = utils.MustRecoverKeyFromMnemonic(state.celestiaBinaryPath, utils.WeaveGasStationKeyName, gasStationMnemonic)
-		defer utils.MustDeleteKey(state.celestiaBinaryPath, utils.WeaveGasStationKeyName)
+		_ = cosmosutils.MustRecoverKeyFromMnemonic(state.celestiaBinaryPath, common.WeaveGasStationKeyName, gasStationMnemonic)
+		defer cosmosutils.MustDeleteKey(state.celestiaBinaryPath, common.WeaveGasStationKeyName)
 
 		// TODO: Choose DA layer based on the chosen L1 network
 		celestiaRegistry, err := registry.GetChainRegistry(registry.CelestiaTestnet)
@@ -71,7 +74,7 @@ func (lsk *L1SystemKeys) FundAccountsWithGasStation(state *LaunchState) (*FundAc
 		}
 
 		celestiaChainId := celestiaRegistry.GetChainId()
-		sendCmd := exec.Command(state.celestiaBinaryPath, "tx", "bank", "send", utils.WeaveGasStationKeyName,
+		sendCmd := exec.Command(state.celestiaBinaryPath, "tx", "bank", "send", common.WeaveGasStationKeyName,
 			lsk.BatchSubmitter.Address, fmt.Sprintf("%sutia", lsk.BatchSubmitter.Coins), "--node", celestiaRpc,
 			"--chain-id", celestiaChainId, "--gas", "100000", "--gas-prices", "0.1utia", "--output", "json", "-y",
 		)
@@ -80,7 +83,7 @@ func (lsk *L1SystemKeys) FundAccountsWithGasStation(state *LaunchState) (*FundAc
 			return nil, fmt.Errorf("failed to broadcast transaction: %v", err)
 		}
 
-		var txResponse utils.CliTxResponse
+		var txResponse cosmosutils.CliTxResponse
 		err = json.Unmarshal(broadcastRes, &txResponse)
 		if err != nil {
 			return nil, fmt.Errorf("failed to unmarshal JSON: %v", err)
@@ -108,13 +111,13 @@ func (lsk *L1SystemKeys) FundAccountsWithGasStation(state *LaunchState) (*FundAc
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user home: %v", err)
 	}
-	rawTxPath := filepath.Join(userHome, utils.WeaveDataDirectory, TmpTxFilename)
-	if err = utils.WriteFile(rawTxPath, rawTxContent); err != nil {
+	rawTxPath := filepath.Join(userHome, common.WeaveDataDirectory, TmpTxFilename)
+	if err = io.WriteFile(rawTxPath, rawTxContent); err != nil {
 		return nil, fmt.Errorf("failed to write raw tx file: %v", err)
 	}
-	defer utils.DeleteFile(rawTxPath)
+	defer io.DeleteFile(rawTxPath)
 
-	signCmd := exec.Command(state.binaryPath, "tx", "sign", rawTxPath, "--from", utils.WeaveGasStationKeyName, "--node", state.l1RPC,
+	signCmd := exec.Command(state.binaryPath, "tx", "sign", rawTxPath, "--from", common.WeaveGasStationKeyName, "--node", state.l1RPC,
 		"--chain-id", state.l1ChainId, "--keyring-backend", "test", "--output-document", rawTxPath)
 	err = signCmd.Run()
 	if err != nil {
@@ -127,7 +130,7 @@ func (lsk *L1SystemKeys) FundAccountsWithGasStation(state *LaunchState) (*FundAc
 		return nil, fmt.Errorf("failed to broadcast transaction: %v", err)
 	}
 
-	var txResponse utils.CliTxResponse
+	var txResponse cosmosutils.CliTxResponse
 	err = json.Unmarshal(broadcastRes, &txResponse)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal JSON: %v", err)

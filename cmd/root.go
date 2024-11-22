@@ -6,8 +6,8 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"github.com/initia-labs/weave/config"
 	"github.com/initia-labs/weave/flags"
-	"github.com/initia-labs/weave/utils"
 )
 
 var Version string
@@ -20,7 +20,7 @@ func Execute() error {
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			viper.AutomaticEnv()
 			viper.SetEnvPrefix("weave")
-			if err := utils.InitializeConfig(); err != nil {
+			if err := config.InitializeConfig(); err != nil {
 				return err
 			}
 			return nil

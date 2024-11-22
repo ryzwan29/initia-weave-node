@@ -50,28 +50,28 @@ type BotInfo struct {
 var BotInfos = []BotInfo{
 	{
 		BotName:    BridgeExecutor,
-		IsSetup:    false, // Default not set up
+		IsSetup:    false, // Default isn't set up
 		KeyName:    BridgeExecutorKeyName,
 		Mnemonic:   "", // Add mnemonic if needed
 		IsNotExist: false,
 	},
 	{
 		BotName:    OutputSubmitter,
-		IsSetup:    false, // Default not set up
+		IsSetup:    false, // Default isn't set up
 		KeyName:    OutputSubmitterKeyName,
 		Mnemonic:   "", // Add mnemonic if needed
 		IsNotExist: false,
 	},
 	{
 		BotName:    BatchSubmitter,
-		IsSetup:    false, // Default not set up
+		IsSetup:    false, // Default isn't set up
 		KeyName:    BatchSubmitterKeyName,
 		Mnemonic:   "", // Add mnemonic if needed
 		IsNotExist: false,
 	},
 	{
 		BotName:    Challenger,
-		IsSetup:    false, // Default not set up
+		IsSetup:    false, // Default isn't set up
 		KeyName:    ChallengerKeyName,
 		Mnemonic:   "", // Add mnemonic if needed
 		IsNotExist: false,

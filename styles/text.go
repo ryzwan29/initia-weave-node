@@ -14,12 +14,8 @@ var (
 	HiddenMnemonicText = Text("*Mnemonic has been entered and is now hidden for security purposes.*", Ivory)
 )
 
-func DefaultText(text string) string {
-	return Text(text, White)
-}
-
 func SetColor(text string, color HexColor) string {
-	style := lipgloss.NewStyle().Foreground(lipgloss.Color(string(color)))
+	style := lipgloss.NewStyle().Foreground(lipgloss.Color(color))
 	return style.Render(text)
 }
 
@@ -38,7 +34,7 @@ func Text(text string, color HexColor) string {
 }
 
 func SetBoldColor(text string, color HexColor) string {
-	style := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(string(color)))
+	style := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(color))
 	return style.Render(text)
 }
 
@@ -76,10 +72,10 @@ func BoldUnderlineText(text string, color HexColor) string {
 
 func Cursor(cursorChar string) string {
 	cursorStyle := lipgloss.NewStyle().
-		Bold(true).                                // Make cursor bold
-		Reverse(true).                             // Reverse the foreground and background colors
-		Background(lipgloss.Color(string(Black))). // Black background
-		Foreground(lipgloss.Color(string(White)))  // White foreground
+		Bold(true).                        // Make the cursor bold
+		Reverse(true).                     // Reverse the foreground and background colors
+		Background(lipgloss.Color(Black)). // Black background
+		Foreground(lipgloss.Color(White))  // White foreground
 
 	return cursorStyle.Render(cursorChar)
 }
@@ -117,36 +113,13 @@ const (
 )
 
 var (
-	QuestionMark    string = Text("? ", Cyan)
-	CorrectMark     string = Text("✓ ", Green)
-	InformationMark string = Text("i ", Cyan)
-	SelectorCursor  string = Text("> ", Cyan)
+	QuestionMark    = Text("? ", Cyan)
+	CorrectMark     = Text("✓ ", Green)
+	InformationMark = Text("i ", Cyan)
+	SelectorCursor  = Text("> ", Cyan)
 )
 
-func RenderPromptWithError(text string, highlights []string, err error, status PromptStatus) string {
-	prompt := ""
-	switch status {
-	case Question:
-		prompt += QuestionMark
-	case Completed:
-		prompt += CorrectMark
-	case Information:
-		prompt += InformationMark
-	}
-
-	for _, highlight := range highlights {
-		if strings.Contains(text, highlight) {
-			text = strings.ReplaceAll(text, highlight, BoldText(highlight, Cyan))
-		}
-	}
-
-	text = DefaultTextWithoutOverridingStyledText(text)
-
-	return prompt + RenderError(err) + text
-
-}
-
-// RenderPrompt highlights phrases in the text if they match any phrase in the highlights list
+// RenderPrompt highlights phrases in the text if they match any phrase in the highlight list
 func RenderPrompt(text string, highlights []string, status PromptStatus) string {
 	prompt := ""
 	if status == Question {
@@ -193,7 +166,8 @@ func TextWithoutOverridingStyledText(text string, color HexColor) string {
 	return strings.TrimSuffix(styledText, "\n")
 }
 
-// Helper function to apply default styling without overriding existing styles
+// DefaultTextWithoutOverridingStyledText is a helper function
+// to apply default styling without overriding existing styles
 func DefaultTextWithoutOverridingStyledText(text string) string {
 	return TextWithoutOverridingStyledText(text, Ivory)
 }

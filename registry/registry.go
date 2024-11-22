@@ -5,7 +5,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/initia-labs/weave/utils"
+	"github.com/initia-labs/weave/http"
 )
 
 // LoadedChainRegistry contains a map of chain id to the chain.json
@@ -104,7 +104,7 @@ func checkAndAddPort(addr string) (string, error) {
 }
 
 func (cr *ChainRegistry) GetActiveRpc() (string, error) {
-	client := utils.NewHTTPClient()
+	client := http.NewHTTPClient()
 	for _, rpc := range cr.Apis.Rpc {
 		address, err := checkAndAddPort(rpc.Address)
 		if err != nil {
@@ -132,7 +132,7 @@ func (cr *ChainRegistry) MustGetActiveRpc() string {
 }
 
 func (cr *ChainRegistry) GetActiveLcd() (string, error) {
-	client := utils.NewHTTPClient()
+	client := http.NewHTTPClient()
 	for _, lcd := range cr.Apis.Rest {
 		_, err := client.Get(lcd.Address, "/cosmos/base/tendermint/v1beta1/syncing", nil, nil)
 		if err != nil {
@@ -175,7 +175,7 @@ func (cr *ChainRegistry) GetGenesisUrl() string {
 }
 
 func loadChainRegistry(chainType ChainType) error {
-	client := utils.NewHTTPClient()
+	client := http.NewHTTPClient()
 	endpoint := GetRegistryEndpoint(chainType)
 	LoadedChainRegistry[chainType] = &ChainRegistry{}
 	if _, err := client.Get(endpoint, "", nil, LoadedChainRegistry[chainType]); err != nil {
@@ -209,7 +209,7 @@ func MustGetChainRegistry(chainType ChainType) *ChainRegistry {
 var OPInitBotsSpecVersion map[string]int
 
 func loadOPInitBotsSpecVersion() error {
-	client := utils.NewHTTPClient()
+	client := http.NewHTTPClient()
 	if _, err := client.Get(OPInitBotsSpecEndpoint, "", nil, &OPInitBotsSpecVersion); err != nil {
 		return fmt.Errorf("failed to load opinit-bots spec_version: %v", err)
 	}

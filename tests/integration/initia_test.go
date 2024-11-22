@@ -7,8 +7,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/initia-labs/weave/context"
 	"github.com/initia-labs/weave/models/initia"
-	"github.com/initia-labs/weave/utils"
 )
 
 const (
@@ -16,8 +16,8 @@ const (
 )
 
 func TestInitiaInitTestnetNoSync(t *testing.T) {
-	ctx := utils.NewAppContext(initia.NewRunL1NodeState())
-	ctx = utils.SetInitiaHome(ctx, TestInitiaHome)
+	ctx := context.NewAppContext(initia.NewRunL1NodeState())
+	ctx = context.SetInitiaHome(ctx, TestInitiaHome)
 
 	firstModel := initia.NewRunL1NodeNetworkSelect(ctx)
 
@@ -82,8 +82,8 @@ func TestInitiaInitTestnetNoSync(t *testing.T) {
 }
 
 func TestInitiaInitTestnetStatesync(t *testing.T) {
-	ctx := utils.NewAppContext(initia.NewRunL1NodeState())
-	ctx = utils.SetInitiaHome(ctx, TestInitiaHome)
+	ctx := context.NewAppContext(initia.NewRunL1NodeState())
+	ctx = context.SetInitiaHome(ctx, TestInitiaHome)
 
 	firstModel := initia.NewRunL1NodeNetworkSelect(ctx)
 
@@ -156,8 +156,8 @@ func TestInitiaInitTestnetStatesync(t *testing.T) {
 }
 
 func TestInitiaInitLocal(t *testing.T) {
-	ctx := utils.NewAppContext(initia.NewRunL1NodeState())
-	ctx = utils.SetInitiaHome(ctx, TestInitiaHome)
+	ctx := context.NewAppContext(initia.NewRunL1NodeState())
+	ctx = context.SetInitiaHome(ctx, TestInitiaHome)
 
 	firstModel := initia.NewRunL1NodeNetworkSelect(ctx)
 
@@ -224,8 +224,8 @@ func TestInitiaInitLocal(t *testing.T) {
 }
 
 func TestInitiaInitLocalExisting(t *testing.T) {
-	ctx := utils.NewAppContext(initia.NewRunL1NodeState())
-	ctx = utils.SetInitiaHome(ctx, TestInitiaHome)
+	ctx := context.NewAppContext(initia.NewRunL1NodeState())
+	ctx = context.SetInitiaHome(ctx, TestInitiaHome)
 
 	firstModel := initia.NewRunL1NodeNetworkSelect(ctx)
 
@@ -289,8 +289,8 @@ func TestInitiaInitLocalExisting(t *testing.T) {
 	compareTomlValue(t, appTomlPath, "minimum-gas-prices", "0uinit")
 	compareTomlValue(t, appTomlPath, "api.enable", "false")
 
-	ctx = utils.NewAppContext(initia.NewRunL1NodeState())
-	ctx = utils.SetInitiaHome(ctx, TestInitiaHome)
+	ctx = context.NewAppContext(initia.NewRunL1NodeState())
+	ctx = context.SetInitiaHome(ctx, TestInitiaHome)
 
 	firstModel = initia.NewRunL1NodeNetworkSelect(ctx)
 
@@ -322,8 +322,8 @@ func TestInitiaInitLocalExisting(t *testing.T) {
 	compareTomlValue(t, appTomlPath, "minimum-gas-prices", "0uinit")
 	compareTomlValue(t, appTomlPath, "api.enable", "false")
 
-	ctx = utils.NewAppContext(initia.NewRunL1NodeState())
-	ctx = utils.SetInitiaHome(ctx, TestInitiaHome)
+	ctx = context.NewAppContext(initia.NewRunL1NodeState())
+	ctx = context.SetInitiaHome(ctx, TestInitiaHome)
 
 	firstModel = initia.NewRunL1NodeNetworkSelect(ctx)
 

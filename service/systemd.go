@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/initia-labs/weave/utils"
+	"github.com/initia-labs/weave/common"
 )
 
 type Systemd struct {
@@ -39,7 +39,7 @@ func (j *Systemd) Create(binaryVersion, appHome string) error {
 		return fmt.Errorf("failed to get user home directory: %v", err)
 	}
 
-	weaveDataPath := filepath.Join(userHome, utils.WeaveDataDirectory)
+	weaveDataPath := filepath.Join(userHome, common.WeaveDataDirectory)
 	binaryName := j.commandName.MustGetBinaryName()
 	binaryPath := filepath.Join(weaveDataPath, binaryVersion, strings.ReplaceAll(binaryVersion, "@", "_"))
 

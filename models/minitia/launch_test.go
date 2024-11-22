@@ -9,16 +9,19 @@ import (
 	"github.com/spf13/viper"
 	"github.com/test-go/testify/assert"
 
+	"github.com/initia-labs/weave/config"
+	weavecontext "github.com/initia-labs/weave/context"
+	"github.com/initia-labs/weave/cosmosutils"
 	"github.com/initia-labs/weave/styles"
 	"github.com/initia-labs/weave/types"
-	"github.com/initia-labs/weave/utils"
+	"github.com/initia-labs/weave/ui"
 )
 
 func InitializeViperForTest(t *testing.T) {
 	viper.Reset()
 
 	viper.SetConfigType("json")
-	err := viper.ReadConfig(strings.NewReader(utils.DefaultConfigTemplate))
+	err := viper.ReadConfig(strings.NewReader(config.DefaultConfigTemplate))
 
 	if err != nil {
 		t.Fatalf("failed to initialize viper: %v", err)
@@ -26,7 +29,7 @@ func InitializeViperForTest(t *testing.T) {
 }
 
 func TestNewExistingMinitiaChecker(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	model := NewExistingMinitiaChecker(ctx)
 
@@ -36,7 +39,7 @@ func TestNewExistingMinitiaChecker(t *testing.T) {
 }
 
 func TestExistingMinitiaChecker_Update(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	model := NewExistingMinitiaChecker(ctx)
 	model.loading.EndContext = model.Ctx
@@ -49,9 +52,9 @@ func TestExistingMinitiaChecker_Update(t *testing.T) {
 	}
 
 	model = NewExistingMinitiaChecker(ctx)
-	state := utils.GetCurrentState[LaunchState](model.Ctx)
+	state := weavecontext.GetCurrentState[LaunchState](model.Ctx)
 	state.existingMinitiaApp = true
-	ctx = utils.SetCurrentState(ctx, state)
+	ctx = weavecontext.SetCurrentState(ctx, state)
 	model.loading.EndContext = ctx
 	model.loading.Completing = true
 
@@ -62,7 +65,7 @@ func TestExistingMinitiaChecker_Update(t *testing.T) {
 }
 
 func TestExistingMinitiaChecker_View(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	model := NewExistingMinitiaChecker(ctx)
 
@@ -93,7 +96,7 @@ func TestExistingMinitiaChecker(t *testing.T) {
 			mockState := &LaunchState{
 				existingMinitiaApp: tc.existingMinitia,
 			}
-			ctx := utils.NewAppContext(*mockState)
+			ctx := weavecontext.NewAppContext(*mockState)
 
 			model := NewExistingMinitiaChecker(ctx)
 
@@ -107,7 +110,7 @@ func TestExistingMinitiaChecker(t *testing.T) {
 }
 
 func TestNewDeleteExistingMinitiaInput(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 	model := NewDeleteExistingMinitiaInput(ctx)
 
 	assert.Nil(t, model.Init(), "Expected Init command to be returned")
@@ -119,7 +122,7 @@ func TestNewDeleteExistingMinitiaInput(t *testing.T) {
 }
 
 func TestDeleteExistingMinitiaInput_Update(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 	model := NewDeleteExistingMinitiaInput(ctx)
 
 	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("incorrect input")})
@@ -130,8 +133,8 @@ func TestDeleteExistingMinitiaInput_Update(t *testing.T) {
 }
 
 func TestDeleteExistingMinitiaInput_View(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
-	ctx = utils.SetMinitiaHome(ctx, "~/.minitia")
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
+	ctx = weavecontext.SetMinitiaHome(ctx, "~/.minitia")
 	model := NewDeleteExistingMinitiaInput(ctx)
 
 	view := model.View()
@@ -141,7 +144,7 @@ func TestDeleteExistingMinitiaInput_View(t *testing.T) {
 }
 
 func TestNewNetworkSelect(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	model := NewNetworkSelect(ctx)
 
@@ -155,8 +158,8 @@ func TestNewNetworkSelect(t *testing.T) {
 func TestNetworkSelect_Update_Selection(t *testing.T) {
 	InitializeViperForTest(t)
 
-	ctx := utils.NewAppContext(*NewLaunchState())
-	state := utils.GetCurrentState[LaunchState](ctx)
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
+	state := weavecontext.GetCurrentState[LaunchState](ctx)
 	state.weave = types.WeaveState{}
 	model := NewNetworkSelect(ctx)
 
@@ -171,7 +174,7 @@ func TestNetworkSelect_Update_Selection(t *testing.T) {
 }
 
 func TestNetworkSelect_View(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	model := NewNetworkSelect(ctx)
 
@@ -182,7 +185,7 @@ func TestNetworkSelect_View(t *testing.T) {
 }
 
 func TestNewVMTypeSelect(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	model := NewVMTypeSelect(ctx)
 
@@ -194,7 +197,7 @@ func TestNewVMTypeSelect(t *testing.T) {
 }
 
 func TestVMTypeSelect_Init(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	model := NewVMTypeSelect(ctx)
 
@@ -210,19 +213,19 @@ func TestVMTypeSelect_Update(t *testing.T) {
 	}{
 		{
 			name:           "Select Move VM type",
-			keyPresses:     []tea.KeyMsg{tea.KeyMsg{Type: tea.KeyEnter}},
+			keyPresses:     []tea.KeyMsg{{Type: tea.KeyEnter}},
 			expectedVMType: "Move",
 			expectedModel:  &LatestVersionLoading{},
 		},
 		{
 			name:           "Select Wasm VM type",
-			keyPresses:     []tea.KeyMsg{tea.KeyMsg{Type: tea.KeyDown}, tea.KeyMsg{Type: tea.KeyEnter}},
+			keyPresses:     []tea.KeyMsg{{Type: tea.KeyDown}, {Type: tea.KeyEnter}},
 			expectedVMType: "Wasm",
 			expectedModel:  &LatestVersionLoading{},
 		},
 		{
 			name:           "Select EVM VM type",
-			keyPresses:     []tea.KeyMsg{tea.KeyMsg{Type: tea.KeyDown}, tea.KeyMsg{Type: tea.KeyDown}, tea.KeyMsg{Type: tea.KeyEnter}},
+			keyPresses:     []tea.KeyMsg{{Type: tea.KeyDown}, {Type: tea.KeyDown}, {Type: tea.KeyEnter}},
 			expectedVMType: "EVM",
 			expectedModel:  &LatestVersionLoading{},
 		},
@@ -230,7 +233,7 @@ func TestVMTypeSelect_Update(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			ctx := utils.NewAppContext(*NewLaunchState())
+			ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 			model := NewVMTypeSelect(ctx)
 
@@ -244,7 +247,7 @@ func TestVMTypeSelect_Update(t *testing.T) {
 			}
 
 			nextModel := m.(*LatestVersionLoading)
-			state := utils.GetCurrentState[LaunchState](nextModel.Ctx)
+			state := weavecontext.GetCurrentState[LaunchState](nextModel.Ctx)
 			assert.Equal(t, tc.expectedVMType, state.vmType, "Expected vmType to be set correctly")
 
 			assert.IsType(t, tc.expectedModel, m, "Expected model to transition to the correct type after VM type selection")
@@ -254,7 +257,7 @@ func TestVMTypeSelect_Update(t *testing.T) {
 }
 
 func TestVMTypeSelect_View(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	model := NewVMTypeSelect(ctx)
 
@@ -267,7 +270,7 @@ func TestVMTypeSelect_View(t *testing.T) {
 
 func TestNetworkSelect_SaveToState(t *testing.T) {
 	InitializeViperForTest(t)
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	networkSelect := NewNetworkSelect(ctx)
 	//m, _ := networkSelect.Update(tea.KeyMsg{Type: tea.KeyEnter})
@@ -281,7 +284,7 @@ func TestNetworkSelect_SaveToState(t *testing.T) {
 	m, _ := networkSelect.Update(tea.KeyMsg{Type: tea.KeyEnter})
 
 	nextModel := m.(*VMTypeSelect)
-	state := utils.GetCurrentState[LaunchState](nextModel.Ctx)
+	state := weavecontext.GetCurrentState[LaunchState](nextModel.Ctx)
 	assert.Equal(t, "initiation-2", state.l1ChainId)
 	assert.Equal(t, "https://rpc.testnet.initia.xyz:443/", state.l1RPC)
 
@@ -289,7 +292,7 @@ func TestNetworkSelect_SaveToState(t *testing.T) {
 }
 
 func TestVersionSelect_Update(t *testing.T) {
-	mockVersions := utils.BinaryVersionWithDownloadURL{
+	mockVersions := cosmosutils.BinaryVersionWithDownloadURL{
 		"v1.0.0": "https://example.com/v1.0.0",
 		"v1.1.0": "https://example.com/v1.1.0",
 		"v1.2.0": "https://example.com/v1.2.0",
@@ -303,19 +306,19 @@ func TestVersionSelect_Update(t *testing.T) {
 	}{
 		{
 			name:            "Select first version",
-			keyPresses:      []tea.KeyMsg{tea.KeyMsg{Type: tea.KeyEnter}},
+			keyPresses:      []tea.KeyMsg{{Type: tea.KeyEnter}},
 			expectedVersion: "v1.2.0",
 			expectedModel:   &ChainIdInput{},
 		},
 		{
 			name:            "Select second version",
-			keyPresses:      []tea.KeyMsg{tea.KeyMsg{Type: tea.KeyDown}, tea.KeyMsg{Type: tea.KeyEnter}},
+			keyPresses:      []tea.KeyMsg{{Type: tea.KeyDown}, {Type: tea.KeyEnter}},
 			expectedVersion: "v1.1.0",
 			expectedModel:   &ChainIdInput{},
 		},
 		{
 			name:            "Select third version",
-			keyPresses:      []tea.KeyMsg{tea.KeyMsg{Type: tea.KeyDown}, tea.KeyMsg{Type: tea.KeyDown}, tea.KeyMsg{Type: tea.KeyEnter}},
+			keyPresses:      []tea.KeyMsg{{Type: tea.KeyDown}, {Type: tea.KeyDown}, {Type: tea.KeyEnter}},
 			expectedVersion: "v1.0.0",
 			expectedModel:   &ChainIdInput{},
 		},
@@ -327,13 +330,13 @@ func TestVersionSelect_Update(t *testing.T) {
 				vmType: "Move",
 				weave:  types.WeaveState{},
 			}
-			ctx := utils.NewAppContext(*mockState)
+			ctx := weavecontext.NewAppContext(*mockState)
 
 			model := &VersionSelect{
-				Selector: utils.Selector[string]{
-					Options: utils.SortVersions(mockVersions),
+				Selector: ui.Selector[string]{
+					Options: cosmosutils.SortVersions(mockVersions),
 				},
-				BaseModel: utils.BaseModel{Ctx: ctx},
+				BaseModel: weavecontext.BaseModel{Ctx: ctx},
 				versions:  mockVersions,
 				question:  "Please specify the minitiad version?",
 			}
@@ -348,7 +351,7 @@ func TestVersionSelect_Update(t *testing.T) {
 			}
 
 			nextModel := m.(*ChainIdInput)
-			state := utils.GetCurrentState[LaunchState](nextModel.Ctx)
+			state := weavecontext.GetCurrentState[LaunchState](nextModel.Ctx)
 			assert.Equal(t, tc.expectedVersion, state.minitiadVersion, "Expected minitiadVersion to be set correctly")
 
 			assert.IsType(t, tc.expectedModel, m, "Expected model to transition to the correct type after version selection")
@@ -358,15 +361,15 @@ func TestVersionSelect_Update(t *testing.T) {
 }
 
 func TestVersionSelect_Init(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
-	mockVersions := utils.BinaryVersionWithDownloadURL{
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
+	mockVersions := cosmosutils.BinaryVersionWithDownloadURL{
 		"v1.0.0": "https://example.com/v1.0.0",
 	}
 	model := &VersionSelect{
-		Selector: utils.Selector[string]{
-			Options: utils.SortVersions(mockVersions),
+		Selector: ui.Selector[string]{
+			Options: cosmosutils.SortVersions(mockVersions),
 		},
-		BaseModel: utils.BaseModel{Ctx: ctx},
+		BaseModel: weavecontext.BaseModel{Ctx: ctx},
 		versions:  mockVersions,
 		question:  "Please specify the minitiad version?",
 	}
@@ -375,16 +378,16 @@ func TestVersionSelect_Init(t *testing.T) {
 }
 
 func TestVersionSelect_View(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
-	mockVersions := utils.BinaryVersionWithDownloadURL{
+	mockVersions := cosmosutils.BinaryVersionWithDownloadURL{
 		"v1.0.0": "https://example.com/v1.0.0",
 	}
 	model := &VersionSelect{
-		Selector: utils.Selector[string]{
-			Options: utils.SortVersions(mockVersions),
+		Selector: ui.Selector[string]{
+			Options: cosmosutils.SortVersions(mockVersions),
 		},
-		BaseModel: utils.BaseModel{Ctx: ctx},
+		BaseModel: weavecontext.BaseModel{Ctx: ctx},
 		versions:  mockVersions,
 		question:  "Please specify the minitiad version?",
 	}
@@ -394,7 +397,7 @@ func TestVersionSelect_View(t *testing.T) {
 }
 
 func TestChainIdInput_Init(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	input := NewChainIdInput(ctx)
 
@@ -403,7 +406,7 @@ func TestChainIdInput_Init(t *testing.T) {
 }
 
 func TestChainIdInput_Update(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	input := NewChainIdInput(ctx)
 
@@ -415,14 +418,14 @@ func TestChainIdInput_Update(t *testing.T) {
 	finalModel, finalCmd := updatedModel.Update(enterPress)
 
 	nextModel := finalModel.(*GasDenomInput)
-	state := utils.GetCurrentState[LaunchState](nextModel.Ctx)
+	state := weavecontext.GetCurrentState[LaunchState](nextModel.Ctx)
 	assert.Equal(t, typedInput, state.chainId, "Expected chainId to be set correctly")
 	assert.IsType(t, &GasDenomInput{}, finalModel, "Expected model to transition to GasDenomInput")
 	assert.Nil(t, finalCmd, "Expected no command after input")
 }
 
 func TestChainIdInput_View(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	input := NewChainIdInput(ctx)
 
@@ -432,7 +435,7 @@ func TestChainIdInput_View(t *testing.T) {
 }
 
 func TestGasDenomInput_Init(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	input := NewGasDenomInput(ctx)
 
@@ -441,7 +444,7 @@ func TestGasDenomInput_Init(t *testing.T) {
 }
 
 func TestGasDenomInput_Update(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	input := NewGasDenomInput(ctx)
 
@@ -453,14 +456,14 @@ func TestGasDenomInput_Update(t *testing.T) {
 	finalModel, finalCmd := updatedModel.Update(enterPress)
 
 	nextModel := finalModel.(*MonikerInput)
-	state := utils.GetCurrentState[LaunchState](nextModel.Ctx)
+	state := weavecontext.GetCurrentState[LaunchState](nextModel.Ctx)
 	assert.Equal(t, typedInput, state.gasDenom, "Expected gasDenom to be set correctly")
 	assert.IsType(t, &MonikerInput{}, finalModel, "Expected model to transition to MonikerInput")
 	assert.Nil(t, finalCmd, "Expected no command after input")
 }
 
 func TestGasDenomInput_View(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	input := NewGasDenomInput(ctx)
 
@@ -470,7 +473,7 @@ func TestGasDenomInput_View(t *testing.T) {
 }
 
 func TestMonikerInput_Init(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	input := NewMonikerInput(ctx)
 
@@ -479,7 +482,7 @@ func TestMonikerInput_Init(t *testing.T) {
 }
 
 func TestMonikerInput_Update(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	input := NewMonikerInput(ctx)
 
@@ -491,14 +494,14 @@ func TestMonikerInput_Update(t *testing.T) {
 	finalModel, finalCmd := updatedModel.Update(enterPress)
 
 	nextModel := finalModel.(*OpBridgeSubmissionIntervalInput)
-	state := utils.GetCurrentState[LaunchState](nextModel.Ctx)
+	state := weavecontext.GetCurrentState[LaunchState](nextModel.Ctx)
 	assert.Equal(t, typedInput, state.moniker, "Expected moniker to be set correctly")
 	assert.IsType(t, &OpBridgeSubmissionIntervalInput{}, finalModel, "Expected model to transition to OpBridgeSubmissionIntervalInput")
 	assert.Nil(t, finalCmd, "Expected no command after input")
 }
 
 func TestMonikerInput_View(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	input := NewMonikerInput(ctx)
 
@@ -508,7 +511,7 @@ func TestMonikerInput_View(t *testing.T) {
 }
 
 func TestNewOpBridgeSubmissionIntervalInput(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	input := NewOpBridgeSubmissionIntervalInput(ctx)
 
@@ -520,7 +523,7 @@ func TestNewOpBridgeSubmissionIntervalInput(t *testing.T) {
 }
 
 func TestOpBridgeSubmissionIntervalInput_Init(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	input := NewOpBridgeSubmissionIntervalInput(ctx)
 
@@ -529,7 +532,7 @@ func TestOpBridgeSubmissionIntervalInput_Init(t *testing.T) {
 }
 
 func TestOpBridgeSubmissionIntervalInput_Update(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	input := NewOpBridgeSubmissionIntervalInput(ctx)
 
@@ -541,14 +544,14 @@ func TestOpBridgeSubmissionIntervalInput_Update(t *testing.T) {
 	finalModel, cmd := updatedModel.Update(enterPress)
 
 	nextModel := finalModel.(*OpBridgeOutputFinalizationPeriodInput)
-	state := utils.GetCurrentState[LaunchState](nextModel.Ctx)
+	state := weavecontext.GetCurrentState[LaunchState](nextModel.Ctx)
 	assert.IsType(t, &OpBridgeOutputFinalizationPeriodInput{}, finalModel)
 	assert.Equal(t, "5m", state.opBridgeSubmissionInterval)
 	assert.Nil(t, cmd)
 }
 
 func TestOpBridgeSubmissionIntervalInput_View(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	input := NewOpBridgeSubmissionIntervalInput(ctx)
 
@@ -559,7 +562,7 @@ func TestOpBridgeSubmissionIntervalInput_View(t *testing.T) {
 }
 
 func TestNewOpBridgeOutputFinalizationPeriodInput(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	input := NewOpBridgeOutputFinalizationPeriodInput(ctx)
 
@@ -571,7 +574,7 @@ func TestNewOpBridgeOutputFinalizationPeriodInput(t *testing.T) {
 }
 
 func TestOpBridgeOutputFinalizationPeriodInput_Init(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	input := NewOpBridgeOutputFinalizationPeriodInput(ctx)
 
@@ -580,7 +583,7 @@ func TestOpBridgeOutputFinalizationPeriodInput_Init(t *testing.T) {
 }
 
 func TestOpBridgeOutputFinalizationPeriodInput_Update(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	input := NewOpBridgeOutputFinalizationPeriodInput(ctx)
 
@@ -592,14 +595,14 @@ func TestOpBridgeOutputFinalizationPeriodInput_Update(t *testing.T) {
 	finalModel, cmd := updatedModel.Update(enterPress)
 
 	nextModel := finalModel.(*OpBridgeBatchSubmissionTargetSelect)
-	state := utils.GetCurrentState[LaunchState](nextModel.Ctx)
+	state := weavecontext.GetCurrentState[LaunchState](nextModel.Ctx)
 	assert.IsType(t, &OpBridgeBatchSubmissionTargetSelect{}, finalModel)
 	assert.Equal(t, "12h", state.opBridgeOutputFinalizationPeriod)
 	assert.Nil(t, cmd)
 }
 
 func TestOpBridgeOutputFinalizationPeriodInput_View(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	input := NewOpBridgeOutputFinalizationPeriodInput(ctx)
 
@@ -610,7 +613,7 @@ func TestOpBridgeOutputFinalizationPeriodInput_View(t *testing.T) {
 }
 
 func TestNewOpBridgeBatchSubmissionTargetSelect(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	input := NewOpBridgeBatchSubmissionTargetSelect(ctx)
 
@@ -619,7 +622,7 @@ func TestNewOpBridgeBatchSubmissionTargetSelect(t *testing.T) {
 }
 
 func TestOpBridgeBatchSubmissionTargetSelect_Init(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	input := NewOpBridgeBatchSubmissionTargetSelect(ctx)
 
@@ -628,7 +631,7 @@ func TestOpBridgeBatchSubmissionTargetSelect_Init(t *testing.T) {
 }
 
 func TestOpBridgeBatchSubmissionTargetSelect_Update(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	input := NewOpBridgeBatchSubmissionTargetSelect(ctx)
 
@@ -636,12 +639,12 @@ func TestOpBridgeBatchSubmissionTargetSelect_Update(t *testing.T) {
 	thisModel, cmd := input.Update(enterPress)
 
 	nextModel := thisModel.(*OracleEnableSelect)
-	state := utils.GetCurrentState[LaunchState](nextModel.Ctx)
+	state := weavecontext.GetCurrentState[LaunchState](nextModel.Ctx)
 	assert.IsType(t, &OracleEnableSelect{}, thisModel)
 	assert.Equal(t, "CELESTIA", state.opBridgeBatchSubmissionTarget)
 	assert.Nil(t, cmd)
 
-	ctx = utils.NewAppContext(state)
+	ctx = weavecontext.NewAppContext(state)
 	input = NewOpBridgeBatchSubmissionTargetSelect(ctx)
 
 	downPress := tea.KeyMsg{Type: tea.KeyDown}
@@ -651,14 +654,14 @@ func TestOpBridgeBatchSubmissionTargetSelect_Update(t *testing.T) {
 	finalModel, cmd := updatedModel.Update(enterPress)
 
 	nextModel = finalModel.(*OracleEnableSelect)
-	state = utils.GetCurrentState[LaunchState](nextModel.Ctx)
+	state = weavecontext.GetCurrentState[LaunchState](nextModel.Ctx)
 	assert.IsType(t, &OracleEnableSelect{}, finalModel)
 	assert.Equal(t, "INITIA", state.opBridgeBatchSubmissionTarget)
 
 }
 
 func TestOpBridgeBatchSubmissionTargetSelect_View(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	input := NewOpBridgeBatchSubmissionTargetSelect(ctx)
 
@@ -667,7 +670,7 @@ func TestOpBridgeBatchSubmissionTargetSelect_View(t *testing.T) {
 }
 
 func TestNewOracleEnableSelect(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	selectInput := NewOracleEnableSelect(ctx)
 
@@ -677,7 +680,7 @@ func TestNewOracleEnableSelect(t *testing.T) {
 }
 
 func TestOracleEnableSelect_Init(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	selectInput := NewOracleEnableSelect(ctx)
 
@@ -686,7 +689,7 @@ func TestOracleEnableSelect_Init(t *testing.T) {
 }
 
 func TestOracleEnableSelect_Update(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	selectInput := NewOracleEnableSelect(ctx)
 
@@ -697,12 +700,12 @@ func TestOracleEnableSelect_Update(t *testing.T) {
 	finalModel, cmd := updatedModel.Update(enterPress)
 
 	nextModel := finalModel.(*SystemKeysSelect)
-	state := utils.GetCurrentState[LaunchState](nextModel.Ctx)
+	state := weavecontext.GetCurrentState[LaunchState](nextModel.Ctx)
 	assert.IsType(t, &SystemKeysSelect{}, finalModel)
 	assert.False(t, state.enableOracle)
 	assert.Nil(t, cmd)
 
-	ctx = utils.NewAppContext(state)
+	ctx = weavecontext.NewAppContext(state)
 	selectInput = NewOracleEnableSelect(ctx)
 	downPress = tea.KeyMsg{Type: tea.KeyDown}
 	updatedModel, _ = selectInput.Update(downPress)
@@ -713,14 +716,14 @@ func TestOracleEnableSelect_Update(t *testing.T) {
 	finalModel, cmd = updatedModel.Update(enterPress)
 
 	nextModel = finalModel.(*SystemKeysSelect)
-	state = utils.GetCurrentState[LaunchState](nextModel.Ctx)
+	state = weavecontext.GetCurrentState[LaunchState](nextModel.Ctx)
 	assert.IsType(t, &SystemKeysSelect{}, finalModel)
 	assert.True(t, state.enableOracle)
 	assert.Nil(t, cmd)
 }
 
 func TestOracleEnableSelect_View(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	selectInput := NewOracleEnableSelect(ctx)
 
@@ -729,7 +732,7 @@ func TestOracleEnableSelect_View(t *testing.T) {
 }
 
 func TestNewSystemKeysSelect(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	selectInput := NewSystemKeysSelect(ctx)
 
@@ -739,7 +742,7 @@ func TestNewSystemKeysSelect(t *testing.T) {
 }
 
 func TestSystemKeysSelect_Init(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	selectInput := NewSystemKeysSelect(ctx)
 
@@ -748,7 +751,7 @@ func TestSystemKeysSelect_Init(t *testing.T) {
 }
 
 func TestSystemKeysSelect_Update(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	selectInput := NewSystemKeysSelect(ctx)
 
@@ -756,24 +759,24 @@ func TestSystemKeysSelect_Update(t *testing.T) {
 	finalModel, _ := selectInput.Update(enterPress)
 
 	nextModel := finalModel.(*ExistingGasStationChecker)
-	state := utils.GetCurrentState[LaunchState](nextModel.Ctx)
+	state := weavecontext.GetCurrentState[LaunchState](nextModel.Ctx)
 	assert.IsType(t, &ExistingGasStationChecker{}, finalModel)
 	assert.True(t, state.generateKeys)
 
-	ctx = utils.NewAppContext(*NewLaunchState())
+	ctx = weavecontext.NewAppContext(*NewLaunchState())
 	selectInput = NewSystemKeysSelect(ctx)
 	downPress := tea.KeyMsg{Type: tea.KeyDown}
 	updatedModel, _ := selectInput.Update(downPress)
 	finalModel, _ = updatedModel.Update(enterPress)
 
 	model := finalModel.(*SystemKeyOperatorMnemonicInput)
-	state = utils.GetCurrentState[LaunchState](model.Ctx)
+	state = weavecontext.GetCurrentState[LaunchState](model.Ctx)
 	assert.IsType(t, &SystemKeyOperatorMnemonicInput{}, finalModel)
 	assert.False(t, state.generateKeys)
 }
 
 func TestSystemKeysSelect_View(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	selectInput := NewSystemKeysSelect(ctx)
 
@@ -783,7 +786,7 @@ func TestSystemKeysSelect_View(t *testing.T) {
 }
 
 func TestSystemKeyOperatorMnemonicInput_Init(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	input := NewSystemKeyOperatorMnemonicInput(ctx)
 
@@ -792,7 +795,7 @@ func TestSystemKeyOperatorMnemonicInput_Init(t *testing.T) {
 }
 
 func TestSystemKeyOperatorMnemonicInput_Update(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	input := NewSystemKeyOperatorMnemonicInput(ctx)
 
@@ -804,13 +807,13 @@ func TestSystemKeyOperatorMnemonicInput_Update(t *testing.T) {
 	finalModel, _ := nextModel.Update(enterPress)
 
 	model := finalModel.(*SystemKeyBridgeExecutorMnemonicInput)
-	state := utils.GetCurrentState[LaunchState](model.Ctx)
+	state := weavecontext.GetCurrentState[LaunchState](model.Ctx)
 	assert.IsType(t, &SystemKeyBridgeExecutorMnemonicInput{}, finalModel)
 	assert.Equal(t, validMnemonic, state.systemKeyOperatorMnemonic)
 	assert.Contains(t, state.weave.PreviousResponse, styles.RenderPreviousResponse(
 		styles.DotsSeparator, input.GetQuestion(), []string{"Operator"}, styles.HiddenMnemonicText))
 
-	ctx = utils.NewAppContext(*NewLaunchState())
+	ctx = weavecontext.NewAppContext(*NewLaunchState())
 	input = NewSystemKeyOperatorMnemonicInput(ctx)
 	invalidMnemonic := "invalid mnemonic phrase"
 	keyMsg = tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(invalidMnemonic)}
@@ -818,14 +821,14 @@ func TestSystemKeyOperatorMnemonicInput_Update(t *testing.T) {
 	finalModel, _ = input.Update(enterPress)
 
 	checkModel := finalModel.(*SystemKeyOperatorMnemonicInput)
-	state = utils.GetCurrentState[LaunchState](checkModel.Ctx)
+	state = weavecontext.GetCurrentState[LaunchState](checkModel.Ctx)
 	assert.NotEqual(t, invalidMnemonic, state.systemKeyOperatorMnemonic)
 	assert.NotContains(t, state.weave.PreviousResponse, styles.RenderPreviousResponse(
 		styles.DotsSeparator, input.GetQuestion(), []string{"Operator"}, styles.HiddenMnemonicText))
 }
 
 func TestSystemKeyOperatorMnemonicInput_View(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	input := NewSystemKeyOperatorMnemonicInput(ctx)
 
@@ -835,7 +838,7 @@ func TestSystemKeyOperatorMnemonicInput_View(t *testing.T) {
 }
 
 func TestNewSystemKeyBridgeExecutorMnemonicInput(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	input := NewSystemKeyBridgeExecutorMnemonicInput(ctx)
 
@@ -845,7 +848,7 @@ func TestNewSystemKeyBridgeExecutorMnemonicInput(t *testing.T) {
 }
 
 func TestSystemKeyBridgeExecutorMnemonicInput_Init(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	input := NewSystemKeyBridgeExecutorMnemonicInput(ctx)
 
@@ -854,7 +857,7 @@ func TestSystemKeyBridgeExecutorMnemonicInput_Init(t *testing.T) {
 }
 
 func TestSystemKeyBridgeExecutorMnemonicInput_Update(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	input := NewSystemKeyBridgeExecutorMnemonicInput(ctx)
 
@@ -866,13 +869,13 @@ func TestSystemKeyBridgeExecutorMnemonicInput_Update(t *testing.T) {
 	finalModel, _ := nextModel.Update(enterPress)
 
 	model := finalModel.(*SystemKeyOutputSubmitterMnemonicInput)
-	state := utils.GetCurrentState[LaunchState](model.Ctx)
+	state := weavecontext.GetCurrentState[LaunchState](model.Ctx)
 	assert.IsType(t, &SystemKeyOutputSubmitterMnemonicInput{}, finalModel)
 	assert.Equal(t, validMnemonic, state.systemKeyBridgeExecutorMnemonic)
 	assert.Contains(t, state.weave.PreviousResponse, styles.RenderPreviousResponse(
 		styles.DotsSeparator, input.GetQuestion(), []string{"Bridge Executor"}, styles.HiddenMnemonicText))
 
-	ctx = utils.NewAppContext(*NewLaunchState())
+	ctx = weavecontext.NewAppContext(*NewLaunchState())
 
 	input = NewSystemKeyBridgeExecutorMnemonicInput(ctx)
 	invalidMnemonic := "invalid mnemonic phrase"
@@ -881,14 +884,14 @@ func TestSystemKeyBridgeExecutorMnemonicInput_Update(t *testing.T) {
 	finalModel, _ = input.Update(enterPress)
 
 	checkModel := finalModel.(*SystemKeyBridgeExecutorMnemonicInput)
-	state = utils.GetCurrentState[LaunchState](checkModel.Ctx)
+	state = weavecontext.GetCurrentState[LaunchState](checkModel.Ctx)
 	assert.NotEqual(t, invalidMnemonic, state.systemKeyBridgeExecutorMnemonic)
 	assert.NotContains(t, state.weave.PreviousResponse, styles.RenderPreviousResponse(
 		styles.DotsSeparator, input.GetQuestion(), []string{"Bridge Executor"}, styles.HiddenMnemonicText))
 }
 
 func TestSystemKeyBridgeExecutorMnemonicInput_View(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	input := NewSystemKeyBridgeExecutorMnemonicInput(ctx)
 
@@ -898,7 +901,7 @@ func TestSystemKeyBridgeExecutorMnemonicInput_View(t *testing.T) {
 }
 
 func TestNewSystemKeyOutputSubmitterMnemonicInput(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	input := NewSystemKeyOutputSubmitterMnemonicInput(ctx)
 
@@ -908,7 +911,7 @@ func TestNewSystemKeyOutputSubmitterMnemonicInput(t *testing.T) {
 }
 
 func TestSystemKeyOutputSubmitterMnemonicInput_Init(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	input := NewSystemKeyOutputSubmitterMnemonicInput(ctx)
 
@@ -917,7 +920,7 @@ func TestSystemKeyOutputSubmitterMnemonicInput_Init(t *testing.T) {
 }
 
 func TestSystemKeyOutputSubmitterMnemonicInput_Update(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	input := NewSystemKeyOutputSubmitterMnemonicInput(ctx)
 
@@ -929,13 +932,13 @@ func TestSystemKeyOutputSubmitterMnemonicInput_Update(t *testing.T) {
 	finalModel, _ := nextModel.Update(enterPress)
 
 	model := finalModel.(*SystemKeyBatchSubmitterMnemonicInput)
-	state := utils.GetCurrentState[LaunchState](model.Ctx)
+	state := weavecontext.GetCurrentState[LaunchState](model.Ctx)
 	assert.IsType(t, &SystemKeyBatchSubmitterMnemonicInput{}, finalModel)
 	assert.Equal(t, validMnemonic, state.systemKeyOutputSubmitterMnemonic)
 	assert.Contains(t, state.weave.PreviousResponse, styles.RenderPreviousResponse(
 		styles.DotsSeparator, input.GetQuestion(), []string{"Output Submitter"}, styles.HiddenMnemonicText))
 
-	ctx = utils.NewAppContext(*NewLaunchState())
+	ctx = weavecontext.NewAppContext(*NewLaunchState())
 	input = NewSystemKeyOutputSubmitterMnemonicInput(ctx)
 	invalidMnemonic := "invalid mnemonic phrase"
 	keyMsg = tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(invalidMnemonic)}
@@ -943,14 +946,14 @@ func TestSystemKeyOutputSubmitterMnemonicInput_Update(t *testing.T) {
 	finalModel, _ = input.Update(enterPress)
 
 	checkerModel := finalModel.(*SystemKeyOutputSubmitterMnemonicInput)
-	state = utils.GetCurrentState[LaunchState](checkerModel.Ctx)
+	state = weavecontext.GetCurrentState[LaunchState](checkerModel.Ctx)
 	assert.NotEqual(t, invalidMnemonic, state.systemKeyOutputSubmitterMnemonic)
 	assert.NotContains(t, state.weave.PreviousResponse, styles.RenderPreviousResponse(
 		styles.DotsSeparator, input.GetQuestion(), []string{"Output Submitter"}, styles.HiddenMnemonicText))
 }
 
 func TestSystemKeyOutputSubmitterMnemonicInput_View(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	input := NewSystemKeyOutputSubmitterMnemonicInput(ctx)
 
@@ -960,7 +963,7 @@ func TestSystemKeyOutputSubmitterMnemonicInput_View(t *testing.T) {
 }
 
 func TestNewSystemKeyBatchSubmitterMnemonicInput(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	input := NewSystemKeyBatchSubmitterMnemonicInput(ctx)
 
@@ -970,7 +973,7 @@ func TestNewSystemKeyBatchSubmitterMnemonicInput(t *testing.T) {
 }
 
 func TestSystemKeyBatchSubmitterMnemonicInput_Init(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	input := NewSystemKeyBatchSubmitterMnemonicInput(ctx)
 
@@ -979,7 +982,7 @@ func TestSystemKeyBatchSubmitterMnemonicInput_Init(t *testing.T) {
 }
 
 func TestSystemKeyBatchSubmitterMnemonicInput_Update(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	input := NewSystemKeyBatchSubmitterMnemonicInput(ctx)
 
@@ -992,14 +995,14 @@ func TestSystemKeyBatchSubmitterMnemonicInput_Update(t *testing.T) {
 	finalModel, _ := nextModel.Update(enterPress)
 
 	model := finalModel.(*SystemKeyChallengerMnemonicInput)
-	state := utils.GetCurrentState[LaunchState](model.Ctx)
+	state := weavecontext.GetCurrentState[LaunchState](model.Ctx)
 	assert.IsType(t, &SystemKeyChallengerMnemonicInput{}, finalModel)
 	assert.Equal(t, validMnemonic, state.systemKeyBatchSubmitterMnemonic)
 	assert.Contains(t, state.weave.PreviousResponse, styles.RenderPreviousResponse(
 		styles.DotsSeparator, input.GetQuestion(), []string{"Batch Submitter"}, styles.HiddenMnemonicText))
 
 	// Test invalid mnemonic input
-	ctx = utils.NewAppContext(*NewLaunchState())
+	ctx = weavecontext.NewAppContext(*NewLaunchState())
 	input = NewSystemKeyBatchSubmitterMnemonicInput(ctx)
 	invalidMnemonic := "invalid mnemonic phrase"
 	keyMsg = tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(invalidMnemonic)}
@@ -1007,14 +1010,14 @@ func TestSystemKeyBatchSubmitterMnemonicInput_Update(t *testing.T) {
 	finalModel, _ = input.Update(enterPress)
 
 	checkerModel := finalModel.(*SystemKeyBatchSubmitterMnemonicInput)
-	state = utils.GetCurrentState[LaunchState](checkerModel.Ctx)
+	state = weavecontext.GetCurrentState[LaunchState](checkerModel.Ctx)
 	assert.NotEqual(t, invalidMnemonic, state.systemKeyBatchSubmitterMnemonic)
 	assert.NotContains(t, state.weave.PreviousResponse, styles.RenderPreviousResponse(
 		styles.DotsSeparator, input.GetQuestion(), []string{"Batch Submitter"}, styles.HiddenMnemonicText))
 }
 
 func TestSystemKeyBatchSubmitterMnemonicInput_View(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	input := NewSystemKeyBatchSubmitterMnemonicInput(ctx)
 
@@ -1024,7 +1027,7 @@ func TestSystemKeyBatchSubmitterMnemonicInput_View(t *testing.T) {
 }
 
 func TestNewSystemKeyChallengerMnemonicInput(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	input := NewSystemKeyChallengerMnemonicInput(ctx)
 
@@ -1034,7 +1037,7 @@ func TestNewSystemKeyChallengerMnemonicInput(t *testing.T) {
 }
 
 func TestSystemKeyChallengerMnemonicInput_Init(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	input := NewSystemKeyChallengerMnemonicInput(ctx)
 
@@ -1043,7 +1046,7 @@ func TestSystemKeyChallengerMnemonicInput_Init(t *testing.T) {
 }
 
 func TestSystemKeyChallengerMnemonicInput_Update(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	input := NewSystemKeyChallengerMnemonicInput(ctx)
 
@@ -1056,14 +1059,14 @@ func TestSystemKeyChallengerMnemonicInput_Update(t *testing.T) {
 	finalModel, _ := nextModel.Update(enterPress)
 
 	model := finalModel.(*ExistingGasStationChecker)
-	state := utils.GetCurrentState[LaunchState](model.Ctx)
+	state := weavecontext.GetCurrentState[LaunchState](model.Ctx)
 	assert.IsType(t, &ExistingGasStationChecker{}, finalModel)
 	assert.Equal(t, validMnemonic, state.systemKeyChallengerMnemonic)
 	assert.Contains(t, state.weave.PreviousResponse, styles.RenderPreviousResponse(
 		styles.DotsSeparator, input.GetQuestion(), []string{"Challenger"}, styles.HiddenMnemonicText))
 
 	// Test invalid mnemonic input
-	ctx = utils.NewAppContext(*NewLaunchState())
+	ctx = weavecontext.NewAppContext(*NewLaunchState())
 	input = NewSystemKeyChallengerMnemonicInput(ctx)
 	invalidMnemonic := "invalid mnemonic phrase"
 	keyMsg = tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(invalidMnemonic)}
@@ -1071,14 +1074,14 @@ func TestSystemKeyChallengerMnemonicInput_Update(t *testing.T) {
 	finalModel, _ = input.Update(enterPress)
 
 	checkerModel := finalModel.(*SystemKeyChallengerMnemonicInput)
-	state = utils.GetCurrentState[LaunchState](checkerModel.Ctx)
+	state = weavecontext.GetCurrentState[LaunchState](checkerModel.Ctx)
 	assert.NotEqual(t, invalidMnemonic, state.systemKeyChallengerMnemonic)
 	assert.NotContains(t, state.weave.PreviousResponse, styles.RenderPreviousResponse(
 		styles.DotsSeparator, input.GetQuestion(), []string{"Challenger"}, styles.HiddenMnemonicText))
 }
 
 func TestSystemKeyChallengerMnemonicInput_View(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	input := NewSystemKeyChallengerMnemonicInput(ctx)
 
@@ -1088,7 +1091,7 @@ func TestSystemKeyChallengerMnemonicInput_View(t *testing.T) {
 }
 
 func TestNewExistingGasStationChecker(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	checker := NewExistingGasStationChecker(ctx)
 
@@ -1097,7 +1100,7 @@ func TestNewExistingGasStationChecker(t *testing.T) {
 }
 
 func TestExistingGasStationChecker_Init(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	checker := NewExistingGasStationChecker(ctx)
 
@@ -1106,46 +1109,46 @@ func TestExistingGasStationChecker_Init(t *testing.T) {
 }
 
 func TestWaitExistingGasStationChecker_FirstTimeSetup(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	cmd := waitExistingGasStationChecker(ctx)
 	msg := cmd()
 
-	state := utils.GetCurrentState[LaunchState](ctx)
-	assert.IsType(t, utils.EndLoading{}, msg, "Expected to receive EndLoading message")
+	state := weavecontext.GetCurrentState[LaunchState](ctx)
+	assert.IsType(t, ui.EndLoading{}, msg, "Expected to receive EndLoading message")
 	assert.False(t, state.gasStationExist, "Expected gasStationExist to be false in first-time setup")
 }
 
 func TestWaitExistingGasStationChecker_ExistingSetup(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	cmd := waitExistingGasStationChecker(ctx)
 	msg := cmd()
 
-	state := utils.GetCurrentState[LaunchState](ctx)
-	assert.IsType(t, utils.EndLoading{}, msg, "Expected to receive EndLoading message")
+	state := weavecontext.GetCurrentState[LaunchState](ctx)
+	assert.IsType(t, ui.EndLoading{}, msg, "Expected to receive EndLoading message")
 	assert.False(t, state.gasStationExist, "Expected gasStationExist to be true in existing setup")
 }
 
 func TestWaitExistingGasStationChecker_NonExistingSetup(t *testing.T) {
 	InitializeViperForTest(t)
 	viper.Set("common.gas_station_mnemonic", "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon")
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	cmd := waitExistingGasStationChecker(ctx)
 	msg := cmd()
 
-	endLoading := msg.(utils.EndLoading)
-	state := utils.GetCurrentState[LaunchState](endLoading.Ctx)
-	assert.IsType(t, utils.EndLoading{}, msg, "Expected to receive EndLoading message")
+	endLoading := msg.(ui.EndLoading)
+	state := weavecontext.GetCurrentState[LaunchState](endLoading.Ctx)
+	assert.IsType(t, ui.EndLoading{}, msg, "Expected to receive EndLoading message")
 	assert.True(t, state.gasStationExist, "Expected gasStationExist to be true in existing setup")
 }
 
 func TestExistingGasStationChecker_Update_LoadingIncomplete(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	checker := NewExistingGasStationChecker(ctx)
-	mockMsg := utils.TickMsg{}
+	mockMsg := ui.TickMsg{}
 
 	updatedModel, cmd := checker.Update(mockMsg)
 
@@ -1155,7 +1158,7 @@ func TestExistingGasStationChecker_Update_LoadingIncomplete(t *testing.T) {
 
 func TestExistingGasStationChecker_Update_LoadingComplete_NoGasStation(t *testing.T) {
 	state := &LaunchState{gasStationExist: false}
-	ctx := utils.NewAppContext(*state)
+	ctx := weavecontext.NewAppContext(*state)
 
 	checker := NewExistingGasStationChecker(ctx)
 	checker.loading.EndContext = ctx
@@ -1168,7 +1171,7 @@ func TestExistingGasStationChecker_Update_LoadingComplete_NoGasStation(t *testin
 }
 
 func TestExistingGasStationChecker_View(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	checker := NewExistingGasStationChecker(ctx)
 
@@ -1178,7 +1181,7 @@ func TestExistingGasStationChecker_View(t *testing.T) {
 }
 
 func TestNewGasStationMnemonicInput(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	input := NewGasStationMnemonicInput(ctx)
 
@@ -1189,7 +1192,7 @@ func TestNewGasStationMnemonicInput(t *testing.T) {
 }
 
 func TestGasStationMnemonicInput_Init(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	input := NewGasStationMnemonicInput(ctx)
 
@@ -1198,7 +1201,7 @@ func TestGasStationMnemonicInput_Init(t *testing.T) {
 }
 
 func TestGasStationMnemonicInput_Update_Invalid(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	input := NewGasStationMnemonicInput(ctx)
 
@@ -1213,7 +1216,7 @@ func TestGasStationMnemonicInput_Update_Invalid(t *testing.T) {
 }
 
 func TestGasStationMnemonicInput_View(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	input := NewGasStationMnemonicInput(ctx)
 
@@ -1223,7 +1226,7 @@ func TestGasStationMnemonicInput_View(t *testing.T) {
 }
 
 func TestNewSystemKeyL1BridgeExecutorBalanceInput(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	balanceInput := NewSystemKeyL1BridgeExecutorBalanceInput(ctx)
 
@@ -1232,7 +1235,7 @@ func TestNewSystemKeyL1BridgeExecutorBalanceInput(t *testing.T) {
 }
 
 func TestSystemKeyL1BridgeExecutorBalanceInput_Init(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	balanceInput := NewSystemKeyL1BridgeExecutorBalanceInput(ctx)
 
@@ -1241,7 +1244,7 @@ func TestSystemKeyL1BridgeExecutorBalanceInput_Init(t *testing.T) {
 }
 
 func TestSystemKeyL1BridgeExecutorBalanceInput_Update_Valid(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	balanceInput := NewSystemKeyL1BridgeExecutorBalanceInput(ctx)
 
@@ -1253,7 +1256,7 @@ func TestSystemKeyL1BridgeExecutorBalanceInput_Update_Valid(t *testing.T) {
 	finalModel, _ := nextModel.Update(enterPress)
 
 	model := finalModel.(*SystemKeyL1OutputSubmitterBalanceInput)
-	state := utils.GetCurrentState[LaunchState](model.Ctx)
+	state := weavecontext.GetCurrentState[LaunchState](model.Ctx)
 	assert.IsType(t, &SystemKeyL1OutputSubmitterBalanceInput{}, finalModel)
 	assert.Equal(t, validInput, state.systemKeyL1BridgeExecutorBalance)
 	assert.Contains(t, state.weave.PreviousResponse, styles.RenderPreviousResponse(
@@ -1261,7 +1264,7 @@ func TestSystemKeyL1BridgeExecutorBalanceInput_Update_Valid(t *testing.T) {
 }
 
 func TestSystemKeyL1BridgeExecutorBalanceInput_Update_Invalid(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	balanceInput := NewSystemKeyL1BridgeExecutorBalanceInput(ctx)
 
@@ -1273,14 +1276,14 @@ func TestSystemKeyL1BridgeExecutorBalanceInput_Update_Invalid(t *testing.T) {
 	finalModel, cmd := nextModel.Update(enterPress)
 
 	model := finalModel.(*SystemKeyL1BridgeExecutorBalanceInput)
-	state := utils.GetCurrentState[LaunchState](model.Ctx)
+	state := weavecontext.GetCurrentState[LaunchState](model.Ctx)
 	assert.Equal(t, balanceInput, finalModel)
 	assert.Nil(t, cmd)
 	assert.NotEqual(t, invalidInput, state.systemKeyL1BridgeExecutorBalance)
 }
 
 func TestSystemKeyL1BridgeExecutorBalanceInput_View(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	balanceInput := NewSystemKeyL1BridgeExecutorBalanceInput(ctx)
 
@@ -1290,7 +1293,7 @@ func TestSystemKeyL1BridgeExecutorBalanceInput_View(t *testing.T) {
 }
 
 func TestNewSystemKeyL1OutputSubmitterBalanceInput(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	outputSubmitterInput := NewSystemKeyL1OutputSubmitterBalanceInput(ctx)
 
@@ -1299,7 +1302,7 @@ func TestNewSystemKeyL1OutputSubmitterBalanceInput(t *testing.T) {
 }
 
 func TestSystemKeyL1OutputSubmitterBalanceInput_Init(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	outputSubmitterInput := NewSystemKeyL1OutputSubmitterBalanceInput(ctx)
 
@@ -1308,7 +1311,7 @@ func TestSystemKeyL1OutputSubmitterBalanceInput_Init(t *testing.T) {
 }
 
 func TestSystemKeyL1OutputSubmitterBalanceInput_Update_Valid(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	outputSubmitterInput := NewSystemKeyL1OutputSubmitterBalanceInput(ctx)
 
@@ -1320,7 +1323,7 @@ func TestSystemKeyL1OutputSubmitterBalanceInput_Update_Valid(t *testing.T) {
 	finalModel, _ := nextModel.Update(enterPress)
 
 	model := finalModel.(*SystemKeyL1BatchSubmitterBalanceInput)
-	state := utils.GetCurrentState[LaunchState](model.Ctx)
+	state := weavecontext.GetCurrentState[LaunchState](model.Ctx)
 	assert.IsType(t, &SystemKeyL1BatchSubmitterBalanceInput{}, finalModel)
 	assert.Equal(t, validInput, state.systemKeyL1OutputSubmitterBalance)
 	assert.Contains(t, state.weave.PreviousResponse, styles.RenderPreviousResponse(
@@ -1328,7 +1331,7 @@ func TestSystemKeyL1OutputSubmitterBalanceInput_Update_Valid(t *testing.T) {
 }
 
 func TestSystemKeyL1OutputSubmitterBalanceInput_Update_Invalid(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	outputSubmitterInput := NewSystemKeyL1OutputSubmitterBalanceInput(ctx)
 
@@ -1340,14 +1343,14 @@ func TestSystemKeyL1OutputSubmitterBalanceInput_Update_Invalid(t *testing.T) {
 	finalModel, cmd := nextModel.Update(enterPress)
 
 	model := finalModel.(*SystemKeyL1OutputSubmitterBalanceInput)
-	state := utils.GetCurrentState[LaunchState](model.Ctx)
+	state := weavecontext.GetCurrentState[LaunchState](model.Ctx)
 	assert.Equal(t, outputSubmitterInput, finalModel)
 	assert.Nil(t, cmd)
 	assert.NotEqual(t, invalidInput, state.systemKeyL1OutputSubmitterBalance)
 }
 
 func TestSystemKeyL1OutputSubmitterBalanceInput_View(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	outputSubmitterInput := NewSystemKeyL1OutputSubmitterBalanceInput(ctx)
 
@@ -1357,7 +1360,7 @@ func TestSystemKeyL1OutputSubmitterBalanceInput_View(t *testing.T) {
 }
 
 func TestNewSystemKeyL1BatchSubmitterBalanceInput(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	batchSubmitterInput := NewSystemKeyL1BatchSubmitterBalanceInput(ctx)
 
@@ -1366,7 +1369,7 @@ func TestNewSystemKeyL1BatchSubmitterBalanceInput(t *testing.T) {
 }
 
 func TestSystemKeyL1BatchSubmitterBalanceInput_Init(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	batchSubmitterInput := NewSystemKeyL1BatchSubmitterBalanceInput(ctx)
 
@@ -1375,7 +1378,7 @@ func TestSystemKeyL1BatchSubmitterBalanceInput_Init(t *testing.T) {
 }
 
 func TestSystemKeyL1BatchSubmitterBalanceInput_Update_Valid(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	batchSubmitterInput := NewSystemKeyL1BatchSubmitterBalanceInput(ctx)
 
@@ -1387,7 +1390,7 @@ func TestSystemKeyL1BatchSubmitterBalanceInput_Update_Valid(t *testing.T) {
 	finalModel, _ := nextModel.Update(enterPress)
 
 	model := finalModel.(*SystemKeyL1ChallengerBalanceInput)
-	state := utils.GetCurrentState[LaunchState](model.Ctx)
+	state := weavecontext.GetCurrentState[LaunchState](model.Ctx)
 	assert.IsType(t, &SystemKeyL1ChallengerBalanceInput{}, finalModel)
 	assert.Equal(t, validInput, state.systemKeyL1BatchSubmitterBalance)
 	assert.Contains(t, state.weave.PreviousResponse, styles.RenderPreviousResponse(
@@ -1395,7 +1398,7 @@ func TestSystemKeyL1BatchSubmitterBalanceInput_Update_Valid(t *testing.T) {
 }
 
 func TestSystemKeyL1BatchSubmitterBalanceInput_Update_Invalid(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	batchSubmitterInput := NewSystemKeyL1BatchSubmitterBalanceInput(ctx)
 
@@ -1407,14 +1410,14 @@ func TestSystemKeyL1BatchSubmitterBalanceInput_Update_Invalid(t *testing.T) {
 	finalModel, cmd := nextModel.Update(enterPress)
 
 	model := finalModel.(*SystemKeyL1BatchSubmitterBalanceInput)
-	state := utils.GetCurrentState[LaunchState](model.Ctx)
+	state := weavecontext.GetCurrentState[LaunchState](model.Ctx)
 	assert.Equal(t, batchSubmitterInput, finalModel)
 	assert.Nil(t, cmd)
 	assert.NotEqual(t, invalidInput, state.systemKeyL1BatchSubmitterBalance)
 }
 
 func TestSystemKeyL1BatchSubmitterBalanceInput_View(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	batchSubmitterInput := NewSystemKeyL1BatchSubmitterBalanceInput(ctx)
 
@@ -1424,7 +1427,7 @@ func TestSystemKeyL1BatchSubmitterBalanceInput_View(t *testing.T) {
 }
 
 func TestNewSystemKeyL1ChallengerBalanceInput(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	challengerInput := NewSystemKeyL1ChallengerBalanceInput(ctx)
 
@@ -1433,7 +1436,7 @@ func TestNewSystemKeyL1ChallengerBalanceInput(t *testing.T) {
 }
 
 func TestSystemKeyL1ChallengerBalanceInput_Init(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	challengerInput := NewSystemKeyL1ChallengerBalanceInput(ctx)
 
@@ -1442,7 +1445,7 @@ func TestSystemKeyL1ChallengerBalanceInput_Init(t *testing.T) {
 }
 
 func TestSystemKeyL1ChallengerBalanceInput_Update_Valid(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	challengerInput := NewSystemKeyL1ChallengerBalanceInput(ctx)
 
@@ -1454,7 +1457,7 @@ func TestSystemKeyL1ChallengerBalanceInput_Update_Valid(t *testing.T) {
 	finalModel, _ := nextModel.Update(enterPress)
 
 	model := finalModel.(*SystemKeyL2OperatorBalanceInput)
-	state := utils.GetCurrentState[LaunchState](model.Ctx)
+	state := weavecontext.GetCurrentState[LaunchState](model.Ctx)
 	assert.IsType(t, &SystemKeyL2OperatorBalanceInput{}, finalModel)
 	assert.Equal(t, validInput, state.systemKeyL1ChallengerBalance)
 	assert.Contains(t, state.weave.PreviousResponse, styles.RenderPreviousResponse(
@@ -1462,7 +1465,7 @@ func TestSystemKeyL1ChallengerBalanceInput_Update_Valid(t *testing.T) {
 }
 
 func TestSystemKeyL1ChallengerBalanceInput_Update_Invalid(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	challengerInput := NewSystemKeyL1ChallengerBalanceInput(ctx)
 
@@ -1474,14 +1477,14 @@ func TestSystemKeyL1ChallengerBalanceInput_Update_Invalid(t *testing.T) {
 	finalModel, cmd := nextModel.Update(enterPress)
 
 	model := finalModel.(*SystemKeyL1ChallengerBalanceInput)
-	state := utils.GetCurrentState[LaunchState](model.Ctx)
+	state := weavecontext.GetCurrentState[LaunchState](model.Ctx)
 	assert.Equal(t, challengerInput, finalModel)
 	assert.Nil(t, cmd)
 	assert.NotEqual(t, invalidInput, state.systemKeyL1ChallengerBalance)
 }
 
 func TestSystemKeyL1ChallengerBalanceInput_View(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	challengerInput := NewSystemKeyL1ChallengerBalanceInput(ctx)
 
@@ -1491,7 +1494,7 @@ func TestSystemKeyL1ChallengerBalanceInput_View(t *testing.T) {
 }
 
 func TestNewSystemKeyL2OperatorBalanceInput(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	operatorInput := NewSystemKeyL2OperatorBalanceInput(ctx)
 
@@ -1500,7 +1503,7 @@ func TestNewSystemKeyL2OperatorBalanceInput(t *testing.T) {
 }
 
 func TestSystemKeyL2OperatorBalanceInput_Init(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	operatorInput := NewSystemKeyL2OperatorBalanceInput(ctx)
 
@@ -1509,7 +1512,7 @@ func TestSystemKeyL2OperatorBalanceInput_Init(t *testing.T) {
 }
 
 func TestSystemKeyL2OperatorBalanceInput_Update_Valid(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	operatorInput := NewSystemKeyL2OperatorBalanceInput(ctx)
 
@@ -1521,7 +1524,7 @@ func TestSystemKeyL2OperatorBalanceInput_Update_Valid(t *testing.T) {
 	finalModel, _ := nextModel.Update(enterPress)
 
 	model := finalModel.(*SystemKeyL2BridgeExecutorBalanceInput)
-	state := utils.GetCurrentState[LaunchState](model.Ctx)
+	state := weavecontext.GetCurrentState[LaunchState](model.Ctx)
 	assert.IsType(t, &SystemKeyL2BridgeExecutorBalanceInput{}, finalModel)
 	assert.Equal(t, validInput, state.systemKeyL2OperatorBalance)
 	assert.Contains(t, state.weave.PreviousResponse, styles.RenderPreviousResponse(
@@ -1529,7 +1532,7 @@ func TestSystemKeyL2OperatorBalanceInput_Update_Valid(t *testing.T) {
 }
 
 func TestSystemKeyL2OperatorBalanceInput_Update_Invalid(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	operatorInput := NewSystemKeyL2OperatorBalanceInput(ctx)
 
@@ -1541,14 +1544,14 @@ func TestSystemKeyL2OperatorBalanceInput_Update_Invalid(t *testing.T) {
 	finalModel, cmd := nextModel.Update(enterPress)
 
 	model := finalModel.(*SystemKeyL2OperatorBalanceInput)
-	state := utils.GetCurrentState[LaunchState](model.Ctx)
+	state := weavecontext.GetCurrentState[LaunchState](model.Ctx)
 	assert.Equal(t, operatorInput, finalModel)
 	assert.Nil(t, cmd)
 	assert.NotEqual(t, invalidInput, state.systemKeyL2OperatorBalance)
 }
 
 func TestSystemKeyL2OperatorBalanceInput_View(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	operatorInput := NewSystemKeyL2OperatorBalanceInput(ctx)
 
@@ -1558,7 +1561,7 @@ func TestSystemKeyL2OperatorBalanceInput_View(t *testing.T) {
 }
 
 func TestNewSystemKeyL2BridgeExecutorBalanceInput(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	executorInput := NewSystemKeyL2BridgeExecutorBalanceInput(ctx)
 
@@ -1567,7 +1570,7 @@ func TestNewSystemKeyL2BridgeExecutorBalanceInput(t *testing.T) {
 }
 
 func TestSystemKeyL2BridgeExecutorBalanceInput_Init(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	executorInput := NewSystemKeyL2BridgeExecutorBalanceInput(ctx)
 
@@ -1576,7 +1579,7 @@ func TestSystemKeyL2BridgeExecutorBalanceInput_Init(t *testing.T) {
 }
 
 func TestSystemKeyL2BridgeExecutorBalanceInput_Update_Valid(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	executorInput := NewSystemKeyL2BridgeExecutorBalanceInput(ctx)
 
@@ -1588,7 +1591,7 @@ func TestSystemKeyL2BridgeExecutorBalanceInput_Update_Valid(t *testing.T) {
 	finalModel, _ := nextModel.Update(enterPress)
 
 	model := finalModel.(*AddGenesisAccountsSelect)
-	state := utils.GetCurrentState[LaunchState](model.Ctx)
+	state := weavecontext.GetCurrentState[LaunchState](model.Ctx)
 	assert.IsType(t, &AddGenesisAccountsSelect{}, finalModel)
 	assert.Equal(t, validInput, state.systemKeyL2BridgeExecutorBalance)
 	assert.Contains(t, state.weave.PreviousResponse, styles.RenderPreviousResponse(
@@ -1596,7 +1599,7 @@ func TestSystemKeyL2BridgeExecutorBalanceInput_Update_Valid(t *testing.T) {
 }
 
 func TestSystemKeyL2BridgeExecutorBalanceInput_Update_Invalid(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	executorInput := NewSystemKeyL2BridgeExecutorBalanceInput(ctx)
 
@@ -1608,14 +1611,14 @@ func TestSystemKeyL2BridgeExecutorBalanceInput_Update_Invalid(t *testing.T) {
 	finalModel, cmd := nextModel.Update(enterPress)
 
 	model := finalModel.(*SystemKeyL2BridgeExecutorBalanceInput)
-	state := utils.GetCurrentState[LaunchState](model.Ctx)
+	state := weavecontext.GetCurrentState[LaunchState](model.Ctx)
 	assert.Equal(t, executorInput, finalModel)
 	assert.Nil(t, cmd)
 	assert.NotEqual(t, invalidInput, state.systemKeyL2BridgeExecutorBalance)
 }
 
 func TestSystemKeyL2BridgeExecutorBalanceInput_View(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	executorInput := NewSystemKeyL2BridgeExecutorBalanceInput(ctx)
 
@@ -1625,7 +1628,7 @@ func TestSystemKeyL2BridgeExecutorBalanceInput_View(t *testing.T) {
 }
 
 func TestAddGenesisAccountsSelect_Init(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	selectInput := NewAddGenesisAccountsSelect(false, ctx)
 
@@ -1634,7 +1637,7 @@ func TestAddGenesisAccountsSelect_Init(t *testing.T) {
 }
 
 func TestAddGenesisAccountsSelect_Update_Yes(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	selectInput := NewAddGenesisAccountsSelect(false, ctx)
 
@@ -1642,13 +1645,13 @@ func TestAddGenesisAccountsSelect_Update_Yes(t *testing.T) {
 	finalModel, _ := selectInput.Update(enterPress)
 
 	model := finalModel.(*GenesisAccountsAddressInput)
-	state := utils.GetCurrentState[LaunchState](model.Ctx)
+	state := weavecontext.GetCurrentState[LaunchState](model.Ctx)
 	assert.IsType(t, &GenesisAccountsAddressInput{}, finalModel)
 	assert.Contains(t, state.weave.PreviousResponse[0], "Would you like to add genesis accounts? > Yes")
 }
 
 func TestAddGenesisAccountsSelect_Update_No(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	selectInput := NewAddGenesisAccountsSelect(false, ctx)
 
@@ -1659,13 +1662,13 @@ func TestAddGenesisAccountsSelect_Update_No(t *testing.T) {
 	finalModel, _ := nextModel.Update(enterPress)
 
 	model := finalModel.(*DownloadMinitiaBinaryLoading)
-	state := utils.GetCurrentState[LaunchState](model.Ctx)
+	state := weavecontext.GetCurrentState[LaunchState](model.Ctx)
 	assert.IsType(t, &DownloadMinitiaBinaryLoading{}, finalModel)
 	assert.Contains(t, state.weave.PreviousResponse[0], "Would you like to add genesis accounts? > No")
 }
 
 func TestAddGenesisAccountsSelect_View(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	selectInput := NewAddGenesisAccountsSelect(false, ctx)
 
@@ -1675,7 +1678,7 @@ func TestAddGenesisAccountsSelect_View(t *testing.T) {
 }
 
 func TestGenesisAccountsAddressInput_Init(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	addressInput := NewGenesisAccountsAddressInput(ctx)
 
@@ -1684,7 +1687,7 @@ func TestGenesisAccountsAddressInput_Init(t *testing.T) {
 }
 
 func TestGenesisAccountsAddressInput_Update_Valid(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	addressInput := NewGenesisAccountsAddressInput(ctx)
 
@@ -1699,7 +1702,7 @@ func TestGenesisAccountsAddressInput_Update_Valid(t *testing.T) {
 }
 
 func TestGenesisAccountsAddressInput_Update_Invalid(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	addressInput := NewGenesisAccountsAddressInput(ctx)
 
@@ -1711,14 +1714,14 @@ func TestGenesisAccountsAddressInput_Update_Invalid(t *testing.T) {
 	finalModel, cmd := nextModel.Update(enterPress)
 
 	model := finalModel.(*GenesisAccountsAddressInput)
-	state := utils.GetCurrentState[LaunchState](model.Ctx)
+	state := weavecontext.GetCurrentState[LaunchState](model.Ctx)
 	assert.Equal(t, addressInput, finalModel)
 	assert.Nil(t, cmd)
 	assert.NotContains(t, state.weave.PreviousResponse, invalidInput)
 }
 
 func TestGenesisAccountsAddressInput_View(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	addressInput := NewGenesisAccountsAddressInput(ctx)
 
@@ -1728,7 +1731,7 @@ func TestGenesisAccountsAddressInput_View(t *testing.T) {
 }
 
 func TestGenesisAccountsBalanceInput_Init(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	balanceInput := NewGenesisAccountsBalanceInput("init1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqpqr5e3d", ctx)
 
@@ -1737,7 +1740,7 @@ func TestGenesisAccountsBalanceInput_Init(t *testing.T) {
 }
 
 func TestGenesisAccountsBalanceInput_Update_Valid(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	balanceInput := NewGenesisAccountsBalanceInput("init1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqpqr5e3d", ctx)
 
@@ -1749,7 +1752,7 @@ func TestGenesisAccountsBalanceInput_Update_Valid(t *testing.T) {
 	finalModel, _ := nextModel.Update(enterPress)
 
 	model := finalModel.(*AddGenesisAccountsSelect)
-	state := utils.GetCurrentState[LaunchState](model.Ctx)
+	state := weavecontext.GetCurrentState[LaunchState](model.Ctx)
 	assert.IsType(t, &AddGenesisAccountsSelect{}, finalModel)
 	assert.Equal(t, 1, len(state.genesisAccounts))
 	assert.Equal(t, "init1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqpqr5e3d", state.genesisAccounts[0].Address)
@@ -1758,7 +1761,7 @@ func TestGenesisAccountsBalanceInput_Update_Valid(t *testing.T) {
 }
 
 func TestGenesisAccountsBalanceInput_Update_Invalid(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	balanceInput := NewGenesisAccountsBalanceInput("init1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqpqr5e3d", ctx)
 
@@ -1770,14 +1773,14 @@ func TestGenesisAccountsBalanceInput_Update_Invalid(t *testing.T) {
 	finalModel, cmd := nextModel.Update(enterPress)
 
 	model := finalModel.(*GenesisAccountsBalanceInput)
-	state := utils.GetCurrentState[LaunchState](model.Ctx)
+	state := weavecontext.GetCurrentState[LaunchState](model.Ctx)
 	assert.Equal(t, balanceInput, finalModel)
 	assert.Nil(t, cmd)
 	assert.Equal(t, 0, len(state.genesisAccounts))
 }
 
 func TestGenesisAccountsBalanceInput_View(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	balanceInput := NewGenesisAccountsBalanceInput("init1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqpqr5e3d", ctx)
 
@@ -1793,7 +1796,7 @@ func TestAddGenesisAccountsSelect_Update_RecurringWithAccounts(t *testing.T) {
 			{Address: "address2", Coins: "200token"},
 		},
 	}
-	ctx := utils.NewAppContext(state)
+	ctx := weavecontext.NewAppContext(state)
 
 	model := NewAddGenesisAccountsSelect(true, ctx)
 
@@ -1801,7 +1804,7 @@ func TestAddGenesisAccountsSelect_Update_RecurringWithAccounts(t *testing.T) {
 	updatedModel, cmd := model.Update(msg)
 
 	finalModel := updatedModel.(*GenesisAccountsAddressInput)
-	state = utils.GetCurrentState[LaunchState](finalModel.Ctx)
+	state = weavecontext.GetCurrentState[LaunchState](finalModel.Ctx)
 	assert.IsType(t, &GenesisAccountsAddressInput{}, updatedModel)
 	assert.Nil(t, cmd)
 	assert.Len(t, state.weave.PreviousResponse, 1)
@@ -1818,7 +1821,7 @@ func TestAddGenesisAccountsSelect_Update_NoRecurringWithAccounts(t *testing.T) {
 		},
 	}
 
-	ctx := utils.NewAppContext(state)
+	ctx := weavecontext.NewAppContext(state)
 
 	model := NewAddGenesisAccountsSelect(true, ctx)
 
@@ -1829,7 +1832,7 @@ func TestAddGenesisAccountsSelect_Update_NoRecurringWithAccounts(t *testing.T) {
 	updatedModel, cmd = model.Update(msg)
 
 	finalModel := updatedModel.(*DownloadMinitiaBinaryLoading)
-	state = utils.GetCurrentState[LaunchState](finalModel.Ctx)
+	state = weavecontext.GetCurrentState[LaunchState](finalModel.Ctx)
 	assert.IsType(t, &DownloadMinitiaBinaryLoading{}, updatedModel)
 	assert.NotNil(t, cmd)
 	assert.Len(t, state.weave.PreviousResponse, 2)
@@ -1847,11 +1850,11 @@ func TestNewDownloadMinitiaBinaryLoading(t *testing.T) {
 		minitiadVersion:  "v1.0.0",
 		minitiadEndpoint: "https://example.com/minitia.tar.gz",
 	}
-	ctx := utils.NewAppContext(state)
+	ctx := weavecontext.NewAppContext(state)
 
 	loadingModel := NewDownloadMinitiaBinaryLoading(ctx)
 
-	nextState := utils.GetCurrentState[LaunchState](loadingModel.Ctx)
+	nextState := weavecontext.GetCurrentState[LaunchState](loadingModel.Ctx)
 	assert.NotNil(t, loadingModel)
 	assert.Equal(t, state, nextState)
 	assert.Contains(t, loadingModel.loading.Text, "Downloading Minitestvm binary <v1.0.0>")
@@ -1863,7 +1866,7 @@ func TestDownloadMinitiaBinaryLoading_Init(t *testing.T) {
 		minitiadVersion:  "v1.0.0",
 		minitiadEndpoint: "https://example.com/minitia.tar.gz",
 	}
-	ctx := utils.NewAppContext(state)
+	ctx := weavecontext.NewAppContext(state)
 
 	loadingModel := NewDownloadMinitiaBinaryLoading(ctx)
 
@@ -1877,7 +1880,7 @@ func TestDownloadMinitiaBinaryLoading_Update_Complete(t *testing.T) {
 		minitiadVersion:  "v1.0.0",
 		minitiadEndpoint: "https://example.com/minitia.tar.gz",
 	}
-	ctx := utils.NewAppContext(state)
+	ctx := weavecontext.NewAppContext(state)
 
 	loadingModel := NewDownloadMinitiaBinaryLoading(ctx)
 	loadingModel.loading.Completing = true
@@ -1895,11 +1898,11 @@ func TestDownloadMinitiaBinaryLoading_Update_DownloadSuccess(t *testing.T) {
 		minitiadVersion:     "v1.0.0",
 		downloadedNewBinary: true,
 	}
-	ctx := utils.NewAppContext(state)
+	ctx := weavecontext.NewAppContext(state)
 
 	loadingModel := NewDownloadMinitiaBinaryLoading(ctx)
 
-	stillLoadingMsg := utils.TickMsg{}
+	stillLoadingMsg := ui.TickMsg{}
 	nextModel, _ := loadingModel.Update(stillLoadingMsg)
 
 	assert.IsType(t, &DownloadMinitiaBinaryLoading{}, nextModel)
@@ -1918,7 +1921,7 @@ func TestDownloadMinitiaBinaryLoading_View(t *testing.T) {
 		minitiadVersion:  "v1.0.0",
 		minitiadEndpoint: "https://example.com/minitia.tar.gz",
 	}
-	ctx := utils.NewAppContext(state)
+	ctx := weavecontext.NewAppContext(state)
 
 	loadingModel := NewDownloadMinitiaBinaryLoading(ctx)
 	view := loadingModel.View()
@@ -1952,7 +1955,7 @@ func TestNewGenerateOrRecoverSystemKeysLoading_Generate(t *testing.T) {
 	state := LaunchState{
 		generateKeys: true,
 	}
-	ctx := utils.NewAppContext(state)
+	ctx := weavecontext.NewAppContext(state)
 
 	loadingModel := NewGenerateOrRecoverSystemKeysLoading(ctx)
 
@@ -1964,7 +1967,7 @@ func TestNewGenerateOrRecoverSystemKeysLoading_Recover(t *testing.T) {
 	state := LaunchState{
 		generateKeys: false,
 	}
-	ctx := utils.NewAppContext(state)
+	ctx := weavecontext.NewAppContext(state)
 
 	loadingModel := NewGenerateOrRecoverSystemKeysLoading(ctx)
 
@@ -1976,7 +1979,7 @@ func TestGenerateOrRecoverSystemKeysLoading_Init(t *testing.T) {
 	state := LaunchState{
 		generateKeys: true,
 	}
-	ctx := utils.NewAppContext(state)
+	ctx := weavecontext.NewAppContext(state)
 
 	loadingModel := NewGenerateOrRecoverSystemKeysLoading(ctx)
 
@@ -1989,7 +1992,7 @@ func TestGenerateOrRecoverSystemKeysLoading_Update_Generate(t *testing.T) {
 		generateKeys: true,
 		binaryPath:   "test/path",
 	}
-	ctx := utils.NewAppContext(state)
+	ctx := weavecontext.NewAppContext(state)
 
 	loadingModel := NewGenerateOrRecoverSystemKeysLoading(ctx)
 	loadingModel.loading.Completing = true
@@ -1997,7 +2000,7 @@ func TestGenerateOrRecoverSystemKeysLoading_Update_Generate(t *testing.T) {
 	finalModel, cmd := loadingModel.Update(&tea.KeyMsg{})
 
 	model := finalModel.(*SystemKeysMnemonicDisplayInput)
-	state = utils.GetCurrentState[LaunchState](model.Ctx)
+	state = weavecontext.GetCurrentState[LaunchState](model.Ctx)
 	assert.Nil(t, cmd)
 	assert.IsType(t, &SystemKeysMnemonicDisplayInput{}, finalModel)
 	assert.Contains(t, state.weave.PreviousResponse[0], "System keys have been successfully generated.")
@@ -2007,7 +2010,7 @@ func TestGenerateOrRecoverSystemKeysLoading_View(t *testing.T) {
 	state := LaunchState{
 		generateKeys: true,
 	}
-	ctx := utils.NewAppContext(state)
+	ctx := weavecontext.NewAppContext(state)
 
 	loadingModel := NewGenerateOrRecoverSystemKeysLoading(ctx)
 	view := loadingModel.View()
@@ -2029,11 +2032,11 @@ func TestNewSystemKeysMnemonicDisplayInput(t *testing.T) {
 		systemKeyChallengerAddress:       "challenger_address",
 		systemKeyChallengerMnemonic:      "challenger_mnemonic",
 	}
-	ctx := utils.NewAppContext(state)
+	ctx := weavecontext.NewAppContext(state)
 
 	inputModel := NewSystemKeysMnemonicDisplayInput(ctx)
 
-	checkState := utils.GetCurrentState[LaunchState](inputModel.Ctx)
+	checkState := weavecontext.GetCurrentState[LaunchState](inputModel.Ctx)
 	assert.NotNil(t, inputModel)
 	assert.Equal(t, state, checkState)
 	assert.Equal(t, "Please type `continue` to proceed after you have securely stored the mnemonic.", inputModel.question)
@@ -2041,7 +2044,7 @@ func TestNewSystemKeysMnemonicDisplayInput(t *testing.T) {
 }
 
 func TestSystemKeysMnemonicDisplayInput_GetQuestion(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	inputModel := NewSystemKeysMnemonicDisplayInput(ctx)
 
@@ -2051,7 +2054,7 @@ func TestSystemKeysMnemonicDisplayInput_GetQuestion(t *testing.T) {
 }
 
 func TestSystemKeysMnemonicDisplayInput_Init(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	inputModel := NewSystemKeysMnemonicDisplayInput(ctx)
 
@@ -2061,7 +2064,7 @@ func TestSystemKeysMnemonicDisplayInput_Init(t *testing.T) {
 }
 
 func TestSystemKeysMnemonicDisplayInput_Update_NotDone(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	inputModel := NewSystemKeysMnemonicDisplayInput(ctx)
 
@@ -2088,7 +2091,7 @@ func TestSystemKeysMnemonicDisplayInput_View(t *testing.T) {
 		systemKeyChallengerAddress:       "challenger_address",
 		systemKeyChallengerMnemonic:      "challenger_mnemonic",
 	}
-	ctx := utils.NewAppContext(state)
+	ctx := weavecontext.NewAppContext(state)
 
 	inputModel := NewSystemKeysMnemonicDisplayInput(ctx)
 
@@ -2117,18 +2120,18 @@ func TestNewFundGasStationBroadcastLoading(t *testing.T) {
 		l1RPC:                             "http://localhost:8545",
 		l1ChainId:                         "1",
 	}
-	ctx := utils.NewAppContext(state)
+	ctx := weavecontext.NewAppContext(state)
 
 	loadingModel := NewFundGasStationBroadcastLoading(ctx)
 
-	checkState := utils.GetCurrentState[LaunchState](loadingModel.Ctx)
+	checkState := weavecontext.GetCurrentState[LaunchState](loadingModel.Ctx)
 	assert.NotNil(t, loadingModel)
 	assert.Equal(t, state, checkState)
 	assert.Equal(t, "Broadcasting transactions...", loadingModel.loading.Text)
 }
 
 func TestFundGasStationBroadcastLoading_Init(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	loadingModel := NewFundGasStationBroadcastLoading(ctx)
 
@@ -2151,14 +2154,14 @@ func TestBroadcastFundingFromGasStation_Failure(t *testing.T) {
 	}
 
 	assert.Panics(t, func() {
-		ctx := utils.NewAppContext(state)
+		ctx := weavecontext.NewAppContext(state)
 		cmd := broadcastFundingFromGasStation(ctx)
 		cmd()
 	})
 }
 
 func TestFundGasStationBroadcastLoading_Update_Complete(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	loadingModel := NewFundGasStationBroadcastLoading(ctx)
 	loadingModel.loading.Completing = true
@@ -2170,11 +2173,11 @@ func TestFundGasStationBroadcastLoading_Update_Complete(t *testing.T) {
 }
 
 func TestFundGasStationBroadcastLoading_Update_Incomplete(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	loadingModel := NewFundGasStationBroadcastLoading(ctx)
 
-	msg := utils.TickMsg{}
+	msg := ui.TickMsg{}
 	finalModel, cmd := loadingModel.Update(msg)
 
 	assert.Equal(t, loadingModel, finalModel)
@@ -2182,19 +2185,19 @@ func TestFundGasStationBroadcastLoading_Update_Incomplete(t *testing.T) {
 }
 
 func TestFundGasStationBroadcastLoading_View(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	loadingModel := NewFundGasStationBroadcastLoading(ctx)
 
 	view := loadingModel.View()
 
-	state := utils.GetCurrentState[LaunchState](loadingModel.Ctx)
+	state := weavecontext.GetCurrentState[LaunchState](loadingModel.Ctx)
 	assert.Contains(t, view, "Broadcasting transactions...")
 	assert.Contains(t, view, state.weave.Render())
 }
 
 func TestNewTerminalState(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	terminalState := NewTerminalState(ctx)
 
@@ -2202,7 +2205,7 @@ func TestNewTerminalState(t *testing.T) {
 }
 
 func TestTerminalState_Init(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	terminalState := NewTerminalState(ctx)
 
@@ -2211,7 +2214,7 @@ func TestTerminalState_Init(t *testing.T) {
 }
 
 func TestTerminalState_Update(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	terminalState := NewTerminalState(ctx)
 
@@ -2223,11 +2226,11 @@ func TestTerminalState_Update(t *testing.T) {
 }
 
 func TestTerminalState_View(t *testing.T) {
-	ctx := utils.NewAppContext(*NewLaunchState())
+	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	terminalState := NewTerminalState(ctx)
 
 	view := terminalState.View()
-	state := utils.GetCurrentState[LaunchState](terminalState.Ctx)
+	state := weavecontext.GetCurrentState[LaunchState](terminalState.Ctx)
 	assert.Contains(t, view, state.weave.Render(), "Expected view to contain the rendered output from the weave")
 }

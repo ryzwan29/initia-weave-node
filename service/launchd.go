@@ -12,7 +12,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/initia-labs/weave/utils"
+	"github.com/initia-labs/weave/common"
+	weaveio "github.com/initia-labs/weave/io"
 )
 
 type Launchd struct {
@@ -37,8 +38,8 @@ func (j *Launchd) Create(binaryVersion, appHome string) error {
 		return fmt.Errorf("failed to get user home directory: %v", err)
 	}
 
-	weaveDataPath := filepath.Join(userHome, utils.WeaveDataDirectory)
-	weaveLogPath := filepath.Join(userHome, utils.WeaveLogDirectory)
+	weaveDataPath := filepath.Join(userHome, common.WeaveDataDirectory)
+	weaveLogPath := filepath.Join(userHome, common.WeaveLogDirectory)
 	binaryName := j.commandName.MustGetBinaryName()
 	binaryPath := filepath.Join(weaveDataPath, binaryVersion)
 	if err = os.Setenv("DYLD_LIBRARY_PATH", binaryPath); err != nil {
@@ -49,8 +50,8 @@ func (j *Launchd) Create(binaryVersion, appHome string) error {
 	}
 
 	plistPath := filepath.Join(userHome, fmt.Sprintf("Library/LaunchAgents/%s.plist", j.GetServiceName()))
-	if utils.FileOrFolderExists(plistPath) {
-		err = utils.DeleteFile(plistPath)
+	if weaveio.FileOrFolderExists(plistPath) {
+		err = weaveio.DeleteFile(plistPath)
 		if err != nil {
 			panic(err)
 		}
@@ -125,8 +126,8 @@ func (j *Launchd) streamLogsFromFiles(n int) error {
 		return fmt.Errorf("failed to get user home directory: %v", err)
 	}
 
-	logFilePathOut := filepath.Join(userHome, utils.WeaveLogDirectory, fmt.Sprintf("%s.stdout.log", j.commandName.MustGetServiceSlug()))
-	logFilePathErr := filepath.Join(userHome, utils.WeaveLogDirectory, fmt.Sprintf("%s.stderr.log", j.commandName.MustGetServiceSlug()))
+	logFilePathOut := filepath.Join(userHome, common.WeaveLogDirectory, fmt.Sprintf("%s.stdout.log", j.commandName.MustGetServiceSlug()))
+	logFilePathErr := filepath.Join(userHome, common.WeaveLogDirectory, fmt.Sprintf("%s.stderr.log", j.commandName.MustGetServiceSlug()))
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
@@ -159,7 +160,7 @@ func (j *Launchd) tailLogFile(filePath string, output io.Writer, maxLogLines int
 	}
 
 	for _, line := range lines {
-		fmt.Fprintln(output, line)
+		_, _ = fmt.Fprintln(output, line)
 	}
 
 	_, err = file.Seek(0, io.SeekEnd)
@@ -177,7 +178,7 @@ func (j *Launchd) tailLogFile(filePath string, output io.Writer, maxLogLines int
 		}
 
 		if n > 0 {
-			output.Write(line[:n])
+			_, _ = output.Write(line[:n])
 		} else {
 			time.Sleep(1 * time.Second)
 		}

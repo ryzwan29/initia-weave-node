@@ -8,10 +8,12 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 
+	"github.com/initia-labs/weave/common"
+	"github.com/initia-labs/weave/config"
+	weavecontext "github.com/initia-labs/weave/context"
 	"github.com/initia-labs/weave/models"
 	"github.com/initia-labs/weave/models/initia"
 	"github.com/initia-labs/weave/service"
-	"github.com/initia-labs/weave/utils"
 )
 
 func InitiaCommand() *cobra.Command {
@@ -43,14 +45,14 @@ func initiaInitCommand() *cobra.Command {
 				return err
 			}
 
-			ctx := utils.NewAppContext(initia.NewRunL1NodeState())
-			ctx = utils.SetInitiaHome(ctx, initiaHome)
+			ctx := weavecontext.NewAppContext(initia.NewRunL1NodeState())
+			ctx = weavecontext.SetInitiaHome(ctx, initiaHome)
 
-			if utils.IsFirstTimeSetup() {
+			if config.IsFirstTimeSetup() {
 				// Capture both the final model and the error from Run()
 
-				checkerCtx := utils.NewAppContext(models.NewExistingCheckerState())
-				checkerCtx = utils.SetInitiaHome(checkerCtx, initiaHome)
+				checkerCtx := weavecontext.NewAppContext(models.NewExistingCheckerState())
+				checkerCtx = weavecontext.SetInitiaHome(checkerCtx, initiaHome)
 
 				finalModel, err := tea.NewProgram(models.NewExistingAppChecker(checkerCtx, initia.NewRunL1NodeNetworkSelect(ctx))).Run()
 				if err != nil {
@@ -77,7 +79,7 @@ func initiaInitCommand() *cobra.Command {
 		panic(fmt.Errorf("cannot get user home directory: %v", err))
 	}
 
-	initCmd.Flags().String(FlagInitiaHome, filepath.Join(homeDir, utils.InitiaDirectory), "The Initia application home directory")
+	initCmd.Flags().String(FlagInitiaHome, filepath.Join(homeDir, common.InitiaDirectory), "The Initia application home directory")
 
 	return initCmd
 }

@@ -41,7 +41,7 @@ type WaitStep struct {
 	Check func() bool
 }
 
-func (w WaitStep) Execute(prog tea.Program) {}
+func (w WaitStep) Execute(_ tea.Program) {}
 
 func (w WaitStep) Wait() bool {
 	return w.Check()

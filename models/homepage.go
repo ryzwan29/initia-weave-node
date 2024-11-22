@@ -5,12 +5,12 @@ import (
 
 	"github.com/initia-labs/weave/models/weaveinit"
 	"github.com/initia-labs/weave/styles"
-	"github.com/initia-labs/weave/utils"
+	"github.com/initia-labs/weave/ui"
 )
 
 type Homepage struct {
-	utils.Selector[HomepageOption]
-	TextInput utils.TextInput
+	ui.Selector[HomepageOption]
+	TextInput ui.TextInput
 }
 
 type HomepageOption string
@@ -21,13 +21,13 @@ const (
 
 func NewHomepage() tea.Model {
 	return &Homepage{
-		Selector: utils.Selector[HomepageOption]{
+		Selector: ui.Selector[HomepageOption]{
 			Options: []HomepageOption{
 				InitOption,
 			},
 			Cursor: 0,
 		},
-		TextInput: utils.NewTextInput(true),
+		TextInput: ui.NewTextInput(true),
 	}
 }
 
