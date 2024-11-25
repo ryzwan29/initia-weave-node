@@ -1,6 +1,7 @@
 package registry
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"strings"
@@ -62,6 +63,11 @@ type Peer struct {
 	Id       string `json:"id"`
 	Address  string `json:"address"`
 	Provider string `json:"provider,omitempty"`
+}
+
+type L2GitHubContent struct {
+	Name string `json:"name"`
+	Path string `json:"path"`
 }
 
 func (cr *ChainRegistry) GetChainId() string {
@@ -263,6 +269,36 @@ func MustGetL2Registry(networkPath string) *ChainRegistry {
 	}
 
 	return l2Registry
+}
+
+func GetAllL2Names(chainType ChainType) ([]L2GitHubContent, error) {
+	if chainType == InitiaL1Testnet {
+		client := client.NewHTTPClient()
+
+		resp, err := client.Get("https://api.github.com", "/repos/initia-labs/initia-registry/contents/testnets", nil, nil)
+		if err != nil {
+			return []L2GitHubContent{}, fmt.Errorf("failed to fetch l2 registry: %v", err)
+		}
+
+		var l2 []L2GitHubContent
+		// Decode the JSON
+		if err := json.Unmarshal(resp, &l2); err != nil {
+			return []L2GitHubContent{}, err
+		}
+
+		return l2, nil
+	}
+
+	return []L2GitHubContent{}, fmt.Errorf("failed to matched chain type")
+}
+
+func MustGetAllL2Contents(chainType ChainType) []L2GitHubContent {
+	contents, err := GetAllL2Names(chainType)
+	if err != nil {
+		panic(err)
+	}
+
+	return contents
 }
 
 var OPInitBotsSpecVersion map[string]int

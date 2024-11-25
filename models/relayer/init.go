@@ -57,7 +57,12 @@ func (m *RollupSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		state := weavecontext.PushPageAndGetState[RelayerState](m)
 
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, string(*selected)))
-		// TODO: Implement this
+		switch *selected {
+		case Whitelisted:
+			return NewSelectingL1Network(weavecontext.SetCurrentState(m.Ctx, state)), nil
+		case Local:
+			return NewFieldInputModel(m.Ctx, defaultL2Config, NewTerminalState), nil
+		}
 		return m, tea.Quit
 	}
 
