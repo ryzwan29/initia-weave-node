@@ -11,6 +11,9 @@ import (
 // LoadedChainRegistry contains a map of chain id to the chain.json
 var LoadedChainRegistry = make(map[ChainType]*ChainRegistry)
 
+// LoadedL2Registry contains a map of l2 network path to the chain.json
+var LoadedL2Registry = make(map[string]*ChainRegistry)
+
 type ChainRegistry struct {
 	ChainId      string   `json:"chain_id"`
 	Bech32Prefix string   `json:"bech32_prefix"`
@@ -228,6 +231,38 @@ func MustGetChainRegistry(chainType ChainType) *ChainRegistry {
 	}
 
 	return chainRegistry
+}
+
+func loadL2Registry(networkPath string) error {
+	httpClient := client.NewHTTPClient()
+	endpoint := fmt.Sprintf(InitiaRegistryEndpoint, networkPath)
+	LoadedL2Registry[networkPath] = &ChainRegistry{}
+	if _, err := httpClient.Get(endpoint, "", nil, LoadedL2Registry[networkPath]); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func GetL2Registry(networkPath string) (*ChainRegistry, error) {
+	l2Registry, ok := LoadedL2Registry[networkPath]
+	if !ok {
+		if err := loadL2Registry(networkPath); err != nil {
+			return nil, fmt.Errorf("failed to load l2 registry for path %s: %v", networkPath, err)
+		}
+		return LoadedL2Registry[networkPath], nil
+	}
+
+	return l2Registry, nil
+}
+
+func MustGetL2Registry(networkPath string) *ChainRegistry {
+	l2Registry, err := GetL2Registry(networkPath)
+	if err != nil {
+		panic(err)
+	}
+
+	return l2Registry
 }
 
 var OPInitBotsSpecVersion map[string]int

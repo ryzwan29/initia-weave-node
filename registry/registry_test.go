@@ -366,3 +366,52 @@ func TestCheckAndAddPort(t *testing.T) {
 		}
 	}
 }
+
+const (
+	MinimovePath string = "testnets/minimove"
+	MiniwasmPath string = "testnets/miniwasm"
+	MinievmPath  string = "testnets/minievm"
+)
+
+func TestLoadL2Registry(t *testing.T) {
+	err := loadL2Registry(MinimovePath)
+	if err != nil {
+		t.Errorf("LoadL2Registry() error for %s = %v", MinimovePath, err)
+	}
+
+	loadedRegistry := LoadedL2Registry[MinimovePath]
+	if loadedRegistry == nil {
+		t.Fatal("expected chain registry to be loaded but got nil")
+	}
+
+	err = loadL2Registry(MiniwasmPath)
+	if err != nil {
+		t.Errorf("LoadL2Registry() error for %s = %v", MiniwasmPath, err)
+	}
+
+	loadedRegistry = LoadedL2Registry[MiniwasmPath]
+	if loadedRegistry == nil {
+		t.Fatal("expected chain registry to be loaded but got nil")
+	}
+
+	err = loadL2Registry(MinievmPath)
+	if err != nil {
+		t.Errorf("LoadL2Registry() error for %s = %v", MinievmPath, err)
+	}
+
+	loadedRegistry = LoadedL2Registry[MinievmPath]
+	if loadedRegistry == nil {
+		t.Fatal("expected chain registry to be loaded but got nil")
+	}
+}
+
+func TestGetL2Registry(t *testing.T) {
+	registry, err := GetL2Registry(MinimovePath)
+	if err != nil {
+		t.Errorf("GetL2Registry() error = %v", err)
+	}
+
+	if registry.Bech32Prefix == "" {
+		t.Errorf("invalid bech32 prefix")
+	}
+}
