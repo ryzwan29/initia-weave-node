@@ -16,12 +16,12 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/initia-labs/weave/client"
 	"github.com/initia-labs/weave/common"
 	"github.com/initia-labs/weave/config"
 	weavecontext "github.com/initia-labs/weave/context"
 	"github.com/initia-labs/weave/cosmosutils"
 	"github.com/initia-labs/weave/crypto"
-	"github.com/initia-labs/weave/http"
 	"github.com/initia-labs/weave/io"
 	"github.com/initia-labs/weave/registry"
 	"github.com/initia-labs/weave/service"
@@ -2069,10 +2069,10 @@ type DownloadCelestiaBinaryLoading struct {
 
 func NewDownloadCelestiaBinaryLoading(ctx context.Context) *DownloadCelestiaBinaryLoading {
 	celestiaMainnetRegistry := registry.MustGetChainRegistry(registry.CelestiaMainnet)
-	client := http.NewHTTPClient()
+	httpClient := client.NewHTTPClient()
 
 	var result map[string]interface{}
-	_, err := client.Get(
+	_, err := httpClient.Get(
 		celestiaMainnetRegistry.MustGetActiveLcd(),
 		"/cosmos/base/tendermint/v1beta1/node_info",
 		nil,

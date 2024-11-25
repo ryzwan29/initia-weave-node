@@ -8,10 +8,10 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 
+	"github.com/initia-labs/weave/client"
 	"github.com/initia-labs/weave/config"
 	weavecontext "github.com/initia-labs/weave/context"
 	"github.com/initia-labs/weave/crypto"
-	"github.com/initia-labs/weave/http"
 	"github.com/initia-labs/weave/models"
 	"github.com/initia-labs/weave/registry"
 )
@@ -110,9 +110,9 @@ func getBalance(chainType registry.ChainType, address string) (*Coins, error) {
 		return nil, fmt.Errorf("failed to get active lcd for %s: %v", chainType, err)
 	}
 
-	client := http.NewHTTPClient()
+	httpClient := client.NewHTTPClient()
 	var result map[string]interface{}
-	_, err = client.Get(
+	_, err = httpClient.Get(
 		baseUrl,
 		fmt.Sprintf("/cosmos/bank/v1beta1/balances/%s", address),
 		map[string]string{"pagination.limit": "100"},

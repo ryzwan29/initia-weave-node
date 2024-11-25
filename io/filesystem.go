@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/initia-labs/weave/http"
+	"github.com/initia-labs/weave/client"
 )
 
 // FileOrFolderExists checks if a file or folder exists at the given path.
@@ -20,8 +20,8 @@ func FileOrFolderExists(path string) bool {
 }
 
 func DownloadAndExtractTarGz(url, tarballPath, extractedPath string) error {
-	client := http.NewHTTPClient()
-	if err := client.DownloadFile(url, tarballPath, nil, nil); err != nil {
+	httpClient := client.NewHTTPClient()
+	if err := httpClient.DownloadFile(url, tarballPath, nil, nil); err != nil {
 		return err
 	}
 

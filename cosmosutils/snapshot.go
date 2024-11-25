@@ -6,7 +6,7 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 
-	"github.com/initia-labs/weave/http"
+	"github.com/initia-labs/weave/client"
 )
 
 const (
@@ -15,8 +15,8 @@ const (
 )
 
 func FetchPolkachuSnapshotDownloadURL(chainSlug string) (string, error) {
-	client := http.NewHTTPClient()
-	body, err := client.Get(fmt.Sprintf(PolkachuSnapshotURL, chainSlug), "", nil, nil)
+	httpClient := client.NewHTTPClient()
+	body, err := httpClient.Get(fmt.Sprintf(PolkachuSnapshotURL, chainSlug), "", nil, nil)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch page: %w", err)
 	}

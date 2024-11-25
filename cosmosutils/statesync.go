@@ -7,7 +7,7 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 
-	"github.com/initia-labs/weave/http"
+	"github.com/initia-labs/weave/client"
 )
 
 const (
@@ -16,8 +16,8 @@ const (
 )
 
 func FetchPolkachuStateSyncURL(chainSlug string) (string, error) {
-	client := http.NewHTTPClient()
-	body, err := client.Get(fmt.Sprintf(PolkachuStateSyncURL, chainSlug), "", nil, nil)
+	httpClient := client.NewHTTPClient()
+	body, err := httpClient.Get(fmt.Sprintf(PolkachuStateSyncURL, chainSlug), "", nil, nil)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch page: %w", err)
 	}
@@ -49,8 +49,8 @@ func isLikelyStateSyncURL(href string) bool {
 }
 
 func FetchPolkachuStateSyncPeers(chainSlug string) (string, error) {
-	client := http.NewHTTPClient()
-	body, err := client.Get(fmt.Sprintf(PolkachuStateSyncPeersURL, chainSlug), "", nil, nil)
+	httpClient := client.NewHTTPClient()
+	body, err := httpClient.Get(fmt.Sprintf(PolkachuStateSyncPeersURL, chainSlug), "", nil, nil)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch page: %w", err)
 	}
@@ -147,9 +147,9 @@ type StateSyncInfo struct {
 }
 
 func GetStateSyncInfo(url string) (*StateSyncInfo, error) {
-	client := http.NewHTTPClient()
+	httpClient := client.NewHTTPClient()
 	var latestBlock BlockResponse
-	_, err := client.Get(url, "/block", nil, &latestBlock)
+	_, err := httpClient.Get(url, "/block", nil, &latestBlock)
 	if err != nil {
 		return nil, fmt.Errorf("Error fetching latest block height: %v\n", err)
 	}
@@ -161,7 +161,7 @@ func GetStateSyncInfo(url string) (*StateSyncInfo, error) {
 	blockHeight := latestHeight - 2000
 
 	var trustHashResp HashResponse
-	_, err = client.Get(url, "/block", map[string]string{"height": strconv.Itoa(blockHeight)}, &trustHashResp)
+	_, err = httpClient.Get(url, "/block", map[string]string{"height": strconv.Itoa(blockHeight)}, &trustHashResp)
 	if err != nil {
 		return nil, fmt.Errorf("Error fetching trust hash: %v\n", err)
 	}

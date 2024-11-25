@@ -12,11 +12,11 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/initia-labs/weave/client"
 	"github.com/initia-labs/weave/common"
 	"github.com/initia-labs/weave/config"
 	weavecontext "github.com/initia-labs/weave/context"
 	"github.com/initia-labs/weave/cosmosutils"
-	"github.com/initia-labs/weave/http"
 	"github.com/initia-labs/weave/io"
 	"github.com/initia-labs/weave/registry"
 	"github.com/initia-labs/weave/service"
@@ -925,7 +925,7 @@ func initializeApp(ctx context.Context) tea.Cmd {
 		weaveDataPath := filepath.Join(userHome, common.WeaveDataDirectory)
 		tarballPath := filepath.Join(weaveDataPath, "initia.tar.gz")
 
-		client := http.NewHTTPClient()
+		httpClient := client.NewHTTPClient()
 		var nodeVersion, extractedPath, binaryPath, url string
 
 		switch state.network {
@@ -939,7 +939,7 @@ func initializeApp(ctx context.Context) tea.Cmd {
 			}
 
 			var result map[string]interface{}
-			_, err = client.Get(baseUrl, "/cosmos/base/tendermint/v1beta1/node_info", nil, &result)
+			_, err = httpClient.Get(baseUrl, "/cosmos/base/tendermint/v1beta1/node_info", nil, &result)
 			if err != nil {
 				panic(err)
 			}
@@ -1018,7 +1018,7 @@ func initializeApp(ctx context.Context) tea.Cmd {
 		}
 
 		if state.genesisEndpoint != "" {
-			if err := client.DownloadFile(state.genesisEndpoint, filepath.Join(weaveDataPath, "genesis.json"), nil, nil); err != nil {
+			if err := httpClient.DownloadFile(state.genesisEndpoint, filepath.Join(weaveDataPath, "genesis.json"), nil, nil); err != nil {
 				panic(fmt.Sprintf("failed to download genesis.json: %v", err))
 			}
 

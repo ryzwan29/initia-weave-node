@@ -7,7 +7,7 @@ import (
 	"github.com/charmbracelet/bubbles/progress"
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/initia-labs/weave/http"
+	"github.com/initia-labs/weave/client"
 	"github.com/initia-labs/weave/styles"
 )
 
@@ -41,8 +41,8 @@ func (m *Downloader) GetError() error {
 
 func (m *Downloader) startDownload() tea.Cmd {
 	return func() tea.Msg {
-		client := http.NewHTTPClient()
-		if err := client.DownloadAndValidateFile(m.url, m.dest, &m.current, &m.total, m.validateFn); err != nil {
+		httpClient := client.NewHTTPClient()
+		if err := httpClient.DownloadAndValidateFile(m.url, m.dest, &m.current, &m.total, m.validateFn); err != nil {
 			m.SetError(err)
 			return nil
 		}

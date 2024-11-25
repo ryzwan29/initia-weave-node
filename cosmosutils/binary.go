@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/initia-labs/weave/client"
 	"github.com/initia-labs/weave/common"
-	"github.com/initia-labs/weave/http"
 )
 
 type BinaryRelease struct {
@@ -50,9 +50,9 @@ func getOSArch() (os, arch string) {
 }
 
 func fetchReleases(url string) []BinaryRelease {
-	client := http.NewHTTPClient()
+	httpClient := client.NewHTTPClient()
 	var releases []BinaryRelease
-	_, err := client.Get(url, "", nil, &releases)
+	_, err := httpClient.Get(url, "", nil, &releases)
 	if err != nil {
 		panic(fmt.Errorf("failed to fetch releases: %v", err))
 	}
