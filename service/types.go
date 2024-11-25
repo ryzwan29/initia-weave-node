@@ -7,6 +7,7 @@ const (
 	Minitia          CommandName = "minitia"
 	OPinitExecutor   CommandName = "executor"
 	OPinitChallenger CommandName = "challenger"
+	Relayer          CommandName = "relayer"
 )
 
 func (cmd CommandName) MustGetBinaryName() string {
@@ -17,6 +18,8 @@ func (cmd CommandName) MustGetBinaryName() string {
 		return "minitiad"
 	case OPinitExecutor, OPinitChallenger:
 		return "opinitd"
+	case Relayer:
+		return "hermes"
 	default:
 		panic("unsupported command")
 	}
@@ -32,6 +35,8 @@ func (cmd CommandName) MustGetServiceSlug() string {
 		return "opinitd.executor"
 	case OPinitChallenger:
 		return "opinitd.challenger"
+	case Relayer:
+		return "hermes"
 	default:
 		panic("unsupported command")
 	}

@@ -39,5 +39,9 @@ func Execute() error {
 		rootCmd.AddCommand(OPInitBotsCommand())
 	}
 
+	if flags.IsEnabled(flags.Relayer) {
+		rootCmd.AddCommand(RelayerCommand())
+	}
+
 	return rootCmd.ExecuteContext(context.Background())
 }

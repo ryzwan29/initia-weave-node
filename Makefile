@@ -4,7 +4,7 @@
 GO_VERSION := 1.22
 GO_SYSTEM_VERSION := $(shell go version | cut -c 14- | cut -d' ' -f1 | cut -d'.' -f1-2)
 REQUIRE_GO_VERSION := $(GO_VERSION)
-ENABLED_FLAGS := minitia_launch,opinit_bots
+ENABLED_FLAGS := minitia_launch,opinit_bots,relayer
 
 # Project version
 WEAVE_VERSION := v0.0.1
