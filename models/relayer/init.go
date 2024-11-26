@@ -12,6 +12,7 @@ import (
 
 	"github.com/initia-labs/weave/common"
 	weavecontext "github.com/initia-labs/weave/context"
+	"github.com/initia-labs/weave/io"
 	"github.com/initia-labs/weave/registry"
 	"github.com/initia-labs/weave/styles"
 	"github.com/initia-labs/weave/types"
@@ -46,13 +47,16 @@ const (
 )
 
 func NewRollupSelect(ctx context.Context) *RollupSelect {
+	options := make([]RollupSelectOption, 0)
+	if io.FileOrFolderExists(weavecontext.GetMinitiaArtifactsConfigJson(ctx)) {
+		options = append(options, Whitelisted, Local, Manual)
+	} else {
+		options = append(options, Whitelisted, Manual)
+	}
+
 	return &RollupSelect{
 		Selector: ui.Selector[RollupSelectOption]{
-			Options: []RollupSelectOption{
-				Whitelisted,
-				Local,
-				Manual,
-			},
+			Options:    options,
 			CannotBack: true,
 		},
 		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
