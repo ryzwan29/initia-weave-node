@@ -2,7 +2,9 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/initia-labs/weave/common"
 	"os"
+	"path/filepath"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
@@ -39,9 +41,7 @@ func relayerInitCommand() *cobra.Command {
 		Short: "Initialize and configure your Hermes relayer for IBC",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := weavecontext.NewAppContext(relayer.NewRelayerState())
-			// TODO: flag this
-			homeDir, _ := os.UserHomeDir()
-			minitiaHome := homeDir + "/.minitia"
+			minitiaHome, _ := cmd.Flags().GetString(FlagMinitiaHome)
 			ctx = weavecontext.SetMinitiaHome(ctx, minitiaHome)
 
 			if config.IsFirstTimeSetup() {
@@ -65,6 +65,13 @@ func relayerInitCommand() *cobra.Command {
 			return nil
 		},
 	}
+
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		panic(fmt.Errorf("cannot get user home directory: %v", err))
+	}
+
+	initCmd.Flags().String(FlagMinitiaHome, filepath.Join(homeDir, common.MinitiaDirectory), "Minitia application directory to fetch artifacts from if existed")
 
 	return initCmd
 }
