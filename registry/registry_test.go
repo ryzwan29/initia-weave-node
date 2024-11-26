@@ -368,45 +368,35 @@ func TestCheckAndAddPort(t *testing.T) {
 }
 
 const (
-	MinimovePath string = "testnets/minimove"
-	MiniwasmPath string = "testnets/miniwasm"
-	MinievmPath  string = "testnets/minievm"
+	MinimoveChainId string = "minimove-2"
+	MiniwasmChainId string = "miniwasm-2"
+	MinievmChainId  string = "minievm-2"
 )
 
 func TestLoadL2Registry(t *testing.T) {
-	err := loadL2Registry(MinimovePath)
+	err := loadL2RegistryForType(InitiaL1Testnet)
 	if err != nil {
-		t.Errorf("LoadL2Registry() error for %s = %v", MinimovePath, err)
+		t.Errorf("loadL2RegistryForType() error for %s = %v", InitiaL1Testnet, err)
 	}
 
-	loadedRegistry := LoadedL2Registry[MinimovePath]
+	loadedRegistry := LoadedL2Registry[MinimoveChainId]
 	if loadedRegistry == nil {
 		t.Fatal("expected chain registry to be loaded but got nil")
 	}
 
-	err = loadL2Registry(MiniwasmPath)
-	if err != nil {
-		t.Errorf("LoadL2Registry() error for %s = %v", MiniwasmPath, err)
-	}
-
-	loadedRegistry = LoadedL2Registry[MiniwasmPath]
+	loadedRegistry = LoadedL2Registry[MiniwasmChainId]
 	if loadedRegistry == nil {
 		t.Fatal("expected chain registry to be loaded but got nil")
 	}
 
-	err = loadL2Registry(MinievmPath)
-	if err != nil {
-		t.Errorf("LoadL2Registry() error for %s = %v", MinievmPath, err)
-	}
-
-	loadedRegistry = LoadedL2Registry[MinievmPath]
+	loadedRegistry = LoadedL2Registry[MinievmChainId]
 	if loadedRegistry == nil {
 		t.Fatal("expected chain registry to be loaded but got nil")
 	}
 }
 
 func TestGetL2Registry(t *testing.T) {
-	registry, err := GetL2Registry(MinimovePath)
+	registry, err := GetL2Registry(InitiaL1Testnet, MinimoveChainId)
 	if err != nil {
 		t.Errorf("GetL2Registry() error = %v", err)
 	}

@@ -1,6 +1,8 @@
 package registry
 
-import "fmt"
+import (
+	"fmt"
+)
 
 const (
 	CelestiaTestnet ChainType = iota
@@ -13,6 +15,10 @@ const (
 	InitiaRegistryEndpoint   string = "https://raw.githubusercontent.com/initia-labs/initia-registry/refs/heads/main/%s/chain.json"
 	CelestiaRegistryEndpoint string = "https://raw.githubusercontent.com/cosmos/chain-registry/refs/heads/master/%s/chain.json"
 	OPInitBotsSpecEndpoint   string = "https://raw.githubusercontent.com/initia-labs/opinit-bots/refs/heads/main/spec_version.json"
+
+	InitiaTestnetRegistryAPI string = "https://registry.testnet.initia.xyz/chains.json"
+	InitiaMainnetRegistryAPI string = "https://registry.initia.xyz/chains.json"
+	InitiaL1PrettyName       string = "Initia"
 )
 
 var (
@@ -27,6 +33,10 @@ var (
 		CelestiaMainnet: "celestia",
 		InitiaL1Testnet: "testnets/initia",
 		InitiaL1Mainnet: "mainnets/initia",
+	}
+	ChainTypeToInitiaRegistryAPI = map[ChainType]string{
+		InitiaL1Testnet: InitiaTestnetRegistryAPI,
+		InitiaL1Mainnet: InitiaMainnetRegistryAPI,
 	}
 )
 

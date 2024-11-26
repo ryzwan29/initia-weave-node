@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sort"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 
@@ -344,19 +346,18 @@ type SelectingL2Network struct {
 }
 
 func NewSelectingL2Network(ctx context.Context) *SelectingL2Network {
-	// TODO: fix network
-	contents := registry.MustGetAllL2Contents(registry.InitiaL1Testnet)
-	names := make([]string, 0)
-	for _, content := range contents {
-		if content.Name != "initia" {
-			names = append(names, content.Name)
-		}
-	}
+	// TODO: dynamic network
+	networks := registry.MustGetAllL2AvailableNetwork(registry.InitiaL1Testnet)
 
-	//Mainnet = NetworkSelectOption(fmt.Sprintf("Mainnet (%s)", mainnetRegistry.GetChainId()))
+	var options []string
+	for _, network := range networks {
+		options = append(options, fmt.Sprintf("%s (%s)", network.PrettyName, network.ChainId))
+	}
+	sort.Slice(options, func(i, j int) bool { return strings.ToLower(options[i]) < strings.ToLower(options[j]) })
+
 	return &SelectingL2Network{
 		Selector: ui.Selector[string]{
-			Options: names,
+			Options: options,
 		},
 		BaseModel: weavecontext.BaseModel{Ctx: ctx},
 		question:  "Please specify the L2 network",

@@ -1,7 +1,6 @@
 package registry
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/url"
 	"strings"
@@ -12,11 +11,9 @@ import (
 // LoadedChainRegistry contains a map of chain id to the chain.json
 var LoadedChainRegistry = make(map[ChainType]*ChainRegistry)
 
-// LoadedL2Registry contains a map of l2 network path to the chain.json
-var LoadedL2Registry = make(map[string]*ChainRegistry)
-
 type ChainRegistry struct {
 	ChainId      string   `json:"chain_id"`
+	PrettyName   string   `json:"pretty_name"`
 	Bech32Prefix string   `json:"bech32_prefix"`
 	Fees         Fees     `json:"fees"`
 	Codebase     Codebase `json:"codebase"`
@@ -63,11 +60,6 @@ type Peer struct {
 	Id       string `json:"id"`
 	Address  string `json:"address"`
 	Provider string `json:"provider,omitempty"`
-}
-
-type L2GitHubContent struct {
-	Name string `json:"name"`
-	Path string `json:"path"`
 }
 
 func (cr *ChainRegistry) GetChainId() string {
@@ -239,66 +231,99 @@ func MustGetChainRegistry(chainType ChainType) *ChainRegistry {
 	return chainRegistry
 }
 
-func loadL2Registry(networkPath string) error {
+type ChainRegistryWithChainType struct {
+	ChainRegistry
+	ChainType ChainType
+}
+
+// LoadedL2Registry contains a map of l2 chain id to the chain.json with [testnet|mainnet] specified
+var LoadedL2Registry = make(map[string]*ChainRegistryWithChainType)
+
+func loadL2RegistryForType(chainType ChainType) error {
 	httpClient := client.NewHTTPClient()
-	endpoint := fmt.Sprintf(InitiaRegistryEndpoint, networkPath)
-	LoadedL2Registry[networkPath] = &ChainRegistry{}
-	if _, err := httpClient.Get(endpoint, "", nil, LoadedL2Registry[networkPath]); err != nil {
-		return err
+
+	var chains []*ChainRegistry
+	apiURL := ChainTypeToInitiaRegistryAPI[chainType]
+	if _, err := httpClient.Get(apiURL, "", nil, &chains); err != nil {
+		return fmt.Errorf("failed to fetch registry from %s: %w", apiURL, err)
 	}
 
+	for _, chain := range chains {
+		if chain.PrettyName == InitiaL1PrettyName {
+			continue
+		}
+		LoadedL2Registry[chain.GetChainId()] = &ChainRegistryWithChainType{
+			ChainRegistry: *chain,
+			ChainType:     chainType,
+		}
+	}
 	return nil
 }
 
-func GetL2Registry(networkPath string) (*ChainRegistry, error) {
-	l2Registry, ok := LoadedL2Registry[networkPath]
+func GetL2Registry(chainType ChainType, chainId string) (*ChainRegistry, error) {
+	if registry, ok := LoadedL2Registry[chainId]; ok {
+		return &registry.ChainRegistry, nil
+	}
+
+	err := loadL2RegistryForType(chainType)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load L2 registry: %w", err)
+	}
+
+	registry, ok := LoadedL2Registry[chainId]
 	if !ok {
-		if err := loadL2Registry(networkPath); err != nil {
-			return nil, fmt.Errorf("failed to load l2 registry for path %s: %v", networkPath, err)
-		}
-		return LoadedL2Registry[networkPath], nil
+		return nil, fmt.Errorf("chain id %s not found in remote registry", chainId)
 	}
 
-	return l2Registry, nil
+	return &registry.ChainRegistry, nil
 }
 
-func MustGetL2Registry(networkPath string) *ChainRegistry {
-	l2Registry, err := GetL2Registry(networkPath)
+func MustGetL2Registry(chainType ChainType, chainId string) *ChainRegistry {
+	registry, err := GetL2Registry(chainType, chainId)
 	if err != nil {
 		panic(err)
 	}
 
-	return l2Registry
+	return registry
 }
 
-func GetAllL2Names(chainType ChainType) ([]L2GitHubContent, error) {
-	if chainType == InitiaL1Testnet {
-		client := client.NewHTTPClient()
+type L2AvailableNetwork struct {
+	PrettyName string
+	ChainId    string
+}
 
-		resp, err := client.Get("https://api.github.com", "/repos/initia-labs/initia-registry/contents/testnets", nil, nil)
-		if err != nil {
-			return []L2GitHubContent{}, fmt.Errorf("failed to fetch l2 registry: %v", err)
+func GetAllL2AvailableNetwork(chainType ChainType) ([]L2AvailableNetwork, error) {
+	if len(LoadedL2Registry) == 0 {
+		if err := loadL2RegistryForType(chainType); err != nil {
+			return nil, fmt.Errorf("failed to load L2 registry: %v", err)
 		}
-
-		var l2 []L2GitHubContent
-		// Decode the JSON
-		if err := json.Unmarshal(resp, &l2); err != nil {
-			return []L2GitHubContent{}, err
-		}
-
-		return l2, nil
 	}
 
-	return []L2GitHubContent{}, fmt.Errorf("failed to matched chain type")
+	var networks []L2AvailableNetwork
+
+	for _, registry := range LoadedL2Registry {
+		if registry.ChainType == chainType {
+			networks = append(networks, L2AvailableNetwork{
+				PrettyName: registry.PrettyName,
+				ChainId:    registry.ChainId,
+			})
+		}
+	}
+
+	if len(networks) == 0 {
+		return nil, fmt.Errorf("no chains found for chain type %s", chainType)
+	}
+
+	return networks, nil
 }
 
-func MustGetAllL2Contents(chainType ChainType) []L2GitHubContent {
-	contents, err := GetAllL2Names(chainType)
+func MustGetAllL2AvailableNetwork(chainType ChainType) []L2AvailableNetwork {
+	networks, err := GetAllL2AvailableNetwork(chainType)
 	if err != nil {
 		panic(err)
 	}
 
-	return contents
+	return networks
 }
 
 var OPInitBotsSpecVersion map[string]int
