@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 
@@ -37,6 +39,10 @@ func relayerInitCommand() *cobra.Command {
 		Short: "Initialize and configure your Hermes relayer for IBC",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := weavecontext.NewAppContext(relayer.NewRelayerState())
+			// TODO: flag this
+			homeDir, _ := os.UserHomeDir()
+			minitiaHome := homeDir + "/.minitia"
+			ctx = weavecontext.SetMinitiaHome(ctx, minitiaHome)
 
 			if config.IsFirstTimeSetup() {
 				checkerCtx := weavecontext.NewAppContext(models.NewExistingCheckerState())
