@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/initia-labs/weave/client"
+	"github.com/initia-labs/weave/types"
 )
 
 // LoadedChainRegistry contains a map of chain id to the chain.json
@@ -154,6 +155,28 @@ func (cr *ChainRegistry) MustGetActiveLcd() string {
 	}
 
 	return lcd
+}
+
+func (cr *ChainRegistry) MustGetOpinitBridgeInfo(id string) types.Bridge {
+	address := cr.MustGetActiveLcd()
+	httpClient := client.NewHTTPClient()
+
+	var bridgeInfo types.Bridge
+	if _, err := httpClient.Get(address, fmt.Sprintf("/opinit/ophost/v1/bridges/%s", id), nil, &bridgeInfo); err != nil {
+		panic(err)
+	}
+	return bridgeInfo
+}
+
+func (cr *ChainRegistry) MustGetCounterPartyIBCChannel(port, channel string) types.Channel {
+	address := cr.MustGetActiveLcd()
+	httpClient := client.NewHTTPClient()
+
+	var response types.MinimalIBCChannelResponse
+	if _, err := httpClient.Get(address, fmt.Sprintf("/ibc/core/channel/v1/channels/%s/ports/%s", channel, port), nil, &response); err != nil {
+		panic(err)
+	}
+	return response.Channel.Counterparty
 }
 
 func (cr *ChainRegistry) GetActiveGrpc() (string, error) {

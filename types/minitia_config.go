@@ -69,3 +69,10 @@ type SystemKeys struct {
 	BatchSubmitter  *SystemAccount `json:"batch_submitter,omitempty"`
 	Challenger      *SystemAccount `json:"challenger,omitempty"`
 }
+
+// Define the structure for the JSON data
+type Artifacts struct {
+	BridgeID                string `json:"BRIDGE_ID"`
+	ExecutorL1MonitorHeight string `json:"EXECUTOR_L1_MONITOR_HEIGHT"`
+	ExecutorL2MonitorHeight string `json:"EXECUTOR_L2_MONITOR_HEIGHT"`
+}

@@ -44,6 +44,11 @@ func GetMinitiaArtifactsConfigJson(ctx context.Context) string {
 	return filepath.Join(minitiaHome, common.MinitiaArtifactsConfigJson)
 }
 
+func GetMinitiaArtifactsJson(ctx context.Context) string {
+	minitiaHome := GetMinitiaHome(ctx)
+	return filepath.Join(minitiaHome, common.MinitiaArtifactsJson)
+}
+
 func SetOPInitHome(ctx context.Context, opInitHome string) context.Context {
 	return context.WithValue(ctx, OPInitHomeKey, opInitHome)
 }

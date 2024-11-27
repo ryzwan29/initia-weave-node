@@ -76,7 +76,7 @@ func (m *SubModel) UpdateWithContext(ctx context.Context, parent weavecontext.Ba
 		res := strings.TrimSpace(input.Text)
 		state.Config[m.field.Name] = res
 		s := strings.Split(m.field.Name, ".")
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.field.Question, []string{s[len(s)-1], "L1", "L2"}, res))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.field.Question, []string{s[len(s)-1], "L1", "L2", "gas_price"}, res))
 		ctx = weavecontext.SetCurrentState(ctx, state)
 		return ctx, nil, nil // Done with this field, signal completion
 	}
@@ -87,7 +87,7 @@ func (m *SubModel) UpdateWithContext(ctx context.Context, parent weavecontext.Ba
 // View is a common View method for all field models
 func (m *SubModel) View() string {
 	s := strings.Split(m.field.Name, ".")
-	return styles.RenderPrompt(m.field.Question, []string{s[len(s)-1], "L1", "L2"}, styles.Question) + m.TextInput.View()
+	return styles.RenderPrompt(m.field.Question, []string{s[len(s)-1], "L1", "L2", "gas_price"}, styles.Question) + m.TextInput.View()
 }
 
 func GetField(fields []*Field, name string) *Field {

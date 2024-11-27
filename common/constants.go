@@ -15,6 +15,7 @@ const (
 
 	MinitiaDirectory           = ".minitia"
 	MinitiaArtifactsConfigJson = "/artifacts/config.json"
+	MinitiaArtifactsJson       = "/artifacts/artifacts.json"
 
 	OPinitDirectory = ".opinit"
 	OPinitAppName   = "opinitd"
