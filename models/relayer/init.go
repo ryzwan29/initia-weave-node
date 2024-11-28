@@ -12,6 +12,7 @@ import (
 
 	"github.com/initia-labs/weave/common"
 	weavecontext "github.com/initia-labs/weave/context"
+	"github.com/initia-labs/weave/cosmosutils"
 	"github.com/initia-labs/weave/io"
 	"github.com/initia-labs/weave/registry"
 	"github.com/initia-labs/weave/styles"
@@ -25,7 +26,7 @@ var defaultL2ConfigLocal = []*Field{
 	{Name: "l2.websocket", Type: StringField, Question: "Please specify the L2 websocket", Placeholder: "Add RPC address ex. ws://localhost:26657/websocket", DefaultValue: "ws://localhost:26657/websocket", ValidateFn: common.ValidateURL},
 }
 
-var defaultL2ConfigManaul = []*Field{
+var defaultL2ConfigManual = []*Field{
 	{Name: "l2.chain_id", Type: StringField, Question: "Please specify the L2 chain_id", Placeholder: "Add alphanumeric", ValidateFn: common.ValidateEmptyString},
 	{Name: "l2.rpc_address", Type: StringField, Question: "Please specify the L2 rpc_address", Placeholder: "Add RPC address ex. http://localhost:26657", ValidateFn: common.ValidateURL},
 	{Name: "l2.grpc_address", Type: StringField, Question: "Please specify the L2 grpc_address", Placeholder: "Add RPC address ex. http://localhost:9090", ValidateFn: common.ValidateURL},
@@ -117,7 +118,8 @@ func (m *RollupSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else {
 				panic("not support L1")
 			}
-			return NewFieldInputModel(weavecontext.SetCurrentState(m.Ctx, state), defaultL2ConfigLocal, NewSelectSettingUpIBCChannelsMethod), nil
+			return NewL1KeySelect(weavecontext.SetCurrentState(m.Ctx, state)), nil
+			//return NewFieldInputModel(weavecontext.SetCurrentState(m.Ctx, state), defaultL2ConfigLocal, NewSelectSettingUpIBCChannelsMethod), nil
 		case Manual:
 			return NewSelectingL1Network(weavecontext.SetCurrentState(m.Ctx, state)), nil
 		}
@@ -160,13 +162,21 @@ func NewL1KeySelect(ctx context.Context) *L1KeySelect {
 	if !ok {
 		panic("cannot get l1 chain id")
 	}
+
+	options := []L1KeySelectOption{
+		L1GenerateKey,
+		L1ImportKey,
+	}
+	// TODO: fix appname
+	if l1RelayerAddress, found := cosmosutils.GetHermesRelayerAddress("hermes", l1ChainId); found {
+		state := weavecontext.GetCurrentState[RelayerState](ctx)
+		state.l1RelayerAddress = l1RelayerAddress
+		options = append([]L1KeySelectOption{L1ExistingKey}, options...)
+	}
+
 	return &L1KeySelect{
 		Selector: ui.Selector[L1KeySelectOption]{
-			Options: []L1KeySelectOption{
-				L1ExistingKey,
-				L1GenerateKey,
-				L1ImportKey,
-			},
+			Options:    options,
 			CannotBack: true,
 		},
 		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
@@ -193,7 +203,7 @@ func (m *L1KeySelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		state := weavecontext.PushPageAndGetState[RelayerState](m)
 
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"relayer account key", fmt.Sprintf("L1 (%s)", m.chainId)}, string(*selected)))
-		// TODO: Implement this
+		state.l1KeyMethod = string(*selected)
 		return NewL2KeySelect(weavecontext.SetCurrentState(m.Ctx, state)), nil
 	}
 
@@ -237,14 +247,22 @@ func NewL2KeySelect(ctx context.Context) *L2KeySelect {
 	if !ok {
 		panic("cannot get l2 chain id")
 	}
+
+	options := []L2KeySelectOption{
+		L2SameKey,
+		L2GenerateKey,
+		L2ImportKey,
+	}
+	// TODO: fix appname
+	if l2RelayerAddress, found := cosmosutils.GetHermesRelayerAddress("hermes", l2ChainId); found {
+		state := weavecontext.GetCurrentState[RelayerState](ctx)
+		state.l2RelayerAddress = l2RelayerAddress
+		options = append([]L2KeySelectOption{L2ExistingKey}, options...)
+	}
+
 	return &L2KeySelect{
 		Selector: ui.Selector[L2KeySelectOption]{
-			Options: []L2KeySelectOption{
-				L2ExistingKey,
-				L2SameKey,
-				L2GenerateKey,
-				L2ImportKey,
-			},
+			Options: options,
 		},
 		BaseModel: weavecontext.BaseModel{Ctx: ctx},
 		question:  fmt.Sprintf("Please select an option for setting up the relayer account key on L2 (%s)", l2ChainId),
@@ -270,7 +288,7 @@ func (m *L2KeySelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		state := weavecontext.PushPageAndGetState[RelayerState](m)
 
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"relayer account key", fmt.Sprintf("L2 (%s)", m.chainId)}, string(*selected)))
-		// TODO: Implement this
+		state.l2KeyMethod = string(*selected)
 		return m, tea.Quit
 	}
 
@@ -356,7 +374,7 @@ func (m *SelectingL1Network) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			state.Config["l1.gas_price.denom"] = DefaultGasPriceDenom
 			state.Config["l1.gas_price.price"] = testnetRegistry.MustGetMinGasPriceByDenom(DefaultGasPriceDenom)
 
-			return NewFieldInputModel(m.Ctx, defaultL2ConfigManaul, NewSelectSettingUpIBCChannelsMethod), nil
+			return NewFieldInputModel(m.Ctx, defaultL2ConfigManual, NewSelectSettingUpIBCChannelsMethod), nil
 		}
 	}
 

@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -279,4 +280,31 @@ func SetSymlink(targetPath string) error {
 	}
 
 	return nil
+}
+
+func GetHermesRelayerAddress(appName, chainId string) (string, bool) {
+	cmd := exec.Command(appName, "keys", "list", "--chain", chainId)
+
+	var out bytes.Buffer
+	cmd.Stdout = &out
+
+	err := cmd.Run()
+	if err != nil {
+		panic(fmt.Errorf("error executing command: %v", err))
+	}
+
+	output := out.String()
+	lines := strings.Split(output, "\n")
+	if len(lines) < 2 {
+		return "", false
+	}
+
+	fourthLine := lines[1]
+	re := regexp.MustCompile(`\(([^)]+)\)`)
+	match := re.FindStringSubmatch(fourthLine)
+	if len(match) > 1 {
+		return match[1], true
+	} else {
+		return "", false
+	}
 }

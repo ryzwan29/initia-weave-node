@@ -1,11 +1,19 @@
 package relayer
 
-import "github.com/initia-labs/weave/types"
+import (
+	"github.com/initia-labs/weave/types"
+)
 
 type RelayerState struct {
 	weave       types.WeaveState
 	Config      map[string]string
 	IBCChannels []types.IBCChannelPair
+
+	l1KeyMethod string
+	l2KeyMethod string
+
+	l1RelayerAddress string
+	l2RelayerAddress string
 }
 
 func NewRelayerState() RelayerState {
