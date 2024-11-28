@@ -112,7 +112,7 @@ func (m *RollupSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				state.Config["l2.chain_id"] = minitiaConfig.L2Config.ChainID
 				state.Config["l2.gas_price.denom"] = DefaultGasPriceDenom
 				state.Config["l2.gas_price.price"] = DefaultGasPriceAmount
-				state.weave.PushPreviousResponse(styles.RenderPrompt("L1 network is auto-detected as initiation-2.\n", []string{"initiation-2"}, styles.Information))
+				state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, "L1 network is auto-detected", []string{}, "initiation-2"))
 
 			} else {
 				panic("not support L1")
@@ -141,27 +141,37 @@ type L1KeySelect struct {
 	ui.Selector[L1KeySelectOption]
 	weavecontext.BaseModel
 	question string
+	chainId  string
 }
 
 type L1KeySelectOption string
 
 const (
 	L1GenerateKey L1KeySelectOption = "Generate new system key"
-	L1ImportKey   L1KeySelectOption = "Import existing key (you will be prompted to enter your mnemonic)"
+)
+
+var (
+	L1ExistingKey = L1KeySelectOption("Use an existing key " + styles.Text("(previously setup in Weave)", styles.Gray))
+	L1ImportKey   = L1KeySelectOption("Import existing key " + styles.Text("(you will be prompted to enter your mnemonic)", styles.Gray))
 )
 
 func NewL1KeySelect(ctx context.Context) *L1KeySelect {
-	state := weavecontext.GetCurrentState[RelayerState](ctx)
+	l1ChainId, ok := GetL1ChainId(ctx)
+	if !ok {
+		panic("cannot get l1 chain id")
+	}
 	return &L1KeySelect{
 		Selector: ui.Selector[L1KeySelectOption]{
 			Options: []L1KeySelectOption{
+				L1ExistingKey,
 				L1GenerateKey,
 				L1ImportKey,
 			},
 			CannotBack: true,
 		},
 		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
-		question:  fmt.Sprintf("Please select an option for setting up the relayer account key on L1 (%s)", state.Config["l1.chain_id"]),
+		question:  fmt.Sprintf("Please select an option for setting up the relayer account key on L1 (%s)", l1ChainId),
+		chainId:   l1ChainId,
 	}
 }
 
@@ -182,7 +192,7 @@ func (m *L1KeySelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if selected != nil {
 		state := weavecontext.PushPageAndGetState[RelayerState](m)
 
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"relayer account key", "L1 (initiation-2)"}, string(*selected)))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"relayer account key", fmt.Sprintf("L1 (%s)", m.chainId)}, string(*selected)))
 		// TODO: Implement this
 		return NewL2KeySelect(weavecontext.SetCurrentState(m.Ctx, state)), nil
 	}
@@ -198,7 +208,7 @@ func (m *L1KeySelect) View() string {
 		styles.White,
 	) + " are required to setup and run the relayer properly." + "\n" + styles.RenderPrompt(
 		m.GetQuestion(),
-		[]string{"relayer account key", "L1 (initiation-2)"},
+		[]string{"relayer account key", fmt.Sprintf("L1 (%s)", m.chainId)},
 		styles.Question,
 	) + m.Selector.View()
 }
@@ -207,25 +217,38 @@ type L2KeySelect struct {
 	ui.Selector[L2KeySelectOption]
 	weavecontext.BaseModel
 	question string
+	chainId  string
 }
 
 type L2KeySelectOption string
 
 const (
+	L2SameKey     L2KeySelectOption = "Use the same key with L1"
 	L2GenerateKey L2KeySelectOption = "Generate new system key"
-	L2ImportKey   L2KeySelectOption = "Import existing key (you will be prompted to enter your mnemonic)"
+)
+
+var (
+	L2ExistingKey = L2KeySelectOption("Use an existing key " + styles.Text("(previously setup in Weave)", styles.Gray))
+	L2ImportKey   = L2KeySelectOption("Import existing key " + styles.Text("(you will be prompted to enter your mnemonic)", styles.Gray))
 )
 
 func NewL2KeySelect(ctx context.Context) *L2KeySelect {
+	l2ChainId, ok := GetL2ChainId(ctx)
+	if !ok {
+		panic("cannot get l2 chain id")
+	}
 	return &L2KeySelect{
 		Selector: ui.Selector[L2KeySelectOption]{
 			Options: []L2KeySelectOption{
+				L2ExistingKey,
+				L2SameKey,
 				L2GenerateKey,
 				L2ImportKey,
 			},
 		},
 		BaseModel: weavecontext.BaseModel{Ctx: ctx},
-		question:  "Please select an option for setting up the relayer account key on L2 (landlord-2)",
+		question:  fmt.Sprintf("Please select an option for setting up the relayer account key on L2 (%s)", l2ChainId),
+		chainId:   l2ChainId,
 	}
 }
 
@@ -246,7 +269,7 @@ func (m *L2KeySelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if selected != nil {
 		state := weavecontext.PushPageAndGetState[RelayerState](m)
 
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"relayer account key", "L2 (landlord-2)"}, string(*selected)))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"relayer account key", fmt.Sprintf("L2 (%s)", m.chainId)}, string(*selected)))
 		// TODO: Implement this
 		return m, tea.Quit
 	}
@@ -259,7 +282,7 @@ func (m *L2KeySelect) View() string {
 	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
 	return state.weave.Render() + styles.RenderPrompt(
 		m.GetQuestion(),
-		[]string{"relayer account key", "L2 (landlord-2)"},
+		[]string{"relayer account key", fmt.Sprintf("L2 (%s)", m.chainId)},
 		styles.Question,
 	) + m.Selector.View()
 }
