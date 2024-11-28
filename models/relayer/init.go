@@ -559,6 +559,9 @@ func (m *SelectSettingUpIBCChannelsMethod) Update(msg tea.Msg) (tea.Model, tea.C
 					L2: counterparty,
 				})
 			}
+			return NewIBCChannelsCheckbox(weavecontext.SetCurrentState(m.Ctx, state), channelPairs), nil
+		case FillFromLCD:
+			return NewFillL2LCD(weavecontext.SetCurrentState(m.Ctx, state)), nil
 		case Manually:
 			return NewFillPortOnL1(weavecontext.SetCurrentState(m.Ctx, state), 0), nil
 		}
@@ -851,12 +854,106 @@ func (m *AddMoreIBCChannels) View() string {
 	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{""}, styles.Question) + m.Selector.View()
 }
 
-type IBCChannelsCCheckbox struct {
-	ui.CheckBox[types.IBCChannelPair]
+type IBCChannelsCheckbox struct {
+	ui.CheckBox[string]
 	weavecontext.BaseModel
 	question string
+	pairs    []types.IBCChannelPair
 }
 
-func NewIBCChannelsCCheckbox(ctx context.Context) *IBCChannelsCCheckbox {
-	return &IBCChannelsCCheckbox{}
+func NewIBCChannelsCheckbox(ctx context.Context, pairs []types.IBCChannelPair) *IBCChannelsCheckbox {
+	prettyPairs := []string{"Open all IBC channels"}
+	for _, pair := range pairs {
+		prettyPairs = append(prettyPairs, fmt.Sprintf("(L1) %s : %s ◀ ▶︎ (L2) %s : %s", pair.L1.PortID, pair.L1.ChannelID, pair.L2.PortID, pair.L2.ChannelID))
+	}
+	cb := ui.NewCheckBox(prettyPairs)
+	cb.EnableSelectAll()
+	pairs = append([]types.IBCChannelPair{pairs[0]}, pairs...)
+	return &IBCChannelsCheckbox{
+		CheckBox:  *cb,
+		BaseModel: weavecontext.BaseModel{Ctx: ctx},
+		question:  "Please select the IBC channels you would like to open",
+		pairs:     pairs,
+	}
+}
+
+func (m *IBCChannelsCheckbox) GetQuestion() string {
+	return m.question
+}
+
+func (m *IBCChannelsCheckbox) Init() tea.Cmd {
+	return nil
+}
+
+func (m *IBCChannelsCheckbox) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := weavecontext.HandleCommonCommands[RelayerState](m, msg); handled {
+		return model, cmd
+	}
+	cb, cmd, done := m.Select(msg)
+	_ = cb
+	if done {
+		state := weavecontext.PushPageAndGetState[RelayerState](m)
+		ibcChannels := make([]types.IBCChannelPair, 0)
+		for idx := 1; idx < len(m.pairs); idx++ {
+			if m.Selected[idx] {
+				ibcChannels = append(ibcChannels, m.pairs[idx])
+			}
+			state.IBCChannels = ibcChannels
+		}
+		// TODO: setup
+	}
+	return m, cmd
+}
+
+func (m *IBCChannelsCheckbox) View() string {
+	state := weavecontext.GetCurrentState[RelayerState](m.Ctx)
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{}, styles.Question) + "\n" + m.CheckBox.View()
+}
+
+type FillL2LCD struct {
+	weavecontext.BaseModel
+	ui.TextInput
+	question string
+	extra    string
+}
+
+func NewFillL2LCD(ctx context.Context) *FillL2LCD {
+	chainId, _ := GetL2ChainId(ctx)
+	extra := fmt.Sprintf("(%s)", chainId)
+	return &FillL2LCD{
+		TextInput: ui.NewTextInput(false),
+		BaseModel: weavecontext.BaseModel{Ctx: ctx},
+		question:  fmt.Sprintf("Please specify the L2 LCD_address %s", extra),
+		extra:     extra,
+	}
+}
+
+func (m *FillL2LCD) GetQuestion() string {
+	return m.question
+}
+
+func (m *FillL2LCD) Init() tea.Cmd {
+	return nil
+}
+
+func (m *FillL2LCD) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := weavecontext.HandleCommonCommands[RelayerState](m, msg); handled {
+		return model, cmd
+	}
+
+	input, cmd, done := m.TextInput.Update(msg)
+	if done {
+		state := weavecontext.PushPageAndGetState[RelayerState](m)
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"L2", "LCD_address", m.extra}, m.TextInput.Text))
+
+		// TODO: if cannot get channels should show error
+		// return NewFillChannelL1(weavecontext.SetCurrentState(m.Ctx, state), m.TextInput.Text, m.idx), nil
+	}
+	m.TextInput = input
+	return m, cmd
+}
+
+func (m *FillL2LCD) View() string {
+	state := weavecontext.GetCurrentState[RelayerState](m.Ctx)
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"L2", "LCD_address", m.extra}, styles.Question) + m.TextInput.View()
 }

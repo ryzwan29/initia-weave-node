@@ -10,11 +10,12 @@ import (
 )
 
 type CheckBox[T any] struct {
-	Options       []T
-	Cursor        int
-	Selected      map[int]bool // Tracks selected indices
-	ToggleTooltip bool
-	Tooltips      *[]Tooltip
+	Options         []T
+	Cursor          int
+	Selected        map[int]bool // Tracks selected indices
+	ToggleTooltip   bool
+	Tooltips        *[]Tooltip
+	enableSelectAll bool
 }
 
 func NewCheckBox[T any](options []T) *CheckBox[T] {
@@ -27,6 +28,10 @@ func NewCheckBox[T any](options []T) *CheckBox[T] {
 		Selected: selected,
 		Cursor:   0,
 	}
+}
+
+func (s *CheckBox[T]) EnableSelectAll() {
+	s.enableSelectAll = true
 }
 
 func (s *CheckBox[T]) WithTooltip(tooltips *[]Tooltip) {
@@ -44,6 +49,23 @@ func (s *CheckBox[T]) Select(msg tea.Msg) (*CheckBox[T], tea.Cmd, bool) {
 			s.Cursor = (s.Cursor - 1 + len(s.Options)) % len(s.Options)
 			return s, nil, false
 		case " ":
+			if s.enableSelectAll {
+				if s.Cursor == 0 {
+					current := s.Selected[s.Cursor]
+					for idx := range s.Selected {
+						s.Selected[idx] = !current
+					}
+					return s, nil, false
+				} else {
+					s.Selected[s.Cursor] = !s.Selected[s.Cursor]
+					allSelected := true
+					for idx := 1; idx < len(s.Selected); idx++ {
+						allSelected = allSelected && s.Selected[idx]
+					}
+					s.Selected[0] = allSelected
+					return s, nil, false
+				}
+			}
 			s.Selected[s.Cursor] = !s.Selected[s.Cursor]
 			return s, nil, false
 		case "q", "ctrl+c":
