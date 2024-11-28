@@ -705,6 +705,8 @@ func (m *FillPortOnL1) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if done {
 		state := weavecontext.PushPageAndGetState[RelayerState](m)
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"L1", m.extra}, m.TextInput.Text))
+		state.IBCChannels = append(state.IBCChannels, types.IBCChannelPair{})
+		state.IBCChannels[m.idx].L1.PortID = m.TextInput.Text
 		return NewFillChannelL1(weavecontext.SetCurrentState(m.Ctx, state), m.TextInput.Text, m.idx), nil
 	}
 	m.TextInput = input
@@ -759,7 +761,7 @@ func (m *FillChannelL1) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if done {
 		state := weavecontext.PushPageAndGetState[RelayerState](m)
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"L1", m.port, m.extra}, m.TextInput.Text))
-
+		state.IBCChannels[m.idx].L1.ChannelID = m.TextInput.Text
 		return NewFillPortOnL2(weavecontext.SetCurrentState(m.Ctx, state), m.idx), nil
 	}
 	m.TextInput = input
@@ -812,7 +814,7 @@ func (m *FillPortOnL2) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if done {
 		state := weavecontext.PushPageAndGetState[RelayerState](m)
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"L2", m.extra}, m.TextInput.Text))
-
+		state.IBCChannels[m.idx].L2.PortID = m.TextInput.Text
 		return NewFillChannelL2(weavecontext.SetCurrentState(m.Ctx, state), m.TextInput.Text, m.idx), nil
 	}
 	m.TextInput = input
@@ -867,6 +869,7 @@ func (m *FillChannelL2) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if done {
 		state := weavecontext.PushPageAndGetState[RelayerState](m)
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"L2", m.port, m.extra}, m.TextInput.Text))
+		state.IBCChannels[m.idx].L2.ChannelID = m.TextInput.Text
 		return NewAddMoreIBCChannels(weavecontext.SetCurrentState(m.Ctx, state), m.idx), nil
 	}
 	m.TextInput = input
