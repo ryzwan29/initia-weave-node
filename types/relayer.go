@@ -49,6 +49,16 @@ type MinimalIBCChannelResponse struct {
 	} `json:"channel"`
 }
 
+type ChannelInfo struct {
+	PortID       string  `json:"port_id"`
+	ChannelID    string  `json:"channel_id"`
+	Counterparty Channel `json:"counterparty"`
+}
+
+type ChannelsResponse struct {
+	Channels []ChannelInfo `json:"channels"`
+}
+
 func MustDecodeBridgeMetadata(base64Str string) Metadata {
 	// Decode the Base64 string
 	jsonData, err := base64.StdEncoding.DecodeString(base64Str)

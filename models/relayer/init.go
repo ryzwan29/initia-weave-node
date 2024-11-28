@@ -5,11 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"regexp"
 	"sort"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/initia-labs/weave/client"
 	"github.com/initia-labs/weave/common"
 	weavecontext "github.com/initia-labs/weave/context"
 	"github.com/initia-labs/weave/cosmosutils"
@@ -396,7 +398,7 @@ func NewSelectingL2Network(ctx context.Context) *SelectingL2Network {
 	// TODO: dynamic network
 	networks := registry.MustGetAllL2AvailableNetwork(registry.InitiaL1Testnet)
 
-	var options []string
+	options := make([]string, 0)
 	for _, network := range networks {
 		options = append(options, fmt.Sprintf("%s (%s)", network.PrettyName, network.ChainId))
 	}
@@ -430,7 +432,37 @@ func (m *SelectingL2Network) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		state := weavecontext.PushPageAndGetState[RelayerState](m)
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"L2 network"}, string(*selected)))
 		m.Ctx = weavecontext.SetCurrentState(m.Ctx, state)
-		// TODO: implement
+
+		re := regexp.MustCompile(`\(([^)]+)\)`)
+		chainId := re.FindStringSubmatch(m.Options[m.Cursor])[1]
+		l2Registry, err := registry.GetL2Registry(registry.InitiaL1Testnet, chainId)
+		if err != nil {
+			panic(err)
+		}
+		lcdAddress, _ := l2Registry.GetActiveLcd()
+		if err != nil {
+			panic(err)
+		}
+		httpClient := client.NewHTTPClient()
+		var res types.ChannelsResponse
+		_, err = httpClient.Get(lcdAddress, "/ibc/core/channel/v1/channels", nil, &res)
+		if err != nil {
+			// TODO: if cannot get channels should show error
+			panic(err)
+		}
+
+		pairs := make([]types.IBCChannelPair, 0)
+		for _, channel := range res.Channels {
+			pairs = append(pairs, types.IBCChannelPair{
+				L1: channel.Counterparty,
+				L2: types.Channel{
+					PortID:    channel.PortID,
+					ChannelID: channel.ChannelID,
+				},
+			})
+		}
+
+		return NewIBCChannelsCheckbox(weavecontext.SetCurrentState(m.Ctx, state), pairs), nil
 	}
 
 	return m, cmd
@@ -987,9 +1019,28 @@ func (m *FillL2LCD) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		state := weavecontext.PushPageAndGetState[RelayerState](m)
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"L2", "LCD_address", m.extra}, m.TextInput.Text))
 
-		// TODO: if cannot get channels should show error
-		// return NewFillChannelL1(weavecontext.SetCurrentState(m.Ctx, state), m.TextInput.Text, m.idx), nil
+		httpClient := client.NewHTTPClient()
+		var res types.ChannelsResponse
+		_, err := httpClient.Get(input.Text, "/ibc/core/channel/v1/channels", nil, &res)
+		if err != nil {
+			// TODO: if cannot get channels should show error
+			panic(err)
+		}
+
+		pairs := make([]types.IBCChannelPair, 0)
+		for _, channel := range res.Channels {
+			pairs = append(pairs, types.IBCChannelPair{
+				L1: channel.Counterparty,
+				L2: types.Channel{
+					PortID:    channel.PortID,
+					ChannelID: channel.ChannelID,
+				},
+			})
+		}
+
+		return NewIBCChannelsCheckbox(weavecontext.SetCurrentState(m.Ctx, state), pairs), nil
 	}
+
 	m.TextInput = input
 	return m, cmd
 }
