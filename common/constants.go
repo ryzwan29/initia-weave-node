@@ -19,4 +19,6 @@ const (
 
 	OPinitDirectory = ".opinit"
 	OPinitAppName   = "opinitd"
+
+	HermesTempMnemonicFilename = "weave.mnemonic"
 )

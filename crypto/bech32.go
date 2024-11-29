@@ -89,3 +89,18 @@ func parseHDPath(path string) []uint32 {
 	}
 	return keys
 }
+
+// GenerateMnemonic generates new fresh mnemonic
+func GenerateMnemonic() (string, error) {
+	entropy, err := bip39.NewEntropy(256)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate entropy: %w", err)
+	}
+
+	mnemonic, err := bip39.NewMnemonic(entropy)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate mnemonic: %w", err)
+	}
+
+	return mnemonic, nil
+}

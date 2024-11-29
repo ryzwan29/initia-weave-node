@@ -9,6 +9,10 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/initia-labs/weave/common"
+	"github.com/initia-labs/weave/crypto"
+	"github.com/initia-labs/weave/io"
 )
 
 type KeyInfo struct {
@@ -283,6 +287,7 @@ func SetSymlink(targetPath string) error {
 }
 
 func GetHermesRelayerAddress(appName, chainId string) (string, bool) {
+	// TODO: Use constants for appName instead of parameter
 	cmd := exec.Command(appName, "keys", "list", "--chain", chainId)
 
 	var out bytes.Buffer
@@ -307,4 +312,44 @@ func GetHermesRelayerAddress(appName, chainId string) (string, bool) {
 	} else {
 		return "", false
 	}
+}
+
+func GenerateAndAddNewHermesRelayerAddress(appName, chainId string) (*KeyInfo, error) {
+	mnemonic, err := crypto.GenerateMnemonic()
+	if err != nil {
+		return nil, err
+	}
+
+	userHome, err := os.UserHomeDir()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user home: %v", err)
+	}
+	tempMnemonicPath := filepath.Join(userHome, common.WeaveDataDirectory, common.HermesTempMnemonicFilename)
+	if err = io.WriteFile(tempMnemonicPath, mnemonic); err != nil {
+		return nil, fmt.Errorf("failed to write raw tx file: %v", err)
+	}
+	defer io.DeleteFile(tempMnemonicPath)
+
+	// TODO: Use constants for appName instead of parameter
+	cmd := exec.Command(appName, "keys", "add", "--chain", chainId, "--mnemonic-file", tempMnemonicPath)
+
+	var out bytes.Buffer
+	cmd.Stdout = &out
+
+	if err = cmd.Run(); err != nil {
+		return nil, fmt.Errorf("failed to run hermes keys add: %v", err)
+	}
+
+	output := out.String()
+	re := regexp.MustCompile(`\(([^)]+)\)`)
+	match := re.FindStringSubmatch(output)
+
+	if len(match) < 2 {
+		return nil, fmt.Errorf("failed to parse address from command output: %s", output)
+	}
+
+	return &KeyInfo{
+		Address:  match[1],
+		Mnemonic: mnemonic,
+	}, nil
 }
