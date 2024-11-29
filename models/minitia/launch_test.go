@@ -262,7 +262,7 @@ func TestVMTypeSelect_View(t *testing.T) {
 	model := NewVMTypeSelect(ctx)
 
 	view := model.View()
-	assert.Contains(t, view, "Select The virtual machine (VM) for your rollup", "Expected question prompt in the view")
+	assert.Contains(t, view, "Select the Virtual Machine (VM) for your rollup", "Expected question prompt in the view")
 	assert.Contains(t, view, "Move", "Expected Move option to be displayed")
 	assert.Contains(t, view, "Wasm", "Expected Wasm option to be displayed")
 	assert.Contains(t, view, "EVM", "Expected EVM option to be displayed")
