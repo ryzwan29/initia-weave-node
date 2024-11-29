@@ -148,7 +148,7 @@ grpc_addr = '{{.GRPCAddr}}'
 event_source = { mode = '{{.EventSource.Mode}}', url = '{{.EventSource.URL}}', batch_delay = '{{.EventSource.BatchDelay}}' }
 rpc_timeout = '10s'
 account_prefix = 'init'
-key_name = 'relayer'
+key_name = 'weave-relayer'
 store_prefix = 'ibc'
 default_gas = 100000
 max_gas = 10000000
@@ -174,7 +174,7 @@ grpc_addr = '{{.GRPCAddr2}}'
 event_source = { mode = '{{.EventSource2.Mode}}', url = '{{.EventSource2.URL}}', batch_delay = '{{.EventSource2.BatchDelay}}' }
 rpc_timeout = '10s'
 account_prefix = 'init'
-key_name = 'relayer'
+key_name = 'weave-relayer'
 store_prefix = 'ibc'
 default_gas = 100000
 max_gas = 10000000

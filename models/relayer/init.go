@@ -5,7 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strings"
 
@@ -15,7 +18,7 @@ import (
 	"github.com/initia-labs/weave/common"
 	weavecontext "github.com/initia-labs/weave/context"
 	"github.com/initia-labs/weave/cosmosutils"
-	"github.com/initia-labs/weave/io"
+	weaveio "github.com/initia-labs/weave/io"
 	"github.com/initia-labs/weave/registry"
 	"github.com/initia-labs/weave/styles"
 	"github.com/initia-labs/weave/types"
@@ -52,7 +55,7 @@ const (
 
 func NewRollupSelect(ctx context.Context) *RollupSelect {
 	options := make([]RollupSelectOption, 0)
-	if io.FileOrFolderExists(weavecontext.GetMinitiaArtifactsConfigJson(ctx)) {
+	if weaveio.FileOrFolderExists(weavecontext.GetMinitiaArtifactsConfigJson(ctx)) {
 		options = append(options, Whitelisted, Local, Manual)
 	} else {
 		options = append(options, Whitelisted, Manual)
@@ -120,8 +123,8 @@ func (m *RollupSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else {
 				panic("not support L1")
 			}
-			return NewL1KeySelect(weavecontext.SetCurrentState(m.Ctx, state)), nil
-			//return NewFieldInputModel(weavecontext.SetCurrentState(m.Ctx, state), defaultL2ConfigLocal, NewSelectSettingUpIBCChannelsMethod), nil
+
+			return NewFieldInputModel(weavecontext.SetCurrentState(m.Ctx, state), defaultL2ConfigLocal, NewSelectSettingUpIBCChannelsMethod), nil
 		case Manual:
 			return NewSelectingL1Network(weavecontext.SetCurrentState(m.Ctx, state)), nil
 		}
@@ -976,7 +979,8 @@ func (m *IBCChannelsCheckbox) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			state.IBCChannels = ibcChannels
 		}
-		// TODO: setup
+		model := NewSettingUpRelayer(weavecontext.SetCurrentState(m.Ctx, state))
+		return model, model.Init()
 	}
 	return m, cmd
 }
@@ -1051,4 +1055,141 @@ func (m *FillL2LCD) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *FillL2LCD) View() string {
 	state := weavecontext.GetCurrentState[RelayerState](m.Ctx)
 	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"L2", "LCD_address", m.extra}, styles.Question) + m.TextInput.View()
+}
+
+type SettingUpRelayer struct {
+	loading ui.Loading
+	weavecontext.BaseModel
+}
+
+func NewSettingUpRelayer(ctx context.Context) *SettingUpRelayer {
+	return &SettingUpRelayer{
+		loading:   ui.NewLoading("Setting up relayer...", WaitSettingUpRelayer(ctx)),
+		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
+	}
+}
+
+// Utility function for determining Hermes binary URL, panicking on errors
+func getHermesBinaryURL(version string) string {
+	baseURL := "https://github.com/informalsystems/hermes/releases/download"
+	arch := runtime.GOARCH
+	os := runtime.GOOS
+
+	var binaryType string
+	switch arch {
+	case "amd64":
+		arch = "x86_64"
+	case "arm64":
+		arch = "aarch64"
+	default:
+		panic(fmt.Sprintf("Unsupported architecture: %s", arch))
+	}
+
+	switch os {
+	case "darwin":
+		binaryType = "apple-darwin"
+	case "linux":
+		binaryType = "unknown-linux-gnu"
+	default:
+		panic(fmt.Sprintf("Unsupported operating system: %s", os))
+	}
+
+	fileName := fmt.Sprintf("hermes-%s-%s-%s.tar.gz", version, arch, binaryType)
+	return fmt.Sprintf("%s/%s/%s", baseURL, version, fileName)
+}
+
+func WaitSettingUpRelayer(ctx context.Context) tea.Cmd {
+	return func() tea.Msg {
+		state := weavecontext.GetCurrentState[RelayerState](ctx)
+
+		// Get Hermes binary URL based on OS and architecture
+		hermesURL := getHermesBinaryURL(HermesVersion)
+
+		// Get the user's home directory
+		userHome, err := os.UserHomeDir()
+		if err != nil {
+			panic(fmt.Sprintf("Failed to get user home directory: %v", err))
+		}
+
+		// Define paths
+		weaveDataPath := filepath.Join(userHome, common.WeaveDataDirectory)
+		tarballPath := filepath.Join(weaveDataPath, fmt.Sprintf("hermes-%s.tar.gz", HermesVersion))
+		hermesPath := filepath.Join(weaveDataPath, "hermes")
+
+		// Ensure the data directory exists
+		if err := os.MkdirAll(weaveDataPath, 0755); err != nil {
+			panic(fmt.Sprintf("Failed to create data directory: %v", err))
+		}
+
+		// Download and extract Hermes tarball
+		if err := weaveio.DownloadAndExtractTarGz(hermesURL, tarballPath, weaveDataPath); err != nil {
+			panic(fmt.Sprintf("Failed to download and extract Hermes: %v", err))
+		}
+
+		// Make the Hermes binary executable
+		if err := os.Chmod(hermesPath, 0755); err != nil {
+			panic(fmt.Sprintf("Failed to set executable permissions for Hermes: %v", err))
+		}
+
+		// Remove quarantine attribute on macOS
+		if runtime.GOOS == "darwin" {
+			if err := removeQuarantineAttribute(hermesPath); err != nil {
+				panic(fmt.Sprintf("Failed to remove quarantine attribute on macOS: %v", err))
+			}
+		}
+
+		// Create Hermes configuration
+		createHermesConfig(state)
+
+		// Return updated state
+		return ui.EndLoading{Ctx: weavecontext.SetCurrentState(ctx, state)}
+	}
+}
+
+func (m *SettingUpRelayer) Init() tea.Cmd {
+	return m.loading.Init()
+}
+
+func (m *SettingUpRelayer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := weavecontext.HandleCommonCommands[RelayerState](m, msg); handled {
+		return model, cmd
+	}
+
+	loader, cmd := m.loading.Update(msg)
+	m.loading = loader
+	if m.loading.Completing {
+		return NewL1KeySelect(m.loading.EndContext), nil
+	}
+	return m, cmd
+}
+
+func (m *SettingUpRelayer) View() string {
+	state := weavecontext.GetCurrentState[RelayerState](m.Ctx)
+	return state.weave.Render() + "\n" + m.loading.View()
+}
+
+func removeQuarantineAttribute(filePath string) error {
+	cmd := exec.Command("xattr", "-l", filePath)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		// If listing attributes fails, assume no quarantine attribute
+		return nil
+	}
+
+	// Check if com.apple.quarantine exists
+	if !containsQuarantine(string(output)) {
+		return nil
+	}
+
+	// Remove the quarantine attribute
+	cmd = exec.Command("xattr", "-d", "com.apple.quarantine", filePath)
+	return cmd.Run()
+}
+
+func containsQuarantine(attrs string) bool {
+	return stringContains(attrs, "com.apple.quarantine")
+}
+
+func stringContains(haystack, needle string) bool {
+	return len(haystack) >= len(needle) && haystack[len(haystack)-len(needle):] == needle
 }
