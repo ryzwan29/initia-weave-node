@@ -199,7 +199,7 @@ func NewRunL1NodeChainIdInput(ctx context.Context) *RunL1NodeChainIdInput {
 		BaseModel: weavecontext.BaseModel{Ctx: ctx},
 		question:  "Please specify the chain id",
 	}
-	model.WithPlaceholder("Enter in alphanumeric format")
+	model.WithPlaceholder("Enter your chain ID")
 	model.WithTooltip(&tooltip)
 	return model
 }
@@ -450,14 +450,14 @@ type EnableFeaturesCheckbox struct {
 type EnableFeaturesOption string
 
 const (
-	LCD  EnableFeaturesOption = "LCD API"
-	gRPC EnableFeaturesOption = "gRPC"
+	REST EnableFeaturesOption = "REST"
+	GRPC EnableFeaturesOption = "gRPC"
 )
 
 func NewEnableFeaturesCheckbox(ctx context.Context) *EnableFeaturesCheckbox {
 	tooltips := []ui.Tooltip{
 		ui.NewTooltip(
-			"LCD API",
+			"REST",
 			"Enabling this option allows REST API calls to query data and submit transactions to your node. \n\nEnabling this is recommended.",
 			"", []string{}, []string{}, []string{},
 		),
@@ -469,7 +469,7 @@ func NewEnableFeaturesCheckbox(ctx context.Context) *EnableFeaturesCheckbox {
 	}
 
 	model := &EnableFeaturesCheckbox{
-		CheckBox:  *ui.NewCheckBox([]EnableFeaturesOption{LCD, gRPC}),
+		CheckBox:  *ui.NewCheckBox([]EnableFeaturesOption{REST, GRPC}),
 		BaseModel: weavecontext.BaseModel{Ctx: ctx},
 		question:  "Would you like to enable the following options?",
 	}
@@ -496,9 +496,9 @@ func (m *EnableFeaturesCheckbox) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		for idx, isSelected := range cb.Selected {
 			if isSelected {
 				switch cb.Options[idx] {
-				case LCD:
+				case REST:
 					state.enableLCD = true
-				case gRPC:
+				case GRPC:
 					state.enableGRPC = true
 				}
 			}

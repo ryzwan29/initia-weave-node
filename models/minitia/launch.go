@@ -88,7 +88,7 @@ func (m *ExistingMinitiaChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *ExistingMinitiaChecker) View() string {
-	return styles.Text("🪢 For launching Minitia, once all required configurations are complete, \nit will run for a few blocks to set up necessary components.\nPlease note that this may take a moment, and your patience is appreciated!\n\n", styles.Ivory) +
+	return styles.Text("🪢 When launching a rollup, after all configurations are set,\nthe rollup process will run for a few blocks to establish the necessary components.\nThis process may take some time.\n\n", styles.Ivory) +
 		m.loading.View()
 }
 
@@ -185,7 +185,7 @@ func NewNetworkSelect(ctx context.Context) *NetworkSelect {
 			CannotBack: true,
 		},
 		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
-		question:  "Which Initia L1 network would you like to connect to?",
+		question:  "Select the Initia L1 network you want to connect your rollup to",
 	}
 }
 
@@ -220,7 +220,7 @@ func (m *NetworkSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *NetworkSelect) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
-	return styles.Text("🪢 For launching Minitia, once all required configurations are complete, \nit will run for a few blocks to set up neccesary components.\nPlease note that this may take a moment, and your patience is appreciated!\n\n", styles.Ivory) +
+	return styles.Text("🪢 When launching a rollup, after all configurations are set,\nthe rollup process will run for a few blocks to establish the necessary components.\nThis process may take some time.\n\n", styles.Ivory) +
 		state.weave.Render() + styles.RenderPrompt(
 		m.GetQuestion(),
 		[]string{"Initia L1 network"},
@@ -273,7 +273,7 @@ func NewVMTypeSelect(ctx context.Context) *VMTypeSelect {
 			Tooltips: &tooltips,
 		},
 		BaseModel: weavecontext.BaseModel{Ctx: ctx},
-		question:  "Which VM type would you like to select?",
+		question:  "Select the Virtual Machine (VM) for your rollup",
 	}
 }
 
@@ -440,9 +440,9 @@ func NewChainIdInput(ctx context.Context) *ChainIdInput {
 	model := &ChainIdInput{
 		TextInput: ui.NewTextInput(true),
 		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
-		question:  "Please specify the L2 chain id",
+		question:  "Please specify your rollup chain ID",
 	}
-	model.WithPlaceholder("Enter in alphanumeric format")
+	model.WithPlaceholder("Enter your chain ID")
 	model.WithValidatorFn(common.ValidateNonEmptyAndLengthString("Chain id", MaxChainIDLength))
 	model.WithTooltip(&tooltip)
 	return model

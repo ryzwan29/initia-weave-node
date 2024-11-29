@@ -191,9 +191,8 @@ func showGasStationBalance() error {
 		maxWidth = len(NoBalancesText)
 	}
 
-	fmt.Println(fmt.Sprintf("\n⛽️ Initia Testnet Address: %s\n%s\n", initiaGasStationAddress, initiaL1TestnetBalances.Render(maxWidth)))
-	fmt.Println(fmt.Sprintf("⛽️ Celestia Testnet Address: %s\n%s\n", celestiaGasStationAddress, celestiaTestnetBalance.Render(maxWidth)))
-	fmt.Println(fmt.Sprintf("⛽️ Celestia Mainnet Address: %s\n%s\n", celestiaGasStationAddress, celestiaMainnetBalance.Render(maxWidth)))
+	fmt.Printf("\n⛽️ Initia Address: %s\n\nTestnet\n%s\n\n", initiaGasStationAddress, initiaL1TestnetBalances.Render(maxWidth))
+	fmt.Printf("⛽️ Celestia Address: %s\n\nTestnet\n%s\nMainnet\n%s\n\n", celestiaGasStationAddress, celestiaTestnetBalance.Render(maxWidth), celestiaMainnetBalance.Render(maxWidth))
 
 	return nil
 }

@@ -344,7 +344,7 @@ func NewSelectingL1Network(ctx context.Context) *SelectingL1Network {
 			},
 		},
 		BaseModel: weavecontext.BaseModel{Ctx: ctx},
-		question:  "Which Initia L1 network would you like to connect to?",
+		question:  "Select the Initia L1 network you want to connect your rollup to",
 	}
 }
 
@@ -515,7 +515,7 @@ func NewSelectingL1NetworkRegistry(ctx context.Context) *SelectingL1NetworkRegis
 			},
 		},
 		BaseModel: weavecontext.BaseModel{Ctx: ctx},
-		question:  "Which Initia L1 network would you like to connect to?",
+		question:  "Select the Initia L1 network you want to connect your rollup to",
 	}
 }
 

@@ -70,7 +70,7 @@ func TestExistingMinitiaChecker_View(t *testing.T) {
 	model := NewExistingMinitiaChecker(ctx)
 
 	view := model.View()
-	assert.Contains(t, view, "For launching Minitia,", "Expected the view to contain the launch message")
+	assert.Contains(t, view, "When launching a rollup,", "Expected the view to contain the launch message")
 }
 
 func TestExistingMinitiaChecker(t *testing.T) {
@@ -150,7 +150,7 @@ func TestNewNetworkSelect(t *testing.T) {
 
 	assert.Nil(t, model.Init(), "Expected Init command to be returned")
 	assert.NotNil(t, model, "Expected NetworkSelect to be created")
-	assert.Equal(t, "Which Initia L1 network would you like to connect to?", model.GetQuestion())
+	assert.Equal(t, "Select the Initia L1 network you want to connect your rollup to", model.GetQuestion())
 	assert.Contains(t, model.Selector.Options, Testnet, "Expected Testnet to be available as a network option")
 	assert.NotContains(t, model.Selector.Options, Mainnet, "Mainnet should not be in the options since it's commented out")
 }
@@ -179,7 +179,7 @@ func TestNetworkSelect_View(t *testing.T) {
 	model := NewNetworkSelect(ctx)
 
 	view := model.View()
-	assert.Contains(t, view, "Which Initia L1 network would you like to connect to?", "Expected question prompt in the view")
+	assert.Contains(t, view, "Select the Initia L1 network you want to connect your rollup to", "Expected question prompt in the view")
 	assert.Contains(t, view, "Testnet", "Expected Testnet option to be displayed")
 	assert.NotContains(t, view, "Mainnet", "Mainnet should not be in the options since it's commented out")
 }
@@ -190,7 +190,7 @@ func TestNewVMTypeSelect(t *testing.T) {
 	model := NewVMTypeSelect(ctx)
 
 	assert.NotNil(t, model, "Expected VMTypeSelect to be created")
-	assert.Equal(t, "Which VM type would you like to select?", model.GetQuestion())
+	assert.Equal(t, "Select the Virtual Machine (VM) for your rollup", model.GetQuestion())
 	assert.Contains(t, model.Selector.Options, Move, "Expected Move to be an available VM option")
 	assert.Contains(t, model.Selector.Options, Wasm, "Expected Wasm to be an available VM option")
 	assert.Contains(t, model.Selector.Options, EVM, "Expected EVM to be an available VM option")
@@ -262,7 +262,7 @@ func TestVMTypeSelect_View(t *testing.T) {
 	model := NewVMTypeSelect(ctx)
 
 	view := model.View()
-	assert.Contains(t, view, "Which VM type would you like to select?", "Expected question prompt in the view")
+	assert.Contains(t, view, "Select The virtual machine (VM) for your rollup", "Expected question prompt in the view")
 	assert.Contains(t, view, "Move", "Expected Move option to be displayed")
 	assert.Contains(t, view, "Wasm", "Expected Wasm option to be displayed")
 	assert.Contains(t, view, "EVM", "Expected EVM option to be displayed")
@@ -430,8 +430,8 @@ func TestChainIdInput_View(t *testing.T) {
 	input := NewChainIdInput(ctx)
 
 	view := input.View()
-	assert.Contains(t, view, "Please specify the L2 chain id", "Expected question prompt in the view")
-	assert.Contains(t, view, "Enter in alphanumeric format", "Expected placeholder in the view")
+	assert.Contains(t, view, "Please specify your rollup chain ID", "Expected question prompt in the view")
+	assert.Contains(t, view, "Enter your chain ID", "Expected placeholder in the view")
 }
 
 func TestGasDenomInput_Init(t *testing.T) {

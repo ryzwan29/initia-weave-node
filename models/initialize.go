@@ -33,7 +33,7 @@ func (e ExistingCheckerState) Clone() ExistingCheckerState {
 
 func InitHeader() string {
 	return styles.FadeText("Welcome to Weave! 🪢\n\n") +
-		styles.RenderPrompt("As this is your first time using Weave, we ask that you set up your Gas Station account,\nwhich will hold the necessary funds for the OPinit-bots or relayer to send transactions.\n\n", []string{"Gas Station account"}, styles.Empty) +
+		styles.RenderPrompt("As this is your first time using Weave, we recommend setting up a Gas Station account.\nThis account will hold funds to be distributed to OPinit Bots, IBC Relayers, and other services for gas fees.\n\n", []string{"Gas Station account"}, styles.Empty) +
 		styles.BoldText("Please note that Weave will not send any transactions without your confirmation.\n", styles.Yellow) +
 		styles.Text("While you can complete this setup later, we recommend doing it now to ensure a smoother experience.\n\n", styles.Gray)
 }
@@ -94,8 +94,7 @@ func (m *ExistingWeaveChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *ExistingWeaveChecker) View() string {
 	view := InitHeader()
-	view += styles.RenderPrompt("Would you like to set up a Gas Station account", []string{"Gas Station account"}, styles.Question) +
-		" " + styles.Text("(The account that will hold the funds required by the OPinit-bots or relayer to send transactions)", styles.Gray)
+	view += styles.RenderPrompt("Would you like to set up a Gas Station account", []string{"Gas Station account"}, styles.Question)
 	view += m.Selector.View()
 
 	return view
