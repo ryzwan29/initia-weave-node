@@ -201,12 +201,13 @@ list = [
 
 	// Populate data for placeholders
 	data := Data{
-		ID:       state.Config["l1.chain_id"],
+		ID: state.Config["l1.chain_id"],
+		// TODO: revisit
 		RPCAddr:  "https://initia-testnet-rpc.polkachu.com/",
 		GRPCAddr: "http://" + state.Config["l1.grpc_address"],
 		EventSource: EventSource{
 			Mode:       "push",
-			URL:        "wss://rpc.testnet.initia.xyz/websocket",
+			URL:        state.Config["l1.websocket"],
 			BatchDelay: "500ms",
 		},
 		PacketFilter: transformToPacketFilter(state.IBCChannels, true),

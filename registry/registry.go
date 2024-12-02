@@ -179,6 +179,25 @@ func (cr *ChainRegistry) MustGetCounterPartyIBCChannel(port, channel string) typ
 	return response.Channel.Counterparty
 }
 
+func normalizeGRPCAddress(addr string) (string, error) {
+	// Parse the URL
+	u, err := url.Parse(addr)
+	if err != nil {
+		return "", fmt.Errorf("invalid address: %v", err)
+	}
+
+	if u.Scheme == "grpc" {
+		u.Scheme = "http"
+	}
+
+	// Add default port if missing
+	if u.Port() == "" {
+		u.Host = u.Host + ":9090"
+	}
+
+	return u.String(), nil
+}
+
 func (cr *ChainRegistry) GetActiveGrpc() (string, error) {
 	grpcClient := client.NewGRPCClient()
 	for _, grpc := range cr.Apis.Grpc {
@@ -187,7 +206,12 @@ func (cr *ChainRegistry) GetActiveGrpc() (string, error) {
 			continue
 		}
 
-		return strings.ReplaceAll(grpc.Address, "grpc://", "http://"), nil
+		addr, err := normalizeGRPCAddress(grpc.Address)
+		if err != nil {
+			continue
+		}
+
+		return addr, nil
 	}
 
 	return "", fmt.Errorf("no active gRPC endpoints available")
@@ -200,6 +224,36 @@ func (cr *ChainRegistry) MustGetActiveGrpc() string {
 	}
 
 	return grpc
+}
+
+// normalizeRPCToWebSocket converts an RPC endpoint (HTTP/HTTPS) to WebSocket (WS/WSS).
+func normalizeRPCToWebSocket(rpcEndpoint string) (string, error) {
+	// Parse the URL
+	u, err := url.Parse(rpcEndpoint)
+	if err != nil {
+		return "", fmt.Errorf("invalid RPC endpoint: %v", err)
+	}
+
+	// Convert HTTP(S) to WS(S)
+	switch u.Scheme {
+	case "http":
+		u.Scheme = "ws" // Convert HTTP to WS
+	case "https":
+		u.Scheme = "wss" // Convert HTTPS to WSS
+	default:
+		return "", fmt.Errorf("unsupported scheme for RPC to WebSocket conversion: %s", u.Scheme)
+	}
+
+	return u.String() + "/websocket", nil
+}
+
+func (cr *ChainRegistry) MustGetActiveWebsocket() string {
+	rpc := cr.MustGetActiveRpc()
+	websocket, err := normalizeRPCToWebSocket(rpc)
+	if err != nil {
+		panic(err)
+	}
+	return websocket
 }
 
 func (cr *ChainRegistry) GetSeeds() string {

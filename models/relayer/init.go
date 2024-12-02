@@ -29,9 +29,9 @@ import (
 )
 
 var defaultL2ConfigLocal = []*Field{
-	{Name: "l2.rpc_address", Type: StringField, Question: "Please specify the L2 rpc_address", Placeholder: "Add RPC address ex. http://localhost:26657", DefaultValue: "http://localhost:26657", ValidateFn: common.ValidateURL},
-	{Name: "l2.grpc_address", Type: StringField, Question: "Please specify the L2 grpc_address", Placeholder: "Add RPC address ex. http://localhost:9090", DefaultValue: "http://localhost:9090", ValidateFn: common.ValidateURL},
-	{Name: "l2.websocket", Type: StringField, Question: "Please specify the L2 websocket", Placeholder: "Add RPC address ex. ws://localhost:26657/websocket", DefaultValue: "ws://localhost:26657/websocket", ValidateFn: common.ValidateURL},
+	{Name: "l2.rpc_address", Type: StringField, Question: "Please specify the L2 rpc_address", Placeholder: `Press tab to use "http://localhost:26657"`, DefaultValue: "http://localhost:26657", ValidateFn: common.ValidateURL},
+	{Name: "l2.grpc_address", Type: StringField, Question: "Please specify the L2 grpc_address", Placeholder: `Press tab to use "http://localhost:9090"`, DefaultValue: "http://localhost:9090", ValidateFn: common.ValidateURL},
+	{Name: "l2.websocket", Type: StringField, Question: "Please specify the L2 websocket", Placeholder: `Press tab to use ws://localhost:26657/websocket`, DefaultValue: "ws://localhost:26657/websocket", ValidateFn: common.ValidateURL},
 }
 
 var defaultL2ConfigManual = []*Field{
@@ -40,6 +40,7 @@ var defaultL2ConfigManual = []*Field{
 	{Name: "l2.grpc_address", Type: StringField, Question: "Please specify the L2 grpc_address", Placeholder: "Add RPC address ex. http://localhost:9090", ValidateFn: common.ValidateURL},
 	{Name: "l2.websocket", Type: StringField, Question: "Please specify the L2 websocket", Placeholder: "Add RPC address ex. ws://localhost:26657/websocket", ValidateFn: common.ValidateURL},
 	{Name: "l2.gas_price.denom", Type: StringField, Question: "Please specify the gas_price denom", Placeholder: "Add gas_price denom ex. umin", ValidateFn: common.ValidateDenom},
+	{Name: "l2.gas_price.price", Type: StringField, Question: "Please specify the gas_price prie", Placeholder: "Add gas_price price ex. 0.15"},
 }
 
 type RollupSelect struct {
@@ -115,6 +116,7 @@ func (m *RollupSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				state.Config["l1.rpc_address"] = testnetRegistry.MustGetActiveRpc()
 				state.Config["l1.grpc_address"] = testnetRegistry.MustGetActiveGrpc()
 				state.Config["l1.lcd_address"] = testnetRegistry.MustGetActiveLcd()
+				state.Config["l1.websocket"] = testnetRegistry.MustGetActiveWebsocket()
 				state.Config["l1.gas_price.denom"] = DefaultGasPriceDenom
 				state.Config["l1.gas_price.price"] = testnetRegistry.MustGetMinGasPriceByDenom(DefaultGasPriceDenom)
 
@@ -997,7 +999,7 @@ func (m *SelectingL2Network) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		state.Config["l2.gas_price.price"] = strconv.FormatFloat(l2DefaultFeeToken.FixedMinGasPrice, 'f', -1, 64)
 		state.Config["l2.rpc_address"] = l2Rpc
 		state.Config["l2.grpc_address"] = l2Registry.MustGetActiveGrpc()
-		state.Config["l2.websocket"] = fmt.Sprintf("%s/websocket", l2Rpc)
+		state.Config["l2.websocket"] = l2Registry.MustGetActiveWebsocket()
 
 		return NewIBCChannelsCheckbox(weavecontext.SetCurrentState(m.Ctx, state), pairs), nil
 	}
@@ -1081,6 +1083,7 @@ func (m *SelectingL1NetworkRegistry) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			state.Config["l1.rpc_address"] = testnetRegistry.MustGetActiveRpc()
 			state.Config["l1.grpc_address"] = testnetRegistry.MustGetActiveGrpc()
 			state.Config["l1.lcd_address"] = testnetRegistry.MustGetActiveLcd()
+			state.Config["l1.websocket"] = testnetRegistry.MustGetActiveWebsocket()
 			state.Config["l1.gas_price.denom"] = DefaultGasPriceDenom
 			state.Config["l1.gas_price.price"] = testnetRegistry.MustGetMinGasPriceByDenom(DefaultGasPriceDenom)
 
