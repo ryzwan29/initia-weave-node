@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"time"
 
@@ -900,21 +899,6 @@ func (m *InitializingAppLoading) View() string {
 	return state.weave.Render() + m.Loading.View()
 }
 
-// Get the binary path based on OS
-func getBinaryPath(extractedPath string, version string) string {
-	switch runtime.GOOS {
-	case "linux":
-		if cosmosutils.CompareSemVer(version, "v0.6.1") {
-			return filepath.Join(extractedPath, "initiad")
-		}
-		return filepath.Join(extractedPath, "initia_"+version, "initiad")
-	case "darwin":
-		return filepath.Join(extractedPath, "initiad")
-	default:
-		panic("unsupported OS")
-	}
-}
-
 func initializeApp(ctx context.Context) tea.Cmd {
 	return func() tea.Msg {
 		state := weavecontext.GetCurrentState[RunL1NodeState](ctx)
@@ -922,11 +906,9 @@ func initializeApp(ctx context.Context) tea.Cmd {
 		if err != nil {
 			panic(fmt.Sprintf("failed to get user home directory: %v", err))
 		}
-		weaveDataPath := filepath.Join(userHome, common.WeaveDataDirectory)
-		tarballPath := filepath.Join(weaveDataPath, "initia.tar.gz")
 
 		httpClient := client.NewHTTPClient()
-		var nodeVersion, extractedPath, binaryPath, url string
+		var nodeVersion, url string
 
 		switch state.network {
 		case string(Local):
@@ -937,49 +919,15 @@ func initializeApp(ctx context.Context) tea.Cmd {
 			if err != nil {
 				panic(err)
 			}
-
-			var result map[string]interface{}
-			_, err = httpClient.Get(baseUrl, "/cosmos/base/tendermint/v1beta1/node_info", nil, &result)
-			if err != nil {
-				panic(err)
-			}
-
-			applicationVersion, ok := result["application_version"].(map[string]interface{})
-			if !ok {
-				panic("failed to get node version")
-			}
-			nodeVersion = applicationVersion["version"].(string)
+			nodeVersion, url = cosmosutils.MustGetInitiaBinaryUrlFromLcd(httpClient, baseUrl)
 			state.initiadVersion = nodeVersion
-			goos := runtime.GOOS
-			goarch := runtime.GOARCH
-			url = getBinaryURL(nodeVersion, goos, goarch)
 		default:
 			panic("unsupported network")
 		}
 
-		extractedPath = filepath.Join(weaveDataPath, fmt.Sprintf("initia@%s", nodeVersion))
-		binaryPath = getBinaryPath(extractedPath, nodeVersion)
-
-		if _, err := os.Stat(binaryPath); os.IsNotExist(err) {
-			if _, err := os.Stat(extractedPath); os.IsNotExist(err) {
-				err := os.MkdirAll(extractedPath, os.ModePerm)
-				if err != nil {
-					panic(fmt.Sprintf("failed to create weave data directory: %v", err))
-				}
-			}
-
-			if err = io.DownloadAndExtractTarGz(url, tarballPath, extractedPath); err != nil {
-				panic(fmt.Sprintf("failed to download and extract binary: %v", err))
-			}
-
-			// 0755 ensuring read, write, execute permissions for the owner, and read-execute for group/others
-			err = os.Chmod(binaryPath, 0755)
-			if err != nil {
-				panic(fmt.Sprintf("failed to set permissions for binary: %v", err))
-			}
-		}
-
-		io.SetLibraryPaths(filepath.Dir(binaryPath))
+		weaveDataPath := filepath.Join(userHome, common.WeaveDataDirectory)
+		binaryPath := cosmosutils.GetInitiaBinaryPath(nodeVersion)
+		cosmosutils.MustInstallInitiaBinary(nodeVersion, url, binaryPath)
 
 		initiaHome := weavecontext.GetInitiaHome(ctx)
 		if _, err := os.Stat(initiaHome); os.IsNotExist(err) {
@@ -1064,26 +1012,6 @@ func initializeApp(ctx context.Context) tea.Cmd {
 
 		return ui.EndLoading{Ctx: weavecontext.SetCurrentState(ctx, state)}
 	}
-}
-
-func getBinaryURL(version, os, arch string) string {
-	switch os {
-	case "darwin":
-		switch arch {
-		case "amd64":
-			return fmt.Sprintf("https://github.com/initia-labs/initia/releases/download/%s/initia_%s_Darwin_x86_64.tar.gz", version, version)
-		case "arm64":
-			return fmt.Sprintf("https://github.com/initia-labs/initia/releases/download/%s/initia_%s_Darwin_aarch64.tar.gz", version, version)
-		}
-	case "linux":
-		switch arch {
-		case "amd64":
-			return fmt.Sprintf("https://github.com/initia-labs/initia/releases/download/%s/initia_%s_Linux_x86_64.tar.gz", version, version)
-		case "arm64":
-			return fmt.Sprintf("https://github.com/initia-labs/initia/releases/download/%s/initia_%s_Linux_aarch64.tar.gz", version, version)
-		}
-	}
-	panic("unsupported OS or architecture")
 }
 
 type SyncMethodSelect struct {
@@ -1678,10 +1606,6 @@ func (m *StateSyncSetupLoading) View() string {
 func setupStateSync(ctx context.Context) tea.Cmd {
 	return func() tea.Msg {
 		state := weavecontext.GetCurrentState[RunL1NodeState](ctx)
-		userHome, err := os.UserHomeDir()
-		if err != nil {
-			return ui.ErrorLoading{Err: fmt.Errorf("[error] Failed to get user home: %v", err)}
-		}
 
 		stateSyncInfo, err := cosmosutils.GetStateSyncInfo(state.stateSyncEndpoint)
 		if err != nil {
@@ -1714,8 +1638,7 @@ func setupStateSync(ctx context.Context) tea.Cmd {
 		}
 
 		initiaHome := weavecontext.GetInitiaHome(ctx)
-		weaveDataPath := filepath.Join(userHome, common.WeaveDataDirectory, fmt.Sprintf("initia@%s", state.initiadVersion))
-		binaryPath := getBinaryPath(weaveDataPath, state.initiadVersion)
+		binaryPath := cosmosutils.GetInitiaBinaryPath(state.initiadVersion)
 
 		runCmd := exec.Command(binaryPath, "comet", "unsafe-reset-all", "--keep-addr-book", "--home", initiaHome)
 		if err := runCmd.Run(); err != nil {

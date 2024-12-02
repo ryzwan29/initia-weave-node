@@ -32,8 +32,8 @@ func NewL1SystemKeys(bridgeExecutor, outputSubmitter, batchSubmitter, challenger
 }
 
 type FundAccountsResponse struct {
-	CelestiaTx *cosmosutils.CliTxResponse
-	InitiaTx   *cosmosutils.CliTxResponse
+	CelestiaTx *cosmosutils.InitiadTxResponse
+	InitiaTx   *cosmosutils.InitiadTxResponse
 }
 
 func (lsk *L1SystemKeys) FundAccountsWithGasStation(state *LaunchState) (*FundAccountsResponse, error) {
@@ -83,7 +83,7 @@ func (lsk *L1SystemKeys) FundAccountsWithGasStation(state *LaunchState) (*FundAc
 			return nil, fmt.Errorf("failed to broadcast transaction: %v", err)
 		}
 
-		var txResponse cosmosutils.CliTxResponse
+		var txResponse cosmosutils.InitiadTxResponse
 		err = json.Unmarshal(broadcastRes, &txResponse)
 		if err != nil {
 			return nil, fmt.Errorf("failed to unmarshal JSON: %v", err)
@@ -130,7 +130,7 @@ func (lsk *L1SystemKeys) FundAccountsWithGasStation(state *LaunchState) (*FundAc
 		return nil, fmt.Errorf("failed to broadcast transaction: %v", err)
 	}
 
-	var txResponse cosmosutils.CliTxResponse
+	var txResponse cosmosutils.InitiadTxResponse
 	err = json.Unmarshal(broadcastRes, &txResponse)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal JSON: %v", err)

@@ -65,3 +65,9 @@ func (cs *Coins) IsZero() bool {
 	}
 	return true
 }
+
+type NodeInfoResponse struct {
+	ApplicationVersion struct {
+		Version string `json:"version"`
+	} `json:"application_version"`
+}

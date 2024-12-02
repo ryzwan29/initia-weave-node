@@ -2,6 +2,7 @@ package cosmosutils
 
 import (
 	"fmt"
+	"github.com/initia-labs/weave/io"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -197,4 +198,89 @@ func GetOPInitVersions() (BinaryVersionWithDownloadURL, string) {
 	currentVersion, _ := GetBinaryVersion(binaryPath)
 
 	return versions, currentVersion
+}
+
+func MustGetInitiaBinaryUrlFromLcd(httpClient *client.HTTPClient, rest string) (string, string) {
+	var result NodeInfoResponse
+	_, err := httpClient.Get(rest, "/cosmos/base/tendermint/v1beta1/node_info", nil, &result)
+	if err != nil {
+		panic(err)
+	}
+
+	version := result.ApplicationVersion.Version
+	url := getBinaryURL(version)
+
+	return version, url
+}
+
+func getBinaryURL(version string) string {
+	goos := runtime.GOOS
+	goarch := runtime.GOARCH
+
+	switch goos {
+	case "darwin":
+		switch goarch {
+		case "amd64":
+			return fmt.Sprintf("https://github.com/initia-labs/initia/releases/download/%s/initia_%s_Darwin_x86_64.tar.gz", version, version)
+		case "arm64":
+			return fmt.Sprintf("https://github.com/initia-labs/initia/releases/download/%s/initia_%s_Darwin_aarch64.tar.gz", version, version)
+		}
+	case "linux":
+		switch goarch {
+		case "amd64":
+			return fmt.Sprintf("https://github.com/initia-labs/initia/releases/download/%s/initia_%s_Linux_x86_64.tar.gz", version, version)
+		case "arm64":
+			return fmt.Sprintf("https://github.com/initia-labs/initia/releases/download/%s/initia_%s_Linux_aarch64.tar.gz", version, version)
+		}
+	}
+	panic("unsupported OS or architecture")
+}
+
+func GetInitiaBinaryPath(version string) string {
+	userHome, err := os.UserHomeDir()
+	if err != nil {
+		panic(fmt.Sprintf("failed to get user home directory: %v", err))
+	}
+	extractedPath := filepath.Join(userHome, common.WeaveDataDirectory, fmt.Sprintf("initia@%s", version))
+
+	switch runtime.GOOS {
+	case "linux":
+		if CompareSemVer(version, "v0.6.1") {
+			return filepath.Join(extractedPath, "initiad")
+		}
+		return filepath.Join(extractedPath, "initia_"+version, "initiad")
+	case "darwin":
+		return filepath.Join(extractedPath, "initiad")
+	default:
+		panic("unsupported OS")
+	}
+}
+
+func MustInstallInitiaBinary(version, url, binaryPath string) {
+	userHome, err := os.UserHomeDir()
+	if err != nil {
+		panic(fmt.Sprintf("failed to get user home directory: %v", err))
+	}
+	tarballPath := filepath.Join(userHome, common.WeaveDataDirectory, "initia.tar.gz")
+	extractedPath := filepath.Join(userHome, common.WeaveDataDirectory, fmt.Sprintf("initia@%s", version))
+
+	if _, err := os.Stat(binaryPath); os.IsNotExist(err) {
+		if _, err := os.Stat(extractedPath); os.IsNotExist(err) {
+			err := os.MkdirAll(extractedPath, os.ModePerm)
+			if err != nil {
+				panic(fmt.Sprintf("failed to create weave data directory: %v", err))
+			}
+		}
+
+		if err = io.DownloadAndExtractTarGz(url, tarballPath, extractedPath); err != nil {
+			panic(fmt.Sprintf("failed to download and extract binary: %v", err))
+		}
+
+		err = os.Chmod(binaryPath, 0755)
+		if err != nil {
+			panic(fmt.Sprintf("failed to set permissions for binary: %v", err))
+		}
+	}
+
+	io.SetLibraryPaths(filepath.Dir(binaryPath))
 }

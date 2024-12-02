@@ -18,8 +18,10 @@ import (
 
 	"github.com/initia-labs/weave/client"
 	"github.com/initia-labs/weave/common"
+	"github.com/initia-labs/weave/config"
 	weavecontext "github.com/initia-labs/weave/context"
 	"github.com/initia-labs/weave/cosmosutils"
+	"github.com/initia-labs/weave/crypto"
 	weaveio "github.com/initia-labs/weave/io"
 	"github.com/initia-labs/weave/registry"
 	"github.com/initia-labs/weave/service"
@@ -118,7 +120,7 @@ func (m *RollupSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				state.Config["l1.lcd_address"] = testnetRegistry.MustGetActiveLcd()
 				state.Config["l1.websocket"] = testnetRegistry.MustGetActiveWebsocket()
 				state.Config["l1.gas_price.denom"] = DefaultGasPriceDenom
-				state.Config["l1.gas_price.price"] = testnetRegistry.MustGetMinGasPriceByDenom(DefaultGasPriceDenom)
+				state.Config["l1.gas_price.price"] = testnetRegistry.MustGetFixedMinGasPriceByDenom(DefaultGasPriceDenom)
 
 				state.Config["l2.chain_id"] = minitiaConfig.L2Config.ChainID
 				state.Config["l2.gas_price.denom"] = minitiaConfig.L2Config.Denom
@@ -129,7 +131,6 @@ func (m *RollupSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				panic("not support L1")
 			}
 
-			//return NewL1KeySelect(weavecontext.SetCurrentState(m.Ctx, state)), nil
 			return NewFieldInputModel(weavecontext.SetCurrentState(m.Ctx, state), defaultL2ConfigLocal, NewSelectSettingUpIBCChannelsMethod), nil
 		case Manual:
 			return NewSelectingL1Network(weavecontext.SetCurrentState(m.Ctx, state)), nil
@@ -752,7 +753,7 @@ type FundingAmountSelectOption string
 
 const (
 	FundingFillManually FundingAmountSelectOption = "○ Fill in an amount manually to fund from Gas Station Account"
-	FundingUserTransfer FundingAmountSelectOption = "○ Transfer funds manually from other account"
+	FundingUserTransfer FundingAmountSelectOption = "○ Skip funding from Gas station"
 )
 
 var (
@@ -803,8 +804,8 @@ func (m *FundingAmountSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		switch *selected {
 		case FundingDefaultPreset:
-			// TODO: Continue
 			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, "Use the default preset"))
+			return NewFundDefaultPresetConfirmationInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
 		case FundingFillManually:
 			// TODO: Continue
 			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, "Fill in an amount manually to fund from Gas Station Account"))
@@ -859,6 +860,154 @@ func (m *FundingAmountSelect) View() string {
 			[]string{},
 			styles.Question,
 		) + m.Selector.View()
+}
+
+type FundDefaultPresetConfirmationInput struct {
+	ui.TextInput
+	weavecontext.BaseModel
+	initiaGasStationAddress string
+	question                string
+}
+
+func NewFundDefaultPresetConfirmationInput(ctx context.Context) *FundDefaultPresetConfirmationInput {
+	gasStationMnemonic := config.GetGasStationMnemonic()
+	initiaGasStationAddress, err := crypto.MnemonicToBech32Address("init", gasStationMnemonic)
+	if err != nil {
+		panic(err)
+	}
+
+	model := &FundDefaultPresetConfirmationInput{
+		TextInput:               ui.NewTextInput(false),
+		BaseModel:               weavecontext.BaseModel{Ctx: ctx},
+		initiaGasStationAddress: initiaGasStationAddress,
+		question:                "Confirm to proceed with signing and broadcasting the following transactions? [y]:",
+	}
+	model.WithPlaceholder("Type `y` to confirm")
+	model.WithValidatorFn(common.ValidateExactString("y"))
+	return model
+}
+
+func (m *FundDefaultPresetConfirmationInput) GetQuestion() string {
+	return m.question
+}
+
+func (m *FundDefaultPresetConfirmationInput) Init() tea.Cmd {
+	return nil
+}
+
+func (m *FundDefaultPresetConfirmationInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := weavecontext.HandleCommonCommands[RelayerState](m, msg); handled {
+		return model, cmd
+	}
+
+	input, cmd, done := m.TextInput.Update(msg)
+	if done {
+		_ = weavecontext.PushPageAndGetState[RelayerState](m)
+		model := NewFundDefaultPresetBroadcastLoading(m.Ctx)
+		return model, model.Init()
+	}
+	m.TextInput = input
+	return m, cmd
+}
+
+func (m *FundDefaultPresetConfirmationInput) View() string {
+	state := weavecontext.GetCurrentState[RelayerState](m.Ctx)
+	formatSendMsg := func(coins, denom, keyName, address string) string {
+		return fmt.Sprintf(
+			"> Send %s to %s %s\n",
+			styles.BoldText(coins+denom, styles.Ivory),
+			styles.BoldText(keyName, styles.Ivory),
+			styles.Text(fmt.Sprintf("(%s)", address), styles.Gray))
+	}
+	return state.weave.Render() + "\n" +
+		styles.Text("i ", styles.Yellow) +
+		styles.RenderPrompt(
+			styles.BoldUnderlineText("Weave will now broadcast the following transactions", styles.Yellow),
+			[]string{}, styles.Empty,
+		) + "\n\n" +
+		fmt.Sprintf("Sending tokens from the Gas Station account on L1 %s ⛽️\n", styles.Text(fmt.Sprintf("(%s)", m.initiaGasStationAddress), styles.Gray)) +
+		formatSendMsg(DefaultL1RelayerBalance, MustGetL1GasDenom(m.Ctx), "Relayer key on L1", state.l1RelayerAddress) + "\n" +
+		fmt.Sprintf("Sending tokens from the Gas Station account on L2 %s ⛽️\n", styles.Text(fmt.Sprintf("(%s)", m.initiaGasStationAddress), styles.Gray)) +
+		formatSendMsg(DefaultL2RelayerBalance, MustGetL2GasDenom(m.Ctx), "Relayer key on L2", state.l2RelayerAddress) +
+		styles.RenderPrompt(m.GetQuestion(), []string{}, styles.Question) + m.TextInput.View()
+}
+
+type FundDefaultPresetBroadcastLoading struct {
+	loading ui.Loading
+	weavecontext.BaseModel
+}
+
+func NewFundDefaultPresetBroadcastLoading(ctx context.Context) *FundDefaultPresetBroadcastLoading {
+	return &FundDefaultPresetBroadcastLoading{
+		loading:   ui.NewLoading("Broadcasting transactions...", broadcastDefaultPresetFromGasStation(ctx)),
+		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
+	}
+}
+
+func (m *FundDefaultPresetBroadcastLoading) Init() tea.Cmd {
+	return m.loading.Init()
+}
+
+func broadcastDefaultPresetFromGasStation(ctx context.Context) tea.Cmd {
+	return func() tea.Msg {
+		state := weavecontext.GetCurrentState[RelayerState](ctx)
+		gasStationMnemonic := config.GetGasStationMnemonic()
+		cliTx := cosmosutils.NewInitiadTxExecutor(MustGetL1ActiveLcd(ctx))
+
+		res, err := cliTx.BroadcastMsgSend(
+			gasStationMnemonic,
+			state.l1RelayerAddress,
+			fmt.Sprintf("%s%s", DefaultL1RelayerBalance, MustGetL1GasDenom(ctx)),
+			MustGetL1GasPrices(ctx),
+			MustGetL1ActiveRpc(ctx),
+			MustGetL1ChainId(ctx),
+		)
+		if err != nil {
+			panic(err)
+		}
+		state.l1FundingTxHash = res.TxHash
+
+		res, err = cliTx.BroadcastMsgSend(
+			gasStationMnemonic,
+			state.l2RelayerAddress,
+			fmt.Sprintf("%s%s", DefaultL2RelayerBalance, MustGetL2GasDenom(ctx)),
+			MustGetL2GasPrices(ctx),
+			MustGetL2ActiveRpc(ctx),
+			MustGetL2ChainId(ctx),
+		)
+		if err != nil {
+			panic(err)
+		}
+		state.l2FundingTxHash = res.TxHash
+
+		return ui.EndLoading{
+			Ctx: weavecontext.SetCurrentState(ctx, state),
+		}
+	}
+}
+
+func (m *FundDefaultPresetBroadcastLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := weavecontext.HandleCommonCommands[RelayerState](m, msg); handled {
+		return model, cmd
+	}
+
+	loader, cmd := m.loading.Update(msg)
+	m.loading = loader
+	if m.loading.Completing {
+		m.Ctx = m.loading.EndContext
+		state := weavecontext.PushPageAndGetState[RelayerState](m)
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, "The relayer account has been funded on L1, with Tx Hash", []string{}, state.l1FundingTxHash))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, "The relayer account has been funded on L2, with Tx Hash", []string{}, state.l2FundingTxHash))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "Your relayer has been setup successfully. 🎉", []string{}, ""))
+
+		return NewTerminalState(weavecontext.SetCurrentState(m.Ctx, state)), nil
+	}
+	return m, cmd
+}
+
+func (m *FundDefaultPresetBroadcastLoading) View() string {
+	state := weavecontext.GetCurrentState[RelayerState](m.Ctx)
+	return state.weave.Render() + "\n" + m.loading.View()
 }
 
 type NetworkSelectOption string
@@ -928,7 +1077,7 @@ func (m *SelectingL1Network) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			state.Config["l1.grpc_address"] = testnetRegistry.MustGetActiveGrpc()
 			state.Config["l1.lcd_address"] = testnetRegistry.MustGetActiveLcd()
 			state.Config["l1.gas_price.denom"] = DefaultGasPriceDenom
-			state.Config["l1.gas_price.price"] = testnetRegistry.MustGetMinGasPriceByDenom(DefaultGasPriceDenom)
+			state.Config["l1.gas_price.price"] = testnetRegistry.MustGetFixedMinGasPriceByDenom(DefaultGasPriceDenom)
 
 			return NewFieldInputModel(m.Ctx, defaultL2ConfigManual, NewSelectSettingUpIBCChannelsMethod), nil
 		}
@@ -1107,7 +1256,7 @@ func (m *SelectingL1NetworkRegistry) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			state.Config["l1.lcd_address"] = testnetRegistry.MustGetActiveLcd()
 			state.Config["l1.websocket"] = testnetRegistry.MustGetActiveWebsocket()
 			state.Config["l1.gas_price.denom"] = DefaultGasPriceDenom
-			state.Config["l1.gas_price.price"] = testnetRegistry.MustGetMinGasPriceByDenom(DefaultGasPriceDenom)
+			state.Config["l1.gas_price.price"] = testnetRegistry.MustGetFixedMinGasPriceByDenom(DefaultGasPriceDenom)
 
 			return NewSelectingL2Network(weavecontext.SetCurrentState(m.Ctx, state), registry.InitiaL1Testnet), nil
 		case Mainnet:
@@ -1275,6 +1424,40 @@ func MustGetL1ActiveLcd(ctx context.Context) string {
 	return lcd
 }
 
+func GetL1ActiveRpc(ctx context.Context) (string, bool) {
+	state := weavecontext.GetCurrentState[RelayerState](ctx)
+	if rpc, found := state.Config["l1.rpc_address"]; found {
+		return rpc, found
+	}
+	return "", false
+}
+
+func MustGetL1ActiveRpc(ctx context.Context) string {
+	rpc, ok := GetL1ActiveRpc(ctx)
+	if !ok {
+		panic("cannot get l1 active rpc from state")
+	}
+
+	return rpc
+}
+
+func GetL2ActiveRpc(ctx context.Context) (string, bool) {
+	state := weavecontext.GetCurrentState[RelayerState](ctx)
+	if rpc, found := state.Config["l2.rpc_address"]; found {
+		return rpc, found
+	}
+	return "", false
+}
+
+func MustGetL2ActiveRpc(ctx context.Context) string {
+	rpc, ok := GetL2ActiveRpc(ctx)
+	if !ok {
+		panic("cannot get l1 active lcd from state")
+	}
+
+	return rpc
+}
+
 func GetL1GasDenom(ctx context.Context) (string, bool) {
 	state := weavecontext.GetCurrentState[RelayerState](ctx)
 	if denom, found := state.Config["l1.gas_price.denom"]; found {
@@ -1309,6 +1492,28 @@ func MustGetL2GasDenom(ctx context.Context) string {
 	}
 
 	return denom
+}
+
+func MustGetL1GasPrices(ctx context.Context) string {
+	denom := MustGetL1GasDenom(ctx)
+	state := weavecontext.GetCurrentState[RelayerState](ctx)
+	price, ok := state.Config["l1.gas_price.price"]
+	if !ok {
+		panic("cannot get l1 gas price from state")
+	}
+
+	return fmt.Sprintf("%s%s", price, denom)
+}
+
+func MustGetL2GasPrices(ctx context.Context) string {
+	denom := MustGetL2GasDenom(ctx)
+	state := weavecontext.GetCurrentState[RelayerState](ctx)
+	amount, ok := state.Config["l2.gas_price.price"]
+	if !ok {
+		panic("cannot get l2 gas denom from state")
+	}
+
+	return fmt.Sprintf("%s%s", amount, denom)
 }
 
 type FillPortOnL1 struct {

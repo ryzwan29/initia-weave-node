@@ -3,6 +3,7 @@ package registry
 import (
 	"fmt"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/initia-labs/weave/client"
@@ -78,6 +79,15 @@ func (cr *ChainRegistry) GetMinGasPriceByDenom(denom string) (string, error) {
 		}
 	}
 	return "", fmt.Errorf("denomination %s not found in fee tokens", denom)
+}
+
+func (cr *ChainRegistry) MustGetFixedMinGasPriceByDenom(denom string) string {
+	for _, feeToken := range cr.Fees.FeeTokens {
+		if feeToken.Denom == denom {
+			return fmt.Sprintf("%g", feeToken.FixedMinGasPrice)
+		}
+	}
+	panic(fmt.Errorf("denomination %s not found in fee tokens", denom))
 }
 
 func (cr *ChainRegistry) MustGetMinGasPriceByDenom(denom string) string {
@@ -290,6 +300,12 @@ func (cr *ChainRegistry) MustGetDefaultFeeToken() FeeTokens {
 	}
 
 	return feeToken
+}
+
+func (cr *ChainRegistry) MustGetDefaultMinGasPrices() string {
+	feeToken := cr.MustGetDefaultFeeToken()
+
+	return fmt.Sprintf("%s%s", strconv.FormatFloat(feeToken.FixedMinGasPrice, 'f', -1, 64), feeToken.Denom)
 }
 
 func loadChainRegistry(chainType ChainType) error {

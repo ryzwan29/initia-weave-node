@@ -370,19 +370,11 @@ func RecoverNewHermesKey(appName, chainId, mnemonic string) (*KeyInfo, error) {
 }
 
 func GenerateAndReplaceHermesKey(appName, chainId string) (*KeyInfo, error) {
-	err := DeleteWeaveKeyFromHermes(appName, chainId)
-	if err != nil {
-		panic(err)
-	}
-
+	DeleteWeaveKeyFromHermes(appName, chainId)
 	return GenerateAndAddNewHermesKey(appName, chainId)
 }
 
 func RecoverAndReplaceHermesKey(appName, chainId, mnemonic string) (*KeyInfo, error) {
-	err := DeleteWeaveKeyFromHermes(appName, chainId)
-	if err != nil {
-		panic(err)
-	}
-
+	DeleteWeaveKeyFromHermes(appName, chainId)
 	return RecoverNewHermesKey(appName, chainId, mnemonic)
 }

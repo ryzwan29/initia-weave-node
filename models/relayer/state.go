@@ -13,11 +13,13 @@ type RelayerState struct {
 	l1RelayerAddress  string
 	l1RelayerMnemonic string
 	l1NeedsFunding    bool
+	l1FundingTxHash   string
 
 	l2KeyMethod       string
 	l2RelayerAddress  string
 	l2RelayerMnemonic string
 	l2NeedsFunding    bool
+	l2FundingTxHash   string
 
 	hermesBinaryPath string
 }
@@ -39,6 +41,20 @@ func (state RelayerState) Clone() RelayerState {
 		weave:       state.weave,
 		Config:      config,
 		IBCChannels: state.IBCChannels,
+
+		l1KeyMethod:       state.l1KeyMethod,
+		l1RelayerAddress:  state.l1RelayerAddress,
+		l1RelayerMnemonic: state.l1RelayerMnemonic,
+		l1NeedsFunding:    state.l1NeedsFunding,
+		l1FundingTxHash:   state.l1FundingTxHash,
+
+		l2KeyMethod:       state.l2KeyMethod,
+		l2RelayerAddress:  state.l2RelayerAddress,
+		l2RelayerMnemonic: state.l2RelayerMnemonic,
+		l2NeedsFunding:    state.l2NeedsFunding,
+		l2FundingTxHash:   state.l2FundingTxHash,
+
+		hermesBinaryPath: state.hermesBinaryPath,
 	}
 
 	return clone
