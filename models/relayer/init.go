@@ -1000,7 +1000,6 @@ func (m *SelectingL2Network) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		var res types.ChannelsResponse
 		_, err = httpClient.Get(lcdAddress, "/ibc/core/channel/v1/channels", nil, &res)
 		if err != nil {
-			// TODO: if cannot get channels should show error
 			panic(err)
 		}
 
@@ -1111,8 +1110,18 @@ func (m *SelectingL1NetworkRegistry) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			state.Config["l1.gas_price.price"] = testnetRegistry.MustGetMinGasPriceByDenom(DefaultGasPriceDenom)
 
 			return NewSelectingL2Network(weavecontext.SetCurrentState(m.Ctx, state), registry.InitiaL1Testnet), nil
+		case Mainnet:
+			mainnetRegistry := registry.MustGetChainRegistry(registry.InitiaL1Mainnet)
+			state.Config["l1.chain_id"] = mainnetRegistry.GetChainId()
+			state.Config["l1.rpc_address"] = mainnetRegistry.MustGetActiveRpc()
+			state.Config["l1.grpc_address"] = mainnetRegistry.MustGetActiveGrpc()
+			state.Config["l1.lcd_address"] = mainnetRegistry.MustGetActiveLcd()
+			state.Config["l1.websocket"] = mainnetRegistry.MustGetActiveWebsocket()
+			state.Config["l1.gas_price.denom"] = DefaultGasPriceDenom
+			state.Config["l1.gas_price.price"] = mainnetRegistry.MustGetMinGasPriceByDenom(DefaultGasPriceDenom)
+
+			return NewSelectingL2Network(weavecontext.SetCurrentState(m.Ctx, state), registry.InitiaL1Testnet), nil
 		}
-		// TODO: add mainnet
 	}
 
 	return m, cmd
@@ -1630,6 +1639,7 @@ type FillL2LCD struct {
 	ui.TextInput
 	question string
 	extra    string
+	err      error
 }
 
 func NewFillL2LCD(ctx context.Context) *FillL2LCD {
@@ -1661,12 +1671,13 @@ func (m *FillL2LCD) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		state := weavecontext.PushPageAndGetState[RelayerState](m)
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"L2", "LCD_address", m.extra}, m.TextInput.Text))
 
+		// TODO: should have loding state for this
 		httpClient := client.NewHTTPClient()
 		var res types.ChannelsResponse
 		_, err := httpClient.Get(input.Text, "/ibc/core/channel/v1/channels", nil, &res)
 		if err != nil {
-			// TODO: if cannot get channels should show error
-			panic(err)
+			m.err = fmt.Errorf("Unable to call the LCD endpoint '%s'. Please verify that the address is correct and reachablem", input.Text)
+			return m, cmd
 		}
 
 		pairs := make([]types.IBCChannelPair, 0)
@@ -1682,14 +1693,17 @@ func (m *FillL2LCD) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		return NewIBCChannelsCheckbox(weavecontext.SetCurrentState(m.Ctx, state), pairs), nil
 	}
-
 	m.TextInput = input
 	return m, cmd
 }
 
 func (m *FillL2LCD) View() string {
 	state := weavecontext.GetCurrentState[RelayerState](m.Ctx)
+	if m.err != nil {
+		return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"L2", "LCD_address", m.extra}, styles.Question) + m.TextInput.ViewErr(m.err)
+	}
 	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"L2", "LCD_address", m.extra}, styles.Question) + m.TextInput.View()
+
 }
 
 type SettingUpRelayer struct {
