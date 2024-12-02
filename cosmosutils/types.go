@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"math/big"
 	"strings"
+
+	"github.com/initia-labs/weave/styles"
 )
 
 type Coin struct {
@@ -28,22 +30,9 @@ func (coin Coin) IsZero() bool {
 
 type Coins []Coin
 
-func createFrame(text string, maxWidth int) string {
-	lines := strings.Split(text, "\n")
-	top := "┌" + strings.Repeat("─", maxWidth+2) + "┐"
-	bottom := "└" + strings.Repeat("─", maxWidth+2) + "┘"
-
-	var framedContent strings.Builder
-	for _, line := range lines {
-		framedContent.WriteString(fmt.Sprintf("│ %-*s │\n", maxWidth, line))
-	}
-
-	return fmt.Sprintf("%s\n%s%s", top, framedContent.String(), bottom)
-}
-
 func (cs *Coins) Render(maxWidth int) string {
 	if len(*cs) == 0 {
-		return createFrame(NoBalancesText, maxWidth)
+		return styles.CreateFrame(NoBalancesText, maxWidth)
 	}
 
 	maxAmountLen := cs.getMaxAmountLength()
@@ -55,7 +44,7 @@ func (cs *Coins) Render(maxWidth int) string {
 	}
 
 	contentStr := strings.TrimSuffix(content.String(), "\n")
-	return createFrame(contentStr, maxWidth)
+	return styles.CreateFrame(contentStr, maxWidth)
 }
 
 func (cs *Coins) getMaxAmountLength() int {

@@ -809,7 +809,22 @@ func (m *FundingAmountSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// TODO: Continue
 			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, "Fill in an amount manually to fund from Gas Station Account"))
 		case FundingUserTransfer:
-			// TODO: Continue
+			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, "Transfer funds manually from other account"))
+			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "Your relayer has been set up successfully! 🎉", []string{}, ""))
+			state.weave.PushPreviousResponse(fmt.Sprintf(
+				"%s %s\n  %s\n%s\n\n",
+				styles.Text("i", styles.Yellow),
+				styles.BoldUnderlineText("Important", styles.Yellow),
+				styles.Text("However, to ensure the relayer functions properly, please make sure these accounts are funded.", styles.Yellow),
+				styles.CreateFrame(fmt.Sprintf(
+					"%s %s\n%s %s",
+					styles.BoldText("• Relayer key on L1", styles.White),
+					styles.Text(fmt.Sprintf("(%s)", state.l1RelayerAddress), styles.Gray),
+					styles.BoldText("• Relayer key on L2", styles.White),
+					styles.Text(fmt.Sprintf("(%s)", state.l2RelayerAddress), styles.Gray),
+				), 65),
+			))
+			return NewTerminalState(weavecontext.SetCurrentState(m.Ctx, state)), tea.Quit
 		}
 	}
 
@@ -819,18 +834,26 @@ func (m *FundingAmountSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *FundingAmountSelect) View() string {
 	state := weavecontext.GetCurrentState[RelayerState](m.Ctx)
 
-	var layerText string
+	var informationLayer, warningLayer string
 	if state.l1NeedsFunding && state.l2NeedsFunding {
-		layerText = "L1 and L2 have"
+		informationLayer = "both L1 and L2"
+		warningLayer = "L1 and L2 have"
 	} else if state.l1NeedsFunding {
-		layerText = "L1 has"
+		informationLayer = "L1"
+		warningLayer = "L1 has"
 	} else if state.l2NeedsFunding {
-		layerText = "L2 has"
+		informationLayer = "L2"
+		warningLayer = "L2 has"
 	}
 
-	return state.weave.Render() +
+	return state.weave.Render() + "\n" +
+		styles.RenderPrompt(
+			fmt.Sprintf("You will need to fund the relayer account on %s.\n  You can either transfer funds from created Gas Station Account or transfer manually.", informationLayer),
+			[]string{informationLayer},
+			styles.Information,
+		) + "\n\n" +
 		styles.BoldUnderlineText("Important", styles.Yellow) + "\n" +
-		styles.Text(fmt.Sprintf("The relayer account on %s have no funds.\nYou will need to fund the account in order to run the relayer properly.", layerText), styles.Yellow) + "\n\n" +
+		styles.Text(fmt.Sprintf("The relayer account on %s have no funds.\nYou will need to fund the account in order to run the relayer properly.", warningLayer), styles.Yellow) + "\n\n" +
 		styles.RenderPrompt(
 			m.GetQuestion(),
 			[]string{},

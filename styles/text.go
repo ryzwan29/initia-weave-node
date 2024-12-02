@@ -219,3 +219,16 @@ func RenderMnemonic(keyName, address, mnemonic string) string {
 		BoldText("Address: ", Ivory) + address + "\n" +
 		BoldText("Mnemonic:", Ivory) + "\n" + mnemonic + "\n\n"
 }
+
+func CreateFrame(text string, maxWidth int) string {
+	lines := strings.Split(text, "\n")
+	top := "┌" + strings.Repeat("─", maxWidth+2) + "┐"
+	bottom := "└" + strings.Repeat("─", maxWidth+2) + "┘"
+
+	var framedContent strings.Builder
+	for _, line := range lines {
+		framedContent.WriteString(fmt.Sprintf("│ %-*s │\n", maxWidth, line))
+	}
+
+	return fmt.Sprintf("%s\n%s%s", top, framedContent.String(), bottom)
+}
