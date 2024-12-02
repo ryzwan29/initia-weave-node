@@ -187,7 +187,7 @@ func (cr *ChainRegistry) GetActiveGrpc() (string, error) {
 			continue
 		}
 
-		return grpc.Address, nil
+		return strings.ReplaceAll(grpc.Address, "grpc://", "http://"), nil
 	}
 
 	return "", fmt.Errorf("no active gRPC endpoints available")
@@ -220,6 +220,22 @@ func (cr *ChainRegistry) GetPersistentPeers() string {
 
 func (cr *ChainRegistry) GetGenesisUrl() string {
 	return cr.Codebase.Genesis.GenesisUrl
+}
+
+func (cr *ChainRegistry) GetDefaultFeeToken() (FeeTokens, error) {
+	for _, feeToken := range cr.Fees.FeeTokens {
+		return feeToken, nil
+	}
+	return FeeTokens{}, fmt.Errorf("fee token not found")
+}
+
+func (cr *ChainRegistry) MustGetDefaultFeeToken() FeeTokens {
+	feeToken, err := cr.GetDefaultFeeToken()
+	if err != nil {
+		panic(err)
+	}
+
+	return feeToken
 }
 
 func loadChainRegistry(chainType ChainType) error {

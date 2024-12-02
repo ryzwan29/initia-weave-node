@@ -213,3 +213,9 @@ func RenderFooter(text string) string {
 	styledText := strings.Join(words, " ")
 	return FooterLine + styledText
 }
+
+func RenderMnemonic(keyName, address, mnemonic string) string {
+	return BoldText("Key Name: ", Ivory) + keyName + "\n" +
+		BoldText("Address: ", Ivory) + address + "\n" +
+		BoldText("Mnemonic:", Ivory) + "\n" + mnemonic + "\n\n"
+}

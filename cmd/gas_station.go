@@ -1,22 +1,18 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
-	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 
-	"github.com/initia-labs/weave/client"
 	"github.com/initia-labs/weave/config"
 	weavecontext "github.com/initia-labs/weave/context"
+	"github.com/initia-labs/weave/cosmosutils"
 	"github.com/initia-labs/weave/crypto"
 	"github.com/initia-labs/weave/models"
 	"github.com/initia-labs/weave/registry"
 )
-
-const NoBalancesText string = "No Balances"
 
 func GasStationCommand() *cobra.Command {
 	cmd := &cobra.Command{
@@ -52,54 +48,7 @@ func gasStationSetupCommand() *cobra.Command {
 	return setupCmd
 }
 
-type Coin struct {
-	Denom  string `json:"denom"`
-	Amount string `json:"amount"`
-}
-
-type Coins []Coin
-
-func (cs *Coins) Render(maxWidth int) string {
-	if len(*cs) == 0 {
-		return createFrame(NoBalancesText, maxWidth)
-	}
-
-	maxAmountLen := cs.getMaxAmountLength()
-
-	var content strings.Builder
-	for _, coin := range *cs {
-		line := fmt.Sprintf("%-*s %s", maxAmountLen, coin.Amount, coin.Denom)
-		content.WriteString(line + "\n")
-	}
-
-	contentStr := strings.TrimSuffix(content.String(), "\n")
-	return createFrame(contentStr, maxWidth)
-}
-
-func createFrame(text string, maxWidth int) string {
-	lines := strings.Split(text, "\n")
-	top := "┌" + strings.Repeat("─", maxWidth+2) + "┐"
-	bottom := "└" + strings.Repeat("─", maxWidth+2) + "┘"
-
-	var framedContent strings.Builder
-	for _, line := range lines {
-		framedContent.WriteString(fmt.Sprintf("│ %-*s │\n", maxWidth, line))
-	}
-
-	return fmt.Sprintf("%s\n%s%s", top, framedContent.String(), bottom)
-}
-
-func (cs *Coins) getMaxAmountLength() int {
-	maxLen := 0
-	for _, coin := range *cs {
-		if len(coin.Amount) > maxLen {
-			maxLen = len(coin.Amount)
-		}
-	}
-	return maxLen
-}
-
-func getBalance(chainType registry.ChainType, address string) (*Coins, error) {
+func getBalance(chainType registry.ChainType, address string) (*cosmosutils.Coins, error) {
 	chainRegistry, err := registry.GetChainRegistry(chainType)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load chainRegistry: %v", err)
@@ -110,38 +59,10 @@ func getBalance(chainType registry.ChainType, address string) (*Coins, error) {
 		return nil, fmt.Errorf("failed to get active lcd for %s: %v", chainType, err)
 	}
 
-	httpClient := client.NewHTTPClient()
-	var result map[string]interface{}
-	_, err = httpClient.Get(
-		baseUrl,
-		fmt.Sprintf("/cosmos/bank/v1beta1/balances/%s", address),
-		map[string]string{"pagination.limit": "100"},
-		&result,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	rawBalances, ok := result["balances"].([]interface{})
-	if !ok {
-		return nil, fmt.Errorf("failed to parse balances field")
-	}
-
-	balancesJSON, err := json.Marshal(rawBalances)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal balances: %w", err)
-	}
-
-	var balances Coins
-	err = json.Unmarshal(balancesJSON, &balances)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal balances into Coins: %w", err)
-	}
-
-	return &balances, nil
+	return cosmosutils.QueryBankBalances(baseUrl, address)
 }
 
-func getMaxWidth(coinGroups ...*Coins) int {
+func getMaxWidth(coinGroups ...*cosmosutils.Coins) int {
 	maxAmountWidth := 0
 	maxDenomWidth := 0
 
@@ -187,8 +108,8 @@ func showGasStationBalance() error {
 	}
 
 	maxWidth := getMaxWidth(initiaL1TestnetBalances, celestiaTestnetBalance, celestiaMainnetBalance)
-	if maxWidth < len(NoBalancesText) {
-		maxWidth = len(NoBalancesText)
+	if maxWidth < len(cosmosutils.NoBalancesText) {
+		maxWidth = len(cosmosutils.NoBalancesText)
 	}
 
 	fmt.Printf("\n⛽️ Initia Address: %s\n\nTestnet\n%s\n\n", initiaGasStationAddress, initiaL1TestnetBalances.Render(maxWidth))

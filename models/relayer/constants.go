@@ -1,8 +1,13 @@
 package relayer
 
 const (
+	HermesHome    = ".hermes"
+	HermesVersion = "v1.10.4"
+
 	DefaultGasPriceDenom  = "uinit"
 	DefaultGasPriceAmount = "0.015"
-	HermesVersion         = "v1.10.4"
-	IntiaTestnetChainId   = "initiation-2"
+	InitiaTestnetChainId  = "initiation-2"
+
+	DefaultL1RelayerBalance = "1000000"
+	DefaultL2RelayerBalance = "1000000"
 )

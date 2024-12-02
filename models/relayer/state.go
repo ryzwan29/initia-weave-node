@@ -9,11 +9,17 @@ type RelayerState struct {
 	Config      map[string]string
 	IBCChannels []types.IBCChannelPair
 
-	l1KeyMethod string
-	l2KeyMethod string
+	l1KeyMethod       string
+	l1RelayerAddress  string
+	l1RelayerMnemonic string
+	l1NeedsFunding    bool
 
-	l1RelayerAddress string
-	l2RelayerAddress string
+	l2KeyMethod       string
+	l2RelayerAddress  string
+	l2RelayerMnemonic string
+	l2NeedsFunding    bool
+
+	hermesBinaryPath string
 }
 
 func NewRelayerState() RelayerState {

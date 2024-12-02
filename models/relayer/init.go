@@ -10,7 +10,9 @@ import (
 	"regexp"
 	"runtime"
 	"sort"
+	"strconv"
 	"strings"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 
@@ -20,6 +22,7 @@ import (
 	"github.com/initia-labs/weave/cosmosutils"
 	weaveio "github.com/initia-labs/weave/io"
 	"github.com/initia-labs/weave/registry"
+	"github.com/initia-labs/weave/service"
 	"github.com/initia-labs/weave/styles"
 	"github.com/initia-labs/weave/types"
 	"github.com/initia-labs/weave/ui"
@@ -106,7 +109,7 @@ func (m *RollupSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				panic(err)
 			}
 
-			if minitiaConfig.L1Config.ChainID == IntiaTestnetChainId {
+			if minitiaConfig.L1Config.ChainID == InitiaTestnetChainId {
 				testnetRegistry := registry.MustGetChainRegistry(registry.InitiaL1Testnet)
 				state.Config["l1.chain_id"] = testnetRegistry.GetChainId()
 				state.Config["l1.rpc_address"] = testnetRegistry.MustGetActiveRpc()
@@ -124,6 +127,7 @@ func (m *RollupSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				panic("not support L1")
 			}
 
+			//return NewL1KeySelect(weavecontext.SetCurrentState(m.Ctx, state)), nil
 			return NewFieldInputModel(weavecontext.SetCurrentState(m.Ctx, state), defaultL2ConfigLocal, NewSelectSettingUpIBCChannelsMethod), nil
 		case Manual:
 			return NewSelectingL1Network(weavecontext.SetCurrentState(m.Ctx, state)), nil
@@ -163,18 +167,13 @@ var (
 )
 
 func NewL1KeySelect(ctx context.Context) *L1KeySelect {
-	l1ChainId, ok := GetL1ChainId(ctx)
-	if !ok {
-		panic("cannot get l1 chain id")
-	}
-
+	l1ChainId := MustGetL1ChainId(ctx)
 	options := []L1KeySelectOption{
 		L1GenerateKey,
 		L1ImportKey,
 	}
-	// TODO: fix appname
-	if l1RelayerAddress, found := cosmosutils.GetHermesRelayerAddress("hermes", l1ChainId); found {
-		state := weavecontext.GetCurrentState[RelayerState](ctx)
+	state := weavecontext.GetCurrentState[RelayerState](ctx)
+	if l1RelayerAddress, found := cosmosutils.GetHermesRelayerAddress(state.hermesBinaryPath, l1ChainId); found {
 		state.l1RelayerAddress = l1RelayerAddress
 		options = append([]L1KeySelectOption{L1ExistingKey}, options...)
 	}
@@ -184,7 +183,7 @@ func NewL1KeySelect(ctx context.Context) *L1KeySelect {
 			Options:    options,
 			CannotBack: true,
 		},
-		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
+		BaseModel: weavecontext.BaseModel{Ctx: weavecontext.SetCurrentState(ctx, state), CannotBack: true},
 		question:  fmt.Sprintf("Please select an option for setting up the relayer account key on L1 (%s)", l1ChainId),
 		chainId:   l1ChainId,
 	}
@@ -248,19 +247,14 @@ var (
 )
 
 func NewL2KeySelect(ctx context.Context) *L2KeySelect {
-	l2ChainId, ok := GetL2ChainId(ctx)
-	if !ok {
-		panic("cannot get l2 chain id")
-	}
-
+	l2ChainId := MustGetL2ChainId(ctx)
 	options := []L2KeySelectOption{
 		L2SameKey,
 		L2GenerateKey,
 		L2ImportKey,
 	}
-	// TODO: fix appname
-	if l2RelayerAddress, found := cosmosutils.GetHermesRelayerAddress("hermes", l2ChainId); found {
-		state := weavecontext.GetCurrentState[RelayerState](ctx)
+	state := weavecontext.GetCurrentState[RelayerState](ctx)
+	if l2RelayerAddress, found := cosmosutils.GetHermesRelayerAddress(state.hermesBinaryPath, l2ChainId); found {
 		state.l2RelayerAddress = l2RelayerAddress
 		options = append([]L2KeySelectOption{L2ExistingKey}, options...)
 	}
@@ -269,7 +263,7 @@ func NewL2KeySelect(ctx context.Context) *L2KeySelect {
 		Selector: ui.Selector[L2KeySelectOption]{
 			Options: options,
 		},
-		BaseModel: weavecontext.BaseModel{Ctx: ctx},
+		BaseModel: weavecontext.BaseModel{Ctx: weavecontext.SetCurrentState(ctx, state)},
 		question:  fmt.Sprintf("Please select an option for setting up the relayer account key on L2 (%s)", l2ChainId),
 		chainId:   l2ChainId,
 	}
@@ -294,7 +288,29 @@ func (m *L2KeySelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"relayer account key", fmt.Sprintf("L2 (%s)", m.chainId)}, string(*selected)))
 		state.l2KeyMethod = string(*selected)
-		return m, tea.Quit
+
+		switch L1KeySelectOption(state.l1KeyMethod) {
+		case L1ExistingKey:
+			switch *selected {
+			case L2ExistingKey:
+				model := NewFetchingBalancesLoading(weavecontext.SetCurrentState(m.Ctx, state))
+				return model, model.Init()
+			case L2SameKey:
+				state.l2RelayerAddress = state.l1RelayerAddress
+				model := NewFetchingBalancesLoading(weavecontext.SetCurrentState(m.Ctx, state))
+				return model, model.Init()
+			case L2GenerateKey:
+				model := NewGenerateL2RelayerKeyLoading(weavecontext.SetCurrentState(m.Ctx, state))
+				return model, model.Init()
+			case L2ImportKey:
+				return NewImportL2RelayerKeyInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
+			}
+		case L1GenerateKey:
+			model := NewGenerateL1RelayerKeyLoading(weavecontext.SetCurrentState(m.Ctx, state))
+			return model, model.Init()
+		case L1ImportKey:
+			return NewImportL1RelayerKeyInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
+		}
 	}
 
 	return m, cmd
@@ -308,6 +324,516 @@ func (m *L2KeySelect) View() string {
 		[]string{"relayer account key", fmt.Sprintf("L2 (%s)", m.chainId)},
 		styles.Question,
 	) + m.Selector.View()
+}
+
+type GenerateL1RelayerKeyLoading struct {
+	loading ui.Loading
+	weavecontext.BaseModel
+}
+
+func NewGenerateL1RelayerKeyLoading(ctx context.Context) *GenerateL1RelayerKeyLoading {
+	state := weavecontext.GetCurrentState[RelayerState](ctx)
+	layerText := "L1"
+	if state.l1KeyMethod == string(L1GenerateKey) && state.l2KeyMethod == string(L2SameKey) {
+		layerText = "L1 and L2"
+	}
+
+	return &GenerateL1RelayerKeyLoading{
+		loading:   ui.NewLoading(fmt.Sprintf("Generating new relayer account key for %s ...", layerText), waitGenerateL1RelayerKeyLoading(ctx)),
+		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
+	}
+}
+
+func (m *GenerateL1RelayerKeyLoading) Init() tea.Cmd {
+	return m.loading.Init()
+}
+
+func waitGenerateL1RelayerKeyLoading(ctx context.Context) tea.Cmd {
+	return func() tea.Msg {
+		time.Sleep(1500 * time.Millisecond)
+
+		state := weavecontext.GetCurrentState[RelayerState](ctx)
+		l1ChainId := MustGetL1ChainId(ctx)
+
+		relayerKey, err := cosmosutils.GenerateAndReplaceHermesKey(state.hermesBinaryPath, l1ChainId)
+		if err != nil {
+			panic(err)
+		}
+		state.l1RelayerAddress = relayerKey.Address
+		state.l1RelayerMnemonic = relayerKey.Mnemonic
+
+		return ui.EndLoading{
+			Ctx: weavecontext.SetCurrentState(ctx, state),
+		}
+	}
+}
+
+func (m *GenerateL1RelayerKeyLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := weavecontext.HandleCommonCommands[RelayerState](m, msg); handled {
+		return model, cmd
+	}
+
+	loader, cmd := m.loading.Update(msg)
+	m.loading = loader
+	if m.loading.Completing {
+		m.Ctx = m.loading.EndContext
+		state := weavecontext.PushPageAndGetState[RelayerState](m)
+
+		switch L2KeySelectOption(state.l2KeyMethod) {
+		case L2ExistingKey, L2ImportKey:
+			return NewKeysMnemonicDisplayInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
+		case L2SameKey:
+			state.l2RelayerAddress = state.l1RelayerAddress
+			state.l2RelayerMnemonic = state.l1RelayerMnemonic
+			return NewKeysMnemonicDisplayInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
+		case L2GenerateKey:
+			model := NewGenerateL2RelayerKeyLoading(weavecontext.SetCurrentState(m.Ctx, state))
+			return model, model.Init()
+		}
+	}
+	return m, cmd
+}
+
+func (m *GenerateL1RelayerKeyLoading) View() string {
+	state := weavecontext.GetCurrentState[RelayerState](m.Ctx)
+	return state.weave.Render() + "\n" + m.loading.View()
+}
+
+type GenerateL2RelayerKeyLoading struct {
+	loading ui.Loading
+	weavecontext.BaseModel
+}
+
+func NewGenerateL2RelayerKeyLoading(ctx context.Context) *GenerateL2RelayerKeyLoading {
+	return &GenerateL2RelayerKeyLoading{
+		loading:   ui.NewLoading("Generating new relayer account key for L2 ...", waitGenerateL2RelayerKeyLoading(ctx)),
+		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
+	}
+}
+
+func (m *GenerateL2RelayerKeyLoading) Init() tea.Cmd {
+	return m.loading.Init()
+}
+
+func waitGenerateL2RelayerKeyLoading(ctx context.Context) tea.Cmd {
+	return func() tea.Msg {
+		time.Sleep(1500 * time.Millisecond)
+
+		state := weavecontext.GetCurrentState[RelayerState](ctx)
+		l2ChainId := MustGetL2ChainId(ctx)
+
+		relayerKey, err := cosmosutils.GenerateAndReplaceHermesKey(state.hermesBinaryPath, l2ChainId)
+		if err != nil {
+			panic(err)
+		}
+		state.l2RelayerAddress = relayerKey.Address
+		state.l2RelayerMnemonic = relayerKey.Mnemonic
+
+		return ui.EndLoading{
+			Ctx: weavecontext.SetCurrentState(ctx, state),
+		}
+	}
+}
+
+func (m *GenerateL2RelayerKeyLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := weavecontext.HandleCommonCommands[RelayerState](m, msg); handled {
+		return model, cmd
+	}
+
+	loader, cmd := m.loading.Update(msg)
+	m.loading = loader
+	if m.loading.Completing {
+		m.Ctx = m.loading.EndContext
+		state := weavecontext.PushPageAndGetState[RelayerState](m)
+
+		return NewKeysMnemonicDisplayInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
+	}
+	return m, cmd
+}
+
+func (m *GenerateL2RelayerKeyLoading) View() string {
+	state := weavecontext.GetCurrentState[RelayerState](m.Ctx)
+	return state.weave.Render() + "\n" + m.loading.View()
+}
+
+type KeysMnemonicDisplayInput struct {
+	ui.TextInput
+	weavecontext.BaseModel
+	question string
+}
+
+func NewKeysMnemonicDisplayInput(ctx context.Context) *KeysMnemonicDisplayInput {
+	model := &KeysMnemonicDisplayInput{
+		TextInput: ui.NewTextInput(true),
+		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
+		question:  "Please type `continue` to proceed after you have securely stored the mnemonic.",
+	}
+	model.WithPlaceholder("Type `continue` to continue, Ctrl+C to quit.")
+	model.WithValidatorFn(common.ValidateExactString("continue"))
+	return model
+}
+
+func (m *KeysMnemonicDisplayInput) GetQuestion() string {
+	return m.question
+}
+
+func (m *KeysMnemonicDisplayInput) Init() tea.Cmd {
+	return nil
+}
+
+func (m *KeysMnemonicDisplayInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := weavecontext.HandleCommonCommands[RelayerState](m, msg); handled {
+		return model, cmd
+	}
+
+	input, cmd, done := m.TextInput.Update(msg)
+	if done {
+		state := weavecontext.PushPageAndGetState[RelayerState](m)
+
+		extraText := " has"
+		if state.l1KeyMethod == string(L1GenerateKey) && state.l2KeyMethod == string(L2GenerateKey) {
+			extraText = "s have"
+		}
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, fmt.Sprintf("Relayer key%s been successfully generated.", extraText), []string{}, ""))
+
+		switch L2KeySelectOption(state.l2KeyMethod) {
+		case L2ExistingKey, L2GenerateKey, L2SameKey:
+			model := NewFetchingBalancesLoading(weavecontext.SetCurrentState(m.Ctx, state))
+			return model, model.Init()
+		case L2ImportKey:
+			return NewImportL2RelayerKeyInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
+		}
+	}
+	m.TextInput = input
+	return m, cmd
+}
+
+func (m *KeysMnemonicDisplayInput) View() string {
+	state := weavecontext.GetCurrentState[RelayerState](m.Ctx)
+	var mnemonicText string
+
+	if state.l1KeyMethod == string(L1GenerateKey) {
+		layerText := "L1"
+		if state.l2KeyMethod == string(L2SameKey) {
+			layerText = "L1 and L2"
+		}
+		mnemonicText += styles.RenderMnemonic(
+			styles.RenderPrompt(fmt.Sprintf("Weave Relayer on %s", layerText), []string{layerText}, styles.Empty),
+			state.l1RelayerAddress,
+			state.l1RelayerMnemonic,
+		)
+	}
+
+	if state.l2KeyMethod == string(L2GenerateKey) {
+		mnemonicText += styles.RenderMnemonic(
+			styles.RenderPrompt(fmt.Sprintf("Weave Relayer on L2"), []string{"L2"}, styles.Empty),
+			state.l2RelayerAddress,
+			state.l2RelayerMnemonic,
+		)
+	}
+
+	return state.weave.Render() + "\n" +
+		styles.BoldUnderlineText("Important", styles.Yellow) + "\n" +
+		styles.Text("Write down these mnemonic phrases and store them in a safe place. \nIt is the only way to recover your system keys.", styles.Yellow) + "\n\n" +
+		mnemonicText + styles.RenderPrompt(m.GetQuestion(), []string{"`continue`"}, styles.Question) + m.TextInput.View()
+}
+
+type ImportL1RelayerKeyInput struct {
+	ui.TextInput
+	weavecontext.BaseModel
+	question  string
+	layerText string
+}
+
+func NewImportL1RelayerKeyInput(ctx context.Context) *ImportL1RelayerKeyInput {
+	state := weavecontext.GetCurrentState[RelayerState](ctx)
+	layerText := "L1"
+	if state.l1KeyMethod == string(L1ImportKey) && state.l2KeyMethod == string(L2SameKey) {
+		layerText = "L1 and L2"
+	}
+	model := &ImportL1RelayerKeyInput{
+		TextInput: ui.NewTextInput(false),
+		BaseModel: weavecontext.BaseModel{Ctx: ctx},
+		question:  fmt.Sprintf("Please add mnemonic for relayer account key on %s", layerText),
+		layerText: layerText,
+	}
+	model.WithPlaceholder("Enter the mnemonic")
+	model.WithValidatorFn(common.ValidateMnemonic)
+	return model
+}
+
+func (m *ImportL1RelayerKeyInput) GetQuestion() string {
+	return m.question
+}
+
+func (m *ImportL1RelayerKeyInput) Init() tea.Cmd {
+	return nil
+}
+
+func (m *ImportL1RelayerKeyInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := weavecontext.HandleCommonCommands[RelayerState](m, msg); handled {
+		return model, cmd
+	}
+
+	input, cmd, done := m.TextInput.Update(msg)
+	if done {
+		state := weavecontext.PushPageAndGetState[RelayerState](m)
+
+		relayerKey, err := cosmosutils.RecoverAndReplaceHermesKey(state.hermesBinaryPath, MustGetL1ChainId(m.Ctx), input.Text)
+		if err != nil {
+			panic(err)
+		}
+
+		state.l1RelayerMnemonic = relayerKey.Mnemonic
+		state.l1RelayerAddress = relayerKey.Address
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"relayer account key", m.layerText}, styles.HiddenMnemonicText))
+
+		switch L2KeySelectOption(state.l2KeyMethod) {
+		case L2ExistingKey:
+			model := NewFetchingBalancesLoading(weavecontext.SetCurrentState(m.Ctx, state))
+			return model, model.Init()
+		case L2SameKey:
+			state.l2RelayerAddress = relayerKey.Address
+			state.l2RelayerMnemonic = relayerKey.Mnemonic
+			model := NewFetchingBalancesLoading(weavecontext.SetCurrentState(m.Ctx, state))
+			return model, model.Init()
+		case L2GenerateKey:
+			model := NewGenerateL2RelayerKeyLoading(weavecontext.SetCurrentState(m.Ctx, state))
+			return model, model.Init()
+		case L2ImportKey:
+			return NewImportL2RelayerKeyInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
+		}
+	}
+	m.TextInput = input
+	return m, cmd
+}
+
+func (m *ImportL1RelayerKeyInput) View() string {
+	state := weavecontext.GetCurrentState[RelayerState](m.Ctx)
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"relayer account key", m.layerText}, styles.Question) + m.TextInput.View()
+}
+
+type ImportL2RelayerKeyInput struct {
+	ui.TextInput
+	weavecontext.BaseModel
+	question string
+}
+
+func NewImportL2RelayerKeyInput(ctx context.Context) *ImportL2RelayerKeyInput {
+	model := &ImportL2RelayerKeyInput{
+		TextInput: ui.NewTextInput(false),
+		BaseModel: weavecontext.BaseModel{Ctx: ctx},
+		question:  "Please add mnemonic for relayer account key on L2",
+	}
+	model.WithPlaceholder("Enter the mnemonic")
+	model.WithValidatorFn(common.ValidateMnemonic)
+	return model
+}
+
+func (m *ImportL2RelayerKeyInput) GetQuestion() string {
+	return m.question
+}
+
+func (m *ImportL2RelayerKeyInput) Init() tea.Cmd {
+	return nil
+}
+
+func (m *ImportL2RelayerKeyInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := weavecontext.HandleCommonCommands[RelayerState](m, msg); handled {
+		return model, cmd
+	}
+
+	input, cmd, done := m.TextInput.Update(msg)
+	if done {
+		state := weavecontext.PushPageAndGetState[RelayerState](m)
+
+		relayerKey, err := cosmosutils.RecoverAndReplaceHermesKey(state.hermesBinaryPath, MustGetL2ChainId(m.Ctx), input.Text)
+		if err != nil {
+			panic(err)
+		}
+
+		state.l2RelayerMnemonic = relayerKey.Mnemonic
+		state.l2RelayerAddress = relayerKey.Address
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"relayer account key", "L2"}, styles.HiddenMnemonicText))
+
+		model := NewFetchingBalancesLoading(weavecontext.SetCurrentState(m.Ctx, state))
+		return model, model.Init()
+	}
+	m.TextInput = input
+	return m, cmd
+}
+
+func (m *ImportL2RelayerKeyInput) View() string {
+	state := weavecontext.GetCurrentState[RelayerState](m.Ctx)
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"relayer account key", "L2"}, styles.Question) + m.TextInput.View()
+}
+
+type FetchingBalancesLoading struct {
+	loading ui.Loading
+	weavecontext.BaseModel
+}
+
+func NewFetchingBalancesLoading(ctx context.Context) *FetchingBalancesLoading {
+	return &FetchingBalancesLoading{
+		loading:   ui.NewLoading("Fetching relayer account balances ...", waitFetchingBalancesLoading(ctx)),
+		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
+	}
+}
+
+func (m *FetchingBalancesLoading) Init() tea.Cmd {
+	return m.loading.Init()
+}
+
+func waitFetchingBalancesLoading(ctx context.Context) tea.Cmd {
+	return func() tea.Msg {
+		state := weavecontext.GetCurrentState[RelayerState](ctx)
+
+		l1Rest := MustGetL1ActiveLcd(ctx)
+		l1Balances, err := cosmosutils.QueryBankBalances(l1Rest, state.l1RelayerAddress)
+		if err != nil {
+			panic(fmt.Errorf("cannot fetch balance for l1: %v", err))
+		}
+		if l1Balances.IsZero() {
+			state.l1NeedsFunding = true
+		}
+
+		l2ChainId := MustGetL2ChainId(ctx)
+		l2Registry := registry.MustGetL2Registry(registry.InitiaL1Testnet, l2ChainId)
+		l2Rest := l2Registry.MustGetActiveLcd()
+		l2Balances, err := cosmosutils.QueryBankBalances(l2Rest, state.l2RelayerAddress)
+		if err != nil {
+			panic(fmt.Errorf("cannot fetch balance for l2: %v", err))
+		}
+		if l2Balances.IsZero() {
+			state.l2NeedsFunding = true
+		}
+
+		return ui.EndLoading{
+			Ctx: weavecontext.SetCurrentState(ctx, state),
+		}
+	}
+}
+
+func (m *FetchingBalancesLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := weavecontext.HandleCommonCommands[RelayerState](m, msg); handled {
+		return model, cmd
+	}
+
+	loader, cmd := m.loading.Update(msg)
+	m.loading = loader
+	if m.loading.Completing {
+		m.Ctx = m.loading.EndContext
+		state := weavecontext.PushPageAndGetState[RelayerState](m)
+
+		if !state.l1NeedsFunding && !state.l2NeedsFunding {
+			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "Your relayer has been setup successfully. 🎉", []string{}, ""))
+			return NewTerminalState(weavecontext.SetCurrentState(m.Ctx, state)), tea.Quit
+		}
+
+		return NewFundingAmountSelect(weavecontext.SetCurrentState(m.Ctx, state)), nil
+	}
+	return m, cmd
+}
+
+func (m *FetchingBalancesLoading) View() string {
+	state := weavecontext.GetCurrentState[RelayerState](m.Ctx)
+	return state.weave.Render() + "\n" + m.loading.View()
+}
+
+type FundingAmountSelect struct {
+	ui.Selector[FundingAmountSelectOption]
+	weavecontext.BaseModel
+	question string
+}
+
+type FundingAmountSelectOption string
+
+const (
+	FundingFillManually FundingAmountSelectOption = "○ Fill in an amount manually to fund from Gas Station Account"
+	FundingUserTransfer FundingAmountSelectOption = "○ Transfer funds manually from other account"
+)
+
+var (
+	FundingDefaultPreset FundingAmountSelectOption = ""
+)
+
+func NewFundingAmountSelect(ctx context.Context) *FundingAmountSelect {
+	state := weavecontext.GetCurrentState[RelayerState](ctx)
+	FundingDefaultPreset = FundingAmountSelectOption(fmt.Sprintf(
+		"○ Use the default preset\n    Total amount that will be transferred from Gas Station account:\n    %s %s on L1 %s\n    %s %s on L2 %s",
+		styles.BoldText(fmt.Sprintf("• L1 (%s):", MustGetL1ChainId(ctx)), styles.Cyan),
+		styles.BoldText(fmt.Sprintf("%s%s", DefaultL1RelayerBalance, MustGetL1GasDenom(ctx)), styles.White),
+		styles.Text(fmt.Sprintf("(%s)", state.l1RelayerAddress), styles.Gray),
+		styles.BoldText(fmt.Sprintf("• L2 (%s):", MustGetL2ChainId(ctx)), styles.Cyan),
+		styles.BoldText(fmt.Sprintf("%s%s", DefaultL2RelayerBalance, MustGetL2GasDenom(ctx)), styles.White),
+		styles.Text(fmt.Sprintf("(%s)", state.l2RelayerAddress), styles.Gray),
+	))
+	return &FundingAmountSelect{
+		Selector: ui.Selector[FundingAmountSelectOption]{
+			Options: []FundingAmountSelectOption{
+				FundingDefaultPreset,
+				FundingFillManually,
+				FundingUserTransfer,
+			},
+			CannotBack: true,
+		},
+		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
+		question:  fmt.Sprintf("Please select the filling amount option"),
+	}
+}
+
+func (m *FundingAmountSelect) GetQuestion() string {
+	return m.question
+}
+
+func (m *FundingAmountSelect) Init() tea.Cmd {
+	return nil
+}
+
+func (m *FundingAmountSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := weavecontext.HandleCommonCommands[RelayerState](m, msg); handled {
+		return model, cmd
+	}
+
+	selected, cmd := m.Select(msg)
+	if selected != nil {
+		state := weavecontext.PushPageAndGetState[RelayerState](m)
+
+		switch *selected {
+		case FundingDefaultPreset:
+			// TODO: Continue
+			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, "Use the default preset"))
+		case FundingFillManually:
+			// TODO: Continue
+			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, "Fill in an amount manually to fund from Gas Station Account"))
+		case FundingUserTransfer:
+			// TODO: Continue
+		}
+	}
+
+	return m, cmd
+}
+
+func (m *FundingAmountSelect) View() string {
+	state := weavecontext.GetCurrentState[RelayerState](m.Ctx)
+
+	var layerText string
+	if state.l1NeedsFunding && state.l2NeedsFunding {
+		layerText = "L1 and L2 have"
+	} else if state.l1NeedsFunding {
+		layerText = "L1 has"
+	} else if state.l2NeedsFunding {
+		layerText = "L2 has"
+	}
+
+	return state.weave.Render() +
+		styles.BoldUnderlineText("Important", styles.Yellow) + "\n" +
+		styles.Text(fmt.Sprintf("The relayer account on %s have no funds.\nYou will need to fund the account in order to run the relayer properly.", layerText), styles.Yellow) + "\n\n" +
+		styles.RenderPrompt(
+			m.GetQuestion(),
+			[]string{},
+			styles.Question,
+		) + m.Selector.View()
 }
 
 type NetworkSelectOption string
@@ -441,7 +967,7 @@ func (m *SelectingL2Network) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if err != nil {
 			panic(err)
 		}
-		lcdAddress, _ := l2Registry.GetActiveLcd()
+		lcdAddress, err := l2Registry.GetActiveLcd()
 		if err != nil {
 			panic(err)
 		}
@@ -464,10 +990,14 @@ func (m *SelectingL2Network) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			})
 		}
 
+		l2DefaultFeeToken := l2Registry.MustGetDefaultFeeToken()
+		l2Rpc := l2Registry.MustGetActiveRpc()
 		state.Config["l2.chain_id"] = chainId
-		// TODO: revisit denom
-		state.Config["l2.gas_price.denom"] = DefaultGasPriceDenom
-		state.Config["l2.gas_price.price"] = DefaultGasPriceAmount
+		state.Config["l2.gas_price.denom"] = l2DefaultFeeToken.Denom
+		state.Config["l2.gas_price.price"] = strconv.FormatFloat(l2DefaultFeeToken.FixedMinGasPrice, 'f', -1, 64)
+		state.Config["l2.rpc_address"] = l2Rpc
+		state.Config["l2.grpc_address"] = l2Registry.MustGetActiveGrpc()
+		state.Config["l2.websocket"] = fmt.Sprintf("%s/websocket", l2Rpc)
 
 		return NewIBCChannelsCheckbox(weavecontext.SetCurrentState(m.Ctx, state), pairs), nil
 	}
@@ -628,8 +1158,7 @@ func (m *SelectSettingUpIBCChannelsMethod) Update(msg tea.Msg) (tea.Model, tea.C
 			}
 			var metadata types.Metadata
 			var networkRegistry *registry.ChainRegistry
-			// TODO: switch registry
-			if state.Config["l1.chain_id"] == IntiaTestnetChainId {
+			if state.Config["l1.chain_id"] == InitiaTestnetChainId {
 				networkRegistry = registry.MustGetChainRegistry(registry.InitiaL1Testnet)
 				info := networkRegistry.MustGetOpinitBridgeInfo(artifacts.BridgeID)
 				metadata = types.MustDecodeBridgeMetadata(info.BridgeConfig.Metadata)
@@ -668,12 +1197,83 @@ func GetL1ChainId(ctx context.Context) (string, bool) {
 	return "", false
 }
 
+func MustGetL1ChainId(ctx context.Context) string {
+	chainId, ok := GetL1ChainId(ctx)
+	if !ok {
+		panic("cannot get l1 chain id")
+	}
+
+	return chainId
+}
+
 func GetL2ChainId(ctx context.Context) (string, bool) {
 	state := weavecontext.GetCurrentState[RelayerState](ctx)
 	if chainId, found := state.Config["l2.chain_id"]; found {
 		return chainId, found
 	}
 	return "", false
+}
+
+func MustGetL2ChainId(ctx context.Context) string {
+	chainId, ok := GetL2ChainId(ctx)
+	if !ok {
+		panic("cannot get l2 chain id")
+	}
+
+	return chainId
+}
+
+func GetL1ActiveLcd(ctx context.Context) (string, bool) {
+	state := weavecontext.GetCurrentState[RelayerState](ctx)
+	if lcd, found := state.Config["l1.lcd_address"]; found {
+		return lcd, found
+	}
+	return "", false
+}
+
+func MustGetL1ActiveLcd(ctx context.Context) string {
+	lcd, ok := GetL1ActiveLcd(ctx)
+	if !ok {
+		panic("cannot get l1 active lcd from state")
+	}
+
+	return lcd
+}
+
+func GetL1GasDenom(ctx context.Context) (string, bool) {
+	state := weavecontext.GetCurrentState[RelayerState](ctx)
+	if denom, found := state.Config["l1.gas_price.denom"]; found {
+		return denom, found
+	}
+
+	return "", false
+}
+
+func MustGetL1GasDenom(ctx context.Context) string {
+	denom, ok := GetL1GasDenom(ctx)
+	if !ok {
+		panic("cannot get l1 gas denom from state")
+	}
+
+	return denom
+}
+
+func GetL2GasDenom(ctx context.Context) (string, bool) {
+	state := weavecontext.GetCurrentState[RelayerState](ctx)
+	if denom, found := state.Config["l2.gas_price.denom"]; found {
+		return denom, found
+	}
+
+	return "", false
+}
+
+func MustGetL2GasDenom(ctx context.Context) string {
+	denom, ok := GetL2GasDenom(ctx)
+	if !ok {
+		panic("cannot get l2 gas denom from state")
+	}
+
+	return denom
 }
 
 type FillPortOnL1 struct {
@@ -1123,7 +1723,7 @@ func WaitSettingUpRelayer(ctx context.Context) tea.Cmd {
 		// Define paths
 		weaveDataPath := filepath.Join(userHome, common.WeaveDataDirectory)
 		tarballPath := filepath.Join(weaveDataPath, fmt.Sprintf("hermes-%s.tar.gz", HermesVersion))
-		hermesPath := filepath.Join(weaveDataPath, "hermes")
+		state.hermesBinaryPath = filepath.Join(weaveDataPath, "hermes")
 
 		// Ensure the data directory exists
 		if err := os.MkdirAll(weaveDataPath, 0755); err != nil {
@@ -1136,19 +1736,28 @@ func WaitSettingUpRelayer(ctx context.Context) tea.Cmd {
 		}
 
 		// Make the Hermes binary executable
-		if err := os.Chmod(hermesPath, 0755); err != nil {
+		if err := os.Chmod(state.hermesBinaryPath, 0755); err != nil {
 			panic(fmt.Sprintf("Failed to set executable permissions for Hermes: %v", err))
 		}
 
 		// Remove quarantine attribute on macOS
 		if runtime.GOOS == "darwin" {
-			if err := removeQuarantineAttribute(hermesPath); err != nil {
+			if err := removeQuarantineAttribute(state.hermesBinaryPath); err != nil {
 				panic(fmt.Sprintf("Failed to remove quarantine attribute on macOS: %v", err))
 			}
 		}
 
 		// Create Hermes configuration
 		createHermesConfig(state)
+
+		srv, err := service.NewService(service.Relayer)
+		if err != nil {
+			panic(fmt.Sprintf("failed to initialize service: %v", err))
+		}
+
+		if err = srv.Create("", filepath.Join(userHome, HermesHome)); err != nil {
+			panic(fmt.Sprintf("failed to create service: %v", err))
+		}
 
 		// Return updated state
 		return ui.EndLoading{Ctx: weavecontext.SetCurrentState(ctx, state)}
@@ -1167,7 +1776,9 @@ func (m *SettingUpRelayer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	loader, cmd := m.loading.Update(msg)
 	m.loading = loader
 	if m.loading.Completing {
-		return NewL1KeySelect(m.loading.EndContext), nil
+		m.Ctx = m.loading.EndContext
+		state := weavecontext.PushPageAndGetState[RelayerState](m)
+		return NewL1KeySelect(weavecontext.SetCurrentState(m.Ctx, state)), nil
 	}
 	return m, cmd
 }

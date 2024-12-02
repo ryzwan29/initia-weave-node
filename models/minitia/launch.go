@@ -2326,22 +2326,16 @@ func (m *SystemKeysMnemonicDisplayInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
 
 	var mnemonicText string
-	mnemonicText += renderMnemonic("Operator", state.systemKeyOperatorAddress, state.systemKeyOperatorMnemonic)
-	mnemonicText += renderMnemonic("Bridge Executor", state.systemKeyBridgeExecutorAddress, state.systemKeyBridgeExecutorMnemonic)
-	mnemonicText += renderMnemonic("Output Submitter", state.systemKeyOutputSubmitterAddress, state.systemKeyOutputSubmitterMnemonic)
-	mnemonicText += renderMnemonic("Batch Submitter", state.systemKeyBatchSubmitterAddress, state.systemKeyBatchSubmitterMnemonic)
-	mnemonicText += renderMnemonic("Challenger", state.systemKeyChallengerAddress, state.systemKeyChallengerMnemonic)
+	mnemonicText += styles.RenderMnemonic("Operator", state.systemKeyOperatorAddress, state.systemKeyOperatorMnemonic)
+	mnemonicText += styles.RenderMnemonic("Bridge Executor", state.systemKeyBridgeExecutorAddress, state.systemKeyBridgeExecutorMnemonic)
+	mnemonicText += styles.RenderMnemonic("Output Submitter", state.systemKeyOutputSubmitterAddress, state.systemKeyOutputSubmitterMnemonic)
+	mnemonicText += styles.RenderMnemonic("Batch Submitter", state.systemKeyBatchSubmitterAddress, state.systemKeyBatchSubmitterMnemonic)
+	mnemonicText += styles.RenderMnemonic("Challenger", state.systemKeyChallengerAddress, state.systemKeyChallengerMnemonic)
 
 	return state.weave.Render() + "\n" +
 		styles.BoldUnderlineText("Important", styles.Yellow) + "\n" +
 		styles.Text("Write down these mnemonic phrases and store them in a safe place. \nIt is the only way to recover your system keys.", styles.Yellow) + "\n\n" +
 		mnemonicText + styles.RenderPrompt(m.GetQuestion(), []string{"`continue`"}, styles.Question) + m.TextInput.View()
-}
-
-func renderMnemonic(keyName, address, mnemonic string) string {
-	return styles.BoldText("Key Name: ", styles.Ivory) + keyName + "\n" +
-		styles.BoldText("Address: ", styles.Ivory) + address + "\n" +
-		styles.BoldText("Mnemonic:", styles.Ivory) + "\n" + mnemonic + "\n\n"
 }
 
 type FundGasStationConfirmationInput struct {

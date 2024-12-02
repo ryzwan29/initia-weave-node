@@ -287,7 +287,6 @@ func SetSymlink(targetPath string) error {
 }
 
 func GetHermesRelayerAddress(appName, chainId string) (string, bool) {
-	// TODO: Use constants for appName instead of parameter
 	cmd := exec.Command(appName, "keys", "list", "--chain", chainId)
 
 	var out bytes.Buffer
@@ -314,12 +313,16 @@ func GetHermesRelayerAddress(appName, chainId string) (string, bool) {
 	}
 }
 
-func GenerateAndAddNewHermesRelayerAddress(appName, chainId string) (*KeyInfo, error) {
-	mnemonic, err := crypto.GenerateMnemonic()
-	if err != nil {
-		return nil, err
+func DeleteWeaveKeyFromHermes(appName, chainId string) error {
+	cmd := exec.Command(appName, "keys", "delete", "--chain", chainId, "--key-name", "weave-relayer")
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to delete key from hermes for network: %s: %v", chainId, err)
 	}
 
+	return nil
+}
+
+func addNewKeyToHermes(appName, chainId, mnemonic string) (*KeyInfo, error) {
 	userHome, err := os.UserHomeDir()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user home: %v", err)
@@ -330,7 +333,6 @@ func GenerateAndAddNewHermesRelayerAddress(appName, chainId string) (*KeyInfo, e
 	}
 	defer io.DeleteFile(tempMnemonicPath)
 
-	// TODO: Use constants for appName instead of parameter
 	cmd := exec.Command(appName, "keys", "add", "--chain", chainId, "--mnemonic-file", tempMnemonicPath)
 
 	var out bytes.Buffer
@@ -352,4 +354,35 @@ func GenerateAndAddNewHermesRelayerAddress(appName, chainId string) (*KeyInfo, e
 		Address:  match[1],
 		Mnemonic: mnemonic,
 	}, nil
+}
+
+func GenerateAndAddNewHermesKey(appName, chainId string) (*KeyInfo, error) {
+	mnemonic, err := crypto.GenerateMnemonic()
+	if err != nil {
+		return nil, err
+	}
+
+	return addNewKeyToHermes(appName, chainId, mnemonic)
+}
+
+func RecoverNewHermesKey(appName, chainId, mnemonic string) (*KeyInfo, error) {
+	return addNewKeyToHermes(appName, chainId, mnemonic)
+}
+
+func GenerateAndReplaceHermesKey(appName, chainId string) (*KeyInfo, error) {
+	err := DeleteWeaveKeyFromHermes(appName, chainId)
+	if err != nil {
+		panic(err)
+	}
+
+	return GenerateAndAddNewHermesKey(appName, chainId)
+}
+
+func RecoverAndReplaceHermesKey(appName, chainId, mnemonic string) (*KeyInfo, error) {
+	err := DeleteWeaveKeyFromHermes(appName, chainId)
+	if err != nil {
+		panic(err)
+	}
+
+	return RecoverNewHermesKey(appName, chainId, mnemonic)
 }
