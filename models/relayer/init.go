@@ -805,10 +805,12 @@ func (m *FundingAmountSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch *selected {
 		case FundingDefaultPreset:
 			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, "Use the default preset"))
+			state.l1FundingAmount = DefaultL1RelayerBalance
+			state.l2FundingAmount = DefaultL2RelayerBalance
 			return NewFundDefaultPresetConfirmationInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
 		case FundingFillManually:
-			// TODO: Continue
 			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, "Fill in an amount manually to fund from Gas Station Account"))
+			return NewFundManuallyL1BalanceInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
 		case FundingUserTransfer:
 			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, "Transfer funds manually from other account"))
 			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "Your relayer has been set up successfully! 🎉", []string{}, ""))
@@ -926,9 +928,9 @@ func (m *FundDefaultPresetConfirmationInput) View() string {
 			[]string{}, styles.Empty,
 		) + "\n\n" +
 		fmt.Sprintf("Sending tokens from the Gas Station account on L1 %s ⛽️\n", styles.Text(fmt.Sprintf("(%s)", m.initiaGasStationAddress), styles.Gray)) +
-		formatSendMsg(DefaultL1RelayerBalance, MustGetL1GasDenom(m.Ctx), "Relayer key on L1", state.l1RelayerAddress) + "\n" +
+		formatSendMsg(state.l1FundingAmount, MustGetL1GasDenom(m.Ctx), "Relayer key on L1", state.l1RelayerAddress) + "\n" +
 		fmt.Sprintf("Sending tokens from the Gas Station account on L2 %s ⛽️\n", styles.Text(fmt.Sprintf("(%s)", m.initiaGasStationAddress), styles.Gray)) +
-		formatSendMsg(DefaultL2RelayerBalance, MustGetL2GasDenom(m.Ctx), "Relayer key on L2", state.l2RelayerAddress) +
+		formatSendMsg(state.l2FundingAmount, MustGetL2GasDenom(m.Ctx), "Relayer key on L2", state.l2RelayerAddress) +
 		styles.RenderPrompt(m.GetQuestion(), []string{}, styles.Question) + m.TextInput.View()
 }
 
@@ -957,7 +959,7 @@ func broadcastDefaultPresetFromGasStation(ctx context.Context) tea.Cmd {
 		res, err := cliTx.BroadcastMsgSend(
 			gasStationMnemonic,
 			state.l1RelayerAddress,
-			fmt.Sprintf("%s%s", DefaultL1RelayerBalance, MustGetL1GasDenom(ctx)),
+			fmt.Sprintf("%s%s", state.l1FundingAmount, MustGetL1GasDenom(ctx)),
 			MustGetL1GasPrices(ctx),
 			MustGetL1ActiveRpc(ctx),
 			MustGetL1ChainId(ctx),
@@ -970,7 +972,7 @@ func broadcastDefaultPresetFromGasStation(ctx context.Context) tea.Cmd {
 		res, err = cliTx.BroadcastMsgSend(
 			gasStationMnemonic,
 			state.l2RelayerAddress,
-			fmt.Sprintf("%s%s", DefaultL2RelayerBalance, MustGetL2GasDenom(ctx)),
+			fmt.Sprintf("%s%s", state.l2FundingAmount, "l2/4b66eb60bf9f503ea97fe4dc96d5c604c1dca14ee988e21510ac4b087bf72671"),
 			MustGetL2GasPrices(ctx),
 			MustGetL2ActiveRpc(ctx),
 			MustGetL2ChainId(ctx),
@@ -1008,6 +1010,100 @@ func (m *FundDefaultPresetBroadcastLoading) Update(msg tea.Msg) (tea.Model, tea.
 func (m *FundDefaultPresetBroadcastLoading) View() string {
 	state := weavecontext.GetCurrentState[RelayerState](m.Ctx)
 	return state.weave.Render() + "\n" + m.loading.View()
+}
+
+type FundManuallyL1BalanceInput struct {
+	ui.TextInput
+	weavecontext.BaseModel
+	question string
+}
+
+func NewFundManuallyL1BalanceInput(ctx context.Context) *FundManuallyL1BalanceInput {
+	model := &FundManuallyL1BalanceInput{
+		TextInput: ui.NewTextInput(false),
+		BaseModel: weavecontext.BaseModel{Ctx: ctx},
+		question:  fmt.Sprintf("Please specify amount that would be transferred to Relayer account on L1 (%s)", MustGetL1GasDenom(ctx)),
+	}
+	model.WithPlaceholder("Enter the desired balance")
+	model.WithValidatorFn(common.IsValidInteger)
+	return model
+}
+
+func (m *FundManuallyL1BalanceInput) GetQuestion() string {
+	return m.question
+}
+
+func (m *FundManuallyL1BalanceInput) Init() tea.Cmd {
+	return nil
+}
+
+func (m *FundManuallyL1BalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := weavecontext.HandleCommonCommands[RelayerState](m, msg); handled {
+		return model, cmd
+	}
+
+	input, cmd, done := m.TextInput.Update(msg)
+	if done {
+		state := weavecontext.PushPageAndGetState[RelayerState](m)
+		state.l1FundingAmount = input.Text
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Relayer account", "L1"}, input.Text))
+
+		return NewFundManuallyL2BalanceInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
+	}
+	m.TextInput = input
+	return m, cmd
+}
+
+func (m *FundManuallyL1BalanceInput) View() string {
+	state := weavecontext.GetCurrentState[RelayerState](m.Ctx)
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"Relayer account", "L1"}, styles.Question) + m.TextInput.View()
+}
+
+type FundManuallyL2BalanceInput struct {
+	ui.TextInput
+	weavecontext.BaseModel
+	question string
+}
+
+func NewFundManuallyL2BalanceInput(ctx context.Context) *FundManuallyL2BalanceInput {
+	model := &FundManuallyL2BalanceInput{
+		TextInput: ui.NewTextInput(false),
+		BaseModel: weavecontext.BaseModel{Ctx: ctx},
+		question:  fmt.Sprintf("Please specify amount that would be transferred to Relayer account on L2 (%s)", MustGetL2GasDenom(ctx)),
+	}
+	model.WithPlaceholder("Enter the desired balance")
+	model.WithValidatorFn(common.IsValidInteger)
+	return model
+}
+
+func (m *FundManuallyL2BalanceInput) GetQuestion() string {
+	return m.question
+}
+
+func (m *FundManuallyL2BalanceInput) Init() tea.Cmd {
+	return nil
+}
+
+func (m *FundManuallyL2BalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := weavecontext.HandleCommonCommands[RelayerState](m, msg); handled {
+		return model, cmd
+	}
+
+	input, cmd, done := m.TextInput.Update(msg)
+	if done {
+		state := weavecontext.PushPageAndGetState[RelayerState](m)
+		state.l2FundingAmount = input.Text
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Relayer account", "L2"}, input.Text))
+
+		return NewFundDefaultPresetConfirmationInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
+	}
+	m.TextInput = input
+	return m, cmd
+}
+
+func (m *FundManuallyL2BalanceInput) View() string {
+	state := weavecontext.GetCurrentState[RelayerState](m.Ctx)
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"Relayer account", "L2"}, styles.Question) + m.TextInput.View()
 }
 
 type NetworkSelectOption string
@@ -1876,7 +1972,7 @@ func (m *FillL2LCD) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		state := weavecontext.PushPageAndGetState[RelayerState](m)
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"L2", "LCD_address", m.extra}, m.TextInput.Text))
 
-		// TODO: should have loding state for this
+		// TODO: should have loading state for this
 		httpClient := client.NewHTTPClient()
 		var res types.ChannelsResponse
 		_, err := httpClient.Get(input.Text, "/ibc/core/channel/v1/channels", nil, &res)

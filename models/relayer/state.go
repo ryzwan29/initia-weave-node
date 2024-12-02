@@ -13,12 +13,14 @@ type RelayerState struct {
 	l1RelayerAddress  string
 	l1RelayerMnemonic string
 	l1NeedsFunding    bool
+	l1FundingAmount   string
 	l1FundingTxHash   string
 
 	l2KeyMethod       string
 	l2RelayerAddress  string
 	l2RelayerMnemonic string
 	l2NeedsFunding    bool
+	l2FundingAmount   string
 	l2FundingTxHash   string
 
 	hermesBinaryPath string
@@ -46,12 +48,14 @@ func (state RelayerState) Clone() RelayerState {
 		l1RelayerAddress:  state.l1RelayerAddress,
 		l1RelayerMnemonic: state.l1RelayerMnemonic,
 		l1NeedsFunding:    state.l1NeedsFunding,
+		l1FundingAmount:   state.l1FundingAmount,
 		l1FundingTxHash:   state.l1FundingTxHash,
 
 		l2KeyMethod:       state.l2KeyMethod,
 		l2RelayerAddress:  state.l2RelayerAddress,
 		l2RelayerMnemonic: state.l2RelayerMnemonic,
 		l2NeedsFunding:    state.l2NeedsFunding,
+		l2FundingAmount:   state.l2FundingAmount,
 		l2FundingTxHash:   state.l2FundingTxHash,
 
 		hermesBinaryPath: state.hermesBinaryPath,
