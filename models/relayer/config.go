@@ -20,6 +20,11 @@ type PacketFilter struct {
 	List [][]string
 }
 
+type GasPrice struct {
+	Amount string
+	Denom  string
+}
+
 // Data holds all the dynamic data for the template
 type Data struct {
 	ID            string
@@ -32,6 +37,7 @@ type Data struct {
 	GRPCAddr2     string
 	EventSource2  EventSource
 	PacketFilter2 PacketFilter
+	GasPrice2     GasPrice
 }
 
 func transformToPacketFilter(pairs []types.IBCChannelPair, isL1 bool) PacketFilter {
@@ -178,7 +184,7 @@ key_name = 'weave-relayer'
 store_prefix = 'ibc'
 default_gas = 100000
 max_gas = 10000000
-gas_price = { price = 0, denom = 'umin' }
+gas_price = { price = 0, denom = '{{.GasPrice2.Denom}}' }
 gas_multiplier = 1.5
 max_msg_num = 30
 max_tx_size = 2097152
@@ -211,6 +217,10 @@ list = [
 			Mode:       "push",
 			URL:        state.Config["l2.websocket"],
 			BatchDelay: "500ms",
+		},
+		GasPrice2: GasPrice{
+			Amount: state.Config["l2.gas_price.price"],
+			Denom:  state.Config["l2.gas_price.denom"],
 		},
 		PacketFilter2: transformToPacketFilter(state.IBCChannels, false),
 	}

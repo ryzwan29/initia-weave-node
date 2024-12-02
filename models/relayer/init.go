@@ -106,7 +106,7 @@ func (m *RollupSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				panic(err)
 			}
 
-			if minitiaConfig.L1Config.ChainID == "initiation-2" {
+			if minitiaConfig.L1Config.ChainID == IntiaTestnetChainId {
 				testnetRegistry := registry.MustGetChainRegistry(registry.InitiaL1Testnet)
 				state.Config["l1.chain_id"] = testnetRegistry.GetChainId()
 				state.Config["l1.rpc_address"] = testnetRegistry.MustGetActiveRpc()
@@ -116,9 +116,9 @@ func (m *RollupSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				state.Config["l1.gas_price.price"] = testnetRegistry.MustGetMinGasPriceByDenom(DefaultGasPriceDenom)
 
 				state.Config["l2.chain_id"] = minitiaConfig.L2Config.ChainID
-				state.Config["l2.gas_price.denom"] = DefaultGasPriceDenom
+				state.Config["l2.gas_price.denom"] = minitiaConfig.L2Config.Denom
 				state.Config["l2.gas_price.price"] = DefaultGasPriceAmount
-				state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, "L1 network is auto-detected", []string{}, "initiation-2"))
+				state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, "L1 network is auto-detected", []string{}, minitiaConfig.L1Config.ChainID))
 
 			} else {
 				panic("not support L1")
@@ -397,9 +397,8 @@ type SelectingL2Network struct {
 	question string
 }
 
-func NewSelectingL2Network(ctx context.Context) *SelectingL2Network {
-	// TODO: dynamic network
-	networks := registry.MustGetAllL2AvailableNetwork(registry.InitiaL1Testnet)
+func NewSelectingL2Network(ctx context.Context, chainType registry.ChainType) *SelectingL2Network {
+	networks := registry.MustGetAllL2AvailableNetwork(chainType)
 
 	options := make([]string, 0)
 	for _, network := range networks {
@@ -464,6 +463,11 @@ func (m *SelectingL2Network) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				},
 			})
 		}
+
+		state.Config["l2.chain_id"] = chainId
+		// TODO: revisit denom
+		state.Config["l2.gas_price.denom"] = DefaultGasPriceDenom
+		state.Config["l2.gas_price.price"] = DefaultGasPriceAmount
 
 		return NewIBCChannelsCheckbox(weavecontext.SetCurrentState(m.Ctx, state), pairs), nil
 	}
@@ -550,8 +554,9 @@ func (m *SelectingL1NetworkRegistry) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			state.Config["l1.gas_price.denom"] = DefaultGasPriceDenom
 			state.Config["l1.gas_price.price"] = testnetRegistry.MustGetMinGasPriceByDenom(DefaultGasPriceDenom)
 
-			return NewSelectingL2Network(weavecontext.SetCurrentState(m.Ctx, state)), nil
+			return NewSelectingL2Network(weavecontext.SetCurrentState(m.Ctx, state), registry.InitiaL1Testnet), nil
 		}
+		// TODO: add mainnet
 	}
 
 	return m, cmd
@@ -621,15 +626,19 @@ func (m *SelectSettingUpIBCChannelsMethod) Update(msg tea.Msg) (tea.Model, tea.C
 			if err := json.Unmarshal(data, &artifacts); err != nil {
 				panic(err)
 			}
-
+			var metadata types.Metadata
+			var networkRegistry *registry.ChainRegistry
 			// TODO: switch registry
-			testnetRegistry := registry.MustGetChainRegistry(registry.InitiaL1Testnet)
-			info := testnetRegistry.MustGetOpinitBridgeInfo(artifacts.BridgeID)
-			metadata := types.MustDecodeBridgeMetadata(info.BridgeConfig.Metadata)
-
+			if state.Config["l1.chain_id"] == IntiaTestnetChainId {
+				networkRegistry = registry.MustGetChainRegistry(registry.InitiaL1Testnet)
+				info := networkRegistry.MustGetOpinitBridgeInfo(artifacts.BridgeID)
+				metadata = types.MustDecodeBridgeMetadata(info.BridgeConfig.Metadata)
+			} else {
+				panic(fmt.Sprintf("not support for l1 %s", state.Config["l1.chain_id"]))
+			}
 			channelPairs := make([]types.IBCChannelPair, 0)
 			for _, channel := range metadata.PermChannels {
-				counterparty := testnetRegistry.MustGetCounterPartyIBCChannel(channel.PortID, channel.ChannelID)
+				counterparty := networkRegistry.MustGetCounterPartyIBCChannel(channel.PortID, channel.ChannelID)
 				channelPairs = append(channelPairs, types.IBCChannelPair{
 					L1: channel,
 					L2: counterparty,
