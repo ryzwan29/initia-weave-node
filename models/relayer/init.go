@@ -100,7 +100,6 @@ func (m *RollupSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return NewSelectingL1NetworkRegistry(weavecontext.SetCurrentState(m.Ctx, state)), nil
 		case Local:
 			minitiaConfigPath := weavecontext.GetMinitiaArtifactsConfigJson(m.Ctx)
-			// Load the config if found
 			configData, err := os.ReadFile(minitiaConfigPath)
 			if err != nil {
 				panic(err)
@@ -1425,7 +1424,6 @@ func (m *SelectSettingUpIBCChannelsMethod) Update(msg tea.Msg) (tea.Model, tea.C
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{""}, string(*selected)))
 		switch *selected {
 		case Basic:
-
 			// Read the file content
 			data, err := os.ReadFile(weavecontext.GetMinitiaArtifactsJson(m.Ctx))
 			if err != nil {
@@ -1438,7 +1436,7 @@ func (m *SelectSettingUpIBCChannelsMethod) Update(msg tea.Msg) (tea.Model, tea.C
 			}
 			var metadata types.Metadata
 			var networkRegistry *registry.ChainRegistry
-			if state.Config["l1.chain_id"] == InitiaTestnetChainId {
+			if state.Config["l1.chain_id"] == registry.MustGetChainRegistry(registry.InitiaL1Testnet).GetChainId() {
 				networkRegistry = registry.MustGetChainRegistry(registry.InitiaL1Testnet)
 				info := networkRegistry.MustGetOpinitBridgeInfo(artifacts.BridgeID)
 				metadata = types.MustDecodeBridgeMetadata(info.BridgeConfig.Metadata)
