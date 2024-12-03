@@ -42,7 +42,7 @@ var defaultL2ConfigManual = []*Field{
 	{Name: "l2.grpc_address", Type: StringField, Question: "Please specify the L2 grpc_address", Placeholder: "Add RPC address ex. http://localhost:9090", ValidateFn: common.ValidateURL},
 	{Name: "l2.websocket", Type: StringField, Question: "Please specify the L2 websocket", Placeholder: "Add RPC address ex. ws://localhost:26657/websocket", ValidateFn: common.ValidateURL},
 	{Name: "l2.gas_price.denom", Type: StringField, Question: "Please specify the gas_price denom", Placeholder: "Add gas_price denom ex. umin", ValidateFn: common.ValidateDenom},
-	{Name: "l2.gas_price.price", Type: StringField, Question: "Please specify the gas_price prie", Placeholder: "Add gas_price price ex. 0.15"},
+	{Name: "l2.gas_price.price", Type: StringField, Question: "Please specify the gas_price prie", Placeholder: "Add gas_price price ex. 0.15", ValidateFn: common.ValidateDecFromStr},
 }
 
 type RollupSelect struct {
@@ -1170,6 +1170,7 @@ func (m *SelectingL1Network) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			state.Config["l1.chain_id"] = testnetRegistry.GetChainId()
 			state.Config["l1.rpc_address"] = testnetRegistry.MustGetActiveRpc()
 			state.Config["l1.grpc_address"] = testnetRegistry.MustGetActiveGrpc()
+			state.Config["l1.websocket"] = testnetRegistry.MustGetActiveWebsocket()
 			state.Config["l1.lcd_address"] = testnetRegistry.MustGetActiveLcd()
 			state.Config["l1.gas_price.denom"] = DefaultGasPriceDenom
 			state.Config["l1.gas_price.price"] = testnetRegistry.MustGetFixedMinGasPriceByDenom(DefaultGasPriceDenom)
