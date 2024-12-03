@@ -1881,6 +1881,7 @@ type IBCChannelsCheckbox struct {
 	weavecontext.BaseModel
 	question string
 	pairs    []types.IBCChannelPair
+	alert    bool
 }
 
 func NewIBCChannelsCheckbox(ctx context.Context, pairs []types.IBCChannelPair) *IBCChannelsCheckbox {
@@ -1922,14 +1923,39 @@ func (m *IBCChannelsCheckbox) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			state.IBCChannels = ibcChannels
 		}
+		response := ""
+		channelCount := len(state.IBCChannels)
+		if channelCount == 0 {
+			m.alert = true
+			return m, cmd
+		}
+
+		if channelCount == 1 {
+			response = "1 ibc channel opened"
+		} else {
+			response = fmt.Sprintf("%d ibc channels opened", channelCount)
+		}
+
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{}, response))
 		model := NewSettingUpRelayer(weavecontext.SetCurrentState(m.Ctx, state))
 		return model, model.Init()
 	}
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		case " ":
+			m.alert = false
+		}
+	}
+
 	return m, cmd
 }
 
 func (m *IBCChannelsCheckbox) View() string {
 	state := weavecontext.GetCurrentState[RelayerState](m.Ctx)
+	if m.alert {
+		return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{}, styles.Question) + "\n" + m.CheckBox.View() + "\n" + styles.Text("Please select at least one IBC channel to proceed to the next step.", styles.Yellow) + "\n"
+	}
 	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{}, styles.Question) + "\n" + m.CheckBox.View()
 }
 
