@@ -2,7 +2,6 @@ package cosmosutils
 
 import (
 	"fmt"
-	"github.com/initia-labs/weave/io"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -13,6 +12,7 @@ import (
 
 	"github.com/initia-labs/weave/client"
 	"github.com/initia-labs/weave/common"
+	"github.com/initia-labs/weave/io"
 )
 
 type BinaryRelease struct {

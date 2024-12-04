@@ -4,7 +4,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	weavecontext "github.com/initia-labs/weave/context"
-	"github.com/initia-labs/weave/cosmosutils"
 	"github.com/initia-labs/weave/flags"
 	"github.com/initia-labs/weave/models/initia"
 	"github.com/initia-labs/weave/models/minitia"
@@ -105,9 +104,8 @@ func (m *WeaveInit) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			minitiaChecker := minitia.NewExistingMinitiaChecker(weavecontext.NewAppContext(*minitia.NewLaunchState()))
 			return minitiaChecker, minitiaChecker.Init()
 		case SetupOPBotsKeys:
-			versions, currentVersion := cosmosutils.GetOPInitVersions()
 			ctx := weavecontext.NewAppContext(opinit_bots.NewOPInitBotsState())
-			return opinit_bots.NewOPInitBotVersionSelector(ctx, versions, currentVersion), nil
+			return opinit_bots.PrepareSetup(ctx), nil
 		case InitializeOPBotsOption:
 			return opinit_bots.NewOPInitBotInitSelector(weavecontext.NewAppContext(opinit_bots.NewOPInitBotsState())), nil
 		}

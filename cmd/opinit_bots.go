@@ -65,18 +65,14 @@ func OPInitBotsCommand() *cobra.Command {
 }
 
 func Setup(minitiaHome, opInitHome string) (tea.Model, error) {
-	versions, currentVersion := cosmosutils.GetOPInitVersions()
 
 	// Initialize the context with OPInitBotsState
 	ctx := weavecontext.NewAppContext(opinit_bots.NewOPInitBotsState())
 	ctx = weavecontext.SetMinitiaHome(ctx, minitiaHome)
 	ctx = weavecontext.SetOPInitHome(ctx, opInitHome)
 
-	// Initialize the OPInitBotVersionSelector with the current context and versions
-	versionSelector := opinit_bots.NewOPInitBotVersionSelector(ctx, versions, currentVersion)
-
 	// Start the program
-	finalModel, err := tea.NewProgram(versionSelector).Run()
+	finalModel, err := tea.NewProgram(opinit_bots.PrepareSetup(ctx)).Run()
 	if err != nil {
 		fmt.Println("Error running program:", err)
 	}

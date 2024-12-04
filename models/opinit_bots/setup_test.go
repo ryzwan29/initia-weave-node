@@ -8,73 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	weavecontext "github.com/initia-labs/weave/context"
-	"github.com/initia-labs/weave/cosmosutils"
 	"github.com/initia-labs/weave/types"
 )
-
-func TestOPInitBotVersionSelector_Update(t *testing.T) {
-	// Sample URL map with versioned download URLs
-	urlMap := cosmosutils.BinaryVersionWithDownloadURL{
-		"v1.0.0": "https://example.com/v1.0.0",
-		"v2.0.0": "https://example.com/v2.0.0",
-	}
-
-	// Initialize context and state
-	ctx := weavecontext.NewAppContext(NewOPInitBotsState())
-	state := weavecontext.GetCurrentState[OPInitBotsState](ctx)
-	ctx = weavecontext.SetCurrentState(ctx, state)
-
-	// Define test cases
-	tests := []struct {
-		name            string
-		navigateDown    int // Number of times to press KeyDown to reach the target version
-		selectedVersion string
-		expectedURL     string
-	}{
-		{
-			name:            "SelectVersion1",
-			navigateDown:    1, // The second option is "v1.0.0"
-			selectedVersion: "v1.0.0",
-			expectedURL:     "https://example.com/v1.0.0",
-		},
-		{
-			name:            "SelectVersion2",
-			navigateDown:    0, // The first option is "v2.0.0"
-			selectedVersion: "v2.0.0",
-			expectedURL:     "https://example.com/v2.0.0",
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			// Initialize OPInitBotVersionSelector model
-			model := NewOPInitBotVersionSelector(ctx, urlMap, "")
-
-			// Navigate down to the target version
-			for i := 0; i < tc.navigateDown; i++ {
-				model.Update(tea.KeyMsg{Type: tea.KeyDown})
-			}
-
-			// Simulate pressing Enter to confirm selection
-			nextModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
-
-			// Expect transition to SetupOPInitBotKeySelector
-			if m, ok := nextModel.(*SetupOPInitBotKeySelector); !ok {
-				t.Errorf("Expected model to be of type *SetupOPInitBotKeySelector, but got %T", nextModel)
-			} else {
-
-				state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
-
-				// Verify that the selected version and endpoint URL are set correctly
-				assert.Equal(t, tc.selectedVersion, state.OPInitBotVersion)
-				assert.Equal(t, tc.expectedURL, state.OPInitBotEndpoint)
-
-				// Verify that the previous response is updated correctly
-				assert.Contains(t, state.weave.Render(), tc.selectedVersion)
-			}
-		})
-	}
-}
 
 func TestProcessingMinitiaConfig_Update_AddKeys(t *testing.T) {
 	ctx := weavecontext.NewAppContext(NewOPInitBotsState())
@@ -106,7 +41,7 @@ func TestProcessingMinitiaConfig_Update_AddKeys(t *testing.T) {
 	nextModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter}) // Confirm selection
 
 	// Check that the model transitions to SetupOPInitBots
-	if setupModel, ok := nextModel.(*SetupOPInitBots); ok {
+	if setupModel, ok := nextModel.(*SetupBotCheckbox); ok {
 		state := weavecontext.GetCurrentState[OPInitBotsState](setupModel.Ctx)
 
 		// Validate that BotInfos have been updated
@@ -116,7 +51,7 @@ func TestProcessingMinitiaConfig_Update_AddKeys(t *testing.T) {
 		assert.Equal(t, "mnemonic4", state.BotInfos[3].Mnemonic)
 		assert.Equal(t, string(InitiaLayerOption), state.BotInfos[2].DALayer) // BatchSubmitter DA Layer check
 	} else {
-		t.Errorf("Expected model to be of type *SetupOPInitBots, but got %T", nextModel)
+		t.Errorf("Expected model to be of type *SetupBotCheckbox, but got %T", nextModel)
 	}
 }
 
