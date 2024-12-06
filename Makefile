@@ -35,6 +35,12 @@ build: check_version $(BUILDDIR)
 install: check_version
 	go install -ldflags "$(LDFLAGS)" .
 
+lint:
+	golangci-lint run --out-format=tab --timeout=15m
+
+lint-fix:
+	golangci-lint run --fix --out-format=tab --timeout=15m
+
 test: check_version
 	go clean -testcache
 	go test -v ./...
