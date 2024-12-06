@@ -343,7 +343,7 @@ func TestInitiaInitLocalExisting(t *testing.T) {
 		pressEnter,
 		typeText("NewMoniker"),
 		pressEnter,
-		typeText("0.015uinit"),
+		typeText("0.15uinit"),
 		pressEnter,
 		pressSpace,
 		pressDown,
@@ -365,6 +365,6 @@ func TestInitiaInitLocalExisting(t *testing.T) {
 	compareTomlValue(t, configTomlPath, "statesync.enable", false)
 	compareTomlValue(t, configTomlPath, "statesync.rpc_servers", "")
 
-	compareTomlValue(t, appTomlPath, "minimum-gas-prices", "0.015uinit")
+	compareTomlValue(t, appTomlPath, "minimum-gas-prices", "0.15uinit")
 	compareTomlValue(t, appTomlPath, "api.enable", "true")
 }
