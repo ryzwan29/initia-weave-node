@@ -3,10 +3,7 @@ name: Notify Slack on workflow completion
 on:
   workflow_run:
     workflows:
-      [
-        Build Go binaries and upload to weave-binaries release,
-        Go Format and Test,
-      ]
+      - "*"
     types: [completed]
 
 jobs:
@@ -15,7 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Get Slack member ID
+      - name: Get Slack member IDs
         id: get-slack-id
         if: github.event.workflow_run.conclusion != 'success'
         run: |

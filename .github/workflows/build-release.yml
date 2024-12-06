@@ -6,28 +6,41 @@ on:
       - published
 
 jobs:
-  test:
-    name: Run Go Format and Test
+  basic-checks:
+    name: Basic Checks
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-      - name: Set up Go
-        uses: actions/setup-go@v4
+      - uses: actions/setup-go@v4
         with:
           go-version: "1.22.6"
 
-      - name: Go Format
+      - name: Check lint
         run: go fmt ./...
 
-      - name: Run Go Tests
+      - name: Run unit tests
         run: go test -v ./...
+
+  integration-tests:
+    name: Run Integration Tests
+    needs: basic-checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-go@v4
+        with:
+          go-version: "1.22.6"
+
+      - name: Run Integration Tests
+        run: cd tests && go test -v ./...
 
   build:
     name: Build Go binaries
-    needs: test
+    needs: integration-tests
     runs-on: ubuntu-latest
 
     strategy:
@@ -36,11 +49,9 @@ jobs:
         goarch: [amd64, arm64]
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-      - name: Set up Go
-        uses: actions/setup-go@v4
+      - uses: actions/setup-go@v4
         with:
           go-version: "1.22.6"
 
@@ -77,8 +88,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Download binaries
-        uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v3
         with:
           path: artifacts
 
