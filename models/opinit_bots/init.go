@@ -1008,7 +1008,7 @@ func WaitSetupOPInitBotsMissingKey(ctx context.Context) tea.Cmd {
 		state := weavecontext.GetCurrentState[OPInitBotsState](ctx)
 		userHome, err := os.UserHomeDir()
 		if err != nil {
-			panic(fmt.Sprintf("failed to get user home directory: %v", err))
+			return ui.ErrorLoading{Err: fmt.Errorf("failed to get user home directory: %v", err)}
 		}
 
 		binaryPath := filepath.Join(userHome, common.WeaveDataDirectory, fmt.Sprintf("opinitd@%s", OpinitBotBinaryVersion), AppName)
@@ -1018,7 +1018,7 @@ func WaitSetupOPInitBotsMissingKey(ctx context.Context) tea.Cmd {
 			if info.Mnemonic != "" {
 				res, err := cosmosutils.OPInitRecoverKeyFromMnemonic(binaryPath, info.KeyName, info.Mnemonic, info.DALayer == string(CelestiaLayerOption), opInitHome)
 				if err != nil {
-					return ui.ErrorLoading{Err: err}
+					return ui.ErrorLoading{Err: fmt.Errorf("failed to recover key from mnemonic: %v", err)}
 				}
 				state.SetupOpinitResponses[info.BotName] = res
 				continue
@@ -1026,7 +1026,7 @@ func WaitSetupOPInitBotsMissingKey(ctx context.Context) tea.Cmd {
 			if info.IsGenerateKey {
 				res, err := cosmosutils.OPInitAddOrReplace(binaryPath, info.KeyName, info.DALayer == string(CelestiaLayerOption), opInitHome)
 				if err != nil {
-					return ui.ErrorLoading{Err: err}
+					return ui.ErrorLoading{Err: fmt.Errorf("failed to add or replace key: %v", err)}
 
 				}
 				state.SetupOpinitResponses[info.BotName] = res

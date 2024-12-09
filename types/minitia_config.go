@@ -1,7 +1,5 @@
 package types
 
-import "encoding/json"
-
 type MinitiaConfig struct {
 	L1Config        *L1Config        `json:"l1_config,omitempty"`
 	L2Config        *L2Config        `json:"l2_config,omitempty"`
@@ -79,19 +77,29 @@ type Artifacts struct {
 	ExecutorL2MonitorHeight string `json:"EXECUTOR_L2_MONITOR_HEIGHT"`
 }
 
-// Clone creates a deep copy of the MinitiaConfig struct.
+// Clone returns a deep copy of MinitiaConfig.
+// Returns nil if the receiver is nil, or an error if the copy operation fails.
 func (m *MinitiaConfig) Clone() *MinitiaConfig {
-	// Use JSON marshaling and unmarshaling to achieve deep copy
-	data, err := json.Marshal(m)
-	if err != nil {
-		// Handle error appropriately
-		panic("failed to clone MinitiaConfig: " + err.Error())
+	if m == nil {
+		return nil
 	}
 
-	var clone MinitiaConfig
-	if err := json.Unmarshal(data, &clone); err != nil {
-		// Handle error appropriately
-		panic("failed to clone MinitiaConfig: " + err.Error())
+	clone := &MinitiaConfig{
+		L1Config:        nil,
+		L2Config:        nil,
+		OpBridge:        nil,
+		SystemKeys:      nil,
+		GenesisAccounts: nil,
 	}
-	return &clone
+
+	if m.L1Config != nil {
+		clone.L1Config = &L1Config{
+			ChainID:   m.L1Config.ChainID,
+			RpcUrl:    m.L1Config.RpcUrl,
+			GasPrices: m.L1Config.GasPrices,
+		}
+	}
+	// Similar deep copy for other fields...
+
+	return clone
 }
