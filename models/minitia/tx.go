@@ -115,7 +115,11 @@ func (lsk *L1SystemKeys) FundAccountsWithGasStation(state *LaunchState) (*FundAc
 	if err = io.WriteFile(rawTxPath, rawTxContent); err != nil {
 		return nil, fmt.Errorf("failed to write raw tx file: %v", err)
 	}
-	defer io.DeleteFile(rawTxPath)
+	defer func() {
+		if err := io.DeleteFile(rawTxPath); err != nil {
+			fmt.Printf("failed to delete raw tx file: %v", err)
+		}
+	}()
 
 	signCmd := exec.Command(state.binaryPath, "tx", "sign", rawTxPath, "--from", common.WeaveGasStationKeyName, "--node", state.l1RPC,
 		"--chain-id", state.l1ChainId, "--keyring-backend", "test", "--output-document", rawTxPath)

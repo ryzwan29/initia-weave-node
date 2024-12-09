@@ -20,5 +20,6 @@ linters-settings:
 issues:
   exclude:
     - composite
+    - 'SA1019: "golang.org/x/crypto/ripemd160" is deprecated:' # Exclude deprecated ripemd160 warning
 run:
   tests: false

@@ -331,7 +331,12 @@ func addNewKeyToHermes(appName, chainId, mnemonic string) (*KeyInfo, error) {
 	if err = io.WriteFile(tempMnemonicPath, mnemonic); err != nil {
 		return nil, fmt.Errorf("failed to write raw tx file: %v", err)
 	}
-	defer io.DeleteFile(tempMnemonicPath)
+
+	defer func() {
+		if err := io.DeleteFile(tempMnemonicPath); err != nil {
+			fmt.Printf("failed to delete temp mnemonic file: %v", err)
+		}
+	}()
 
 	cmd := exec.Command(appName, "keys", "add", "--chain", chainId, "--mnemonic-file", tempMnemonicPath)
 
@@ -370,11 +375,11 @@ func RecoverNewHermesKey(appName, chainId, mnemonic string) (*KeyInfo, error) {
 }
 
 func GenerateAndReplaceHermesKey(appName, chainId string) (*KeyInfo, error) {
-	DeleteWeaveKeyFromHermes(appName, chainId)
+	_ = DeleteWeaveKeyFromHermes(appName, chainId)
 	return GenerateAndAddNewHermesKey(appName, chainId)
 }
 
 func RecoverAndReplaceHermesKey(appName, chainId, mnemonic string) (*KeyInfo, error) {
-	DeleteWeaveKeyFromHermes(appName, chainId)
+	_ = DeleteWeaveKeyFromHermes(appName, chainId)
 	return RecoverNewHermesKey(appName, chainId, mnemonic)
 }

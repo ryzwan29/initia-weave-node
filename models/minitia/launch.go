@@ -2170,7 +2170,7 @@ func (m *DownloadCelestiaBinaryLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd)
 		state := weavecontext.PushPageAndGetState[LaunchState](m)
 
 		if state.downloadedNewCelestiaBinary {
-			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, fmt.Sprintf("Celestia binary has been successfully downloaded."), []string{}, ""))
+			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "Celestia binary has been successfully downloaded.", []string{}, ""))
 		}
 		model := NewGenerateOrRecoverSystemKeysLoading(weavecontext.SetCurrentState(m.Ctx, state))
 		return model, model.Init()
