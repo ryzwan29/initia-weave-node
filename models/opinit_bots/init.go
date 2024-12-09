@@ -9,13 +9,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/initia-labs/weave/cosmosutils"
-	"github.com/initia-labs/weave/io"
-
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/initia-labs/weave/common"
 	weavecontext "github.com/initia-labs/weave/context"
+	"github.com/initia-labs/weave/cosmosutils"
+	"github.com/initia-labs/weave/io"
 	"github.com/initia-labs/weave/registry"
 	"github.com/initia-labs/weave/service"
 	"github.com/initia-labs/weave/styles"
