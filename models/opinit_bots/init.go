@@ -242,6 +242,7 @@ func (m *OPInitBotInitSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"bot"}, string(*selected)))
 		switch *selected {
 		case ExecutorOPInitBotInitOption:
+			state.InitExecutorBot = true
 			keyNames := make(map[string]bool)
 			keyNames[BridgeExecutorKeyName] = true
 			keyNames[OutputSubmitterKeyName] = true
@@ -262,15 +263,32 @@ func (m *OPInitBotInitSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if finished {
 				return OPInitBotInitSelectExecutor(weavecontext.SetCurrentState(m.Ctx, state)), cmd
 			}
-			ja := ""
-			for _, botInfo := range state.BotInfos {
-				ja += fmt.Sprintf("%s => %v\n", botInfo.KeyName, botInfo.IsSetup)
-			}
 
 			state.isSetupMissingKey = true
 			return NextUpdateOpinitBotKey(weavecontext.SetCurrentState(m.Ctx, state))
 		case ChallengerOPInitBotInitOption:
-			return OPInitBotInitSelectChallenger(weavecontext.SetCurrentState(m.Ctx, state)), cmd
+			state.InitChallengerBot = true
+			keyNames := make(map[string]bool)
+			keyNames[ChallengerKeyName] = true
+
+			finished := true
+
+			state.BotInfos = CheckIfKeysExist(BotInfos)
+			for idx, botInfo := range state.BotInfos {
+				fmt.Println(botInfo.KeyName, keyNames[botInfo.KeyName], botInfo.IsNotExist)
+				if keyNames[botInfo.KeyName] && botInfo.IsNotExist {
+					state.BotInfos[idx].IsSetup = true
+					finished = false
+				} else {
+					state.BotInfos[idx].IsSetup = false
+				}
+			}
+			if finished {
+				return OPInitBotInitSelectChallenger(weavecontext.SetCurrentState(m.Ctx, state)), cmd
+			}
+
+			state.isSetupMissingKey = true
+			return NextUpdateOpinitBotKey(weavecontext.SetCurrentState(m.Ctx, state))
 		}
 	}
 	return m, cmd
