@@ -47,7 +47,7 @@ lint-fix: check_version
 	@echo "Warning: This will automatically modify your files to fix linting issues"
 	@read -p "Are you sure you want to continue? [y/N] " -n 1 -r; echo; if [[ ! $$REPLY =~ ^[Yy]$$ ]]; then exit 1; fi
 	@command -v golangci-lint >/dev/null 2>&1 || { echo "golangci-lint is required but not installed. Install it by following instructions at https://golangci-lint.run/welcome/install/"; exit 1; }
- 	golangci-lint run --fix --out-format=tab --timeout=15m
+	golangci-lint run --fix --out-format=tab --timeout=15m
 
 test: check_version
 	go clean -testcache
