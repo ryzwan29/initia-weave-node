@@ -253,6 +253,11 @@ func NextUpdateOpinitBotKey(ctx context.Context) (tea.Model, tea.Cmd) {
 			return NewRecoverKeySelector(ctx, idx), nil
 		}
 	}
+	if state.isSetupMissingKey {
+		model := NewSetupOPInitBotsMissingKey(ctx)
+		return model, model.Init()
+	}
+
 	model := NewSetupOPInitBots(ctx)
 	return model, model.Init()
 }
@@ -715,10 +720,12 @@ func (m *TerminalState) View() string {
 	state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
 	if len(state.SetupOpinitResponses) > 0 {
 		mnemonicText := ""
-		for botName, res := range state.SetupOpinitResponses {
-			keyInfo := strings.Split(res, "\n")
-			address := strings.Split(keyInfo[0], ": ")
-			mnemonicText += renderMnemonic(string(botName), address[1], keyInfo[1])
+		for _, botName := range BotNames {
+			if res, ok := state.SetupOpinitResponses[botName]; ok {
+				keyInfo := strings.Split(res, "\n")
+				address := strings.Split(keyInfo[0], ": ")
+				mnemonicText += renderMnemonic(string(botName), address[1], keyInfo[1])
+			}
 		}
 
 		return state.weave.Render() + "\n" + styles.RenderPrompt("Download binary and add keys successfully.", []string{}, styles.Completed) + "\n\n" +
