@@ -62,6 +62,10 @@ func (state OPInitBotsState) Clone() OPInitBotsState {
 		isSetupMissingKey:    state.isSetupMissingKey,
 	}
 
+	if state.MinitiaConfig != nil {
+		clone.MinitiaConfig = state.MinitiaConfig.Clone()
+	}
+	clone.weave = state.weave.Clone()
 	// Copy slice data
 	copy(clone.BotInfos, state.BotInfos)
 

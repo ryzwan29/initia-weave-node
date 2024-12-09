@@ -1,5 +1,7 @@
 package types
 
+import "encoding/json"
+
 type MinitiaConfig struct {
 	L1Config        *L1Config        `json:"l1_config,omitempty"`
 	L2Config        *L2Config        `json:"l2_config,omitempty"`
@@ -75,4 +77,21 @@ type Artifacts struct {
 	BridgeID                string `json:"BRIDGE_ID"`
 	ExecutorL1MonitorHeight string `json:"EXECUTOR_L1_MONITOR_HEIGHT"`
 	ExecutorL2MonitorHeight string `json:"EXECUTOR_L2_MONITOR_HEIGHT"`
+}
+
+// Clone creates a deep copy of the MinitiaConfig struct.
+func (m *MinitiaConfig) Clone() *MinitiaConfig {
+	// Use JSON marshaling and unmarshaling to achieve deep copy
+	data, err := json.Marshal(m)
+	if err != nil {
+		// Handle error appropriately
+		panic("failed to clone MinitiaConfig: " + err.Error())
+	}
+
+	var clone MinitiaConfig
+	if err := json.Unmarshal(data, &clone); err != nil {
+		// Handle error appropriately
+		panic("failed to clone MinitiaConfig: " + err.Error())
+	}
+	return &clone
 }
