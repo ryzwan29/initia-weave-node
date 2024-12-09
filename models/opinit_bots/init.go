@@ -954,7 +954,12 @@ func (m *SetupOPInitBotsMissingKey) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg := msg.(type) {
 		case tea.KeyMsg:
 			if msg.String() == "enter" {
-				return OPInitBotInitSelectExecutor(m.loading.EndContext), nil
+				state := weavecontext.GetCurrentState[OPInitBotsState](m.loading.EndContext)
+				if state.InitExecutorBot {
+					return OPInitBotInitSelectExecutor(m.loading.EndContext), nil
+				} else if state.InitChallengerBot {
+					return OPInitBotInitSelectChallenger(m.loading.EndContext), nil
+				}
 			}
 		}
 	}
