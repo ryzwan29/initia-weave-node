@@ -78,7 +78,7 @@ type Artifacts struct {
 }
 
 // Clone returns a deep copy of MinitiaConfig.
-// Returns nil if the receiver is nil, or an error if the copy operation fails.
+// Returns nil if the receiver is nil.
 func (m *MinitiaConfig) Clone() *MinitiaConfig {
 	if m == nil {
 		return nil
@@ -100,6 +100,50 @@ func (m *MinitiaConfig) Clone() *MinitiaConfig {
 		}
 	}
 	// Similar deep copy for other fields...
+	if m.L2Config != nil {
+		clone.L2Config = &L2Config{
+			ChainID:  m.L2Config.ChainID,
+			Denom:    m.L2Config.Denom,
+			Moniker:  m.L2Config.Moniker,
+			BridgeID: m.L2Config.BridgeID,
+		}
+	}
 
+	if m.OpBridge != nil {
+		clone.OpBridge = &OpBridge{
+			OutputSubmissionInterval:    m.OpBridge.OutputSubmissionInterval,
+			OutputFinalizationPeriod:    m.OpBridge.OutputFinalizationPeriod,
+			OutputSubmissionStartHeight: m.OpBridge.OutputSubmissionStartHeight,
+			BatchSubmissionTarget:       m.OpBridge.BatchSubmissionTarget,
+			EnableOracle:                m.OpBridge.EnableOracle,
+		}
+	}
+
+	if m.SystemKeys != nil {
+		clone.SystemKeys = &SystemKeys{
+			Validator:       cloneSystemAccount(m.SystemKeys.Validator),
+			BridgeExecutor:  cloneSystemAccount(m.SystemKeys.BridgeExecutor),
+			OutputSubmitter: cloneSystemAccount(m.SystemKeys.OutputSubmitter),
+			BatchSubmitter:  cloneSystemAccount(m.SystemKeys.BatchSubmitter),
+			Challenger:      cloneSystemAccount(m.SystemKeys.Challenger),
+		}
+	}
+	if m.GenesisAccounts != nil {
+		accs := make(GenesisAccounts, len(*m.GenesisAccounts))
+		copy(accs, *m.GenesisAccounts)
+		clone.GenesisAccounts = &accs
+	}
 	return clone
+}
+
+func cloneSystemAccount(acc *SystemAccount) *SystemAccount {
+	if acc == nil {
+		return nil
+	}
+	return &SystemAccount{
+		L1Address: acc.L1Address,
+		L2Address: acc.L2Address,
+		DAAddress: acc.DAAddress,
+		Mnemonic:  acc.Mnemonic,
+	}
 }
