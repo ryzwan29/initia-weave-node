@@ -695,18 +695,14 @@ func waitFetchingBalancesLoading(ctx context.Context) tea.Cmd {
 		if err != nil {
 			panic(fmt.Errorf("cannot fetch balance for l1: %v", err))
 		}
-		if l1Balances.IsZero() {
-			state.l1NeedsFunding = true
-		}
+		state.l1NeedsFunding = l1Balances.IsZero()
 
 		querier := cosmosutils.NewInitiadQuerier(l1Rest)
 		l2Balances, err := querier.QueryBankBalances(state.l2RelayerAddress, MustGetL2ActiveRpc(ctx))
 		if err != nil {
 			panic(fmt.Errorf("cannot fetch balance for l2: %v", err))
 		}
-		if l2Balances.IsZero() {
-			state.l2NeedsFunding = true
-		}
+		state.l2NeedsFunding = l2Balances.IsZero()
 
 		return ui.EndLoading{
 			Ctx: weavecontext.SetCurrentState(ctx, state),
