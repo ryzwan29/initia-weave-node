@@ -1,4 +1,4 @@
-package integration
+package opinit_test
 
 const (
 	TestOPInitHome = ".opinit.weave.test"

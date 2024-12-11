@@ -213,7 +213,7 @@ Valid options are [executor, challenger] eg. weave opinit-bots stop challenger`,
 			if err != nil {
 				return err
 			}
-			fmt.Println(fmt.Sprintf("Stopped the OPinit %s bot process.", botName))
+			fmt.Printf("Stopped the OPinit %s bot process.\n", botName)
 			return nil
 		},
 	}
@@ -298,7 +298,7 @@ Valid options are [executor, challenger] eg. weave opinit-bots reset challenger`
 			if err = execCmd.Run(); err != nil {
 				return fmt.Errorf("failed to reset-db: %v", err)
 			}
-			fmt.Println(fmt.Sprintf("Reset the OPinit %[1]s bot database successfully.", botName))
+			fmt.Printf("Reset the OPinit %s bot database successfully.\n", botName)
 			return nil
 		},
 	}
