@@ -695,20 +695,14 @@ func waitFetchingBalancesLoading(ctx context.Context) tea.Cmd {
 		if err != nil {
 			panic(fmt.Errorf("cannot fetch balance for l1: %v", err))
 		}
-		if l1Balances.IsZero() {
-			state.l1NeedsFunding = true
-		}
+		state.l1NeedsFunding = l1Balances.IsZero()
 
-		l2ChainId := MustGetL2ChainId(ctx)
-		l2Registry := registry.MustGetL2Registry(registry.InitiaL1Testnet, l2ChainId)
-		l2Rest := l2Registry.MustGetActiveLcd()
-		l2Balances, err := cosmosutils.QueryBankBalances(l2Rest, state.l2RelayerAddress)
+		querier := cosmosutils.NewInitiadQuerier(l1Rest)
+		l2Balances, err := querier.QueryBankBalances(state.l2RelayerAddress, MustGetL2ActiveRpc(ctx))
 		if err != nil {
 			panic(fmt.Errorf("cannot fetch balance for l2: %v", err))
 		}
-		if l2Balances.IsZero() {
-			state.l2NeedsFunding = true
-		}
+		state.l2NeedsFunding = l2Balances.IsZero()
 
 		return ui.EndLoading{
 			Ctx: weavecontext.SetCurrentState(ctx, state),
@@ -971,7 +965,7 @@ func broadcastDefaultPresetFromGasStation(ctx context.Context) tea.Cmd {
 		res, err = cliTx.BroadcastMsgSend(
 			gasStationMnemonic,
 			state.l2RelayerAddress,
-			fmt.Sprintf("%s%s", state.l2FundingAmount, "l2/4b66eb60bf9f503ea97fe4dc96d5c604c1dca14ee988e21510ac4b087bf72671"),
+			fmt.Sprintf("%s%s", state.l2FundingAmount, MustGetL2GasDenom(ctx)),
 			MustGetL2GasPrices(ctx),
 			MustGetL2ActiveRpc(ctx),
 			MustGetL2ChainId(ctx),
