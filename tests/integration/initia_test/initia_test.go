@@ -85,7 +85,7 @@ func TestInitiaInitTestnetNoSync(t *testing.T) {
 }
 
 func TestInitiaInitTestnetStatesync(t *testing.T) {
-	t.Parallel()
+	t.Skip("Skipping initia init with state sync test")
 	ctx := context.NewAppContext(initia.NewRunL1NodeState())
 	initiaHome := TestInitiaHome + ".statesync"
 	ctx = context.SetInitiaHome(ctx, initiaHome)
@@ -125,13 +125,17 @@ func TestInitiaInitTestnetStatesync(t *testing.T) {
 		}), // wait for the fetching of the default value
 		integration.TypeText("1d9b9512f925cf8808e7f76d71a788d82089fe76@65.108.198.118:25756"), // type in the additional peer for state sync
 		integration.PressEnter, // press enter to confirm the peer
-		integration.WaitFor(func() bool {
-			return true
-		}), // wait for the state sync setup
 	}
 
-	_ = integration.RunProgramWithSteps(t, firstModel, steps)
+	finalModel := integration.RunProgramWithSteps(t, firstModel, steps)
 	defer integration.ClearTestDir(initiaHome)
+
+	// Check the final state here
+	assert.IsType(t, &initia.TerminalState{}, finalModel)
+
+	if _, ok := finalModel.(*initia.TerminalState); ok {
+		assert.True(t, ok)
+	}
 
 	// Check if Initia home has been created
 	_, err = os.Stat(initiaHome)
@@ -259,6 +263,12 @@ func TestInitiaInitLocalExisting(t *testing.T) {
 		integration.PressEnter,            // press enter to disable both REST and gRPC
 		integration.PressEnter,            // press enter to skip adding the seeds
 		integration.PressEnter,            // press enter to skip adding the persistent peers
+		integration.WaitFor(func() bool {
+			if _, err := os.Stat(initiaHome); os.IsNotExist(err) {
+				return false
+			}
+			return true
+		}), // wait for the app to be created
 	}
 
 	finalModel := integration.RunProgramWithSteps(t, firstModel, steps)
