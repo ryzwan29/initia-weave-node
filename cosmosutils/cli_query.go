@@ -9,10 +9,7 @@ import (
 )
 
 type InitiadBankBalancesQueryResponse struct {
-	Balances []struct {
-		Denom  string `json:"denom"`
-		Amount string `json:"amount"`
-	} `json:"balances"`
+	Balances Coins `json:"balances"`
 }
 
 type InitiadQuerier struct {
@@ -44,16 +41,5 @@ func (iq *InitiadQuerier) QueryBankBalances(address, rpc string) (*Coins, error)
 		panic(fmt.Sprintf("failed to unmarshal JSON: %v", err))
 	}
 
-	balancesJSON, err := json.Marshal(queryResponse.Balances)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal balances: %w", err)
-	}
-
-	var balances Coins
-	err = json.Unmarshal(balancesJSON, &balances)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal balances into Coins: %w", err)
-	}
-
-	return &balances, nil
+	return &queryResponse.Balances, nil
 }
