@@ -41,22 +41,19 @@ func (j *Systemd) Create(binaryVersion, appHome string) error {
 	}
 
 	binaryName := j.commandName.MustGetBinaryName()
-	binaryPath := filepath.Join(userHome, common.WeaveDataDirectory)
-	var serviceName string
+	var binaryPath string
 	switch j.commandName {
 	case Initia:
 		binaryPath = filepath.Dir(cosmosutils.GetInitiaBinaryPath(binaryVersion))
 	case Minitia:
-		binaryPath = filepath.Join(binaryPath, binaryVersion, strings.ReplaceAll(binaryVersion, "@", "_"))
-	case OPinitExecutor:
-		serviceName = "executor"
-	case OPinitChallenger:
-		serviceName = "challenger"
+		binaryPath = filepath.Join(userHome, common.WeaveDataDirectory, binaryVersion, strings.ReplaceAll(binaryVersion, "@", "_"))
+	default:
+		binaryPath = filepath.Join(userHome, common.WeaveDataDirectory)
 	}
 
 	cmd := exec.Command("sudo", "tee", fmt.Sprintf("/etc/systemd/system/%s", j.GetServiceName()))
 	template := LinuxTemplateMap[j.commandName]
-	cmd.Stdin = strings.NewReader(fmt.Sprintf(string(template), binaryName, currentUser.Username, binaryPath, serviceName, appHome))
+	cmd.Stdin = strings.NewReader(fmt.Sprintf(string(template), binaryName, currentUser.Username, binaryPath, string(j.commandName), appHome))
 	if err = cmd.Run(); err != nil {
 		return fmt.Errorf("failed to create service: %v", err)
 	}
