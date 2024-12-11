@@ -528,7 +528,7 @@ func (m *KeysMnemonicDisplayInput) View() string {
 
 	if state.l2KeyMethod == string(L2GenerateKey) {
 		mnemonicText += styles.RenderMnemonic(
-			styles.RenderPrompt(fmt.Sprintf("Weave Relayer on L2"), []string{"L2"}, styles.Empty),
+			styles.RenderPrompt("Weave Relayer on L2", []string{"L2"}, styles.Empty),
 			state.l2RelayerAddress,
 			state.l2RelayerMnemonic,
 		)
@@ -780,7 +780,7 @@ func NewFundingAmountSelect(ctx context.Context) *FundingAmountSelect {
 			CannotBack: true,
 		},
 		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
-		question:  fmt.Sprintf("Please select the filling amount option"),
+		question:  "Please select the filling amount option",
 	}
 }
 

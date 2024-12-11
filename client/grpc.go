@@ -16,9 +16,7 @@ const (
 )
 
 // GRPCClient defines the logic for making gRPC requests.
-type GRPCClient struct {
-	conn *grpc.ClientConn
-}
+type GRPCClient struct{}
 
 // NewGRPCClient initializes and returns a new GRPCClient instance.
 func NewGRPCClient() *GRPCClient {
@@ -27,9 +25,7 @@ func NewGRPCClient() *GRPCClient {
 
 // CheckHealth attempts to connect to the server and uses the reflection service to verify the server is up.
 func (g *GRPCClient) CheckHealth(serverAddr string) error {
-	if strings.HasPrefix(serverAddr, "grpc://") {
-		serverAddr = strings.TrimPrefix(serverAddr, "grpc://")
-	}
+	serverAddr = strings.TrimPrefix(serverAddr, "grpc://")
 
 	conn, err := grpc.Dial(serverAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
