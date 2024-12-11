@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/initia-labs/weave/common"
+	"github.com/initia-labs/weave/cosmosutils"
 )
 
 type Systemd struct {
@@ -39,13 +40,23 @@ func (j *Systemd) Create(binaryVersion, appHome string) error {
 		return fmt.Errorf("failed to get user home directory: %v", err)
 	}
 
-	weaveDataPath := filepath.Join(userHome, common.WeaveDataDirectory)
 	binaryName := j.commandName.MustGetBinaryName()
-	binaryPath := filepath.Join(weaveDataPath, binaryVersion, strings.ReplaceAll(binaryVersion, "@", "_"))
+	binaryPath := filepath.Join(userHome, common.WeaveDataDirectory)
+	var serviceName string
+	switch j.commandName {
+	case Initia:
+		binaryPath = filepath.Dir(cosmosutils.GetInitiaBinaryPath(binaryVersion))
+	case Minitia:
+		binaryPath = filepath.Join(binaryPath, binaryVersion, strings.ReplaceAll(binaryVersion, "@", "_"))
+	case OPinitExecutor:
+		serviceName = "executor"
+	case OPinitChallenger:
+		serviceName = "challenger"
+	}
 
 	cmd := exec.Command("sudo", "tee", fmt.Sprintf("/etc/systemd/system/%s", j.GetServiceName()))
 	template := LinuxTemplateMap[j.commandName]
-	cmd.Stdin = strings.NewReader(fmt.Sprintf(string(template), binaryName, currentUser.Username, binaryPath, j.GetServiceName(), appHome))
+	cmd.Stdin = strings.NewReader(fmt.Sprintf(string(template), binaryName, currentUser.Username, binaryPath, serviceName, appHome))
 	if err = cmd.Run(); err != nil {
 		return fmt.Errorf("failed to create service: %v", err)
 	}
