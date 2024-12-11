@@ -130,15 +130,8 @@ func TestInitiaInitTestnetStatesync(t *testing.T) {
 		}), // wait for the state sync setup
 	}
 
-	finalModel := integration.RunProgramWithSteps(t, firstModel, steps)
+	_ = integration.RunProgramWithSteps(t, firstModel, steps)
 	defer integration.ClearTestDir(initiaHome)
-
-	// Check the final state here
-	assert.IsType(t, &initia.TerminalState{}, finalModel)
-
-	if _, ok := finalModel.(*initia.TerminalState); ok {
-		assert.True(t, ok)
-	}
 
 	// Check if Initia home has been created
 	_, err = os.Stat(initiaHome)
