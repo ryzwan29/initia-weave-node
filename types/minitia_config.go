@@ -76,3 +76,74 @@ type Artifacts struct {
 	ExecutorL1MonitorHeight string `json:"EXECUTOR_L1_MONITOR_HEIGHT"`
 	ExecutorL2MonitorHeight string `json:"EXECUTOR_L2_MONITOR_HEIGHT"`
 }
+
+// Clone returns a deep copy of MinitiaConfig.
+// Returns nil if the receiver is nil.
+func (m *MinitiaConfig) Clone() *MinitiaConfig {
+	if m == nil {
+		return nil
+	}
+
+	clone := &MinitiaConfig{
+		L1Config:        nil,
+		L2Config:        nil,
+		OpBridge:        nil,
+		SystemKeys:      nil,
+		GenesisAccounts: nil,
+	}
+
+	if m.L1Config != nil {
+		clone.L1Config = &L1Config{
+			ChainID:   m.L1Config.ChainID,
+			RpcUrl:    m.L1Config.RpcUrl,
+			GasPrices: m.L1Config.GasPrices,
+		}
+	}
+	// Similar deep copy for other fields...
+	if m.L2Config != nil {
+		clone.L2Config = &L2Config{
+			ChainID:  m.L2Config.ChainID,
+			Denom:    m.L2Config.Denom,
+			Moniker:  m.L2Config.Moniker,
+			BridgeID: m.L2Config.BridgeID,
+		}
+	}
+
+	if m.OpBridge != nil {
+		clone.OpBridge = &OpBridge{
+			OutputSubmissionInterval:    m.OpBridge.OutputSubmissionInterval,
+			OutputFinalizationPeriod:    m.OpBridge.OutputFinalizationPeriod,
+			OutputSubmissionStartHeight: m.OpBridge.OutputSubmissionStartHeight,
+			BatchSubmissionTarget:       m.OpBridge.BatchSubmissionTarget,
+			EnableOracle:                m.OpBridge.EnableOracle,
+		}
+	}
+
+	if m.SystemKeys != nil {
+		clone.SystemKeys = &SystemKeys{
+			Validator:       cloneSystemAccount(m.SystemKeys.Validator),
+			BridgeExecutor:  cloneSystemAccount(m.SystemKeys.BridgeExecutor),
+			OutputSubmitter: cloneSystemAccount(m.SystemKeys.OutputSubmitter),
+			BatchSubmitter:  cloneSystemAccount(m.SystemKeys.BatchSubmitter),
+			Challenger:      cloneSystemAccount(m.SystemKeys.Challenger),
+		}
+	}
+	if m.GenesisAccounts != nil {
+		accs := make(GenesisAccounts, len(*m.GenesisAccounts))
+		copy(accs, *m.GenesisAccounts)
+		clone.GenesisAccounts = &accs
+	}
+	return clone
+}
+
+func cloneSystemAccount(acc *SystemAccount) *SystemAccount {
+	if acc == nil {
+		return nil
+	}
+	return &SystemAccount{
+		L1Address: acc.L1Address,
+		L2Address: acc.L2Address,
+		DAAddress: acc.DAAddress,
+		Mnemonic:  acc.Mnemonic,
+	}
+}
