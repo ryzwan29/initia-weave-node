@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/initia-labs/weave/common"
-	"github.com/initia-labs/weave/cosmosutils"
 )
 
 type Systemd struct {
@@ -44,7 +43,7 @@ func (j *Systemd) Create(binaryVersion, appHome string) error {
 	var binaryPath string
 	switch j.commandName {
 	case Initia:
-		binaryPath = filepath.Dir(cosmosutils.GetInitiaBinaryPath(binaryVersion))
+		binaryPath = filepath.Join(userHome, common.WeaveDataDirectory, binaryVersion)
 	case Minitia:
 		binaryPath = filepath.Join(userHome, common.WeaveDataDirectory, binaryVersion, strings.ReplaceAll(binaryVersion, "@", "_"))
 	default:
