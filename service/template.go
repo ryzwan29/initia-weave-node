@@ -29,7 +29,7 @@ const DarwinRunCosmovisorTemplate Template = `<?xml version="1.0" encoding="UTF-
 		<key>HOME</key>
         <string>%[4]s</string>
         <key>DYLD_LIBRARY_PATH</key>
-        <string>%[3]s/cosmovisor/current</string>
+        <string>%[3]s/cosmovisor/dyld_lib</string>
         <key>DAEMON_NAME</key>
         <string>initiad</string>
         <key>DAEMON_HOME</key>
@@ -193,7 +193,7 @@ Type=exec
 User=%[2]s
 ExecStart=%[3]s/%[1]s run start
 KillSignal=SIGINT
-Environment="LD_LIBRARY_PATH=%[5]s/cosmovisor/current"
+Environment="LD_LIBRARY_PATH=%[5]s/cosmovisor/dyld_lib"
 Environment="DAEMON_NAME=initiad"
 Environment="DAEMON_HOME=%[5]s"
 

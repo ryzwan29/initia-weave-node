@@ -943,6 +943,11 @@ func initializeApp(ctx context.Context) tea.Cmd {
 			}
 		}
 
+		err = io.CopyDirectory(filepath.Dir(binaryPath), filepath.Join(initiaHome, "cosmovisor", "dyld_lib"))
+		if err != nil {
+			panic(err)
+		}
+
 		initiaConfigPath := weavecontext.GetInitiaConfigDirectory(ctx)
 
 		if state.replaceExistingApp || !state.existingApp {
