@@ -42,9 +42,6 @@ func (j *Launchd) Create(binaryVersion, appHome string) error {
 	weaveLogPath := filepath.Join(userHome, common.WeaveLogDirectory)
 	binaryName := j.commandName.MustGetBinaryName()
 	binaryPath := filepath.Join(weaveDataPath, binaryVersion)
-	// if err = os.Setenv("DYLD_LIBRARY_PATH", binaryPath); err != nil {
-	// 	panic(fmt.Errorf("failed to set DYLD_LIBRARY_PATH: %v", err))
-	// }
 	if err = os.Setenv("HOME", userHome); err != nil {
 		panic(fmt.Errorf("failed to set HOME: %v", err))
 	}
