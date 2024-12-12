@@ -1590,9 +1590,9 @@ func TestSystemKeyL2BridgeExecutorBalanceInput_Update_Valid(t *testing.T) {
 	enterPress := tea.KeyMsg{Type: tea.KeyEnter}
 	finalModel, _ := nextModel.Update(enterPress)
 
-	model := finalModel.(*AddGenesisAccountsSelect)
+	model := finalModel.(*AddGasStationToGenesisSelect)
 	state := weavecontext.GetCurrentState[LaunchState](model.Ctx)
-	assert.IsType(t, &AddGenesisAccountsSelect{}, finalModel)
+	assert.IsType(t, &AddGasStationToGenesisSelect{}, finalModel)
 	assert.Equal(t, validInput, state.systemKeyL2BridgeExecutorBalance)
 	assert.Contains(t, state.weave.PreviousResponse, styles.RenderPreviousResponse(
 		styles.DotsSeparator, executorInput.GetQuestion(), []string{"Bridge Executor", "L2"}, validInput))
