@@ -935,12 +935,13 @@ func initializeApp(ctx context.Context) tea.Cmd {
 			if err := runCmd.Run(); err != nil {
 				panic(fmt.Sprintf("failed to run initiad init: %v", err))
 			}
-			runCmd = exec.Command(cosmovisorPath, "init", binaryPath)
-			runCmd.Env = append(runCmd.Env, "DAEMON_NAME=initiad", "DAEMON_HOME="+initiaHome)
-			if err := runCmd.Run(); err != nil {
-				panic(fmt.Sprintf("failed to run cosmovisor init: %v", err))
-			}
 
+		}
+
+		runCmd := exec.Command(cosmovisorPath, "init", binaryPath)
+		runCmd.Env = append(runCmd.Env, "DAEMON_NAME=initiad", "DAEMON_HOME="+initiaHome)
+		if err := runCmd.Run(); err != nil {
+			panic(fmt.Sprintf("failed to run cosmovisor init: %v", err))
 		}
 
 		err = io.CopyDirectory(filepath.Dir(binaryPath), filepath.Join(initiaHome, "cosmovisor", "current"))
