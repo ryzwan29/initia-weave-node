@@ -928,13 +928,24 @@ func initializeApp(ctx context.Context) tea.Cmd {
 		weaveDataPath := filepath.Join(userHome, common.WeaveDataDirectory)
 		binaryPath := cosmosutils.GetInitiaBinaryPath(nodeVersion)
 		cosmosutils.MustInstallInitiaBinary(nodeVersion, url, binaryPath)
-
+		cosmovisorPath := cosmosutils.MustInstallCosmovisor(CosmovisorVersion)
 		initiaHome := weavecontext.GetInitiaHome(ctx)
 		if _, err := os.Stat(initiaHome); os.IsNotExist(err) {
 			runCmd := exec.Command(binaryPath, "init", state.moniker, "--chain-id", state.chainId, "--home", initiaHome)
 			if err := runCmd.Run(); err != nil {
 				panic(fmt.Sprintf("failed to run initiad init: %v", err))
 			}
+			runCmd = exec.Command(cosmovisorPath, "init", binaryPath)
+			runCmd.Env = append(runCmd.Env, "DAEMON_NAME=initiad", "DAEMON_HOME="+initiaHome)
+			if err := runCmd.Run(); err != nil {
+				panic(fmt.Sprintf("failed to run cosmovisor init: %v", err))
+			}
+
+		}
+
+		err = io.CopyDirectory(binaryPath, filepath.Join(initiaHome, "cosmovisor", "current"))
+		if err != nil {
+			panic(err)
 		}
 
 		initiaConfigPath := weavecontext.GetInitiaConfigDirectory(ctx)
@@ -980,7 +991,7 @@ func initializeApp(ctx context.Context) tea.Cmd {
 			panic(fmt.Sprintf("failed to initialize service: %v", err))
 		}
 
-		if err = srv.Create(fmt.Sprintf("initia@%s", state.initiadVersion), initiaHome); err != nil {
+		if err = srv.Create(fmt.Sprintf("cosmovisor@%s", CosmovisorVersion), initiaHome); err != nil {
 			panic(fmt.Sprintf("failed to create service: %v", err))
 		}
 
@@ -1535,7 +1546,7 @@ func snapshotExtractor(ctx context.Context) tea.Cmd {
 
 		initiaHome := weavecontext.GetInitiaHome(ctx)
 		binaryPath := filepath.Join(userHome, common.WeaveDataDirectory, fmt.Sprintf("initia@%s", state.initiadVersion), "initiad")
-
+		io.SetLibraryPaths(binaryPath)
 		runCmd := exec.Command(binaryPath, "comet", "unsafe-reset-all", "--keep-addr-book", "--home", initiaHome)
 		if err := runCmd.Run(); err != nil {
 			panic(fmt.Sprintf("failed to run initiad comet unsafe-reset-all: %v", err))

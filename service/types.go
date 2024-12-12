@@ -13,7 +13,7 @@ const (
 func (cmd CommandName) MustGetBinaryName() string {
 	switch cmd {
 	case Initia:
-		return "initiad"
+		return "cosmovisor"
 	case Minitia:
 		return "minitiad"
 	case OPinitExecutor, OPinitChallenger:
