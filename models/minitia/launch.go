@@ -1798,13 +1798,12 @@ func (m *AddGasStationToGenesisSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) 
 	selected, cmd := m.Select(msg)
 	if selected != nil {
 		state := weavecontext.PushPageAndGetState[LaunchState](m)
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), m.highlights, string(*selected)))
 
 		switch *selected {
 		case Add:
-			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), m.highlights, string(*selected)))
 			return NewGenesisGasStationBalanceInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
 		case DontAdd:
-			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), m.highlights, string(*selected)))
 			return NewAddGenesisAccountsSelect(false, weavecontext.SetCurrentState(m.Ctx, state)), nil
 		}
 	}
