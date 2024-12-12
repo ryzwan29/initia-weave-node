@@ -193,7 +193,7 @@ Type=exec
 User=%[2]s
 ExecStart=%[3]s/%[1]s run start
 KillSignal=SIGINT
-Environment="LD_LIBRARY_PATH=%[3]s"
+Environment="LD_LIBRARY_PATH=%[5]s/cosmovisor/current"
 Environment="DAEMON_NAME=initiad"
 Environment="DAEMON_HOME=%[5]s"
 
