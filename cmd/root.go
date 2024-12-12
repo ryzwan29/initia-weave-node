@@ -14,9 +14,8 @@ var Version string
 
 func Execute() error {
 	rootCmd := &cobra.Command{
-		Version: Version,
-		Use:     "weave",
-		Long:    "Weave is the CLI for managing Initia deployments.",
+		Use:  "weave",
+		Long: "Weave is the CLI for managing Initia deployments.",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			viper.AutomaticEnv()
 			viper.SetEnvPrefix("weave")
@@ -27,9 +26,13 @@ func Execute() error {
 		},
 	}
 
-	rootCmd.AddCommand(InitCommand())
-	rootCmd.AddCommand(InitiaCommand())
-	rootCmd.AddCommand(GasStationCommand())
+	rootCmd.AddCommand(
+		InitCommand(),
+		InitiaCommand(),
+		GasStationCommand(),
+		VersionCommand(),
+		UpgradeCommand(),
+	)
 
 	if flags.IsEnabled(flags.MinitiaLaunch) {
 		rootCmd.AddCommand(MinitiaCommand())

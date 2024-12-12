@@ -7,7 +7,7 @@ REQUIRE_GO_VERSION := $(GO_VERSION)
 ENABLED_FLAGS := minitia_launch,opinit_bots,relayer
 
 # Project version
-WEAVE_VERSION := v0.0.1
+WEAVE_VERSION := $(shell git describe --tags)
 
 # Build directory
 BUILDDIR ?= $(CURDIR)/build
