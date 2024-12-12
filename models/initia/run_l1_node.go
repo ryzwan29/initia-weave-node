@@ -943,7 +943,7 @@ func initializeApp(ctx context.Context) tea.Cmd {
 
 		}
 
-		err = io.CopyDirectory(binaryPath, filepath.Join(initiaHome, "cosmovisor", "current"))
+		err = io.CopyDirectory(filepath.Dir(binaryPath), filepath.Join(initiaHome, "cosmovisor", "current"))
 		if err != nil {
 			panic(err)
 		}
