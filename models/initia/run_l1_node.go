@@ -943,15 +943,15 @@ func initializeApp(ctx context.Context) tea.Cmd {
 			}
 		}
 
-		err = io.CopyDirectory(filepath.Dir(binaryPath), filepath.Join(initiaHome, "cosmovisor", "current"))
-		if err != nil {
-			panic(err)
-		}
+		// err = io.CopyDirectory(filepath.Dir(binaryPath), filepath.Join(initiaHome, "cosmovisor", "current"))
+		// if err != nil {
+		// 	panic(err)
+		// }
 
-		err = io.CopyDirectory(filepath.Dir(binaryPath), filepath.Join(initiaHome, "cosmovisor", "current", "bin"))
-		if err != nil {
-			panic(err)
-		}
+		// err = io.CopyDirectory(filepath.Dir(binaryPath), filepath.Join(initiaHome, "cosmovisor", "current", "bin"))
+		// if err != nil {
+		// 	panic(err)
+		// }
 
 		initiaConfigPath := weavecontext.GetInitiaConfigDirectory(ctx)
 
@@ -1551,7 +1551,6 @@ func snapshotExtractor(ctx context.Context) tea.Cmd {
 
 		initiaHome := weavecontext.GetInitiaHome(ctx)
 		binaryPath := filepath.Join(userHome, common.WeaveDataDirectory, fmt.Sprintf("initia@%s", state.initiadVersion), "initiad")
-		io.SetLibraryPaths(binaryPath)
 		runCmd := exec.Command(binaryPath, "comet", "unsafe-reset-all", "--keep-addr-book", "--home", initiaHome)
 		if err := runCmd.Run(); err != nil {
 			panic(fmt.Sprintf("failed to run initiad comet unsafe-reset-all: %v", err))
@@ -1655,7 +1654,6 @@ func setupStateSync(ctx context.Context) tea.Cmd {
 
 		initiaHome := weavecontext.GetInitiaHome(ctx)
 		binaryPath := cosmosutils.GetInitiaBinaryPath(state.initiadVersion)
-
 		runCmd := exec.Command(binaryPath, "comet", "unsafe-reset-all", "--keep-addr-book", "--home", initiaHome)
 		if err := runCmd.Run(); err != nil {
 			panic(fmt.Sprintf("failed to run initiad comet unsafe-reset-all: %v", err))
