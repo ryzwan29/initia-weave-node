@@ -186,7 +186,7 @@ func OPInitGetAddressForKey(appName, keyname, opInitHome string) (string, error)
 	cmd := exec.Command(appName, "keys", "show", "weave-dummy", keyname, "--home", opInitHome)
 	outputBytes, err := cmd.CombinedOutput()
 	if err != nil {
-		return "", fmt.Errorf("failed to recover or replace key for %s: %v, output: %s", keyname, err, string(outputBytes))
+		return "", fmt.Errorf("failed to get address for key %s: %v, output: %s", keyname, err, string(outputBytes))
 	}
 
 	// Parse the output to extract the address
