@@ -308,15 +308,13 @@ func MustInstallCosmovisor(version string) string {
 	// Determine the OS and architecture
 	osType := runtime.GOOS
 	arch := runtime.GOARCH
-	if osType == "darwin" {
-		arch = "amd64"
-	}
 
 	// Generate the URL dynamically
 	supportedCombinations := map[string]string{
 		"linux-amd64":  "cosmovisor-%s-linux-amd64.tar.gz",
 		"linux-arm64":  "cosmovisor-%s-linux-arm64.tar.gz",
 		"darwin-amd64": "cosmovisor-%s-darwin-amd64.tar.gz",
+		"darwin-arm64": "cosmovisor-%s-darwin-amd64.tar.gz",
 	}
 
 	key := fmt.Sprintf("%s-%s", osType, arch)
