@@ -147,7 +147,6 @@ func TestSelectSettingUpIBCChannelsMethodUpdate(t *testing.T) {
 		{
 			name: "Select FillFromLCD (down enter)",
 			navigationKeys: []tea.KeyMsg{
-				{Type: tea.KeyDown},  // Navigate to FillFromLCD
 				{Type: tea.KeyEnter}, // Select FillFromLCD
 			},
 			expectedModel: &FillL2LCD{},
@@ -155,7 +154,6 @@ func TestSelectSettingUpIBCChannelsMethodUpdate(t *testing.T) {
 		{
 			name: "Select Manually (down down enter)",
 			navigationKeys: []tea.KeyMsg{
-				{Type: tea.KeyDown},  // Navigate to FillFromLCD
 				{Type: tea.KeyDown},  // Navigate to Manually
 				{Type: tea.KeyEnter}, // Select Manually
 			},
