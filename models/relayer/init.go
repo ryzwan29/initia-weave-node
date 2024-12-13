@@ -1467,15 +1467,18 @@ type SelectSettingUpIBCChannelsMethod struct {
 
 func NewSelectSettingUpIBCChannelsMethod(ctx context.Context) tea.Model {
 	options := make([]SettingUpIBCChannelOption, 0)
-	options = append(options, Basic)
-	options = append(options, FillFromLCD, Manually)
-
-	tooltips := []ui.Tooltip{
-		ui.NewTooltip(
+	tooltips := make([]ui.Tooltip, 0)
+	if weaveio.FileOrFolderExists(weavecontext.GetMinitiaArtifactsJson(ctx)) {
+		options = append(options, Basic)
+		tooltips = append(tooltips, ui.NewTooltip(
 			"Minimal setup",
 			"Subscribe to only `transfer` and `nft-transfer` IBC Channels created when launching the Rollup with `minitiad launch` or `weave minitia launch`. This is recommended for new networks or local testing.",
 			"", []string{}, []string{}, []string{},
-		),
+		))
+	}
+	options = append(options, FillFromLCD, Manually)
+	tooltips = append(
+		tooltips,
 		ui.NewTooltip(
 			"Get all available IBC Channels",
 			"By filling in the Rollup LCD endpoint, Weave will be able to detect all available IBC Channels and show you all the IBC Channel pairs.",
@@ -1486,7 +1489,7 @@ func NewSelectSettingUpIBCChannelsMethod(ctx context.Context) tea.Model {
 			"Setup each IBC Channel manually by specifying the port ID and channel ID.",
 			"", []string{}, []string{}, []string{},
 		),
-	}
+	)
 
 	return &SelectSettingUpIBCChannelsMethod{
 		Selector: ui.Selector[SettingUpIBCChannelOption]{
