@@ -936,7 +936,10 @@ func initializeApp(ctx context.Context) tea.Cmd {
 				panic(fmt.Sprintf("failed to run initiad init: %v", err))
 			}
 
-			runCmd = exec.Command(cosmovisorPath, "init", binaryPath)
+		}
+
+		if _, err = os.Stat(filepath.Join(initiaHome, "cosmovisor")); os.IsNotExist(err) {
+			runCmd := exec.Command(cosmovisorPath, "init", binaryPath)
 			runCmd.Env = append(runCmd.Env, "DAEMON_NAME=initiad", "DAEMON_HOME="+initiaHome)
 			if err := runCmd.Run(); err != nil {
 				panic(fmt.Sprintf("failed to run cosmovisor init: %v", err))
