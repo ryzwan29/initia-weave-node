@@ -257,7 +257,7 @@ func normalizeRPCToWebSocket(rpcEndpoint string) (string, error) {
 	return u.String() + "/websocket", nil
 }
 
-func (cr *ChainRegistry) MustGetActiveWebsocket() string {
+func (cr *ChainRegistry) MustGetActiveWebSocket() string {
 	rpc := cr.MustGetActiveRpc()
 	websocket, err := normalizeRPCToWebSocket(rpc)
 	if err != nil {
