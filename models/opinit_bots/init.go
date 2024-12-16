@@ -834,8 +834,9 @@ func WaitStartingInitBot(ctx context.Context) tea.Cmd {
 				MaxChunks:                     5000,
 				MaxChunkSize:                  300000,
 				MaxSubmissionTime:             3600,
-				L2StartHeight:                 0,
-				BatchStartHeight:              0,
+				L1StartHeight:                 1,
+				L2StartHeight:                 1,
+				BatchStartHeight:              1,
 				DisableDeleteFutureWithdrawal: false,
 				DisableAutoSetL1Height:        false,
 				DisableBatchSubmitter:         false,
@@ -850,6 +851,17 @@ func WaitStartingInitBot(ctx context.Context) tea.Cmd {
 			if err = os.WriteFile(configFilePath, configBz, 0600); err != nil {
 				panic(fmt.Errorf("failed to write config file: %v", err))
 			}
+
+			userHome, err := os.UserHomeDir()
+			if err != nil {
+				panic(err)
+			}
+			binaryPath := filepath.Join(userHome, common.WeaveDataDirectory, fmt.Sprintf("opinitd@%s", OpinitBotBinaryVersion), AppName)
+			if address, err := cosmosutils.OPInitGetAddressForKey(binaryPath, OracleBridgeExecutorKeyName, opInitHome); err == nil {
+				// TODO: revisit error
+				_ = cosmosutils.OPInitGrantOracle(binaryPath, address, opInitHome)
+			}
+
 		} else if state.InitChallengerBot {
 			srv, err := service.NewService(service.OPinitChallenger)
 			if err != nil {
@@ -883,7 +895,7 @@ func WaitStartingInitBot(ctx context.Context) tea.Cmd {
 					RPCAddress:   configMap["l2_node.rpc_address"],
 					Bech32Prefix: "init",
 				},
-				L2StartHeight: 0,
+				L2StartHeight: 1,
 			}
 			configBz, err := json.MarshalIndent(config, "", " ")
 			if err != nil {

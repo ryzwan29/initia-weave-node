@@ -2,6 +2,7 @@ package cosmosutils
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -13,6 +14,10 @@ import (
 	"github.com/initia-labs/weave/client"
 	"github.com/initia-labs/weave/common"
 	"github.com/initia-labs/weave/io"
+)
+
+var (
+	MaxIntPadding = strconv.Itoa(math.MaxInt)
 )
 
 type BinaryRelease struct {
@@ -80,6 +85,22 @@ func mapReleasesToVersions(releases []BinaryRelease) BinaryVersionWithDownloadUR
 func ListBinaryReleases(url string) BinaryVersionWithDownloadURL {
 	releases := fetchReleases(url)
 	return mapReleasesToVersions(releases)
+}
+
+func ListWeaveReleases(url string) BinaryVersionWithDownloadURL {
+	releases := fetchReleases(url)
+	versions := make(BinaryVersionWithDownloadURL)
+	searchString := fmt.Sprintf("%s_%s.tar.gz", runtime.GOOS, runtime.GOARCH)
+
+	for _, release := range releases {
+		for _, asset := range release.Assets {
+			if strings.Contains(asset.BrowserDownloadURL, searchString) {
+				versions[release.TagName] = asset.BrowserDownloadURL
+			}
+		}
+	}
+
+	return versions
 }
 
 func GetLatestMinitiaVersion(vm string) (string, string, error) {
@@ -157,8 +178,8 @@ func CompareSemVer(v1, v2 string) bool {
 	v2Main, v2Pre := splitVersion(v2)
 
 	// Compare the main (major, minor, patch) versions
-	v1MainParts := strings.Split(v1Main, ".")
-	v2MainParts := strings.Split(v2Main, ".")
+	v1MainParts := padVersionParts(v1Main)
+	v2MainParts := padVersionParts(v2Main)
 	for i := 0; i < 3; i++ {
 		v1Part, _ := strconv.Atoi(v1MainParts[i])
 		v2Part, _ := strconv.Atoi(v2MainParts[i])
@@ -186,6 +207,15 @@ func splitVersion(version string) (mainVersion, preRelease string) {
 		return parts[0], parts[1]
 	}
 	return version, ""
+}
+
+// padVersionParts ensures the version has exactly three parts by adding zeros as needed
+func padVersionParts(version string) []string {
+	parts := strings.Split(version, ".")
+	for len(parts) < 3 {
+		parts = append(parts, MaxIntPadding)
+	}
+	return parts
 }
 
 func GetOPInitVersions() (BinaryVersionWithDownloadURL, string) {
