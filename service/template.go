@@ -2,8 +2,8 @@ package service
 
 type Template string
 
-// DarwinRunCosmovisorTemplate should inject the arguments as follows: [1:binaryName, 2:binaryPath, 3:appHome, 4:userHome, 5:weaveLogPath, 6:serviceName]
-const DarwinRunCosmovisorTemplate Template = `<?xml version="1.0" encoding="UTF-8"?>
+// DarwinRunUpgradalbeCosmovisorTemplate should inject the arguments as follows: [1:binaryName, 2:binaryPath, 3:appHome, 4:userHome, 5:weaveLogPath, 6:serviceName]
+const DarwinRunUpgradalbeCosmovisorTemplate Template = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
@@ -34,6 +34,63 @@ const DarwinRunCosmovisorTemplate Template = `<?xml version="1.0" encoding="UTF-
         <string>initiad</string>
         <key>DAEMON_HOME</key>
         <string>%[3]s</string>
+        <key>DAEMON_ALLOW_DOWNLOAD_BINARIES</key>
+        <string>true</string>
+        <key>DAEMON_RESTART_AFTER_UPGRADE</key>
+        <string>true</string>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>%[5]s/initia.stdout.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>%[5]s/initia.stderr.log</string>
+
+    <key>HardResourceLimits</key>
+    <dict>
+        <key>NumberOfFiles</key>
+        <integer>65535</integer>
+    </dict>
+</dict>
+</plist>
+`
+
+// DarwinRunNonUpgradalbeCosmovisorTemplate should inject the arguments as follows: [1:binaryName, 2:binaryPath, 3:appHome, 4:userHome, 5:weaveLogPath, 6:serviceName]
+const DarwinRunNonUpgradalbeCosmovisorTemplate Template = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.initia.daemon</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>%[2]s/%[1]s</string>
+        <string>run</string>
+        <string>start</string>
+    </array>
+
+    <key>RunAtLoad</key>
+    <false/>
+
+    <key>KeepAlive</key>
+    <false/>
+
+    <!-- Adding the environment variable -->
+    <key>EnvironmentVariables</key>
+    <dict>
+		<key>HOME</key>
+        <string>%[4]s</string>
+        <key>DYLD_LIBRARY_PATH</key>
+        <string>%[3]s/cosmovisor/dyld_lib</string>
+        <key>DAEMON_NAME</key>
+        <string>initiad</string>
+        <key>DAEMON_HOME</key>
+        <string>%[3]s</string>
+        <key>DAEMON_ALLOW_DOWNLOAD_BINARIES</key>
+        <string>false</string>
+        <key>DAEMON_RESTART_AFTER_UPGRADE</key>
+        <string>false</string>
     </dict>
 
     <key>StandardOutPath</key>
@@ -182,8 +239,8 @@ const DarwinRelayerTemplate Template = `<?xml version="1.0" encoding="UTF-8"?>
 </plist>
 `
 
-// LinuxRunCosmovisorTemplate should inject the arguments as follows: [binaryName, currentUser.Username, binaryPath, serviceName, appHome]
-const LinuxRunCosmovisorTemplate Template = `
+// LinuxRunUpgradalbeCosmovisorTemplate should inject the arguments as follows: [binaryName, currentUser.Username, binaryPath, serviceName, appHome]
+const LinuxRunUpgradalbeCosmovisorTemplate Template = `
 [Unit]
 Description=%[1]s
 After=network.target
@@ -196,6 +253,32 @@ KillSignal=SIGINT
 Environment="LD_LIBRARY_PATH=%[5]s/cosmovisor/dyld_lib"
 Environment="DAEMON_NAME=initiad"
 Environment="DAEMON_HOME=%[5]s"
+Environment="DAEMON_ALLOW_DOWNLOAD_BINARIES=true"
+Environment="DAEMON_RESTART_AFTER_UPGRADE=true"
+
+[Install]
+WantedBy=multi-user.target
+
+[Service]
+LimitNOFILE=65535
+`
+
+// LinuxRunNonUpgradalbeCosmovisorTemplate should inject the arguments as follows: [binaryName, currentUser.Username, binaryPath, serviceName, appHome]
+const LinuxRunNonUpgradalbeCosmovisorTemplate Template = `
+[Unit]
+Description=%[1]s
+After=network.target
+
+[Service]
+Type=exec
+User=%[2]s
+ExecStart=%[3]s/%[1]s run start
+KillSignal=SIGINT
+Environment="LD_LIBRARY_PATH=%[5]s/cosmovisor/dyld_lib"
+Environment="DAEMON_NAME=initiad"
+Environment="DAEMON_HOME=%[5]s"
+Environment="DAEMON_ALLOW_DOWNLOAD_BINARIES=false"
+Environment="DAEMON_RESTART_AFTER_UPGRADE=false"
 
 [Install]
 WantedBy=multi-user.target
@@ -265,17 +348,19 @@ LimitNOFILE=65535
 
 var (
 	LinuxTemplateMap = map[CommandName]Template{
-		Initia:           LinuxRunCosmovisorTemplate,
-		Minitia:          LinuxRunBinaryTemplate,
-		OPinitExecutor:   LinuxOPinitBotTemplate,
-		OPinitChallenger: LinuxOPinitBotTemplate,
-		Relayer:          LinuxRelayerTemplate,
+		UpgradeAbleInitia:    LinuxRunUpgradalbeCosmovisorTemplate,
+		NonUpgradeAbleInitia: LinuxRunNonUpgradalbeCosmovisorTemplate,
+		Minitia:              LinuxRunBinaryTemplate,
+		OPinitExecutor:       LinuxOPinitBotTemplate,
+		OPinitChallenger:     LinuxOPinitBotTemplate,
+		Relayer:              LinuxRelayerTemplate,
 	}
 	DarwinTemplateMap = map[CommandName]Template{
-		Initia:           DarwinRunCosmovisorTemplate,
-		Minitia:          DarwinRunBinaryTemplate,
-		OPinitExecutor:   DarwinOPinitBotTemplate,
-		OPinitChallenger: DarwinOPinitBotTemplate,
-		Relayer:          DarwinRelayerTemplate,
+		UpgradeAbleInitia:    DarwinRunUpgradalbeCosmovisorTemplate,
+		NonUpgradeAbleInitia: DarwinRunNonUpgradalbeCosmovisorTemplate,
+		Minitia:              DarwinRunBinaryTemplate,
+		OPinitExecutor:       DarwinOPinitBotTemplate,
+		OPinitChallenger:     DarwinOPinitBotTemplate,
+		Relayer:              DarwinRelayerTemplate,
 	}
 )

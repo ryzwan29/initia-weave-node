@@ -302,8 +302,7 @@ func (m *ExistingAppReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				model := NewExistingGenesisChecker(weavecontext.SetCurrentState(m.Ctx, state))
 				return model, model.Init()
 			case string(Mainnet), string(Testnet):
-				newLoader := NewInitializingAppLoading(weavecontext.SetCurrentState(m.Ctx, state))
-				return newLoader, newLoader.Init()
+				return NewCosmovisorAutoUpgradeSelector(weavecontext.SetCurrentState(m.Ctx, state)), nil
 			}
 		case ReplaceApp:
 			state.replaceExistingApp = true
@@ -641,8 +640,7 @@ func (m *PersistentPeersInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			model := NewExistingGenesisChecker(m.Ctx)
 			return model, model.Init()
 		case string(Mainnet), string(Testnet):
-			newLoader := NewInitializingAppLoading(m.Ctx)
-			return newLoader, newLoader.Init()
+			return NewCosmovisorAutoUpgradeSelector(weavecontext.SetCurrentState(m.Ctx, state)), cmd
 		}
 	}
 	m.TextInput = input
@@ -701,8 +699,7 @@ func (m *ExistingGenesisChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if !state.existingGenesis {
 			m.Ctx = weavecontext.SetCurrentState(m.Ctx, state)
 			if state.network == string(Local) {
-				newLoader := NewInitializingAppLoading(m.Ctx)
-				return newLoader, newLoader.Init()
+				return NewCosmovisorAutoUpgradeSelector(weavecontext.SetCurrentState(m.Ctx, state)), cmd
 			}
 			return NewGenesisEndpointInput(m.Ctx), nil
 		} else {
@@ -761,8 +758,7 @@ func (m *ExistingGenesisReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) 
 			m.Ctx = weavecontext.SetCurrentState(m.Ctx, state)
 			switch *selected {
 			case UseCurrentGenesis:
-				newLoader := NewInitializingAppLoading(m.Ctx)
-				return newLoader, newLoader.Init()
+				return NewCosmovisorAutoUpgradeSelector(weavecontext.SetCurrentState(m.Ctx, state)), cmd
 			case ReplaceGenesis:
 				return NewGenesisEndpointInput(m.Ctx), nil
 			}
@@ -771,8 +767,7 @@ func (m *ExistingGenesisReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) 
 				state.replaceExistingGenesisWithDefault = true
 			}
 			m.Ctx = weavecontext.SetCurrentState(m.Ctx, state)
-			newLoader := NewInitializingAppLoading(m.Ctx)
-			return newLoader, newLoader.Init()
+			return NewCosmovisorAutoUpgradeSelector(weavecontext.SetCurrentState(m.Ctx, state)), cmd
 		}
 	}
 
@@ -832,8 +827,7 @@ func (m *GenesisEndpointInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.err = common.ValidateURL(dns)
 		if m.err == nil {
 			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"endpoint"}, dns))
-			newLoader := NewInitializingAppLoading(weavecontext.SetCurrentState(m.Ctx, state))
-			return newLoader, newLoader.Init()
+			return NewCosmovisorAutoUpgradeSelector(weavecontext.SetCurrentState(m.Ctx, state)), cmd
 		}
 	}
 	m.TextInput = input
@@ -988,8 +982,16 @@ func initializeApp(ctx context.Context) tea.Cmd {
 				panic(fmt.Sprintf("failed to move genesis.json: %v", err))
 			}
 		}
+		var serviceCommand service.CommandName
 
-		srv, err := service.NewService(service.Initia)
+		if state.allowAutoUpgrade {
+			serviceCommand = service.UpgradeAbleInitia
+		} else {
+			serviceCommand = service.NonUpgradeAbleInitia
+
+		}
+
+		srv, err := service.NewService(serviceCommand)
 		if err != nil {
 			panic(fmt.Sprintf("failed to initialize service: %v", err))
 		}
@@ -1105,6 +1107,80 @@ func (m *SyncMethodSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *SyncMethodSelect) View() string {
+	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
+	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	return state.weave.Render() + styles.RenderPrompt(
+		m.GetQuestion(),
+		[]string{""},
+		styles.Question,
+	) + m.Selector.View()
+}
+
+type AutoUpgradeOption string
+
+const (
+	AllowAutoUpgrade    AutoUpgradeOption = "Allow"
+	DisallowAutoUpgrade AutoUpgradeOption = "Disallow"
+)
+
+type CosmovisorAutoUpgradeSelector struct {
+	ui.Selector[AutoUpgradeOption]
+	weavecontext.BaseModel
+	question string
+}
+
+func NewCosmovisorAutoUpgradeSelector(ctx context.Context) *CosmovisorAutoUpgradeSelector {
+	return &CosmovisorAutoUpgradeSelector{
+		Selector: ui.Selector[AutoUpgradeOption]{
+			Options: []AutoUpgradeOption{
+				AllowAutoUpgrade,
+				DisallowAutoUpgrade,
+			},
+			Tooltips: &[]ui.Tooltip{
+				ui.NewTooltip(
+					"Allow",
+					// TODO: revisit docs
+					"Enable automatic downloading of binaries (DAEMON_ALLOW_DOWNLOAD_BINARIES=true). \nSee more: https://docs.initia.xyz/run-initia-node/automating-software-updates-with-cosmovisor",
+					"", []string{}, []string{}, []string{},
+				),
+				ui.NewTooltip(
+					"Disallow",
+					// TODO: revisit docs
+					"Disable automatic downloading of binaries (DAEMON_ALLOW_DOWNLOAD_BINARIES=false). \nSee more: https://docs.initia.xyz/run-initia-node/automating-software-updates-with-cosmovisor",
+					"", []string{}, []string{}, []string{},
+				),
+			},
+		},
+		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
+		question:  "Would you like to allow automatic updates via Cosmovisor?",
+	}
+}
+
+func (m *CosmovisorAutoUpgradeSelector) GetQuestion() string {
+	return m.question
+}
+
+func (m *CosmovisorAutoUpgradeSelector) Init() tea.Cmd {
+	return nil
+}
+
+func (m *CosmovisorAutoUpgradeSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := weavecontext.HandleCommonCommands[RunL1NodeState](m, msg); handled {
+		return model, cmd
+	}
+	selected, cmd := m.Select(msg)
+	if selected != nil {
+		state := weavecontext.PushPageAndGetState[RunL1NodeState](m)
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{""}, string(*selected)))
+		state.allowAutoUpgrade = AllowAutoUpgrade == (*selected)
+		model := NewInitializingAppLoading(weavecontext.SetCurrentState(m.Ctx, state))
+		return model, model.Init()
+	}
+
+	return m, cmd
+}
+
+func (m *CosmovisorAutoUpgradeSelector) View() string {
 	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
 	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
 	return state.weave.Render() + styles.RenderPrompt(

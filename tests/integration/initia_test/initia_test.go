@@ -12,9 +12,16 @@ import (
 	"github.com/initia-labs/weave/tests/integration"
 )
 
-const (
-	TestInitiaHome = ".initia.weave.test"
+var (
+	TestInitiaHome string
 )
+
+func init() {
+	homeDir, _ := os.Getwd()
+
+	// Construct the absolute path for TestInitiaHome
+	TestInitiaHome = filepath.Join(homeDir, "initia.weave.test")
+}
 
 func TestInitiaInitTestnetNoSync(t *testing.T) {
 	t.Parallel()
@@ -38,6 +45,7 @@ func TestInitiaInitTestnetNoSync(t *testing.T) {
 		integration.PressEnter, // press enter to confirm the seeds
 		integration.TypeText("3715cdb41efb45714eb534c3943c5947f4894787@34.143.179.242:26656"), // type in the persistent peers
 		integration.PressEnter, // press enter to confirm the persistent peers
+		integration.PressEnter, // press enter to confirm Allow
 		integration.WaitFor(func() bool {
 			if _, err := os.Stat(initiaHome); os.IsNotExist(err) {
 				return false
@@ -116,10 +124,10 @@ func TestInitiaInitTestnetStatesync(t *testing.T) {
 		integration.PressEnter, // press enter to confirm selecting State Sync
 		integration.WaitFor(func() bool {
 			return true
-		}),                                                                  // wait for the checking of existing data
-		integration.PressEnter,                                              // press enter to proceed with syncing
+		}), // wait for the checking of existing data
+		integration.PressEnter, // press enter to proceed with syncing
 		integration.TypeText("https://initia-testnet-rpc.polkachu.com:443"), // type in the state sync rpc
-		integration.PressEnter,                                              // press enter to confirm the rpc
+		integration.PressEnter, // press enter to confirm the rpc
 		integration.WaitFor(func() bool {
 			return true
 		}), // wait for the fetching of the default value
@@ -180,7 +188,7 @@ func TestInitiaInitLocal(t *testing.T) {
 		integration.PressEnter, // press enter to confirm selecting Local
 		integration.WaitFor(func() bool {
 			return true
-		}),                                // wait for the fetching of Initia versions
+		}), // wait for the fetching of Initia versions
 		integration.PressEnter,            // press enter to select the latest version available
 		integration.TypeText("ChainId-1"), // type in the chain id
 		integration.PressEnter,            // press enter to confirm the chain id
@@ -191,6 +199,9 @@ func TestInitiaInitLocal(t *testing.T) {
 		integration.PressEnter,            // press enter to disable both REST and gRPC
 		integration.PressEnter,            // press enter to skip adding seeds
 		integration.PressEnter,            // press enter to skip adding persistent peers
+		integration.PressDown,             // press down once to select disallow upgrade
+		integration.PressDown,             // press enter to confirm
+
 		integration.WaitFor(func() bool {
 			if _, err := os.Stat(initiaHome); os.IsNotExist(err) {
 				return false
@@ -252,7 +263,7 @@ func TestInitiaInitLocalExisting(t *testing.T) {
 		integration.PressEnter, // press enter to confirm selecting Local
 		integration.WaitFor(func() bool {
 			return true
-		}),                                // wait for the fetching of Initia versions
+		}), // wait for the fetching of Initia versions
 		integration.PressEnter,            // press enter to select the latest version available
 		integration.TypeText("ChainId-1"), // type in the chain id
 		integration.PressEnter,            // press enter to confirm the chain id
@@ -263,6 +274,10 @@ func TestInitiaInitLocalExisting(t *testing.T) {
 		integration.PressEnter,            // press enter to disable both REST and gRPC
 		integration.PressEnter,            // press enter to skip adding the seeds
 		integration.PressEnter,            // press enter to skip adding the persistent peers
+		integration.WaitFor(func() bool {
+			return true
+		}), // wait for the app to be created
+		integration.PressEnter, // press enter to confirm allow upgrade
 		integration.WaitFor(func() bool {
 			if _, err := os.Stat(initiaHome); os.IsNotExist(err) {
 				return false
@@ -319,18 +334,19 @@ func TestInitiaInitLocalExisting(t *testing.T) {
 		integration.PressEnter, // press enter to confirm selecting Local
 		integration.WaitFor(func() bool {
 			return true
-		}),                                // wait for the fetching of Initia versions
+		}), // wait for the fetching of Initia versions
 		integration.PressEnter,            // press enter to select the latest version available
 		integration.TypeText("ChainId-2"), // type in the chain id
 		integration.PressEnter,            // press enter to confirm the chain id
 		integration.WaitFor(func() bool {
 			return true
-		}),                     // wait for the checking of existing config
+		}), // wait for the checking of existing config
 		integration.PressEnter, // press enter to use current files
 		integration.WaitFor(func() bool {
 			return true
-		}),                     // wait for the checking of existing genesis
+		}), // wait for the checking of existing genesis
 		integration.PressEnter, // press enter to use the current genesis
+		integration.PressEnter, // press enter to comfirm allow upgrade
 	}
 
 	finalModel = integration.RunProgramWithSteps(t, firstModel, steps)
@@ -358,13 +374,13 @@ func TestInitiaInitLocalExisting(t *testing.T) {
 		integration.PressEnter, // press enter to confirm selecting Local
 		integration.WaitFor(func() bool {
 			return true
-		}),                                // wait for the fetching of Initia versions
+		}), // wait for the fetching of Initia versions
 		integration.PressEnter,            // press enter to select the latest version available
 		integration.TypeText("ChainId-3"), // type in the chain id
 		integration.PressEnter,            // press enter to confirm the chain id
 		integration.WaitFor(func() bool {
 			return true
-		}),                                 // wait for the checking of existing config
+		}), // wait for the checking of existing config
 		integration.PressUp,                // press up once to select replacing the config
 		integration.PressEnter,             // press enter to confirm replacing the config
 		integration.TypeText("NewMoniker"), // type in the new moniker
@@ -379,9 +395,10 @@ func TestInitiaInitLocalExisting(t *testing.T) {
 		integration.PressEnter,             // press enter to skip adding the persistent peers
 		integration.WaitFor(func() bool {
 			return true
-		}),                     // wait for the checking of existing genesis
+		}), // wait for the checking of existing genesis
 		integration.PressUp,    // press up once to select replacing the genesis
 		integration.PressEnter, // press enter to confirm replacing the genesis
+		integration.PressEnter, // press enter to comfirm allow upgrade
 	}
 
 	finalModel = integration.RunProgramWithSteps(t, firstModel, steps)

@@ -30,6 +30,7 @@ type RunL1NodeState struct {
 	snapshotEndpoint                  string
 	stateSyncEndpoint                 string
 	additionalStateSyncPeers          string
+	allowAutoUpgrade                  bool
 }
 
 // NewRunL1NodeState initializes a new RunL1NodeState with default values.
@@ -65,5 +66,6 @@ func (s RunL1NodeState) Clone() RunL1NodeState {
 		snapshotEndpoint:                  s.snapshotEndpoint,
 		stateSyncEndpoint:                 s.stateSyncEndpoint,
 		additionalStateSyncPeers:          s.additionalStateSyncPeers,
+		allowAutoUpgrade:                  s.allowAutoUpgrade,
 	}
 }
