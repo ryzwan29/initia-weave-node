@@ -8,6 +8,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/initia-labs/weave/config"
+	"github.com/initia-labs/weave/context"
+	"github.com/initia-labs/weave/models"
+
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/pelletier/go-toml/v2"
 	"github.com/stretchr/testify/assert"
@@ -16,6 +20,7 @@ import (
 const (
 	DefaultMaxWaitRetry   = 300
 	DefaultPostWaitPeriod = 5 * time.Second
+	GasStationMnemonic    = "imitate sick vibrant bonus weather spice pave announce direct impulse strategy math"
 )
 
 type Step interface {
@@ -47,7 +52,7 @@ func (w WaitStep) Wait() bool {
 	return w.Check()
 }
 
-func runProgramWithSteps(t *testing.T, program tea.Model, steps Steps) tea.Model {
+func RunProgramWithSteps(t *testing.T, program tea.Model, steps Steps) tea.Model {
 	prog := tea.NewProgram(program, tea.WithInput(nil))
 	done := make(chan struct{})
 	finalModel := tea.Model(nil)
@@ -89,13 +94,13 @@ func runProgramWithSteps(t *testing.T, program tea.Model, steps Steps) tea.Model
 	return finalModel
 }
 
-func clearTestDir(dir string) {
+func ClearTestDir(dir string) {
 	if err := os.RemoveAll(dir); err != nil {
 		panic(fmt.Sprintf("failed to remove test directory: %v", err))
 	}
 }
 
-func getTomlValue(filePath, key string) (interface{}, error) {
+func GetTomlValue(filePath, key string) (interface{}, error) {
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, err
@@ -124,14 +129,14 @@ func getTomlValue(filePath, key string) (interface{}, error) {
 	return nil, nil
 }
 
-func compareTomlValue(t *testing.T, filePath, key string, expectedValue interface{}) {
-	value, err := getTomlValue(filePath, key)
+func CompareTomlValue(t *testing.T, filePath, key string, expectedValue interface{}) {
+	value, err := GetTomlValue(filePath, key)
 	assert.NoError(t, err, "Error loading TOML file or traversing key")
 
 	assert.Equal(t, expectedValue, value, "Mismatch for key %s", key)
 }
 
-func getJsonValue(filePath, key string) (interface{}, error) {
+func GetJsonValue(filePath, key string) (interface{}, error) {
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, err
@@ -160,9 +165,24 @@ func getJsonValue(filePath, key string) (interface{}, error) {
 	return nil, nil
 }
 
-func compareJsonValue(t *testing.T, filePath, key string, expectedValue interface{}) {
-	value, err := getJsonValue(filePath, key)
+func CompareJsonValue(t *testing.T, filePath, key string, expectedValue interface{}) {
+	value, err := GetJsonValue(filePath, key)
 	assert.NoError(t, err, "Error loading JSON file or traversing key")
 
 	assert.Equal(t, expectedValue, value, "Mismatch for key %s", key)
+}
+
+func SetupGasStation(t *testing.T) tea.Model {
+	err := config.InitializeConfig()
+	assert.Nil(t, err)
+
+	ctx := context.NewAppContext(models.NewExistingCheckerState())
+	firstModel := models.NewGasStationMnemonicInput(ctx)
+
+	steps := Steps{
+		TypeText(GasStationMnemonic), // type in the mnemonic
+		PressEnter,                   // press enter to confirm
+	}
+
+	return RunProgramWithSteps(t, firstModel, steps)
 }

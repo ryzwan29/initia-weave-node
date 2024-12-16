@@ -1260,8 +1260,8 @@ func NewGasStationMnemonicInput(ctx context.Context) *GasStationMnemonicInput {
 		"Gas Station account is the account from which Weave will use to fund necessary system accounts, enabling easier and more seamless experience while setting up things using Weave.",
 		"** Weave will NOT automatically send transactions without asking for your confirmation. **", []string{}, []string{}, []string{})
 	model := &GasStationMnemonicInput{
-		TextInput: ui.NewTextInput(false),
-		BaseModel: weavecontext.BaseModel{Ctx: ctx},
+		TextInput: ui.NewTextInput(true),
+		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
 		question:  fmt.Sprintf("Please set up a Gas Station account %s\n%s", styles.Text("(The account that will hold the funds required by the OPinit-bots or relayer to send transactions)", styles.Gray), styles.BoldText("Weave will not send any transactions without your confirmation.", styles.Yellow)),
 	}
 	model.WithPlaceholder("Enter the mnemonic")
@@ -1405,7 +1405,7 @@ func (m *AccountsFundingPresetSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case DefaultPreset:
 			state.FillDefaultBalances()
 			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, "Use the default preset"))
-			return NewAddGenesisAccountsSelect(false, weavecontext.SetCurrentState(m.Ctx, state)), nil
+			return NewAddGasStationToGenesisSelect(weavecontext.SetCurrentState(m.Ctx, state)), nil
 		case ManuallyFill:
 			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, "Fill in an amount for each account manually"))
 			return NewSystemKeyL1BridgeExecutorBalanceInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
@@ -1730,7 +1730,7 @@ func (m *SystemKeyL2BridgeExecutorBalanceInput) Update(msg tea.Msg) (tea.Model, 
 		state.systemKeyL2BridgeExecutorBalance = fmt.Sprintf("%s%s", input.Text, state.gasDenom)
 		state.weave.PopPreviousResponseAtIndex(state.preL2BalancesResponsesCount)
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Bridge Executor", "L2"}, input.Text))
-		return NewAddGenesisAccountsSelect(false, weavecontext.SetCurrentState(m.Ctx, state)), nil
+		return NewAddGasStationToGenesisSelect(weavecontext.SetCurrentState(m.Ctx, state)), nil
 	}
 	m.TextInput = input
 	return m, cmd
@@ -1740,6 +1740,153 @@ func (m *SystemKeyL2BridgeExecutorBalanceInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
 	return state.weave.Render() +
 		styles.RenderPrompt(m.GetQuestion(), []string{"Bridge Executor", "L2"}, styles.Question) + m.TextInput.View()
+}
+
+type AddGasStationToGenesisSelect struct {
+	ui.Selector[AddGasStationToGenesisOption]
+	weavecontext.BaseModel
+	question   string
+	highlights []string
+}
+
+type AddGasStationToGenesisOption string
+
+const (
+	Add     AddGasStationToGenesisOption = "Yes"
+	DontAdd AddGasStationToGenesisOption = "No"
+)
+
+func NewAddGasStationToGenesisSelect(ctx context.Context) *AddGasStationToGenesisSelect {
+	state := weavecontext.GetCurrentState[LaunchState](ctx)
+
+	tooltips := ui.NewTooltipSlice(
+		ui.NewTooltip(
+			"Gas Station in Rollup Genesis",
+			"Adding gas station account as a genesis account grants initial balances to the gas station on the rollup at network launch. This ensures the gas station can fund relayer accounts during the Weave relayer flow, eliminating the need for later manual funding.",
+			"", []string{}, []string{}, []string{},
+		), 2,
+	)
+
+	return &AddGasStationToGenesisSelect{
+		Selector: ui.Selector[AddGasStationToGenesisOption]{
+			Options: []AddGasStationToGenesisOption{
+				Add,
+				DontAdd,
+			},
+			CannotBack: true,
+			Tooltips:   &tooltips,
+		},
+		BaseModel:  weavecontext.BaseModel{Ctx: weavecontext.SetCurrentState(ctx, state), CannotBack: true},
+		question:   "Would you like to add the gas station account to genesis accounts?",
+		highlights: []string{"gas station", "genesis"},
+	}
+}
+
+func (m *AddGasStationToGenesisSelect) GetQuestion() string {
+	return m.question
+}
+
+func (m *AddGasStationToGenesisSelect) Init() tea.Cmd {
+	return nil
+}
+
+func (m *AddGasStationToGenesisSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := weavecontext.HandleCommonCommands[LaunchState](m, msg); handled {
+		return model, cmd
+	}
+
+	selected, cmd := m.Select(msg)
+	if selected != nil {
+		state := weavecontext.PushPageAndGetState[LaunchState](m)
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), m.highlights, string(*selected)))
+
+		switch *selected {
+		case Add:
+			return NewGenesisGasStationBalanceInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
+		case DontAdd:
+			return NewAddGenesisAccountsSelect(false, weavecontext.SetCurrentState(m.Ctx, state)), nil
+		}
+	}
+
+	return m, cmd
+}
+
+func (m *AddGasStationToGenesisSelect) View() string {
+	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
+	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	return state.weave.Render() + "\n" +
+		styles.RenderPrompt("Adding a gas station account to the rollup genesis ensures that when running relayer init you would have funds to distribute to the relayer account.", []string{"gas station", "relayer init"}, styles.Information) + "\n" +
+		styles.RenderPrompt(
+			m.GetQuestion(),
+			m.highlights,
+			styles.Question,
+		) + m.Selector.View()
+}
+
+type GenesisGasStationBalanceInput struct {
+	ui.TextInput
+	weavecontext.BaseModel
+	question string
+	address  string
+}
+
+func NewGenesisGasStationBalanceInput(ctx context.Context) *GenesisGasStationBalanceInput {
+	tooltip := ui.NewTooltip(
+		"Gas Station Initial Balance on rollup",
+		"A genesis initial balance is the amount of tokens allocated to specific accounts when a blockchain network launches, in this case the gas station account. It allows these accounts to have immediate resources for transactions, testing, or operational roles without needing to acquire tokens afterward.",
+		"", []string{}, []string{}, []string{},
+	)
+	state := weavecontext.GetCurrentState[LaunchState](ctx)
+	gasStationAddress, err := crypto.MnemonicToBech32Address("init", config.GetGasStationMnemonic())
+	if err != nil {
+		panic(fmt.Errorf("cannot recover gas station for init: %v", err))
+	}
+
+	model := &GenesisGasStationBalanceInput{
+		TextInput: ui.NewTextInput(false),
+		BaseModel: weavecontext.BaseModel{Ctx: ctx},
+		question:  fmt.Sprintf("Please specify initial balance for the gas station account (%s)", state.gasDenom),
+		address:   gasStationAddress,
+	}
+	model.WithPlaceholder("Enter the desired balance")
+	model.WithValidatorFn(common.IsValidInteger)
+	model.WithTooltip(&tooltip)
+	return model
+}
+
+func (m *GenesisGasStationBalanceInput) GetQuestion() string {
+	return m.question
+}
+
+func (m *GenesisGasStationBalanceInput) Init() tea.Cmd {
+	return nil
+}
+
+func (m *GenesisGasStationBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := weavecontext.HandleCommonCommands[LaunchState](m, msg); handled {
+		return model, cmd
+	}
+
+	input, cmd, done := m.TextInput.Update(msg)
+	if done {
+		state := weavecontext.PushPageAndGetState[LaunchState](m)
+
+		state.genesisAccounts = append(state.genesisAccounts, types.GenesisAccount{
+			Coins:   fmt.Sprintf("%s%s", input.Text, state.gasDenom),
+			Address: m.address,
+		})
+
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{m.address}, input.Text))
+		return NewAddGenesisAccountsSelect(false, weavecontext.SetCurrentState(m.Ctx, state)), nil
+	}
+	m.TextInput = input
+	return m, cmd
+}
+
+func (m *GenesisGasStationBalanceInput) View() string {
+	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
+	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{m.address}, styles.Question) + m.TextInput.View()
 }
 
 type AddGenesisAccountsSelect struct {
@@ -2170,7 +2317,7 @@ func (m *DownloadCelestiaBinaryLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd)
 		state := weavecontext.PushPageAndGetState[LaunchState](m)
 
 		if state.downloadedNewCelestiaBinary {
-			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, fmt.Sprintf("Celestia binary has been successfully downloaded."), []string{}, ""))
+			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "Celestia binary has been successfully downloaded.", []string{}, ""))
 		}
 		model := NewGenerateOrRecoverSystemKeysLoading(weavecontext.SetCurrentState(m.Ctx, state))
 		return model, model.Init()

@@ -21,6 +21,7 @@ func TestProcessingMinitiaConfig_Update_AddKeys(t *testing.T) {
 		{BotName: OutputSubmitter},
 		{BotName: BatchSubmitter},
 		{BotName: Challenger},
+		{BotName: OracleBridgeExecutor},
 	}
 	state.MinitiaConfig = &types.MinitiaConfig{
 		SystemKeys: &types.SystemKeys{
@@ -65,6 +66,7 @@ func TestProcessingMinitiaConfig_Update_SkipKeys(t *testing.T) {
 		{BotName: OutputSubmitter},
 		{BotName: BatchSubmitter},
 		{BotName: Challenger},
+		{BotName: OracleBridgeExecutor},
 	}
 	ctx = weavecontext.SetCurrentState(ctx, state)
 
@@ -84,6 +86,7 @@ func TestProcessingMinitiaConfig_Update_SkipKeys(t *testing.T) {
 		assert.Empty(t, state.BotInfos[1].Mnemonic)
 		assert.Empty(t, state.BotInfos[2].Mnemonic)
 		assert.Empty(t, state.BotInfos[3].Mnemonic)
+		assert.Empty(t, state.BotInfos[4].Mnemonic)
 	} else {
 		t.Errorf("Expected model to be of type *SetupBotCheckbox, but got %T", nextModel)
 	}
@@ -99,6 +102,7 @@ func TestSetupBotCheckbox_SelectBots(t *testing.T) {
 		{BotName: OutputSubmitter},
 		{BotName: BatchSubmitter},
 		{BotName: Challenger},
+		{BotName: OracleBridgeExecutor},
 	}
 	ctx = weavecontext.SetCurrentState(ctx, state)
 
@@ -123,6 +127,7 @@ func TestSetupBotCheckbox_SelectBots(t *testing.T) {
 		assert.False(t, state.BotInfos[1].IsSetup) // OutputSubmitter
 		assert.True(t, state.BotInfos[2].IsSetup)  // BatchSubmitter
 		assert.False(t, state.BotInfos[3].IsSetup) // Challenger
+		assert.False(t, state.BotInfos[4].IsSetup) // Challenger
 	} else {
 		t.Errorf("Expected model to transition to *NextUpdateOpinitBotKey, but got %T", nextModel)
 	}
@@ -138,6 +143,7 @@ func TestSetupBotCheckbox_NoSelection(t *testing.T) {
 		{BotName: OutputSubmitter},
 		{BotName: BatchSubmitter},
 		{BotName: Challenger},
+		{BotName: OracleBridgeExecutor},
 	}
 	ctx = weavecontext.SetCurrentState(ctx, state)
 

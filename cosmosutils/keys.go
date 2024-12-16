@@ -3,6 +3,7 @@ package cosmosutils
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -180,6 +181,51 @@ func OPInitKeyExist(appName, keyname, opInitHome string) bool {
 	return err == nil
 }
 
+// OPInitGetAddressForKey retrieves the address for a given key using opinitd.
+func OPInitGetAddressForKey(appName, keyname, opInitHome string) (string, error) {
+	cmd := exec.Command(appName, "keys", "show", "weave-dummy", keyname, "--home", opInitHome)
+	outputBytes, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("failed to get address for key %s: %v, output: %s", keyname, err, string(outputBytes))
+	}
+
+	// Parse the output to extract the address
+	address, err := extractAddress(string(outputBytes), keyname)
+	if err != nil {
+		return "", fmt.Errorf("failed to extract address for %s: %v", keyname, err)
+	}
+
+	return address, nil
+}
+
+// OPInitGrantOracle grants oracle permissions to a specific address.
+func OPInitGrantOracle(appName, address, opInitHome string) error {
+	cmd := exec.Command(appName, "tx", "grant-oracle", address, "--home", opInitHome)
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to grant oracle to address %s: %v, stderr: %s", address, err, stderr.String())
+	}
+
+	return nil
+}
+
+// extractAddress parses the command output to extract the key address.
+func extractAddress(output, keyname string) (string, error) {
+	lines := strings.Split(output, "\n")
+	for _, line := range lines {
+		if strings.HasPrefix(line, keyname+":") {
+			parts := strings.Split(line, ":")
+			if len(parts) != 2 {
+				return "", errors.New("invalid format for key address")
+			}
+			return strings.TrimSpace(parts[1]), nil
+		}
+	}
+	return "", errors.New("key address not found in output")
+}
+
 // OPInitAddOrReplace adds or replaces a key using `opinitd keys add <keyname> --keyring-backend test`
 // with 'y' confirmation
 func OPInitAddOrReplace(appName, keyname string, isCelestia bool, opInitHome string) (string, error) {
@@ -331,7 +377,12 @@ func addNewKeyToHermes(appName, chainId, mnemonic string) (*KeyInfo, error) {
 	if err = io.WriteFile(tempMnemonicPath, mnemonic); err != nil {
 		return nil, fmt.Errorf("failed to write raw tx file: %v", err)
 	}
-	defer io.DeleteFile(tempMnemonicPath)
+
+	defer func() {
+		if err := io.DeleteFile(tempMnemonicPath); err != nil {
+			fmt.Printf("failed to delete temp mnemonic file: %v", err)
+		}
+	}()
 
 	cmd := exec.Command(appName, "keys", "add", "--chain", chainId, "--mnemonic-file", tempMnemonicPath)
 
@@ -370,11 +421,11 @@ func RecoverNewHermesKey(appName, chainId, mnemonic string) (*KeyInfo, error) {
 }
 
 func GenerateAndReplaceHermesKey(appName, chainId string) (*KeyInfo, error) {
-	DeleteWeaveKeyFromHermes(appName, chainId)
+	_ = DeleteWeaveKeyFromHermes(appName, chainId)
 	return GenerateAndAddNewHermesKey(appName, chainId)
 }
 
 func RecoverAndReplaceHermesKey(appName, chainId, mnemonic string) (*KeyInfo, error) {
-	DeleteWeaveKeyFromHermes(appName, chainId)
+	_ = DeleteWeaveKeyFromHermes(appName, chainId)
 	return RecoverNewHermesKey(appName, chainId, mnemonic)
 }

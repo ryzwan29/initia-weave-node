@@ -1,12 +1,17 @@
 package opinit_bots
 
 import (
+	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
+
+	"github.com/initia-labs/weave/common"
 )
 
 const (
-	OpinitBotBinaryVersion = "v0.1.10"
+	OpinitBotBinaryVersion = "v0.1.11"
 )
 
 // BotName defines a custom type for the bot names
@@ -94,9 +99,17 @@ var BotInfos = []BotInfo{
 
 // CheckIfKeysExist checks the output of `initiad keys list` and sets IsNotExist for missing keys
 func CheckIfKeysExist(botInfos []BotInfo) []BotInfo {
-	cmd := exec.Command(AppName, "keys", "list", "weave-dummy")
+	userHome, err := os.UserHomeDir()
+	if err != nil {
+		panic(err)
+	}
+	binaryPath := filepath.Join(userHome, common.WeaveDataDirectory, fmt.Sprintf("opinitd@%s", OpinitBotBinaryVersion), AppName)
+	cmd := exec.Command(binaryPath, "keys", "list", "weave-dummy")
 	outputBytes, err := cmd.Output()
 	if err != nil {
+		for i := range botInfos {
+			botInfos[i].IsNotExist = true
+		}
 		return botInfos
 	}
 	output := string(outputBytes)

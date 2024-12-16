@@ -9,12 +9,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/initia-labs/weave/io"
-
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/initia-labs/weave/common"
 	weavecontext "github.com/initia-labs/weave/context"
+	"github.com/initia-labs/weave/cosmosutils"
+	"github.com/initia-labs/weave/io"
 	"github.com/initia-labs/weave/registry"
 	"github.com/initia-labs/weave/service"
 	"github.com/initia-labs/weave/styles"
@@ -239,12 +239,55 @@ func (m *OPInitBotInitSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if selected != nil {
 		state := weavecontext.PushPageAndGetState[OPInitBotsState](m)
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"bot"}, string(*selected)))
-		m.Ctx = weavecontext.SetCurrentState(m.Ctx, state)
 		switch *selected {
 		case ExecutorOPInitBotInitOption:
-			return OPInitBotInitSelectExecutor(m.Ctx), cmd
+			state.InitExecutorBot = true
+			keyNames := make(map[string]bool)
+			keyNames[BridgeExecutorKeyName] = true
+			keyNames[OutputSubmitterKeyName] = true
+			keyNames[BatchSubmitterKeyName] = true
+			keyNames[OracleBridgeExecutorKeyName] = true
+
+			finished := true
+
+			state.BotInfos = CheckIfKeysExist(BotInfos)
+			for idx, botInfo := range state.BotInfos {
+				if keyNames[botInfo.KeyName] && botInfo.IsNotExist {
+					state.BotInfos[idx].IsSetup = true
+					finished = false
+				} else {
+					state.BotInfos[idx].IsSetup = false
+				}
+			}
+			if finished {
+				return OPInitBotInitSelectExecutor(weavecontext.SetCurrentState(m.Ctx, state)), cmd
+			}
+
+			state.isSetupMissingKey = true
+			return NextUpdateOpinitBotKey(weavecontext.SetCurrentState(m.Ctx, state))
 		case ChallengerOPInitBotInitOption:
-			return OPInitBotInitSelectChallenger(m.Ctx), cmd
+			state.InitChallengerBot = true
+			keyNames := make(map[string]bool)
+			keyNames[ChallengerKeyName] = true
+
+			finished := true
+
+			state.BotInfos = CheckIfKeysExist(BotInfos)
+			for idx, botInfo := range state.BotInfos {
+				fmt.Println(botInfo.KeyName, keyNames[botInfo.KeyName], botInfo.IsNotExist)
+				if keyNames[botInfo.KeyName] && botInfo.IsNotExist {
+					state.BotInfos[idx].IsSetup = true
+					finished = false
+				} else {
+					state.BotInfos[idx].IsSetup = false
+				}
+			}
+			if finished {
+				return OPInitBotInitSelectChallenger(weavecontext.SetCurrentState(m.Ctx, state)), cmd
+			}
+
+			state.isSetupMissingKey = true
+			return NextUpdateOpinitBotKey(weavecontext.SetCurrentState(m.Ctx, state))
 		}
 	}
 	return m, cmd
@@ -755,8 +798,13 @@ func WaitStartingInitBot(ctx context.Context) tea.Cmd {
 			version := registry.MustGetOPInitBotsSpecVersion(state.botConfig["l1_node.chain_id"])
 
 			config := ExecutorConfig{
-				Version:       version,
-				ListenAddress: configMap["listen_address"],
+				Version: version,
+				Server: ServerConfig{
+					Address:      configMap["listen_address"],
+					AllowOrigins: "*",
+					AllowHeaders: "Origin, Content-Type, Accept",
+					AllowMethods: "GET",
+				},
 				L1Node: NodeSettings{
 					ChainID:       configMap["l1_node.chain_id"],
 					RPCAddress:    configMap["l1_node.rpc_address"],
@@ -781,14 +829,18 @@ func WaitStartingInitBot(ctx context.Context) tea.Cmd {
 					GasAdjustment: 1.5,
 					TxTimeout:     60,
 				},
-				OutputSubmitter:       OutputSubmitterKeyName,
-				BridgeExecutor:        BridgeExecutorKeyName,
-				BatchSubmitterEnabled: true,
-				MaxChunks:             5000,
-				MaxChunkSize:          300000,
-				MaxSubmissionTime:     3600,
-				L2StartHeight:         0,
-				BatchStartHeight:      0,
+				BridgeExecutor:                BridgeExecutorKeyName,
+				OracleBridgeExecutor:          OracleBridgeExecutorKeyName,
+				MaxChunks:                     5000,
+				MaxChunkSize:                  300000,
+				MaxSubmissionTime:             3600,
+				L1StartHeight:                 1,
+				L2StartHeight:                 1,
+				BatchStartHeight:              1,
+				DisableDeleteFutureWithdrawal: false,
+				DisableAutoSetL1Height:        false,
+				DisableBatchSubmitter:         false,
+				DisableOutputSubmitter:        false,
 			}
 			configBz, err := json.MarshalIndent(config, "", " ")
 			if err != nil {
@@ -799,6 +851,17 @@ func WaitStartingInitBot(ctx context.Context) tea.Cmd {
 			if err = os.WriteFile(configFilePath, configBz, 0600); err != nil {
 				panic(fmt.Errorf("failed to write config file: %v", err))
 			}
+
+			userHome, err := os.UserHomeDir()
+			if err != nil {
+				panic(err)
+			}
+			binaryPath := filepath.Join(userHome, common.WeaveDataDirectory, fmt.Sprintf("opinitd@%s", OpinitBotBinaryVersion), AppName)
+			if address, err := cosmosutils.OPInitGetAddressForKey(binaryPath, OracleBridgeExecutorKeyName, opInitHome); err == nil {
+				// TODO: revisit error
+				_ = cosmosutils.OPInitGrantOracle(binaryPath, address, opInitHome)
+			}
+
 		} else if state.InitChallengerBot {
 			srv, err := service.NewService(service.OPinitChallenger)
 			if err != nil {
@@ -815,8 +878,13 @@ func WaitStartingInitBot(ctx context.Context) tea.Cmd {
 
 			version := registry.MustGetOPInitBotsSpecVersion(state.botConfig["l1_node.chain_id"])
 			config := ChallengerConfig{
-				Version:       version,
-				ListenAddress: configMap["listen_address"],
+				Version: version,
+				Server: ServerConfig{
+					Address:      configMap["listen_address"],
+					AllowOrigins: "*",
+					AllowHeaders: "Origin, Content-Type, Accept",
+					AllowMethods: "GET",
+				},
 				L1Node: NodeConfig{
 					ChainID:      configMap["l1_node.chain_id"],
 					RPCAddress:   configMap["l1_node.rpc_address"],
@@ -827,7 +895,7 @@ func WaitStartingInitBot(ctx context.Context) tea.Cmd {
 					RPCAddress:   configMap["l2_node.rpc_address"],
 					Bech32Prefix: "init",
 				},
-				L2StartHeight: 0,
+				L2StartHeight: 1,
 			}
 			configBz, err := json.MarshalIndent(config, "", " ")
 			if err != nil {
@@ -888,4 +956,97 @@ func (m *OPinitBotSuccessful) View() string {
 	}
 
 	return state.weave.Render() + styles.RenderPrompt(fmt.Sprintf("OPInit bot setup successfully. Config file is saved at %s. Feel free to modify it as needed.", filepath.Join(weavecontext.GetOPInitHome(m.Ctx), fmt.Sprintf("%s.json", botConfigFileName))), []string{}, styles.Completed) + "\n" + styles.RenderPrompt("You can start the bot by running `weave opinit-bots start "+botConfigFileName+"`", []string{}, styles.Completed) + "\n"
+}
+
+// SetupOPInitBotsMissingKey handles the loading and setup of OPInit bots
+type SetupOPInitBotsMissingKey struct {
+	weavecontext.BaseModel
+	loading ui.Loading
+}
+
+// NewSetupOPInitBots initializes a new SetupOPInitBots with context
+func NewSetupOPInitBotsMissingKey(ctx context.Context) *SetupOPInitBotsMissingKey {
+	return &SetupOPInitBotsMissingKey{
+		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
+		loading:   ui.NewLoading("Downloading binary and adding keys...", WaitSetupOPInitBotsMissingKey(ctx)),
+	}
+}
+
+func (m *SetupOPInitBotsMissingKey) Init() tea.Cmd {
+	return m.loading.Init()
+}
+
+func (m *SetupOPInitBotsMissingKey) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	loader, cmd := m.loading.Update(msg)
+	m.loading = loader
+	if m.loading.Completing {
+		switch msg := msg.(type) {
+		case tea.KeyMsg:
+			if msg.String() == "enter" {
+				state := weavecontext.GetCurrentState[OPInitBotsState](m.loading.EndContext)
+				if state.InitExecutorBot {
+					return OPInitBotInitSelectExecutor(m.loading.EndContext), nil
+				} else if state.InitChallengerBot {
+					return OPInitBotInitSelectChallenger(m.loading.EndContext), nil
+				}
+			}
+		}
+	}
+	return m, cmd
+}
+
+func (m *SetupOPInitBotsMissingKey) View() string {
+	state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
+	if len(state.SetupOpinitResponses) > 0 {
+		mnemonicText := ""
+		for _, botName := range BotNames {
+			if res, ok := state.SetupOpinitResponses[botName]; ok {
+				keyInfo := strings.Split(res, "\n")
+				address := strings.Split(keyInfo[0], ": ")
+				mnemonicText += renderMnemonic(string(botName), address[1], keyInfo[1])
+			}
+		}
+
+		return state.weave.Render() + "\n" + styles.BoldUnderlineText("Important", styles.Yellow) + "\n" +
+			styles.Text("Write down these mnemonic phrases and store them in a safe place. \nIt is the only way to recover your system keys.", styles.Yellow) + "\n\n" +
+			mnemonicText + "\nPress enter to go next step\n"
+	}
+	return state.weave.Render() + "\n"
+}
+
+func WaitSetupOPInitBotsMissingKey(ctx context.Context) tea.Cmd {
+	return func() tea.Msg {
+		state := weavecontext.GetCurrentState[OPInitBotsState](ctx)
+		userHome, err := os.UserHomeDir()
+		if err != nil {
+			return ui.ErrorLoading{Err: fmt.Errorf("failed to get user home directory: %v", err)}
+		}
+
+		binaryPath := filepath.Join(userHome, common.WeaveDataDirectory, fmt.Sprintf("opinitd@%s", OpinitBotBinaryVersion), AppName)
+
+		opInitHome := weavecontext.GetOPInitHome(ctx)
+		for _, info := range state.BotInfos {
+			if info.Mnemonic != "" {
+				res, err := cosmosutils.OPInitRecoverKeyFromMnemonic(binaryPath, info.KeyName, info.Mnemonic, info.DALayer == string(CelestiaLayerOption), opInitHome)
+				if err != nil {
+					return ui.ErrorLoading{Err: fmt.Errorf("failed to recover key from mnemonic: %v", err)}
+				}
+				state.SetupOpinitResponses[info.BotName] = res
+				continue
+			}
+			if info.IsGenerateKey {
+				res, err := cosmosutils.OPInitAddOrReplace(binaryPath, info.KeyName, info.DALayer == string(CelestiaLayerOption), opInitHome)
+				if err != nil {
+					return ui.ErrorLoading{Err: fmt.Errorf("failed to add or replace key: %v", err)}
+
+				}
+				state.SetupOpinitResponses[info.BotName] = res
+				continue
+			}
+		}
+
+		return ui.EndLoading{
+			Ctx: ctx,
+		}
+	}
 }

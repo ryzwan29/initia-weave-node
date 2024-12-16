@@ -76,7 +76,7 @@ func TestSelectingL1NetworkUpdateWithNavigation(t *testing.T) {
 	assert.IsType(t, &FieldInputModel{}, newModel)
 
 	// Verify the configuration state
-	state := weavecontext.GetCurrentState[RelayerState](ctx)
+	state := weavecontext.GetCurrentState[State](ctx)
 	assert.Equal(t, "initiation-2", state.Config["l1.chain_id"])
 	assert.NotEmpty(t, state.Config["l1.rpc_address"])
 	assert.NotEmpty(t, state.Config["l1.grpc_address"])
@@ -118,12 +118,12 @@ func TestSelectingL1NetworkRegistryUpdate(t *testing.T) {
 			assert.IsType(t, tc.expectedModel, newModel, "Expected the resulting model to match the expected type.")
 
 			// Verify the configuration state
-			state := weavecontext.GetCurrentState[RelayerState](ctx)
+			state := weavecontext.GetCurrentState[State](ctx)
 			assert.NotEmpty(t, state.Config["l1.chain_id"], "Chain ID should not be empty.")
 			assert.NotEmpty(t, state.Config["l1.rpc_address"], "RPC address should not be empty.")
 			assert.NotEmpty(t, state.Config["l1.grpc_address"], "gRPC address should not be empty.")
 			assert.NotEmpty(t, state.Config["l1.lcd_address"], "LCD address should not be empty.")
-			assert.NotEmpty(t, state.Config["l1.websocket"], "Websocket address should not be empty.")
+			assert.NotEmpty(t, state.Config["l1.websocket"], "WebSocket address should not be empty.")
 			assert.NotEmpty(t, state.Config["l1.gas_price.denom"], "Gas price denom should not be empty.")
 			assert.NotEmpty(t, state.Config["l1.gas_price.price"], "Gas price should not be empty.")
 
@@ -147,7 +147,6 @@ func TestSelectSettingUpIBCChannelsMethodUpdate(t *testing.T) {
 		{
 			name: "Select FillFromLCD (down enter)",
 			navigationKeys: []tea.KeyMsg{
-				{Type: tea.KeyDown},  // Navigate to FillFromLCD
 				{Type: tea.KeyEnter}, // Select FillFromLCD
 			},
 			expectedModel: &FillL2LCD{},
@@ -155,7 +154,6 @@ func TestSelectSettingUpIBCChannelsMethodUpdate(t *testing.T) {
 		{
 			name: "Select Manually (down down enter)",
 			navigationKeys: []tea.KeyMsg{
-				{Type: tea.KeyDown},  // Navigate to FillFromLCD
 				{Type: tea.KeyDown},  // Navigate to Manually
 				{Type: tea.KeyEnter}, // Select Manually
 			},
@@ -185,7 +183,7 @@ func TestSelectSettingUpIBCChannelsMethodUpdate(t *testing.T) {
 }
 
 func TestStateAccessors(t *testing.T) {
-	// Create a mock RelayerState
+	// Create a mock State
 	state := NewRelayerState()
 	state.Config = map[string]string{
 		"l1.chain_id":        "testnet-chain-id",
@@ -338,7 +336,7 @@ func TestAddMoreIBCChannelsUpdate(t *testing.T) {
 
 	// Step 1: Initialize the AddMoreIBCChannels model
 	model := NewAddMoreIBCChannels(ctx, 1)
-	assert.Equal(t, "Do you want to open more IBC Channels?", model.GetQuestion())
+	assert.Equal(t, "Do you want to add more IBC Channel pairs?", model.GetQuestion())
 
 	// Step 2: Simulate selecting "Yes"
 	msg := tea.KeyMsg{Type: tea.KeyEnter}
@@ -417,7 +415,7 @@ func TestIBCChannelsCheckboxUpdateWithConditions(t *testing.T) {
 
 			settingModel := updatedModel.(*SettingUpRelayer)
 			// Verify the state update
-			state := weavecontext.GetCurrentState[RelayerState](settingModel.Ctx)
+			state := weavecontext.GetCurrentState[State](settingModel.Ctx)
 			require.Len(t, state.IBCChannels, tc.expectedLength, "Unexpected number of selected channels")
 			assert.Equal(t, tc.expectedPairs, state.IBCChannels, "Selected channels do not match expected pairs")
 		})
