@@ -94,7 +94,7 @@ func handleUpgrade(version string) error {
 		return fmt.Errorf("failed to upgrade to version %s: %w", targetVersion, err)
 	}
 
-	fmt.Printf("✅ Upgrade successful!\n\n")
+	fmt.Printf("✅ Upgrade successful! You are now using %s of Weave.\n\n", targetVersion)
 	return nil
 }
 
