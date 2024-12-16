@@ -55,7 +55,7 @@ var defaultExecutorFields = []*Field{
 	// L2 Node Configuration
 	{Name: "l2_node.chain_id", Type: StringField, Question: "Please specify the L2 chain_id", Placeholder: "Add alphanumeric", ValidateFn: common.ValidateEmptyString},
 	{Name: "l2_node.rpc_address", Type: StringField, Question: "Please specify the L2 rpc_address", Placeholder: `Press tab to use "http://localhost:26657"`, DefaultValue: "http://localhost:26657", ValidateFn: common.ValidateURL, Tooltip: &L2RPCAddressTooltip},
-	{Name: "l2_node.gas_price", Type: StringField, Question: "Please specify the L2 gas_price", Placeholder: `Press tab to use "0.015umin"`, DefaultValue: "0.015umin", ValidateFn: common.ValidateDecCoin, Tooltip: &L2GasPriceTooltip},
+	{Name: "l2_node.gas_price", Type: StringField, Question: "Please specify the L2 gas_price", Placeholder: `Press tab to use "0.15umin"`, DefaultValue: "0.15umin", ValidateFn: common.ValidateDecCoin, Tooltip: &L2GasPriceTooltip},
 }
 
 var defaultChallengerFields = []*Field{
@@ -501,8 +501,8 @@ func (m *PrefillMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			state.botConfig["l1_node.gas_price"] = minitiaConfig.L1Config.GasPrices
 			GetField(defaultExecutorFields, "l1_node.rpc_address").PrefillValue = minitiaConfig.L1Config.RpcUrl
 			GetField(defaultExecutorFields, "l2_node.chain_id").PrefillValue = minitiaConfig.L2Config.ChainID
-			GetField(defaultExecutorFields, "l2_node.gas_price").PrefillValue = "0.015" + minitiaConfig.L2Config.Denom
-			GetField(defaultExecutorFields, "l2_node.gas_price").Placeholder = "Press tab to use " + "\"0.015" + minitiaConfig.L2Config.Denom + "\""
+			GetField(defaultExecutorFields, "l2_node.gas_price").PrefillValue = "0.15" + minitiaConfig.L2Config.Denom
+			GetField(defaultExecutorFields, "l2_node.gas_price").Placeholder = "Press tab to use " + "\"0.15" + minitiaConfig.L2Config.Denom + "\""
 
 			GetField(defaultChallengerFields, "l1_node.rpc_address").PrefillValue = minitiaConfig.L1Config.RpcUrl
 			GetField(defaultChallengerFields, "l2_node.chain_id").PrefillValue = minitiaConfig.L2Config.ChainID
@@ -895,6 +895,7 @@ func WaitStartingInitBot(ctx context.Context) tea.Cmd {
 					RPCAddress:   configMap["l2_node.rpc_address"],
 					Bech32Prefix: "init",
 				},
+				L1StartHeight: 1,
 				L2StartHeight: 1,
 			}
 			configBz, err := json.MarshalIndent(config, "", " ")
