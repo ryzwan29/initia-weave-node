@@ -42,7 +42,7 @@ func (j *Systemd) Create(binaryVersion, appHome string) error {
 	binaryName := j.commandName.MustGetBinaryName()
 	var binaryPath string
 	switch j.commandName {
-	case UpgradeAbleInitia, NonUpgradeAbleInitia:
+	case UpgradeableInitia, NonUpgradeableInitia:
 		binaryPath = filepath.Join(userHome, common.WeaveDataDirectory, binaryVersion)
 	case Minitia:
 		binaryPath = filepath.Join(userHome, common.WeaveDataDirectory, binaryVersion, strings.ReplaceAll(binaryVersion, "@", "_"))
