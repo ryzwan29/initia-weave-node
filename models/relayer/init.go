@@ -1518,7 +1518,7 @@ func (m *SelectSettingUpIBCChannelsMethod) Update(msg tea.Msg) (tea.Model, tea.C
 	selected, cmd := m.Select(msg)
 	if selected != nil {
 		state := weavecontext.PushPageAndGetState[State](m)
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{""}, string(*selected)))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, string(*selected)))
 		switch *selected {
 		case Basic:
 			// Read the file content
@@ -1562,7 +1562,7 @@ func (m *SelectSettingUpIBCChannelsMethod) Update(msg tea.Msg) (tea.Model, tea.C
 func (m *SelectSettingUpIBCChannelsMethod) View() string {
 	state := weavecontext.GetCurrentState[State](m.Ctx)
 	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{""}, styles.Question) + m.Selector.View()
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{}, styles.Question) + m.Selector.View()
 }
 
 func GetL1ChainId(ctx context.Context) (string, bool) {
@@ -1997,7 +1997,7 @@ func (m *AddMoreIBCChannels) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	selected, cmd := m.Select(msg)
 	if selected != nil {
 		state := weavecontext.PushPageAndGetState[State](m)
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{""}, *selected))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, *selected))
 
 		return NewFillPortOnL1(weavecontext.SetCurrentState(m.Ctx, state), m.idx), nil
 	}
@@ -2006,7 +2006,7 @@ func (m *AddMoreIBCChannels) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *AddMoreIBCChannels) View() string {
 	state := weavecontext.GetCurrentState[State](m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{""}, styles.Question) + m.Selector.View()
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{}, styles.Question) + m.Selector.View()
 }
 
 type IBCChannelsCheckbox struct {

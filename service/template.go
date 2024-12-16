@@ -2,8 +2,8 @@ package service
 
 type Template string
 
-// DarwinRunUpgradalbeCosmovisorTemplate should inject the arguments as follows: [1:binaryName, 2:binaryPath, 3:appHome, 4:userHome, 5:weaveLogPath, 6:serviceName]
-const DarwinRunUpgradalbeCosmovisorTemplate Template = `<?xml version="1.0" encoding="UTF-8"?>
+// DarwinRunUpgradableCosmovisorTemplate should inject the arguments as follows: [1:binaryName, 2:binaryPath, 3:appHome, 4:userHome, 5:weaveLogPath, 6:serviceName]
+const DarwinRunUpgradableCosmovisorTemplate Template = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
@@ -55,8 +55,8 @@ const DarwinRunUpgradalbeCosmovisorTemplate Template = `<?xml version="1.0" enco
 </plist>
 `
 
-// DarwinRunNonUpgradalbeCosmovisorTemplate should inject the arguments as follows: [1:binaryName, 2:binaryPath, 3:appHome, 4:userHome, 5:weaveLogPath, 6:serviceName]
-const DarwinRunNonUpgradalbeCosmovisorTemplate Template = `<?xml version="1.0" encoding="UTF-8"?>
+// DarwinRunNonUpgradableCosmovisorTemplate should inject the arguments as follows: [1:binaryName, 2:binaryPath, 3:appHome, 4:userHome, 5:weaveLogPath, 6:serviceName]
+const DarwinRunNonUpgradableCosmovisorTemplate Template = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
@@ -239,8 +239,8 @@ const DarwinRelayerTemplate Template = `<?xml version="1.0" encoding="UTF-8"?>
 </plist>
 `
 
-// LinuxRunUpgradalbeCosmovisorTemplate should inject the arguments as follows: [binaryName, currentUser.Username, binaryPath, serviceName, appHome]
-const LinuxRunUpgradalbeCosmovisorTemplate Template = `
+// LinuxRunUpgradableCosmovisorTemplate should inject the arguments as follows: [binaryName, currentUser.Username, binaryPath, serviceName, appHome]
+const LinuxRunUpgradableCosmovisorTemplate Template = `
 [Unit]
 Description=%[1]s
 After=network.target
@@ -263,8 +263,8 @@ WantedBy=multi-user.target
 LimitNOFILE=65535
 `
 
-// LinuxRunNonUpgradalbeCosmovisorTemplate should inject the arguments as follows: [binaryName, currentUser.Username, binaryPath, serviceName, appHome]
-const LinuxRunNonUpgradalbeCosmovisorTemplate Template = `
+// LinuxRunNonUpgradableCosmovisorTemplate should inject the arguments as follows: [binaryName, currentUser.Username, binaryPath, serviceName, appHome]
+const LinuxRunNonUpgradableCosmovisorTemplate Template = `
 [Unit]
 Description=%[1]s
 After=network.target
@@ -348,16 +348,16 @@ LimitNOFILE=65535
 
 var (
 	LinuxTemplateMap = map[CommandName]Template{
-		UpgradeableInitia:    LinuxRunUpgradalbeCosmovisorTemplate,
-		NonUpgradeableInitia: LinuxRunNonUpgradalbeCosmovisorTemplate,
+		UpgradeableInitia:    LinuxRunUpgradableCosmovisorTemplate,
+		NonUpgradeableInitia: LinuxRunNonUpgradableCosmovisorTemplate,
 		Minitia:              LinuxRunBinaryTemplate,
 		OPinitExecutor:       LinuxOPinitBotTemplate,
 		OPinitChallenger:     LinuxOPinitBotTemplate,
 		Relayer:              LinuxRelayerTemplate,
 	}
 	DarwinTemplateMap = map[CommandName]Template{
-		UpgradeableInitia:    DarwinRunUpgradalbeCosmovisorTemplate,
-		NonUpgradeableInitia: DarwinRunNonUpgradalbeCosmovisorTemplate,
+		UpgradeableInitia:    DarwinRunUpgradableCosmovisorTemplate,
+		NonUpgradeableInitia: DarwinRunNonUpgradableCosmovisorTemplate,
 		Minitia:              DarwinRunBinaryTemplate,
 		OPinitExecutor:       DarwinOPinitBotTemplate,
 		OPinitChallenger:     DarwinOPinitBotTemplate,
