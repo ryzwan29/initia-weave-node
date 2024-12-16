@@ -199,9 +199,11 @@ func TestInitiaInitLocal(t *testing.T) {
 		integration.PressEnter,            // press enter to disable both REST and gRPC
 		integration.PressEnter,            // press enter to skip adding seeds
 		integration.PressEnter,            // press enter to skip adding persistent peers
-		integration.PressDown,             // press down once to select disallow upgrade
-		integration.PressDown,             // press enter to confirm
-
+		integration.WaitFor(func() bool {
+			return true
+		}),
+		integration.PressDown,  // press down once to select disallow upgrade
+		integration.PressEnter, // press enter to confirm
 		integration.WaitFor(func() bool {
 			if _, err := os.Stat(initiaHome); os.IsNotExist(err) {
 				return false
