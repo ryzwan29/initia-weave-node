@@ -16,6 +16,10 @@ import (
 	"github.com/initia-labs/weave/io"
 )
 
+var (
+	MaxIntPadding = strconv.Itoa(math.MaxInt)
+)
+
 type BinaryRelease struct {
 	TagName     string `json:"tag_name"`
 	PublishedAt string `json:"published_at"`
@@ -174,8 +178,8 @@ func CompareSemVer(v1, v2 string) bool {
 	v2Main, v2Pre := splitVersion(v2)
 
 	// Compare the main (major, minor, patch) versions
-	v1MainParts := padVersionParts(strings.Split(v1Main, "."))
-	v2MainParts := padVersionParts(strings.Split(v2Main, "."))
+	v1MainParts := padVersionParts(v1Main)
+	v2MainParts := padVersionParts(v2Main)
 	for i := 0; i < 3; i++ {
 		v1Part, _ := strconv.Atoi(v1MainParts[i])
 		v2Part, _ := strconv.Atoi(v2MainParts[i])
@@ -206,9 +210,10 @@ func splitVersion(version string) (mainVersion, preRelease string) {
 }
 
 // padVersionParts ensures the version has exactly three parts by adding zeros as needed
-func padVersionParts(parts []string) []string {
+func padVersionParts(version string) []string {
+	parts := strings.Split(version, ".")
 	for len(parts) < 3 {
-		parts = append(parts, strconv.Itoa(math.MaxInt))
+		parts = append(parts, MaxIntPadding)
 	}
 	return parts
 }

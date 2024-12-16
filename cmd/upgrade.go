@@ -47,27 +47,27 @@ Examples:
 If the specified version does not exist, an error will be shown with a link to the available releases.`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			version := ""
+			requestedVersion := ""
 			if len(args) > 0 {
-				version = args[0]
-				if version == Version {
+				requestedVersion = args[0]
+				if requestedVersion == Version {
 					fmt.Printf("ℹ️ The current Weave version matches the specified version.\n\n")
 					return nil
 				}
-				isNewer := cosmosutils.CompareSemVer(version, Version)
+				isNewer := cosmosutils.CompareSemVer(requestedVersion, Version)
 				if !isNewer {
 					return fmt.Errorf("the specified version is older than the current version: %s", Version)
 				}
 			}
 
-			return handleUpgrade(version)
+			return handleUpgrade(requestedVersion)
 		},
 	}
 
 	return upgradeCmd
 }
 
-func handleUpgrade(version string) error {
+func handleUpgrade(requestedVersion string) error {
 	availableVersions := cosmosutils.ListWeaveReleases(WeaveReleaseAPI)
 	if len(availableVersions) == 0 {
 		return fmt.Errorf("failed to fetch available Weave versions")
@@ -75,16 +75,16 @@ func handleUpgrade(version string) error {
 
 	sortedVersions := cosmosutils.SortVersions(availableVersions)
 	var targetVersion string
-	if version == "" {
+	if requestedVersion == "" {
 		targetVersion = sortedVersions[0]
 		if targetVersion == Version {
 			fmt.Printf("ℹ️ You are already using the latest version of Weave!\n\n")
 			return nil
 		}
 	} else {
-		targetVersion = findMatchingVersion(version, sortedVersions)
+		targetVersion = findMatchingVersion(requestedVersion, sortedVersions)
 		if targetVersion == "" {
-			return fmt.Errorf("version %s does not exist. See available versions: %s", version, WeaveReleaseURL)
+			return fmt.Errorf("version %s does not exist. See available versions: %s", requestedVersion, WeaveReleaseURL)
 		}
 	}
 
