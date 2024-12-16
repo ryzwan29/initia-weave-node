@@ -99,7 +99,7 @@ func TestPrefillMinitiaConfig_Update_PrefillYes(t *testing.T) {
 		assert.Equal(t, "l1-chain-id", state.botConfig["l1_node.chain_id"])
 		assert.Equal(t, "http://l1-rpc-url", state.botConfig["l1_node.rpc_address"])
 		assert.Equal(t, "0.01", state.botConfig["l1_node.gas_price"])
-		assert.Equal(t, "0.015denom", GetField(defaultExecutorFields, "l2_node.gas_price").PrefillValue)
+		assert.Equal(t, "0.15denom", GetField(defaultExecutorFields, "l2_node.gas_price").PrefillValue)
 		assert.True(t, state.daIsCelestia)
 	}
 }
