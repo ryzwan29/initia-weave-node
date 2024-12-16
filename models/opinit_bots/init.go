@@ -895,6 +895,7 @@ func WaitStartingInitBot(ctx context.Context) tea.Cmd {
 					RPCAddress:   configMap["l2_node.rpc_address"],
 					Bech32Prefix: "init",
 				},
+				L1StartHeight: 1,
 				L2StartHeight: 1,
 			}
 			configBz, err := json.MarshalIndent(config, "", " ")
