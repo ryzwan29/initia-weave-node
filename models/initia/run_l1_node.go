@@ -640,7 +640,7 @@ func (m *PersistentPeersInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			model := NewExistingGenesisChecker(m.Ctx)
 			return model, model.Init()
 		case string(Mainnet), string(Testnet):
-			return NewCosmovisorAutoUpgradeSelector(weavecontext.SetCurrentState(m.Ctx, state)), cmd
+			return NewCosmovisorAutoUpgradeSelector(weavecontext.SetCurrentState(m.Ctx, state)), nil
 		}
 	}
 	m.TextInput = input
@@ -699,7 +699,7 @@ func (m *ExistingGenesisChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if !state.existingGenesis {
 			m.Ctx = weavecontext.SetCurrentState(m.Ctx, state)
 			if state.network == string(Local) {
-				return NewCosmovisorAutoUpgradeSelector(weavecontext.SetCurrentState(m.Ctx, state)), cmd
+				return NewCosmovisorAutoUpgradeSelector(weavecontext.SetCurrentState(m.Ctx, state)), nil
 			}
 			return NewGenesisEndpointInput(m.Ctx), nil
 		} else {
@@ -758,7 +758,7 @@ func (m *ExistingGenesisReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) 
 			m.Ctx = weavecontext.SetCurrentState(m.Ctx, state)
 			switch *selected {
 			case UseCurrentGenesis:
-				return NewCosmovisorAutoUpgradeSelector(weavecontext.SetCurrentState(m.Ctx, state)), cmd
+				return NewCosmovisorAutoUpgradeSelector(weavecontext.SetCurrentState(m.Ctx, state)), nil
 			case ReplaceGenesis:
 				return NewGenesisEndpointInput(m.Ctx), nil
 			}
@@ -767,7 +767,7 @@ func (m *ExistingGenesisReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) 
 				state.replaceExistingGenesisWithDefault = true
 			}
 			m.Ctx = weavecontext.SetCurrentState(m.Ctx, state)
-			return NewCosmovisorAutoUpgradeSelector(weavecontext.SetCurrentState(m.Ctx, state)), cmd
+			return NewCosmovisorAutoUpgradeSelector(weavecontext.SetCurrentState(m.Ctx, state)), nil
 		}
 	}
 
@@ -827,7 +827,7 @@ func (m *GenesisEndpointInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.err = common.ValidateURL(dns)
 		if m.err == nil {
 			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"endpoint"}, dns))
-			return NewCosmovisorAutoUpgradeSelector(weavecontext.SetCurrentState(m.Ctx, state)), cmd
+			return NewCosmovisorAutoUpgradeSelector(weavecontext.SetCurrentState(m.Ctx, state)), nil
 		}
 	}
 	m.TextInput = input
