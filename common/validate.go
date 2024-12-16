@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"os"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -151,16 +152,32 @@ func ValidateMnemonic(mnemonic string) error {
 	return nil
 }
 
-// ValidateURL is a function to validate if a string is a valid URL and return an error if invalid
-func ValidateURL(str string) error {
+// ValidateURLWithSchemes is a function to validate if a string is a valid URL and return an error if invalid.
+// It allows for custom schemes to be specified.
+func validateURLWithSchemes(str string, schemes ...string) error {
 	u, err := url.Parse(str)
 	if err != nil {
 		return fmt.Errorf("invalid URL format: %v", err)
 	}
-	if u.Scheme == "" || u.Host == "" {
-		return fmt.Errorf("URL is missing scheme or host")
+	if u.Host == "" {
+		return fmt.Errorf("URL is missing host")
+	}
+	if len(schemes) > 0 && !slices.Contains(schemes, u.Scheme) {
+		return fmt.Errorf("URL must use one of the following schemes: %v", schemes)
 	}
 	return nil
+}
+
+// ValidateURL is a function to validate if a string is a valid URL and return an error if invalid.
+// Only http and https schemes are allowed.
+func ValidateURL(str string) error {
+	return validateURLWithSchemes(str, "http", "https")
+}
+
+// ValidateWSURL is a function to validate if a string is a valid WebSocket URL and return an error if invalid.
+// Only ws and wss schemes are allowed.
+func ValidateWSURL(str string) error {
+	return validateURLWithSchemes(str, "ws", "wss")
 }
 
 // IsValidDNS checks if a given string is a valid DNS name
