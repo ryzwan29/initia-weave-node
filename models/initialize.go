@@ -3,7 +3,6 @@ package models
 import (
 	"context"
 	"fmt"
-	"github.com/initia-labs/weave/crypto"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -11,6 +10,7 @@ import (
 	"github.com/initia-labs/weave/common"
 	"github.com/initia-labs/weave/config"
 	weavecontext "github.com/initia-labs/weave/context"
+	"github.com/initia-labs/weave/crypto"
 	"github.com/initia-labs/weave/styles"
 	"github.com/initia-labs/weave/types"
 	"github.com/initia-labs/weave/ui"
