@@ -49,8 +49,19 @@ func (c *HTTPClient) Get(baseURL, additionalPath string, params map[string]strin
 func (c *HTTPClient) getWithRetry(endpoint string) ([]byte, error) {
 	var lastErr error
 
+	req, err := http.NewRequest("GET", endpoint, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	// if baseURL is api.github.com
+	if strings.HasPrefix(endpoint, "https://api.github.com") && os.Getenv("GITHUB_TOKEN") != "" {
+		// add GITHUB_TOKEN to headers
+		req.Header.Add("Authorization", "Bearer "+os.Getenv("GITHUB_TOKEN"))
+	}
+
 	for attempt := 1; attempt <= maxRetries; attempt++ {
-		resp, err := http.Get(endpoint)
+		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
 			lastErr = fmt.Errorf("attempt %d: request error: %w", attempt, err)
 		} else {
