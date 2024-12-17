@@ -36,7 +36,7 @@ func gasStationSetupCommand() *cobra.Command {
 		Short: "Setup Gas Station account on Initia and Celestia for funding the OPinit-bots or relayer to send transactions.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := weavecontext.NewAppContext(models.NewExistingCheckerState())
-			_, err := tea.NewProgram(models.NewGasStationMnemonicInput(ctx)).Run()
+			_, err := tea.NewProgram(models.NewGasStationMethodSelect(ctx)).Run()
 			if err != nil {
 				return err
 			}

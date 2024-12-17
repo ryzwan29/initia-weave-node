@@ -2,6 +2,8 @@ package models
 
 import (
 	"context"
+	"fmt"
+	"github.com/initia-labs/weave/crypto"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -15,7 +17,8 @@ import (
 )
 
 type ExistingCheckerState struct {
-	weave types.WeaveState
+	weave             types.WeaveState
+	generatedMnemonic string
 }
 
 func NewExistingCheckerState() ExistingCheckerState {
@@ -26,7 +29,8 @@ func NewExistingCheckerState() ExistingCheckerState {
 
 func (e ExistingCheckerState) Clone() ExistingCheckerState {
 	return ExistingCheckerState{
-		weave: e.weave.Clone(),
+		weave:             e.weave.Clone(),
+		generatedMnemonic: e.generatedMnemonic,
 	}
 
 }
@@ -84,7 +88,7 @@ func (m *ExistingWeaveChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.Ctx = weavecontext.SetCurrentState(m.Ctx, state)
 		switch *selected {
 		case Yes:
-			return NewGasStationMnemonicInput(m.Ctx), nil
+			return NewGasStationMethodSelect(m.Ctx), nil
 		case No:
 			return m.skipToModel, m.skipToModel.Init()
 		}
@@ -98,6 +102,175 @@ func (m *ExistingWeaveChecker) View() string {
 	view += m.Selector.View()
 
 	return view
+}
+
+type GasStationMethodSelect struct {
+	weavecontext.BaseModel
+	ui.Selector[GasStationMethodOption]
+}
+
+type GasStationMethodOption string
+
+const (
+	Generate GasStationMethodOption = "Generate new account (recommended)"
+	Import   GasStationMethodOption = "Import existing account using mnemonic"
+)
+
+func NewGasStationMethodSelect(ctx context.Context) *GasStationMethodSelect {
+	return &GasStationMethodSelect{
+		Selector: ui.Selector[GasStationMethodOption]{
+			Options: []GasStationMethodOption{
+				Generate,
+				Import,
+			},
+		},
+		BaseModel: weavecontext.BaseModel{Ctx: ctx},
+	}
+}
+
+func (m *GasStationMethodSelect) Init() tea.Cmd {
+	return nil
+}
+
+func (m *GasStationMethodSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := weavecontext.HandleCommonCommands[ExistingCheckerState](m, msg); handled {
+		return model, cmd
+	}
+
+	selected, cmd := m.Select(msg)
+	if selected != nil {
+		state := weavecontext.PushPageAndGetState[ExistingCheckerState](m)
+
+		state.weave.PushPreviousResponse(
+			styles.RenderPreviousResponse(styles.ArrowSeparator, "How would you like to setup your Gas station account?", []string{"Gas Station account"}, string(*selected)),
+		)
+		switch *selected {
+		case Generate:
+			model := NewGenerateOrRecoverSystemKeysLoading(weavecontext.SetCurrentState(m.Ctx, state))
+			return model, model.Init()
+		case Import:
+			return NewGasStationMnemonicInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
+		}
+	}
+	return m, cmd
+}
+
+func (m *GasStationMethodSelect) View() string {
+	state := weavecontext.GetCurrentState[ExistingCheckerState](m.Ctx)
+	return InitHeader() + state.weave.Render() +
+		styles.RenderPrompt("How would you like to setup your Gas station account?", []string{"Gas Station account"}, styles.Question) +
+		m.Selector.View()
+}
+
+type GenerateGasStationLoading struct {
+	loading ui.Loading
+	weavecontext.BaseModel
+}
+
+func NewGenerateOrRecoverSystemKeysLoading(ctx context.Context) *GenerateGasStationLoading {
+	return &GenerateGasStationLoading{
+		loading:   ui.NewLoading("Generating new Gas Station account...", generateGasStationAccount(ctx)),
+		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
+	}
+}
+
+func (m *GenerateGasStationLoading) Init() tea.Cmd {
+	return m.loading.Init()
+}
+
+func generateGasStationAccount(ctx context.Context) tea.Cmd {
+	return func() tea.Msg {
+		state := weavecontext.GetCurrentState[ExistingCheckerState](ctx)
+
+		mnemonic, err := crypto.GenerateMnemonic()
+		if err != nil {
+			panic(fmt.Errorf("failed to generate gas station mnemonic: %w", err))
+		}
+		state.generatedMnemonic = mnemonic
+
+		time.Sleep(1500 * time.Millisecond)
+
+		return ui.EndLoading{
+			Ctx: weavecontext.SetCurrentState(ctx, state),
+		}
+	}
+}
+
+func (m *GenerateGasStationLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := weavecontext.HandleCommonCommands[ExistingCheckerState](m, msg); handled {
+		return model, cmd
+	}
+
+	loader, cmd := m.loading.Update(msg)
+	m.loading = loader
+	if m.loading.Completing {
+		m.Ctx = m.loading.EndContext
+		state := weavecontext.PushPageAndGetState[ExistingCheckerState](m)
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "Gas Station account has been successfully generated.", []string{}, ""))
+		return NewSystemKeysMnemonicDisplayInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
+	}
+	return m, cmd
+}
+
+func (m *GenerateGasStationLoading) View() string {
+	state := weavecontext.GetCurrentState[ExistingCheckerState](m.Ctx)
+	return InitHeader() + state.weave.Render() + "\n" + m.loading.View()
+}
+
+type GasStationMnemonicDisplayInput struct {
+	ui.TextInput
+	weavecontext.BaseModel
+	question string
+}
+
+func NewSystemKeysMnemonicDisplayInput(ctx context.Context) *GasStationMnemonicDisplayInput {
+	model := &GasStationMnemonicDisplayInput{
+		TextInput: ui.NewTextInput(true),
+		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
+		question:  "Please type `continue` to proceed after you have securely stored the mnemonic.",
+	}
+	model.WithPlaceholder("Type `continue` to continue, Ctrl+C to quit.")
+	model.WithValidatorFn(common.ValidateExactString("continue"))
+	return model
+}
+
+func (m *GasStationMnemonicDisplayInput) GetQuestion() string {
+	return m.question
+}
+
+func (m *GasStationMnemonicDisplayInput) Init() tea.Cmd {
+	return nil
+}
+
+func (m *GasStationMnemonicDisplayInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := weavecontext.HandleCommonCommands[ExistingCheckerState](m, msg); handled {
+		return model, cmd
+	}
+
+	input, cmd, done := m.TextInput.Update(msg)
+	if done {
+		state := weavecontext.PushPageAndGetState[ExistingCheckerState](m)
+		model := NewWeaveAppInitialization(m.Ctx, state.generatedMnemonic)
+		return model, model.Init()
+	}
+	m.TextInput = input
+	return m, cmd
+}
+
+func (m *GasStationMnemonicDisplayInput) View() string {
+	state := weavecontext.GetCurrentState[ExistingCheckerState](m.Ctx)
+	gasStationAddress, err := crypto.MnemonicToBech32Address("init", state.generatedMnemonic)
+	if err != nil {
+		panic(fmt.Errorf("failed to convert mnemonic to bech32 address: %w", err))
+	}
+
+	var mnemonicText string
+	mnemonicText += styles.RenderMnemonic("Gas Station", gasStationAddress, state.generatedMnemonic)
+
+	return InitHeader() + state.weave.Render() + "\n" +
+		styles.BoldUnderlineText("Important", styles.Yellow) + "\n" +
+		styles.Text("Write down these mnemonic phrases and store them in a safe place. \nIt is the only way to recover your system keys.", styles.Yellow) + "\n\n" +
+		mnemonicText + styles.RenderPrompt(m.GetQuestion(), []string{"`continue`"}, styles.Question) + m.TextInput.View()
 }
 
 type GasStationMnemonicInput struct {
