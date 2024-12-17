@@ -8,7 +8,7 @@ const DarwinRunUpgradableCosmovisorTemplate Template = `<?xml version="1.0" enco
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>com.initia.daemon</string>
+    <string>com.%[1]s.daemon</string>
 
     <key>ProgramArguments</key>
     <array>
@@ -41,10 +41,10 @@ const DarwinRunUpgradableCosmovisorTemplate Template = `<?xml version="1.0" enco
     </dict>
 
     <key>StandardOutPath</key>
-    <string>%[5]s/initia.stdout.log</string>
+    <string>%[5]s/%[1]s.stdout.log</string>
 
     <key>StandardErrorPath</key>
-    <string>%[5]s/initia.stderr.log</string>
+    <string>%[5]s/%[1]s.stderr.log</string>
 
     <key>HardResourceLimits</key>
     <dict>
@@ -61,7 +61,7 @@ const DarwinRunNonUpgradableCosmovisorTemplate Template = `<?xml version="1.0" e
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>com.initia.daemon</string>
+    <string>com.%[1]s.daemon</string>
 
     <key>ProgramArguments</key>
     <array>
@@ -94,10 +94,10 @@ const DarwinRunNonUpgradableCosmovisorTemplate Template = `<?xml version="1.0" e
     </dict>
 
     <key>StandardOutPath</key>
-    <string>%[5]s/initia.stdout.log</string>
+    <string>%[5]s/%[1]s.stdout.log</string>
 
     <key>StandardErrorPath</key>
-    <string>%[5]s/initia.stderr.log</string>
+    <string>%[5]s/%[1]s.stderr.log</string>
 
     <key>HardResourceLimits</key>
     <dict>

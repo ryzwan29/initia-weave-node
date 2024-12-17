@@ -29,9 +29,9 @@ func (cmd CommandName) MustGetBinaryName() string {
 func (cmd CommandName) MustGetServiceSlug() string {
 	switch cmd {
 	case UpgradeableInitia:
-		return "initiad"
+		return "cosmovisor"
 	case NonUpgradeableInitia:
-		return "initiad"
+		return "cosmovisor"
 	case Minitia:
 		return "minitiad"
 	case OPinitExecutor:
