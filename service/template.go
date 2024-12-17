@@ -348,19 +348,19 @@ LimitNOFILE=65535
 
 var (
 	LinuxTemplateMap = map[CommandName]Template{
-		UpgradeableInitia:    LinuxRunUpgradableCosmovisorTemplate,
-		NonUpgradeableInitia: LinuxRunNonUpgradableCosmovisorTemplate,
-		Minitia:              LinuxRunBinaryTemplate,
-		OPinitExecutor:       LinuxOPinitBotTemplate,
-		OPinitChallenger:     LinuxOPinitBotTemplate,
-		Relayer:              LinuxRelayerTemplate,
+		UpgradableInitia:    LinuxRunUpgradableCosmovisorTemplate,
+		NonUpgradableInitia: LinuxRunNonUpgradableCosmovisorTemplate,
+		Minitia:             LinuxRunBinaryTemplate,
+		OPinitExecutor:      LinuxOPinitBotTemplate,
+		OPinitChallenger:    LinuxOPinitBotTemplate,
+		Relayer:             LinuxRelayerTemplate,
 	}
 	DarwinTemplateMap = map[CommandName]Template{
-		UpgradeableInitia:    DarwinRunUpgradableCosmovisorTemplate,
-		NonUpgradeableInitia: DarwinRunNonUpgradableCosmovisorTemplate,
-		Minitia:              DarwinRunBinaryTemplate,
-		OPinitExecutor:       DarwinOPinitBotTemplate,
-		OPinitChallenger:     DarwinOPinitBotTemplate,
-		Relayer:              DarwinRelayerTemplate,
+		UpgradableInitia:    DarwinRunUpgradableCosmovisorTemplate,
+		NonUpgradableInitia: DarwinRunNonUpgradableCosmovisorTemplate,
+		Minitia:             DarwinRunBinaryTemplate,
+		OPinitExecutor:      DarwinOPinitBotTemplate,
+		OPinitChallenger:    DarwinOPinitBotTemplate,
+		Relayer:             DarwinRelayerTemplate,
 	}
 )

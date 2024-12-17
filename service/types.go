@@ -3,17 +3,17 @@ package service
 type CommandName string
 
 const (
-	UpgradeableInitia    CommandName = "upgradable_initia"
-	NonUpgradeableInitia CommandName = "non_upgradable_initia"
-	Minitia              CommandName = "minitia"
-	OPinitExecutor       CommandName = "executor"
-	OPinitChallenger     CommandName = "challenger"
-	Relayer              CommandName = "relayer"
+	UpgradableInitia    CommandName = "upgradable_initia"
+	NonUpgradableInitia CommandName = "non_upgradable_initia"
+	Minitia             CommandName = "minitia"
+	OPinitExecutor      CommandName = "executor"
+	OPinitChallenger    CommandName = "challenger"
+	Relayer             CommandName = "relayer"
 )
 
 func (cmd CommandName) MustGetBinaryName() string {
 	switch cmd {
-	case UpgradeableInitia, NonUpgradeableInitia:
+	case UpgradableInitia, NonUpgradableInitia:
 		return "cosmovisor"
 	case Minitia:
 		return "minitiad"
@@ -28,9 +28,9 @@ func (cmd CommandName) MustGetBinaryName() string {
 
 func (cmd CommandName) MustGetServiceSlug() string {
 	switch cmd {
-	case UpgradeableInitia:
+	case UpgradableInitia:
 		return "cosmovisor"
-	case NonUpgradeableInitia:
+	case NonUpgradableInitia:
 		return "cosmovisor"
 	case Minitia:
 		return "minitiad"

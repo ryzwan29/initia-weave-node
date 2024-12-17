@@ -985,9 +985,9 @@ func initializeApp(ctx context.Context) tea.Cmd {
 		var serviceCommand service.CommandName
 
 		if state.allowAutoUpgrade {
-			serviceCommand = service.UpgradeableInitia
+			serviceCommand = service.UpgradableInitia
 		} else {
-			serviceCommand = service.NonUpgradeableInitia
+			serviceCommand = service.NonUpgradableInitia
 
 		}
 
