@@ -276,8 +276,12 @@ func ValidateEmptyString(s string) error {
 }
 
 func IsValidInteger(s string) error {
-	if _, err := strconv.Atoi(s); err != nil {
+	num, err := strconv.Atoi(s)
+	if err != nil {
 		return fmt.Errorf("amount must be an integer")
+	}
+	if num < 0 {
+		return fmt.Errorf("amount must be zero or a positive integer")
 	}
 	return nil
 }
