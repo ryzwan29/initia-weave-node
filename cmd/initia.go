@@ -89,7 +89,7 @@ func initiaStartCommand() *cobra.Command {
 		Use:   "start",
 		Short: "Start the initiad full node application.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			s, err := service.NewService(service.Initia)
+			s, err := service.NewService(service.UpgradableInitia)
 			if err != nil {
 				return err
 			}
@@ -110,7 +110,7 @@ func initiaStopCommand() *cobra.Command {
 		Use:   "stop",
 		Short: "Stop the initiad full node application.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			s, err := service.NewService(service.Initia)
+			s, err := service.NewService(service.UpgradableInitia)
 			if err != nil {
 				return err
 			}
@@ -131,7 +131,7 @@ func initiaRestartCommand() *cobra.Command {
 		Use:   "restart",
 		Short: "Restart the initiad full node application.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			s, err := service.NewService(service.Initia)
+			s, err := service.NewService(service.UpgradableInitia)
 			if err != nil {
 				return err
 			}
@@ -158,7 +158,7 @@ func initiaLogCommand() *cobra.Command {
 				return err
 			}
 
-			s, err := service.NewService(service.Initia)
+			s, err := service.NewService(service.UpgradableInitia)
 			if err != nil {
 				return err
 			}

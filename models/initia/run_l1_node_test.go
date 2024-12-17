@@ -132,14 +132,14 @@ func TestExistingAppReplaceSelectUseCurrentAppMainnet(t *testing.T) {
 	// Simulate selecting "UseCurrentApp"
 	nextModel, cmd := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
 
-	// Check that nextModel is InitializingAppLoading and verify state
-	if m, ok := nextModel.(*InitializingAppLoading); !ok {
-		t.Errorf("Expected model to be of type *InitializingAppLoading, but got %T", nextModel)
+	// Check that nextModel is CosmovisorAutoUpgradeSelector and verify state
+	if m, ok := nextModel.(*CosmovisorAutoUpgradeSelector); !ok {
+		t.Errorf("Expected model to be of type *CosmovisorAutoUpgradeSelector, but got %T", nextModel)
 	} else {
 		state = weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
 		assert.False(t, state.replaceExistingApp)
 	}
-	assert.NotNil(t, cmd)
+	assert.Nil(t, cmd)
 }
 
 func TestExistingAppReplaceSelectReplaceApp(t *testing.T) {
@@ -492,9 +492,9 @@ func TestPersistentPeersInputUpdate_ValidInput_MainnetNetwork(t *testing.T) {
 	// Simulate pressing Enter to submit the valid input
 	nextModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
 
-	// Expect transition to InitializingAppLoading for Mainnet network
-	if m, ok := nextModel.(*InitializingAppLoading); !ok {
-		t.Errorf("Expected model to be of type *InitializingAppLoading, but got %T", nextModel)
+	// Expect transition to CosmovisorAutoUpgradeSelector for Mainnet network
+	if m, ok := nextModel.(*CosmovisorAutoUpgradeSelector); !ok {
+		t.Errorf("Expected model to be of type *CosmovisorAutoUpgradeSelector, but got %T", nextModel)
 	} else {
 		state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
 		assert.Equal(t, validPeer, state.persistentPeers)   // Verify persistent peers in state
@@ -570,8 +570,8 @@ func TestExistingGenesisCheckerUpdate_NoExistingGenesis_LocalNetwork(t *testing.
 	nextModel, _ := model.Update(tea.KeyMsg{})
 
 	// Expect transition to InitializingAppLoading for Local network
-	if _, ok := nextModel.(*InitializingAppLoading); !ok {
-		t.Errorf("Expected model to be of type *InitializingAppLoading, but got %T", nextModel)
+	if _, ok := nextModel.(*CosmovisorAutoUpgradeSelector); !ok {
+		t.Errorf("Expected model to be of type *CosmovisorAutoUpgradeSelector, but got %T", nextModel)
 	}
 }
 
@@ -627,9 +627,9 @@ func TestExistingGenesisReplaceSelect_Update_UseCurrentGenesis_LocalNetwork(t *t
 	model.Update(tea.KeyMsg{Type: tea.KeySpace})                 // Select UseCurrentGenesis
 	nextModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter}) // Confirm selection with Enter
 
-	// Expect transition to InitializingAppLoading for Local network
-	if _, ok := nextModel.(*InitializingAppLoading); !ok {
-		t.Errorf("Expected model to be of type *InitializingAppLoading, but got %T", nextModel)
+	// Expect transition to CosmovisorAutoUpgradeSelector for Local network
+	if _, ok := nextModel.(*CosmovisorAutoUpgradeSelector); !ok {
+		t.Errorf("Expected model to be of type *CosmovisorAutoUpgradeSelector, but got %T", nextModel)
 	}
 }
 
@@ -646,9 +646,9 @@ func TestExistingGenesisReplaceSelect_Update_ReplaceGenesis_LocalNetwork(t *test
 	model.Update(tea.KeyMsg{Type: tea.KeySpace})                 // Select ReplaceGenesis
 	nextModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter}) // Confirm selection with Enter
 
-	// Expect transition to InitializingAppLoading and state update
-	if m, ok := nextModel.(*InitializingAppLoading); !ok {
-		t.Errorf("Expected model to be of type *InitializingAppLoading, but got %T", nextModel)
+	// Expect transition to CosmovisorAutoUpgradeSelector and state update
+	if m, ok := nextModel.(*CosmovisorAutoUpgradeSelector); !ok {
+		t.Errorf("Expected model to be of type *CosmovisorAutoUpgradeSelector, but got %T", nextModel)
 	} else {
 		state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
 		assert.True(t, state.replaceExistingGenesisWithDefault) // Verify a flag is set for Local network
@@ -686,9 +686,9 @@ func TestGenesisEndpointInputUpdate_ValidInput(t *testing.T) {
 	// Simulate pressing Enter to submit the valid URL
 	nextModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
 
-	// Expect transition to InitializingAppLoading for valid URL
-	if m, ok := nextModel.(*InitializingAppLoading); !ok {
-		t.Errorf("Expected model to be of type *InitializingAppLoading, but got %T", nextModel)
+	// Expect transition to CosmovisorAutoUpgradeSelector for valid URL
+	if m, ok := nextModel.(*CosmovisorAutoUpgradeSelector); !ok {
+		t.Errorf("Expected model to be of type *CosmovisorAutoUpgradeSelector, but got %T", nextModel)
 	} else {
 		state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
 		assert.Equal(t, validURL, state.genesisEndpoint)                       // Verify genesis endpoint in state

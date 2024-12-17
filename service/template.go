@@ -2,7 +2,113 @@ package service
 
 type Template string
 
-// DarwinRunBinaryTemplate should inject the arguments as follows: [binaryName, binaryPath, appHome, userHome, weaveLogPath, serviceName]
+// DarwinRunUpgradableCosmovisorTemplate should inject the arguments as follows: [1:binaryName, 2:binaryPath, 3:appHome, 4:userHome, 5:weaveLogPath, 6:serviceName]
+const DarwinRunUpgradableCosmovisorTemplate Template = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.%[1]s.daemon</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>%[2]s/%[1]s</string>
+        <string>run</string>
+        <string>start</string>
+    </array>
+
+    <key>RunAtLoad</key>
+    <false/>
+
+    <key>KeepAlive</key>
+    <false/>
+
+    <!-- Adding the environment variable -->
+    <key>EnvironmentVariables</key>
+    <dict>
+		<key>HOME</key>
+        <string>%[4]s</string>
+        <key>DYLD_LIBRARY_PATH</key>
+        <string>%[3]s/cosmovisor/dyld_lib</string>
+        <key>DAEMON_NAME</key>
+        <string>initiad</string>
+        <key>DAEMON_HOME</key>
+        <string>%[3]s</string>
+        <key>DAEMON_ALLOW_DOWNLOAD_BINARIES</key>
+        <string>true</string>
+        <key>DAEMON_RESTART_AFTER_UPGRADE</key>
+        <string>true</string>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>%[5]s/%[1]s.stdout.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>%[5]s/%[1]s.stderr.log</string>
+
+    <key>HardResourceLimits</key>
+    <dict>
+        <key>NumberOfFiles</key>
+        <integer>65535</integer>
+    </dict>
+</dict>
+</plist>
+`
+
+// DarwinRunNonUpgradableCosmovisorTemplate should inject the arguments as follows: [1:binaryName, 2:binaryPath, 3:appHome, 4:userHome, 5:weaveLogPath, 6:serviceName]
+const DarwinRunNonUpgradableCosmovisorTemplate Template = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.%[1]s.daemon</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>%[2]s/%[1]s</string>
+        <string>run</string>
+        <string>start</string>
+    </array>
+
+    <key>RunAtLoad</key>
+    <false/>
+
+    <key>KeepAlive</key>
+    <false/>
+
+    <!-- Adding the environment variable -->
+    <key>EnvironmentVariables</key>
+    <dict>
+		<key>HOME</key>
+        <string>%[4]s</string>
+        <key>DYLD_LIBRARY_PATH</key>
+        <string>%[3]s/cosmovisor/dyld_lib</string>
+        <key>DAEMON_NAME</key>
+        <string>initiad</string>
+        <key>DAEMON_HOME</key>
+        <string>%[3]s</string>
+        <key>DAEMON_ALLOW_DOWNLOAD_BINARIES</key>
+        <string>false</string>
+        <key>DAEMON_RESTART_AFTER_UPGRADE</key>
+        <string>false</string>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>%[5]s/%[1]s.stdout.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>%[5]s/%[1]s.stderr.log</string>
+
+    <key>HardResourceLimits</key>
+    <dict>
+        <key>NumberOfFiles</key>
+        <integer>65535</integer>
+    </dict>
+</dict>
+</plist>
+`
+
+// DarwinRunBinaryTemplate should inject the arguments as follows: [1:binaryName, 2:binaryPath, 3:appHome, 4:userHome, 5:weaveLogPath, 6:serviceName]
 const DarwinRunBinaryTemplate Template = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -14,7 +120,7 @@ const DarwinRunBinaryTemplate Template = `<?xml version="1.0" encoding="UTF-8"?>
     <array>
         <string>%[2]s/%[1]s</string>
         <string>start</string>
-		<string>--home=%[3]s</string>
+        <string>--home=%[3]s</string>
     </array>
 
     <key>RunAtLoad</key>
@@ -133,6 +239,50 @@ const DarwinRelayerTemplate Template = `<?xml version="1.0" encoding="UTF-8"?>
 </plist>
 `
 
+// LinuxRunUpgradableCosmovisorTemplate should inject the arguments as follows: [binaryName, currentUser.Username, binaryPath, serviceName, appHome]
+const LinuxRunUpgradableCosmovisorTemplate Template = `
+[Unit]
+Description=%[1]s
+After=network.target
+
+[Service]
+Type=exec
+User=%[2]s
+ExecStart=%[3]s/%[1]s run start
+KillSignal=SIGINT
+Environment="LD_LIBRARY_PATH=%[5]s/cosmovisor/dyld_lib"
+Environment="DAEMON_NAME=initiad"
+Environment="DAEMON_HOME=%[5]s"
+Environment="DAEMON_ALLOW_DOWNLOAD_BINARIES=true"
+Environment="DAEMON_RESTART_AFTER_UPGRADE=true"
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target
+`
+
+// LinuxRunNonUpgradableCosmovisorTemplate should inject the arguments as follows: [binaryName, currentUser.Username, binaryPath, serviceName, appHome]
+const LinuxRunNonUpgradableCosmovisorTemplate Template = `
+[Unit]
+Description=%[1]s
+After=network.target
+
+[Service]
+Type=exec
+User=%[2]s
+ExecStart=%[3]s/%[1]s run start
+KillSignal=SIGINT
+Environment="LD_LIBRARY_PATH=%[5]s/cosmovisor/dyld_lib"
+Environment="DAEMON_NAME=initiad"
+Environment="DAEMON_HOME=%[5]s"
+Environment="DAEMON_ALLOW_DOWNLOAD_BINARIES=false"
+Environment="DAEMON_RESTART_AFTER_UPGRADE=false"
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target
+`
+
 // LinuxRunBinaryTemplate should inject the arguments as follows: [binaryName, currentUser.Username, binaryPath, serviceName, appHome]
 const LinuxRunBinaryTemplate Template = `
 [Unit]
@@ -145,12 +295,10 @@ User=%[2]s
 ExecStart=%[3]s/%[1]s start --home %[5]s
 KillSignal=SIGINT
 Environment="LD_LIBRARY_PATH=%[3]s"
+LimitNOFILE=65535
 
 [Install]
 WantedBy=multi-user.target
-
-[Service]
-LimitNOFILE=65535
 `
 
 // LinuxOPinitBotTemplate should inject the arguments as follows: [binaryName, currentUser.Username, binaryPath, serviceName, appHome]
@@ -165,12 +313,10 @@ User=%[2]s
 ExecStart=%[3]s/%[1]s start %[4]s --home %[5]s
 KillSignal=SIGINT
 Environment="LD_LIBRARY_PATH=%[3]s"
+LimitNOFILE=65535
 
 [Install]
 WantedBy=multi-user.target
-
-[Service]
-LimitNOFILE=65535
 `
 
 // LinuxRelayerTemplate should inject the arguments as follows: [binaryName, currentUser.Username, binaryPath, serviceName, appHome]
@@ -184,27 +330,27 @@ Type=exec
 User=%[2]s
 ExecStart=%[3]s/%[1]s start
 KillSignal=SIGINT
+LimitNOFILE=65535
 
 [Install]
 WantedBy=multi-user.target
-
-[Service]
-LimitNOFILE=65535
 `
 
 var (
 	LinuxTemplateMap = map[CommandName]Template{
-		Initia:           LinuxRunBinaryTemplate,
-		Minitia:          LinuxRunBinaryTemplate,
-		OPinitExecutor:   LinuxOPinitBotTemplate,
-		OPinitChallenger: LinuxOPinitBotTemplate,
-		Relayer:          LinuxRelayerTemplate,
+		UpgradableInitia:    LinuxRunUpgradableCosmovisorTemplate,
+		NonUpgradableInitia: LinuxRunNonUpgradableCosmovisorTemplate,
+		Minitia:             LinuxRunBinaryTemplate,
+		OPinitExecutor:      LinuxOPinitBotTemplate,
+		OPinitChallenger:    LinuxOPinitBotTemplate,
+		Relayer:             LinuxRelayerTemplate,
 	}
 	DarwinTemplateMap = map[CommandName]Template{
-		Initia:           DarwinRunBinaryTemplate,
-		Minitia:          DarwinRunBinaryTemplate,
-		OPinitExecutor:   DarwinOPinitBotTemplate,
-		OPinitChallenger: DarwinOPinitBotTemplate,
-		Relayer:          DarwinRelayerTemplate,
+		UpgradableInitia:    DarwinRunUpgradableCosmovisorTemplate,
+		NonUpgradableInitia: DarwinRunNonUpgradableCosmovisorTemplate,
+		Minitia:             DarwinRunBinaryTemplate,
+		OPinitExecutor:      DarwinOPinitBotTemplate,
+		OPinitChallenger:    DarwinOPinitBotTemplate,
+		Relayer:             DarwinRelayerTemplate,
 	}
 )

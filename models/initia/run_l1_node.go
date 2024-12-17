@@ -302,8 +302,7 @@ func (m *ExistingAppReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				model := NewExistingGenesisChecker(weavecontext.SetCurrentState(m.Ctx, state))
 				return model, model.Init()
 			case string(Mainnet), string(Testnet):
-				newLoader := NewInitializingAppLoading(weavecontext.SetCurrentState(m.Ctx, state))
-				return newLoader, newLoader.Init()
+				return NewCosmovisorAutoUpgradeSelector(weavecontext.SetCurrentState(m.Ctx, state)), nil
 			}
 		case ReplaceApp:
 			state.replaceExistingApp = true
@@ -641,8 +640,7 @@ func (m *PersistentPeersInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			model := NewExistingGenesisChecker(m.Ctx)
 			return model, model.Init()
 		case string(Mainnet), string(Testnet):
-			newLoader := NewInitializingAppLoading(m.Ctx)
-			return newLoader, newLoader.Init()
+			return NewCosmovisorAutoUpgradeSelector(weavecontext.SetCurrentState(m.Ctx, state)), nil
 		}
 	}
 	m.TextInput = input
@@ -701,8 +699,7 @@ func (m *ExistingGenesisChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if !state.existingGenesis {
 			m.Ctx = weavecontext.SetCurrentState(m.Ctx, state)
 			if state.network == string(Local) {
-				newLoader := NewInitializingAppLoading(m.Ctx)
-				return newLoader, newLoader.Init()
+				return NewCosmovisorAutoUpgradeSelector(weavecontext.SetCurrentState(m.Ctx, state)), nil
 			}
 			return NewGenesisEndpointInput(m.Ctx), nil
 		} else {
@@ -761,8 +758,7 @@ func (m *ExistingGenesisReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) 
 			m.Ctx = weavecontext.SetCurrentState(m.Ctx, state)
 			switch *selected {
 			case UseCurrentGenesis:
-				newLoader := NewInitializingAppLoading(m.Ctx)
-				return newLoader, newLoader.Init()
+				return NewCosmovisorAutoUpgradeSelector(weavecontext.SetCurrentState(m.Ctx, state)), nil
 			case ReplaceGenesis:
 				return NewGenesisEndpointInput(m.Ctx), nil
 			}
@@ -771,8 +767,7 @@ func (m *ExistingGenesisReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) 
 				state.replaceExistingGenesisWithDefault = true
 			}
 			m.Ctx = weavecontext.SetCurrentState(m.Ctx, state)
-			newLoader := NewInitializingAppLoading(m.Ctx)
-			return newLoader, newLoader.Init()
+			return NewCosmovisorAutoUpgradeSelector(weavecontext.SetCurrentState(m.Ctx, state)), nil
 		}
 	}
 
@@ -832,8 +827,7 @@ func (m *GenesisEndpointInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.err = common.ValidateURL(dns)
 		if m.err == nil {
 			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"endpoint"}, dns))
-			newLoader := NewInitializingAppLoading(weavecontext.SetCurrentState(m.Ctx, state))
-			return newLoader, newLoader.Init()
+			return NewCosmovisorAutoUpgradeSelector(weavecontext.SetCurrentState(m.Ctx, state)), nil
 		}
 	}
 	m.TextInput = input
@@ -928,13 +922,27 @@ func initializeApp(ctx context.Context) tea.Cmd {
 		weaveDataPath := filepath.Join(userHome, common.WeaveDataDirectory)
 		binaryPath := cosmosutils.GetInitiaBinaryPath(nodeVersion)
 		cosmosutils.MustInstallInitiaBinary(nodeVersion, url, binaryPath)
-
+		cosmovisorPath := cosmosutils.MustInstallCosmovisor(CosmovisorVersion)
 		initiaHome := weavecontext.GetInitiaHome(ctx)
 		if _, err := os.Stat(initiaHome); os.IsNotExist(err) {
 			runCmd := exec.Command(binaryPath, "init", state.moniker, "--chain-id", state.chainId, "--home", initiaHome)
 			if err := runCmd.Run(); err != nil {
 				panic(fmt.Sprintf("failed to run initiad init: %v", err))
 			}
+
+		}
+
+		if _, err = os.Stat(filepath.Join(initiaHome, "cosmovisor")); os.IsNotExist(err) {
+			runCmd := exec.Command(cosmovisorPath, "init", binaryPath)
+			runCmd.Env = append(runCmd.Env, "DAEMON_NAME=initiad", "DAEMON_HOME="+initiaHome)
+			if err := runCmd.Run(); err != nil {
+				panic(fmt.Sprintf("failed to run cosmovisor init: %v", err))
+			}
+		}
+
+		err = io.CopyDirectory(filepath.Dir(binaryPath), filepath.Join(initiaHome, "cosmovisor", "dyld_lib"))
+		if err != nil {
+			panic(err)
 		}
 
 		initiaConfigPath := weavecontext.GetInitiaConfigDirectory(ctx)
@@ -974,13 +982,21 @@ func initializeApp(ctx context.Context) tea.Cmd {
 				panic(fmt.Sprintf("failed to move genesis.json: %v", err))
 			}
 		}
+		var serviceCommand service.CommandName
 
-		srv, err := service.NewService(service.Initia)
+		if state.allowAutoUpgrade {
+			serviceCommand = service.UpgradableInitia
+		} else {
+			serviceCommand = service.NonUpgradableInitia
+
+		}
+
+		srv, err := service.NewService(serviceCommand)
 		if err != nil {
 			panic(fmt.Sprintf("failed to initialize service: %v", err))
 		}
 
-		if err = srv.Create(fmt.Sprintf("initia@%s", state.initiadVersion), initiaHome); err != nil {
+		if err = srv.Create(fmt.Sprintf("cosmovisor@%s", CosmovisorVersion), initiaHome); err != nil {
 			panic(fmt.Sprintf("failed to create service: %v", err))
 		}
 
@@ -1075,7 +1091,7 @@ func (m *SyncMethodSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if selected != nil {
 		state := weavecontext.PushPageAndGetState[RunL1NodeState](m)
 
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{""}, string(*selected)))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, string(*selected)))
 		state.syncMethod = string(*selected)
 		switch *selected {
 		case NoSync:
@@ -1095,7 +1111,80 @@ func (m *SyncMethodSelect) View() string {
 	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
 	return state.weave.Render() + styles.RenderPrompt(
 		m.GetQuestion(),
-		[]string{""},
+		[]string{},
+		styles.Question,
+	) + m.Selector.View()
+}
+
+type AutoUpgradeOption string
+
+const (
+	AllowAutoUpgrade    AutoUpgradeOption = "Allow"
+	DisallowAutoUpgrade AutoUpgradeOption = "Disallow"
+)
+
+type CosmovisorAutoUpgradeSelector struct {
+	ui.Selector[AutoUpgradeOption]
+	weavecontext.BaseModel
+	question string
+}
+
+func NewCosmovisorAutoUpgradeSelector(ctx context.Context) *CosmovisorAutoUpgradeSelector {
+	return &CosmovisorAutoUpgradeSelector{
+		Selector: ui.Selector[AutoUpgradeOption]{
+			Options: []AutoUpgradeOption{
+				AllowAutoUpgrade,
+				DisallowAutoUpgrade,
+			},
+			Tooltips: &[]ui.Tooltip{
+				ui.NewTooltip(
+					"Allow",
+					// TODO: revisit docs
+					"Enable automatic downloading of new binaries and upgrades via Cosmovisor. \nSee more: https://docs.initia.xyz/run-initia-node/automating-software-updates-with-cosmovisor",
+					"", []string{}, []string{}, []string{},
+				),
+				ui.NewTooltip(
+					"Disallow",
+					"Disable automatic downloading of new binaries and upgrades via Cosmovisor. You will need to manually upgrade the binaries and restart the node to apply the upgrades.",
+					"", []string{}, []string{}, []string{},
+				),
+			},
+		},
+		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
+		question:  "Would you like to allow automatic upgrades via Cosmovisor?",
+	}
+}
+
+func (m *CosmovisorAutoUpgradeSelector) GetQuestion() string {
+	return m.question
+}
+
+func (m *CosmovisorAutoUpgradeSelector) Init() tea.Cmd {
+	return nil
+}
+
+func (m *CosmovisorAutoUpgradeSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := weavecontext.HandleCommonCommands[RunL1NodeState](m, msg); handled {
+		return model, cmd
+	}
+	selected, cmd := m.Select(msg)
+	if selected != nil {
+		state := weavecontext.PushPageAndGetState[RunL1NodeState](m)
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, string(*selected)))
+		state.allowAutoUpgrade = AllowAutoUpgrade == (*selected)
+		model := NewInitializingAppLoading(weavecontext.SetCurrentState(m.Ctx, state))
+		return model, model.Init()
+	}
+
+	return m, cmd
+}
+
+func (m *CosmovisorAutoUpgradeSelector) View() string {
+	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
+	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	return state.weave.Render() + styles.RenderPrompt(
+		m.GetQuestion(),
+		[]string{},
 		styles.Question,
 	) + m.Selector.View()
 }
@@ -1535,7 +1624,6 @@ func snapshotExtractor(ctx context.Context) tea.Cmd {
 
 		initiaHome := weavecontext.GetInitiaHome(ctx)
 		binaryPath := filepath.Join(userHome, common.WeaveDataDirectory, fmt.Sprintf("initia@%s", state.initiadVersion), "initiad")
-
 		runCmd := exec.Command(binaryPath, "comet", "unsafe-reset-all", "--keep-addr-book", "--home", initiaHome)
 		if err := runCmd.Run(); err != nil {
 			panic(fmt.Sprintf("failed to run initiad comet unsafe-reset-all: %v", err))
@@ -1639,7 +1727,6 @@ func setupStateSync(ctx context.Context) tea.Cmd {
 
 		initiaHome := weavecontext.GetInitiaHome(ctx)
 		binaryPath := cosmosutils.GetInitiaBinaryPath(state.initiadVersion)
-
 		runCmd := exec.Command(binaryPath, "comet", "unsafe-reset-all", "--keep-addr-book", "--home", initiaHome)
 		if err := runCmd.Run(); err != nil {
 			panic(fmt.Sprintf("failed to run initiad comet unsafe-reset-all: %v", err))
