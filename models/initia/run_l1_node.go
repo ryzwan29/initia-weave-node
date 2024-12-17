@@ -1140,19 +1140,18 @@ func NewCosmovisorAutoUpgradeSelector(ctx context.Context) *CosmovisorAutoUpgrad
 				ui.NewTooltip(
 					"Allow",
 					// TODO: revisit docs
-					"Enable automatic downloading of binaries (DAEMON_ALLOW_DOWNLOAD_BINARIES=true). \nSee more: https://docs.initia.xyz/run-initia-node/automating-software-updates-with-cosmovisor",
+					"Enable automatic downloading of new binaries and upgrades via Cosmovisor. \nSee more: https://docs.initia.xyz/run-initia-node/automating-software-updates-with-cosmovisor",
 					"", []string{}, []string{}, []string{},
 				),
 				ui.NewTooltip(
 					"Disallow",
-					// TODO: revisit docs
-					"Disable automatic downloading of binaries (DAEMON_ALLOW_DOWNLOAD_BINARIES=false). \nSee more: https://docs.initia.xyz/run-initia-node/automating-software-updates-with-cosmovisor",
+					"Disable automatic downloading of new binaries and upgrades via Cosmovisor. You will need to manually upgrade the binaries and restart the node to apply the upgrades.",
 					"", []string{}, []string{}, []string{},
 				),
 			},
 		},
 		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
-		question:  "Would you like to allow automatic updates via Cosmovisor?",
+		question:  "Would you like to allow automatic upgrades via Cosmovisor?",
 	}
 }
 
