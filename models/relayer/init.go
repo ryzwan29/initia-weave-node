@@ -436,6 +436,10 @@ func (m *GenerateL1RelayerKeyLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case L2SameKey:
 			state.l2RelayerAddress = state.l1RelayerAddress
 			state.l2RelayerMnemonic = state.l1RelayerMnemonic
+			_, err := cosmosutils.RecoverAndReplaceHermesKey(state.hermesBinaryPath, MustGetL2ChainId(m.Ctx), state.l2RelayerMnemonic)
+			if err != nil {
+				panic(fmt.Errorf("failed to recover and recover Hermes key for Rollup: %w", err))
+			}
 			return NewKeysMnemonicDisplayInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
 		case L2GenerateKey:
 			model := NewGenerateL2RelayerKeyLoading(weavecontext.SetCurrentState(m.Ctx, state))
