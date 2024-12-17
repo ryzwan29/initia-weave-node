@@ -153,7 +153,7 @@ func (m *GasStationMethodSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		)
 		switch *selected {
 		case Generate:
-			model := NewGenerateOrRecoverSystemKeysLoading(weavecontext.SetCurrentState(m.Ctx, state))
+			model := NewGenerateGasStationLoading(weavecontext.SetCurrentState(m.Ctx, state))
 			return model, model.Init()
 		case Import:
 			return NewGasStationMnemonicInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
@@ -175,7 +175,7 @@ type GenerateGasStationLoading struct {
 	weavecontext.BaseModel
 }
 
-func NewGenerateOrRecoverSystemKeysLoading(ctx context.Context) *GenerateGasStationLoading {
+func NewGenerateGasStationLoading(ctx context.Context) *GenerateGasStationLoading {
 	return &GenerateGasStationLoading{
 		loading:   ui.NewLoading("Generating new Gas Station account...", generateGasStationAccount(ctx)),
 		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
