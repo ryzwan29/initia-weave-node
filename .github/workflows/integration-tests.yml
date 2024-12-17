@@ -26,7 +26,7 @@ jobs:
 
       - name: Run Integration Tests
         env:
-          GITHUB_TOKEN: ${{ secrets.WEAVE_GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: cd tests && go test -v ./...
 
   integration-tests-macos:
@@ -42,5 +42,5 @@ jobs:
 
       - name: Run Integration Tests
         env:
-          GITHUB_TOKEN: ${{ secrets.WEAVE_GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: cd tests && go test -v ./...
