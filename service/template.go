@@ -255,12 +255,10 @@ Environment="DAEMON_NAME=initiad"
 Environment="DAEMON_HOME=%[5]s"
 Environment="DAEMON_ALLOW_DOWNLOAD_BINARIES=true"
 Environment="DAEMON_RESTART_AFTER_UPGRADE=true"
+LimitNOFILE=65535
 
 [Install]
 WantedBy=multi-user.target
-
-[Service]
-LimitNOFILE=65535
 `
 
 // LinuxRunNonUpgradableCosmovisorTemplate should inject the arguments as follows: [binaryName, currentUser.Username, binaryPath, serviceName, appHome]
@@ -279,12 +277,10 @@ Environment="DAEMON_NAME=initiad"
 Environment="DAEMON_HOME=%[5]s"
 Environment="DAEMON_ALLOW_DOWNLOAD_BINARIES=false"
 Environment="DAEMON_RESTART_AFTER_UPGRADE=false"
+LimitNOFILE=65535
 
 [Install]
 WantedBy=multi-user.target
-
-[Service]
-LimitNOFILE=65535
 `
 
 // LinuxRunBinaryTemplate should inject the arguments as follows: [binaryName, currentUser.Username, binaryPath, serviceName, appHome]
@@ -299,12 +295,10 @@ User=%[2]s
 ExecStart=%[3]s/%[1]s start --home %[5]s
 KillSignal=SIGINT
 Environment="LD_LIBRARY_PATH=%[3]s"
+LimitNOFILE=65535
 
 [Install]
 WantedBy=multi-user.target
-
-[Service]
-LimitNOFILE=65535
 `
 
 // LinuxOPinitBotTemplate should inject the arguments as follows: [binaryName, currentUser.Username, binaryPath, serviceName, appHome]
@@ -319,12 +313,10 @@ User=%[2]s
 ExecStart=%[3]s/%[1]s start %[4]s --home %[5]s
 KillSignal=SIGINT
 Environment="LD_LIBRARY_PATH=%[3]s"
+LimitNOFILE=65535
 
 [Install]
 WantedBy=multi-user.target
-
-[Service]
-LimitNOFILE=65535
 `
 
 // LinuxRelayerTemplate should inject the arguments as follows: [binaryName, currentUser.Username, binaryPath, serviceName, appHome]
@@ -338,12 +330,10 @@ Type=exec
 User=%[2]s
 ExecStart=%[3]s/%[1]s start
 KillSignal=SIGINT
+LimitNOFILE=65535
 
 [Install]
 WantedBy=multi-user.target
-
-[Service]
-LimitNOFILE=65535
 `
 
 var (
