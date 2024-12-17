@@ -117,14 +117,21 @@ const (
 )
 
 func NewGasStationMethodSelect(ctx context.Context) *GasStationMethodSelect {
+	tooltip := ui.NewTooltipSlice(ui.NewTooltip(
+		"Gas Station",
+		"Gas Station account is the account from which Weave will use to fund necessary system accounts, enabling easier and more seamless experience while setting up things using Weave.",
+		"** Weave will NOT automatically send transactions without asking for your confirmation. **",
+		[]string{}, []string{}, []string{}), 2)
 	return &GasStationMethodSelect{
 		Selector: ui.Selector[GasStationMethodOption]{
 			Options: []GasStationMethodOption{
 				Generate,
 				Import,
 			},
+			Tooltips:   &tooltip,
+			CannotBack: true,
 		},
-		BaseModel: weavecontext.BaseModel{Ctx: ctx},
+		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
 	}
 }
 
@@ -157,6 +164,7 @@ func (m *GasStationMethodSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *GasStationMethodSelect) View() string {
 	state := weavecontext.GetCurrentState[ExistingCheckerState](m.Ctx)
+	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
 	return InitHeader() + state.weave.Render() +
 		styles.RenderPrompt("How would you like to setup your Gas station account?", []string{"Gas Station account"}, styles.Question) +
 		m.Selector.View()
