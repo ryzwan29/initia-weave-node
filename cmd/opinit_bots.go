@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -64,18 +65,32 @@ func OPInitBotsCommand() *cobra.Command {
 	return cmd
 }
 
-func Setup(minitiaHome, opInitHome string) (tea.Model, error) {
+type HomeConfig struct {
+	MinitiaHome string
+	OPInitHome  string
+	UserHome    string
+}
 
+func RunOPInit(nextModelFunc func(ctx context.Context) tea.Model, homeConfig HomeConfig) (tea.Model, error) {
 	// Initialize the context with OPInitBotsState
 	ctx := weavecontext.NewAppContext(opinit_bots.NewOPInitBotsState())
-	ctx = weavecontext.SetMinitiaHome(ctx, minitiaHome)
-	ctx = weavecontext.SetOPInitHome(ctx, opInitHome)
+	ctx = weavecontext.SetMinitiaHome(ctx, homeConfig.MinitiaHome)
+	ctx = weavecontext.SetOPInitHome(ctx, homeConfig.OPInitHome)
 
 	// Start the program
-	finalModel, err := tea.NewProgram(opinit_bots.PrepareSetup(ctx)).Run()
+	finalModel, err := tea.NewProgram(
+		opinit_bots.NewEnsureOPInitBotsBinaryLoadingModel(
+			ctx,
+			func(nextCtx context.Context) tea.Model {
+				return opinit_bots.ProcessMinitiaConfig(nextCtx, nextModelFunc)
+			},
+		),
+	).Run()
+
 	if err != nil {
 		fmt.Println("Error running program:", err)
 	}
+
 	return finalModel, err
 }
 
@@ -87,7 +102,16 @@ func OPInitBotsKeysSetupCommand() *cobra.Command {
 			minitiaHome, _ := cmd.Flags().GetString(FlagMinitiaHome)
 			opInitHome, _ := cmd.Flags().GetString(FlagOPInitHome)
 
-			_, err := Setup(minitiaHome, opInitHome)
+			userHome, err := os.UserHomeDir()
+			if err != nil {
+				panic(err)
+			}
+
+			_, err = RunOPInit(opinit_bots.NewSetupBotCheckbox, HomeConfig{
+				MinitiaHome: minitiaHome,
+				OPInitHome:  opInitHome,
+				UserHome:    userHome,
+			})
 			return err
 		},
 	}
@@ -119,41 +143,30 @@ Example: weave opinit init executor`,
 			if err != nil {
 				panic(err)
 			}
-			binaryPath := filepath.Join(userHome, common.WeaveDataDirectory, opinit_bots.AppName)
-			_, err = cosmosutils.GetBinaryVersion(binaryPath)
-			if err != nil {
-				finalModel, err := Setup(minitiaHome, opInitHome)
-				if err != nil {
-					return err
-				}
 
-				if _, ok := finalModel.(*opinit_bots.TerminalState); !ok {
-					return nil
-				}
-			}
-			// Initialize the context with OPInitBotsState
-			ctx := weavecontext.NewAppContext(opinit_bots.NewOPInitBotsState())
-			ctx = weavecontext.SetMinitiaHome(ctx, minitiaHome)
-			ctx = weavecontext.SetOPInitHome(ctx, opInitHome)
-
+			var rootProgram func(ctx context.Context) tea.Model
 			// Check if a bot name was provided as an argument
 			if len(args) == 1 {
 				botName := args[0]
 				switch botName {
 				case "executor":
-					_, err := tea.NewProgram(opinit_bots.OPInitBotInitSelectExecutor(ctx)).Run()
-					return err
+					rootProgram = opinit_bots.OPInitBotInitSelectExecutor
 				case "challenger":
-					_, err := tea.NewProgram(opinit_bots.OPInitBotInitSelectChallenger(ctx)).Run()
-					return err
+					rootProgram = opinit_bots.OPInitBotInitSelectChallenger
 				default:
 					return fmt.Errorf("invalid bot name provided: %s", botName)
 				}
 			} else {
 				// Start the bot selector program if no bot name is provided
-				_, err := tea.NewProgram(opinit_bots.NewOPInitBotInitSelector(ctx)).Run()
-				return err
+				rootProgram = opinit_bots.NewOPInitBotInitSelector
 			}
+
+			_, err = RunOPInit(rootProgram, HomeConfig{
+				MinitiaHome: minitiaHome,
+				OPInitHome:  opInitHome,
+				UserHome:    userHome,
+			})
+			return err
 		},
 	}
 
