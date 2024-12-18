@@ -24,9 +24,9 @@ func ProcessMinitiaConfig(ctx context.Context, nextModelFunc func(ctx context.Co
 	minitiaConfigPath := weavecontext.GetMinitiaArtifactsConfigJson(ctx)
 	state := weavecontext.GetCurrentState[OPInitBotsState](ctx)
 
-	// no config file, show the checkbox
+	// no config file, proceed to next model
 	if !io.FileOrFolderExists(minitiaConfigPath) {
-		model := NewSetupBotCheckbox(weavecontext.SetCurrentState(ctx, state))
+		model := nextModelFunc(weavecontext.SetCurrentState(ctx, state))
 		return model
 	}
 
