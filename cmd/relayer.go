@@ -109,7 +109,7 @@ func relayerStartCommand() *cobra.Command {
 			return nil
 		},
 	}
-	startCmd.Flags().String(FlagUpdateClient, "true", "Update the client configuration before starting the relayer (can be 'true' or 'false')")
+	startCmd.Flags().String(FlagUpdateClient, "true", "Update light clients with new header information before starting the relayer (can be 'true' or 'false')")
 	return startCmd
 }
 
