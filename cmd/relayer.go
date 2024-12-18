@@ -81,6 +81,19 @@ func relayerStartCommand() *cobra.Command {
 		Use:   "start",
 		Short: "Start the Hermes relayer application.",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			updateClient, err := cmd.Flags().GetString(FlagUpdateClient)
+			if err != nil {
+				return err
+			}
+
+			switch updateClient {
+			case "true":
+				relayer.UpdateClientFromConfig()
+				fmt.Println("Client updated successfully.")
+			case "false":
+			default:
+				panic("invalid update client flag")
+			}
 			s, err := service.NewService(service.Relayer)
 			if err != nil {
 				return err
@@ -93,6 +106,7 @@ func relayerStartCommand() *cobra.Command {
 			return nil
 		},
 	}
+	startCmd.Flags().String(FlagUpdateClient, "true", "Update the client configuration before starting the relayer")
 
 	return startCmd
 }
