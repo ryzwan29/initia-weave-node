@@ -265,7 +265,7 @@ func OPInitBotsLogCommand() *cobra.Command {
 		Use:   "log [bot-name]",
 		Short: "Stream the logs of the running OPinit bot process.",
 		Long: `Stream the logs of the running OPinit bot. The only argument required is the desired bot name.
-Valid options are [executor, challenger] eg. weave opinit logs executor`,
+Valid options are [executor, challenger] eg. weave opinit log executor`,
 		Args: ValidateOPinitBotNameArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			n, err := cmd.Flags().GetInt(FlagN)
