@@ -66,7 +66,7 @@ release:
 # Development purpose
 local: build
 	clear
-	./build/weave opinit-bots init
+	./build/weave opinit init
 
 # Catch-all target
 %:

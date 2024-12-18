@@ -20,13 +20,13 @@ import (
 	"github.com/initia-labs/weave/ui"
 )
 
-func PrepareSetup(ctx context.Context) tea.Model {
+func ProcessMinitiaConfig(ctx context.Context, nextModelFunc func(ctx context.Context) tea.Model) tea.Model {
 	minitiaConfigPath := weavecontext.GetMinitiaArtifactsConfigJson(ctx)
 	state := weavecontext.GetCurrentState[OPInitBotsState](ctx)
 
-	// Check if the config file exists
+	// no config file, show the checkbox
 	if !io.FileOrFolderExists(minitiaConfigPath) {
-		model := NewSetupBotCheckbox(weavecontext.SetCurrentState(ctx, state), false, true)
+		model := NewSetupBotCheckbox(weavecontext.SetCurrentState(ctx, state))
 		return model
 	}
 
@@ -42,104 +42,9 @@ func PrepareSetup(ctx context.Context) tea.Model {
 		panic(err)
 	}
 
-	// Mark all bots as non-existent for now
-	for i := range state.BotInfos {
-		if state.BotInfos[i].BotName != OracleBridgeExecutor {
-			state.BotInfos[i].IsNotExist = true
-		}
-	}
-
 	// Set the loaded config to the state variable
 	state.MinitiaConfig = &minitiaConfig
-	return NewProcessingMinitiaConfig(weavecontext.SetCurrentState(ctx, state))
-}
-
-type SetupOPInitBotKeySelector struct {
-	weavecontext.BaseModel
-	ui.Selector[string]
-	question string
-}
-
-func NewSetupOPInitBotKeySelector(ctx context.Context) *SetupOPInitBotKeySelector {
-	return &SetupOPInitBotKeySelector{
-		Selector: ui.Selector[string]{
-			Options: []string{"Yes", "No"},
-		},
-		BaseModel: weavecontext.BaseModel{Ctx: ctx},
-		question:  "Would you like to set up OPinit bot keys?",
-	}
-
-}
-
-func (m *SetupOPInitBotKeySelector) GetQuestion() string {
-	return m.question
-}
-
-func (m *SetupOPInitBotKeySelector) Init() tea.Cmd {
-	return nil
-}
-
-func (m *SetupOPInitBotKeySelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	if model, cmd, handled := weavecontext.HandleCommonCommands[OPInitBotsState](m, msg); handled {
-		return model, cmd
-	}
-
-	// Handle selection
-	selected, cmd := m.Select(msg)
-	if selected != nil {
-		state := weavecontext.PushPageAndGetState[OPInitBotsState](m)
-
-		state.weave.PushPreviousResponse(
-			styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"OPinit bot keys"}, *selected),
-		)
-
-		switch *selected {
-		case "Yes":
-			// Handle "Yes" option
-			minitiaConfigPath := weavecontext.GetMinitiaArtifactsConfigJson(m.Ctx)
-
-			// Check if the config file exists
-			if !io.FileOrFolderExists(minitiaConfigPath) {
-				model := NewSetupBotCheckbox(weavecontext.SetCurrentState(m.Ctx, state), false, true)
-				return model, model.Init()
-			}
-
-			// Load the config if found
-			configData, err := os.ReadFile(minitiaConfigPath)
-			if err != nil {
-				panic(err)
-			}
-
-			var minitiaConfig types.MinitiaConfig
-			err = json.Unmarshal(configData, &minitiaConfig)
-			if err != nil {
-				panic(err)
-			}
-
-			// Mark all bots as non-existent for now
-			for i := range state.BotInfos {
-				if state.BotInfos[i].BotName != OracleBridgeExecutor {
-					state.BotInfos[i].IsNotExist = true
-				}
-			}
-
-			// Set the loaded config to the state variable
-			state.MinitiaConfig = &minitiaConfig
-			return NewProcessingMinitiaConfig(weavecontext.SetCurrentState(m.Ctx, state)), nil
-
-		case "No":
-			// Handle "No" option
-			model := NewSetupOPInitBots(weavecontext.SetCurrentState(m.Ctx, state))
-			return model, model.Init()
-		}
-	}
-
-	return m, cmd
-}
-
-func (m *SetupOPInitBotKeySelector) View() string {
-	state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"OPinit bot keys"}, styles.Question) + m.Selector.View()
+	return NewProcessingMinitiaConfig(weavecontext.SetCurrentState(ctx, state), nextModelFunc)
 }
 
 type AddMinitiaKeyOption string
@@ -152,7 +57,8 @@ const (
 type ProcessingMinitiaConfig struct {
 	weavecontext.BaseModel
 	ui.Selector[AddMinitiaKeyOption]
-	question string
+	question      string
+	nextModelFunc func(ctx context.Context) tea.Model
 }
 
 func assignBotInfo(botInfo *BotInfo, minitiaConfig *types.MinitiaConfig) {
@@ -187,7 +93,7 @@ func getDALayer(address string) string {
 	return string(CelestiaLayerOption)
 }
 
-func NewProcessingMinitiaConfig(ctx context.Context) *ProcessingMinitiaConfig {
+func NewProcessingMinitiaConfig(ctx context.Context, nextModelFunc func(ctx context.Context) tea.Model) *ProcessingMinitiaConfig {
 	return &ProcessingMinitiaConfig{
 		Selector: ui.Selector[AddMinitiaKeyOption]{
 			Options: []AddMinitiaKeyOption{
@@ -195,8 +101,9 @@ func NewProcessingMinitiaConfig(ctx context.Context) *ProcessingMinitiaConfig {
 				NoAddMinitiaKeyOption,
 			},
 		},
-		BaseModel: weavecontext.BaseModel{Ctx: ctx},
-		question:  fmt.Sprintf("Existing keys in %s detected. Would you like to add these to the keyring before proceeding?", weavecontext.GetMinitiaArtifactsConfigJson(ctx)),
+		BaseModel:     weavecontext.BaseModel{Ctx: ctx},
+		question:      fmt.Sprintf("Existing keys in %s detected. Would you like to add these to the keyring before proceeding?", weavecontext.GetMinitiaArtifactsConfigJson(ctx)),
+		nextModelFunc: nextModelFunc,
 	}
 }
 
@@ -230,10 +137,10 @@ func (m *ProcessingMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					assignBotInfo(&state.BotInfos[idx], state.MinitiaConfig)
 				}
 			}
-			return NewSetupBotCheckbox(weavecontext.SetCurrentState(m.Ctx, state), true, false), nil
+			return m.nextModelFunc(weavecontext.SetCurrentState(m.Ctx, state)), nil
 
 		case NoAddMinitiaKeyOption:
-			return NewSetupBotCheckbox(weavecontext.SetCurrentState(m.Ctx, state), false, false), nil
+			return m.nextModelFunc(weavecontext.SetCurrentState(m.Ctx, state)), nil
 		}
 	}
 
@@ -268,25 +175,18 @@ type SetupBotCheckbox struct {
 	question string
 }
 
-func NewSetupBotCheckbox(ctx context.Context, addKeyRing bool, noMinitia bool) *SetupBotCheckbox {
+func NewSetupBotCheckbox(ctx context.Context) tea.Model {
 	state := weavecontext.GetCurrentState[OPInitBotsState](ctx)
 	checkBoxOptions := make([]string, 0)
 	for idx, botInfo := range state.BotInfos {
-		if !botInfo.IsNotExist && noMinitia {
-			checkBoxOptions = append(checkBoxOptions, fmt.Sprintf("%s (key exists)", BotNames[idx]))
-		} else if !botInfo.IsNotExist && addKeyRing {
-			checkBoxOptions = append(checkBoxOptions, fmt.Sprintf("%s (key exists)", BotNames[idx]))
-		} else {
+		if botInfo.IsNotExist {
 			checkBoxOptions = append(checkBoxOptions, string(BotNames[idx]))
+		} else {
+			checkBoxOptions = append(checkBoxOptions, fmt.Sprintf("%s (key exists)", BotNames[idx]))
 		}
 	}
 
-	var question string
-	if addKeyRing {
-		question = fmt.Sprintf("Which bots would you like to override? (The ones that remain unselected will be imported from %s)", weavecontext.GetMinitiaArtifactsConfigJson(ctx))
-	} else {
-		question = "Which bots would you like to set?"
-	}
+	question := "Which bots would you like to set/override?"
 	tooltips := []ui.Tooltip{
 		ui.NewTooltip("Bridge Executor", "Monitors the L1 and L2 transactions, facilitates token bridging and withdrawals between the minitia and Initia L1 chain, and also relays oracle price feed to L2.", "", []string{}, []string{}, []string{}),
 		ui.NewTooltip("Output Submitter", "Submits L2 output roots to L1 for verification and potential challenges. If the submitted output remains unchallenged beyond the output finalization period, it is considered finalized and immutable.", "", []string{}, []string{}, []string{}),
@@ -631,13 +531,25 @@ func getBinaryURL(version, os, arch string) string {
 	panic("unsupported OS or architecture")
 }
 
-func WaitSetupOPInitBots(ctx context.Context) tea.Cmd {
+func GetBinaryPath(userHome string) string {
+	return filepath.Join(userHome, common.WeaveDataDirectory, fmt.Sprintf("opinitd@%s", OpinitBotBinaryVersion), AppName)
+}
+
+func EnsureOPInitBotsBinary(ctx context.Context) tea.Cmd {
 	return func() tea.Msg {
-		state := weavecontext.GetCurrentState[OPInitBotsState](ctx)
 		userHome, err := os.UserHomeDir()
 		if err != nil {
 			panic(fmt.Sprintf("failed to get user home directory: %v", err))
 		}
+
+		binaryPath := GetBinaryPath(userHome)
+		_, err = cosmosutils.GetBinaryVersion(binaryPath)
+		if err == nil {
+			return ui.EndLoading{
+				Ctx: ctx,
+			}
+		}
+
 		weaveDataPath := filepath.Join(userHome, common.WeaveDataDirectory)
 		tarballPath := filepath.Join(weaveDataPath, "opinitd.tar.gz")
 
@@ -645,7 +557,6 @@ func WaitSetupOPInitBots(ctx context.Context) tea.Cmd {
 		goarch := runtime.GOARCH
 		url := getBinaryURL(OpinitBotBinaryVersion, goos, goarch)
 
-		binaryPath := filepath.Join(userHome, common.WeaveDataDirectory, fmt.Sprintf("opinitd@%s", OpinitBotBinaryVersion), AppName)
 		extractedPath := filepath.Join(weaveDataPath, fmt.Sprintf("opinitd@%s", OpinitBotBinaryVersion))
 
 		if _, err := os.Stat(binaryPath); os.IsNotExist(err) {
@@ -671,6 +582,21 @@ func WaitSetupOPInitBots(ctx context.Context) tea.Cmd {
 			panic(err)
 		}
 
+		return ui.EndLoading{
+			Ctx: ctx,
+		}
+	}
+}
+
+func WaitSetupOPInitBots(ctx context.Context) tea.Cmd {
+	return func() tea.Msg {
+		state := weavecontext.GetCurrentState[OPInitBotsState](ctx)
+		userHome, err := os.UserHomeDir()
+		if err != nil {
+			panic(fmt.Sprintf("failed to get user home directory: %v", err))
+		}
+
+		binaryPath := GetBinaryPath(userHome)
 		opInitHome := weavecontext.GetOPInitHome(ctx)
 		for _, info := range state.BotInfos {
 			if info.Mnemonic != "" {
@@ -728,10 +654,42 @@ func (m *TerminalState) View() string {
 			}
 		}
 
-		return state.weave.Render() + "\n" + styles.RenderPrompt("Download binary and add keys successfully.", []string{}, styles.Completed) + "\n\n" +
+		return state.weave.Render() + "\n" + styles.RenderPrompt("Setup keys successfully.", []string{}, styles.Completed) + "\n\n" +
 			styles.BoldUnderlineText("Important", styles.Yellow) + "\n" +
 			styles.Text("Write down these mnemonic phrases and store them in a safe place. \nIt is the only way to recover your system keys.", styles.Yellow) + "\n\n" +
 			mnemonicText
 	}
 	return state.weave.Render() + "\n"
+}
+
+type EnsureOPInitBotsBinaryLoadingModel struct {
+	weavecontext.BaseModel
+	loading       ui.Loading
+	nextModelFunc func(ctx context.Context) tea.Model
+}
+
+func NewEnsureOPInitBotsBinaryLoadingModel(ctx context.Context, nextModelFunc func(ctx context.Context) tea.Model) tea.Model {
+	return &EnsureOPInitBotsBinaryLoadingModel{
+		BaseModel:     weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
+		loading:       ui.NewLoading("Downloading OPinit bot ...", EnsureOPInitBotsBinary(ctx)),
+		nextModelFunc: nextModelFunc,
+	}
+}
+
+func (m *EnsureOPInitBotsBinaryLoadingModel) Init() tea.Cmd {
+	return m.loading.Init()
+}
+
+func (m *EnsureOPInitBotsBinaryLoadingModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	loader, cmd := m.loading.Update(msg)
+	m.loading = loader
+	if m.loading.Completing {
+		return m.nextModelFunc(m.Ctx), nil
+	}
+	return m, cmd
+}
+
+func (m *EnsureOPInitBotsBinaryLoadingModel) View() string {
+	state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
+	return state.weave.Render() + m.loading.View()
 }
