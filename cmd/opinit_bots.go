@@ -104,7 +104,7 @@ func OPInitBotsKeysSetupCommand() *cobra.Command {
 
 			userHome, err := os.UserHomeDir()
 			if err != nil {
-				panic(err)
+				return fmt.Errorf("error getting user home directory: %v", err)
 			}
 
 			_, err = RunOPInit(opinit_bots.NewSetupBotCheckbox, HomeConfig{
@@ -141,7 +141,7 @@ Example: weave opinit init executor`,
 
 			userHome, err := os.UserHomeDir()
 			if err != nil {
-				panic(err)
+				return fmt.Errorf("error getting user home directory: %v", err)
 			}
 
 			var rootProgram func(ctx context.Context) tea.Model
@@ -166,6 +166,7 @@ Example: weave opinit init executor`,
 				OPInitHome:  opInitHome,
 				UserHome:    userHome,
 			})
+
 			return err
 		},
 	}
@@ -298,12 +299,13 @@ Valid options are [executor, challenger] eg. weave opinit reset challenger`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			userHome, err := os.UserHomeDir()
 			if err != nil {
-				panic(err)
+				return fmt.Errorf("error getting user home directory: %v", err)
 			}
+
 			binaryPath := filepath.Join(userHome, common.WeaveDataDirectory, opinit_bots.AppName)
 			_, err = cosmosutils.GetBinaryVersion(binaryPath)
 			if err != nil {
-				panic("error getting the opinitd binary")
+				return fmt.Errorf("error getting the opinitd binary: %v", err)
 			}
 
 			botName := args[0]
