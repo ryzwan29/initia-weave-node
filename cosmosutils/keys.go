@@ -337,10 +337,11 @@ func GetHermesRelayerAddress(appName, chainId string) (string, bool) {
 
 	var out bytes.Buffer
 	cmd.Stdout = &out
+	cmd.Stderr = &out
 
 	err := cmd.Run()
 	if err != nil {
-		panic(fmt.Errorf("error executing command: %v", err))
+		return "", false
 	}
 
 	output := out.String()
@@ -349,14 +350,18 @@ func GetHermesRelayerAddress(appName, chainId string) (string, bool) {
 		return "", false
 	}
 
-	fourthLine := lines[1]
-	re := regexp.MustCompile(`\(([^)]+)\)`)
-	match := re.FindStringSubmatch(fourthLine)
-	if len(match) > 1 {
-		return match[1], true
-	} else {
+	secondLine := strings.TrimSpace(lines[1])
+	re := regexp.MustCompile(`- (\S+) \(([^)]+)\)`)
+	match := re.FindStringSubmatch(secondLine)
+	if len(match) != 3 {
 		return "", false
 	}
+	keyName := match[1]
+	if keyName != "weave-relayer" {
+		return "", false
+	}
+	relayerAddress := match[2]
+	return relayerAddress, true
 }
 
 func DeleteWeaveKeyFromHermes(appName, chainId string) error {
