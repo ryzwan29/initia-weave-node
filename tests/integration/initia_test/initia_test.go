@@ -24,7 +24,6 @@ func init() {
 }
 
 func TestInitiaInitTestnetNoSync(t *testing.T) {
-	t.Parallel()
 	ctx := context.NewAppContext(initia.NewRunL1NodeState())
 	initiaHome := TestInitiaHome + ".nosync"
 	ctx = context.SetInitiaHome(ctx, initiaHome)
@@ -45,7 +44,7 @@ func TestInitiaInitTestnetNoSync(t *testing.T) {
 		integration.PressEnter, // press enter to confirm the seeds
 		integration.TypeText("3715cdb41efb45714eb534c3943c5947f4894787@34.143.179.242:26656"), // type in the persistent peers
 		integration.PressEnter, // press enter to confirm the persistent peers
-		integration.PressEnter, // press enter to confirm Allow
+		integration.PressEnter, // press enter to confirm Allow Upgrade
 		integration.WaitFor(func() bool {
 			if _, err := os.Stat(initiaHome); os.IsNotExist(err) {
 				return false
@@ -93,9 +92,8 @@ func TestInitiaInitTestnetNoSync(t *testing.T) {
 }
 
 func TestInitiaInitTestnetStatesync(t *testing.T) {
-	t.Skip("Skipping initia init with state sync test")
 	ctx := context.NewAppContext(initia.NewRunL1NodeState())
-	initiaHome := TestInitiaHome + ".statesync"
+	initiaHome := TestInitiaHome + ".state.sync"
 	ctx = context.SetInitiaHome(ctx, initiaHome)
 
 	firstModel := initia.NewRunL1NodeNetworkSelect(ctx)
@@ -114,6 +112,7 @@ func TestInitiaInitTestnetStatesync(t *testing.T) {
 		integration.PressEnter, // press enter to confirm the seeds
 		integration.TypeText("3715cdb41efb45714eb534c3943c5947f4894787@34.143.179.242:26656"), // type in the persistent peers
 		integration.PressEnter, // press enter to confirm the persistent peers
+		integration.PressEnter, // press enter to confirm Allow Upgrade
 		integration.WaitFor(func() bool {
 			if _, err := os.Stat(initiaHome); os.IsNotExist(err) {
 				return false
@@ -172,7 +171,6 @@ func TestInitiaInitTestnetStatesync(t *testing.T) {
 }
 
 func TestInitiaInitLocal(t *testing.T) {
-	t.Parallel()
 	ctx := context.NewAppContext(initia.NewRunL1NodeState())
 	initiaHome := TestInitiaHome + ".local"
 	ctx = context.SetInitiaHome(ctx, initiaHome)
@@ -249,7 +247,6 @@ func TestInitiaInitLocal(t *testing.T) {
 }
 
 func TestInitiaInitLocalExisting(t *testing.T) {
-	t.Parallel()
 	ctx := context.NewAppContext(initia.NewRunL1NodeState())
 	initiaHome := TestInitiaHome + ".local.existing"
 	ctx = context.SetInitiaHome(ctx, initiaHome)

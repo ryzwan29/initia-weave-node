@@ -57,6 +57,8 @@ func RunProgramWithSteps(t *testing.T, program tea.Model, steps Steps) tea.Model
 	done := make(chan struct{})
 	finalModel := tea.Model(nil)
 
+	timeout := time.After(3 * time.Minute)
+
 	go func() {
 		var err error
 		finalModel, err = prog.Run()
@@ -67,31 +69,52 @@ func RunProgramWithSteps(t *testing.T, program tea.Model, steps Steps) tea.Model
 		close(done)
 	}()
 
-	for _, step := range steps {
+	for i, step := range steps {
 		if waitStep, ok := step.(WaitStep); ok {
 			retryCount := 0
+			stepTimeout := time.After(30 * time.Second)
+
+			stepDone := false
 			for {
-				if waitStep.Wait() {
+				select {
+				case <-stepTimeout:
+					// print test name and step index
+					t.Errorf("Test %s: Step %d: timed out after 30 seconds", t.Name(), i)
+					return nil
+				default:
+					if waitStep.Wait() {
+						stepDone = true
+						break
+					}
+
+					if retryCount >= DefaultMaxWaitRetry {
+						t.Errorf("Test %s: Step %d: Max retries reached while waiting for condition in WaitStep", t.Name(), i)
+						return nil
+					}
+
+					retryCount++
+					time.Sleep(100 * time.Millisecond)
+				}
+
+				time.Sleep(DefaultPostWaitPeriod)
+
+				if stepDone {
 					break
 				}
-
-				if retryCount >= DefaultMaxWaitRetry {
-					t.Errorf("Max retries reached while waiting for condition in WaitStep")
-					return nil
-				}
-
-				retryCount++
-				time.Sleep(100 * time.Millisecond)
 			}
-			time.Sleep(DefaultPostWaitPeriod)
 		}
 
 		step.Execute(*prog)
 		time.Sleep(100 * time.Millisecond)
 	}
 
-	<-done
-	return finalModel
+	select {
+	case <-done:
+		return finalModel
+	case <-timeout:
+		t.Errorf("Test %s: Program execution timed out after 3 minutes", t.Name())
+		return nil
+	}
 }
 
 func ClearTestDir(dir string) {
