@@ -89,6 +89,9 @@ func relayerStartCommand() *cobra.Command {
 			switch updateClient {
 			case "true":
 				relayer.UpdateClientFromConfig()
+				if err != nil {
+					return err
+				}
 				fmt.Println("Client updated successfully.")
 			case "false":
 			default:
