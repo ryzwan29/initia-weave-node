@@ -88,7 +88,7 @@ func relayerStartCommand() *cobra.Command {
 
 			switch updateClient {
 			case "true":
-				relayer.UpdateClientFromConfig()
+				err = relayer.UpdateClientFromConfig()
 				if err != nil {
 					return err
 				}
