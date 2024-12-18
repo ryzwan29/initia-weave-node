@@ -140,7 +140,7 @@ func minitiaLaunchCommand() *cobra.Command {
 			if config.IsFirstTimeSetup() {
 				checkerCtx := weavecontext.NewAppContext(models.NewExistingCheckerState())
 				checkerCtx = weavecontext.SetMinitiaHome(checkerCtx, minitiaHome)
-				finalModel, err := tea.NewProgram(models.NewExistingAppChecker(checkerCtx, minitia.NewExistingMinitiaChecker(ctx))).Run()
+				finalModel, err := tea.NewProgram(models.NewGasStationMethodSelect(checkerCtx)).Run()
 				if err != nil {
 					return err
 				}
