@@ -1,8 +1,9 @@
 package relayer
 
 const (
-	HermesHome    = ".hermes"
-	HermesVersion = "v1.10.4"
+	HermesHome          = ".hermes"
+	HermesKeysDirectory = HermesHome + "/keys"
+	HermesVersion       = "v1.10.4"
 
 	DefaultGasPriceDenom  = "uinit"
 	DefaultGasPriceAmount = "0.15"
