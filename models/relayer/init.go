@@ -348,6 +348,15 @@ func (m *L2KeySelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return model, model.Init()
 			case L2SameKey:
 				state.l2RelayerAddress = state.l1RelayerAddress
+				userHome, err := os.UserHomeDir()
+				if err != nil {
+					panic(fmt.Errorf("could not get user home directory: %s", err))
+				}
+				l1ExistingKeyPath := filepath.Join(userHome, HermesKeysDirectory, MustGetL1ChainId(m.Ctx))
+				l2KeyPath := filepath.Join(userHome, HermesKeysDirectory, MustGetL2ChainId(m.Ctx))
+				if err = weaveio.CopyDirectory(l1ExistingKeyPath, l2KeyPath); err != nil {
+					panic(fmt.Errorf("could not copy L1 existing key: %s", err))
+				}
 				model := NewFetchingBalancesLoading(weavecontext.SetCurrentState(m.Ctx, state))
 				return model, model.Init()
 			case L2GenerateKey:
@@ -875,12 +884,12 @@ func (m *FundingAmountSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				styles.BoldUnderlineText("Important", styles.Yellow),
 				styles.Text("To ensure the relayer functions properly, make sure these accounts are funded.", styles.Yellow),
 				styles.CreateFrame(fmt.Sprintf(
-					"%s %s\n%s %s",
+					"%s %s    \n%s %s",
 					styles.BoldText("• Relayer key on L1", styles.White),
 					styles.Text(fmt.Sprintf("(%s)", state.l1RelayerAddress), styles.Gray),
 					styles.BoldText("• Relayer key on Rollup", styles.White),
 					styles.Text(fmt.Sprintf("(%s)", state.l2RelayerAddress), styles.Gray),
-				), 65),
+				), 69),
 			))
 			return NewTerminalState(weavecontext.SetCurrentState(m.Ctx, state)), tea.Quit
 		}
@@ -976,16 +985,24 @@ func (m *FundDefaultPresetConfirmationInput) View() string {
 			styles.BoldText(keyName, styles.Ivory),
 			styles.Text(fmt.Sprintf("(%s)", address), styles.Gray))
 	}
+	l1FundingText := map[bool]string{
+		true: "",
+		false: fmt.Sprintf("Sending tokens from the Gas Station account on L1 %s ⛽️\n", styles.Text(fmt.Sprintf("(%s)", m.initiaGasStationAddress), styles.Gray)) +
+			formatSendMsg(state.l1FundingAmount, MustGetL1GasDenom(m.Ctx), "Relayer key on L1", state.l1RelayerAddress) + "\n",
+	}
+	l2FundingText := map[bool]string{
+		true: "",
+		false: fmt.Sprintf("Sending tokens from the Gas Station account on L2 %s ⛽️\n", styles.Text(fmt.Sprintf("(%s)", m.initiaGasStationAddress), styles.Gray)) +
+			formatSendMsg(state.l2FundingAmount, MustGetL2GasDenom(m.Ctx), "Relayer key on L2", state.l2RelayerAddress),
+	}
 	return state.weave.Render() + "\n" +
 		styles.Text("i ", styles.Yellow) +
 		styles.RenderPrompt(
 			styles.BoldUnderlineText("Weave will now broadcast the following transactions", styles.Yellow),
 			[]string{}, styles.Empty,
 		) + "\n\n" +
-		fmt.Sprintf("Sending tokens from the Gas Station account on L1 %s ⛽️\n", styles.Text(fmt.Sprintf("(%s)", m.initiaGasStationAddress), styles.Gray)) +
-		formatSendMsg(state.l1FundingAmount, MustGetL1GasDenom(m.Ctx), "Relayer key on L1", state.l1RelayerAddress) + "\n" +
-		fmt.Sprintf("Sending tokens from the Gas Station account on L2 %s ⛽️\n", styles.Text(fmt.Sprintf("(%s)", m.initiaGasStationAddress), styles.Gray)) +
-		formatSendMsg(state.l2FundingAmount, MustGetL2GasDenom(m.Ctx), "Relayer key on L2", state.l2RelayerAddress) +
+		l1FundingText[state.l1FundingAmount == "0"] +
+		l2FundingText[state.l2FundingAmount == "0"] +
 		styles.RenderPrompt(m.GetQuestion(), []string{}, styles.Question) + m.TextInput.View()
 }
 
@@ -1011,31 +1028,35 @@ func broadcastDefaultPresetFromGasStation(ctx context.Context) tea.Cmd {
 		gasStationMnemonic := config.GetGasStationMnemonic()
 		cliTx := cosmosutils.NewInitiadTxExecutor(MustGetL1ActiveLcd(ctx))
 
-		res, err := cliTx.BroadcastMsgSend(
-			gasStationMnemonic,
-			state.l1RelayerAddress,
-			fmt.Sprintf("%s%s", state.l1FundingAmount, MustGetL1GasDenom(ctx)),
-			MustGetL1GasPrices(ctx),
-			MustGetL1ActiveRpc(ctx),
-			MustGetL1ChainId(ctx),
-		)
-		if err != nil {
-			panic(err)
+		if state.l1FundingAmount != "0" {
+			res, err := cliTx.BroadcastMsgSend(
+				gasStationMnemonic,
+				state.l1RelayerAddress,
+				fmt.Sprintf("%s%s", state.l1FundingAmount, MustGetL1GasDenom(ctx)),
+				MustGetL1GasPrices(ctx),
+				MustGetL1ActiveRpc(ctx),
+				MustGetL1ChainId(ctx),
+			)
+			if err != nil {
+				panic(err)
+			}
+			state.l1FundingTxHash = res.TxHash
 		}
-		state.l1FundingTxHash = res.TxHash
 
-		res, err = cliTx.BroadcastMsgSend(
-			gasStationMnemonic,
-			state.l2RelayerAddress,
-			fmt.Sprintf("%s%s", state.l2FundingAmount, MustGetL2GasDenom(ctx)),
-			MustGetL2GasPrices(ctx),
-			MustGetL2ActiveRpc(ctx),
-			MustGetL2ChainId(ctx),
-		)
-		if err != nil {
-			panic(err)
+		if state.l2FundingAmount != "0" {
+			res, err := cliTx.BroadcastMsgSend(
+				gasStationMnemonic,
+				state.l2RelayerAddress,
+				fmt.Sprintf("%s%s", state.l2FundingAmount, MustGetL2GasDenom(ctx)),
+				MustGetL2GasPrices(ctx),
+				MustGetL2ActiveRpc(ctx),
+				MustGetL2ChainId(ctx),
+			)
+			if err != nil {
+				panic(err)
+			}
+			state.l2FundingTxHash = res.TxHash
 		}
-		state.l2FundingTxHash = res.TxHash
 
 		return ui.EndLoading{
 			Ctx: weavecontext.SetCurrentState(ctx, state),
@@ -1053,11 +1074,15 @@ func (m *FundDefaultPresetBroadcastLoading) Update(msg tea.Msg) (tea.Model, tea.
 	if m.loading.Completing {
 		m.Ctx = m.loading.EndContext
 		state := weavecontext.PushPageAndGetState[State](m)
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, "The relayer account has been funded on L1, with Tx Hash", []string{}, state.l1FundingTxHash))
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, "The relayer account has been funded on L2, with Tx Hash", []string{}, state.l2FundingTxHash))
+		if state.l1FundingTxHash != "" {
+			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, "The relayer account has been funded on L1, with Tx Hash", []string{}, state.l1FundingTxHash))
+		}
+		if state.l2FundingTxHash != "" {
+			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, "The relayer account has been funded on L2, with Tx Hash", []string{}, state.l2FundingTxHash))
+		}
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "Your relayer has been setup successfully. 🎉", []string{}, ""))
 
-		return NewTerminalState(weavecontext.SetCurrentState(m.Ctx, state)), nil
+		return NewTerminalState(weavecontext.SetCurrentState(m.Ctx, state)), tea.Quit
 	}
 	return m, cmd
 }
@@ -1079,7 +1104,7 @@ func NewFundManuallyL1BalanceInput(ctx context.Context) *FundManuallyL1BalanceIn
 		BaseModel: weavecontext.BaseModel{Ctx: ctx},
 		question:  fmt.Sprintf("Specify amount that would be transferred to Relayer account on L1 (%s)", MustGetL1GasDenom(ctx)),
 	}
-	model.WithPlaceholder("Enter the amount")
+	model.WithPlaceholder("Enter the amount (or 0 to skip)")
 	model.WithValidatorFn(common.IsValidInteger)
 	return model
 }
@@ -1126,7 +1151,7 @@ func NewFundManuallyL2BalanceInput(ctx context.Context) *FundManuallyL2BalanceIn
 		BaseModel: weavecontext.BaseModel{Ctx: ctx},
 		question:  fmt.Sprintf("Specify amount that would be transferred to Relayer account on Rollup (%s)", MustGetL2GasDenom(ctx)),
 	}
-	model.WithPlaceholder("Enter the desired balance")
+	model.WithPlaceholder("Enter the amount (or 0 to skip)")
 	model.WithValidatorFn(common.IsValidInteger)
 	return model
 }
@@ -1149,6 +1174,11 @@ func (m *FundManuallyL2BalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		state := weavecontext.PushPageAndGetState[State](m)
 		state.l2FundingAmount = input.Text
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Relayer account", "L2"}, input.Text))
+
+		if state.l1FundingAmount == "0" && state.l2FundingAmount == "0" {
+			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "Your relayer has been setup successfully. 🎉", []string{}, ""))
+			return NewTerminalState(weavecontext.SetCurrentState(m.Ctx, state)), tea.Quit
+		}
 
 		return NewFundDefaultPresetConfirmationInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
 	}

@@ -1,6 +1,7 @@
 package opinit_bots
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -36,7 +37,9 @@ func TestProcessingMinitiaConfig_Update_AddKeys(t *testing.T) {
 	ctx = weavecontext.SetCurrentState(ctx, state)
 
 	// Initialize the ProcessingMinitiaConfig model
-	model := NewProcessingMinitiaConfig(ctx)
+	model := NewProcessingMinitiaConfig(ctx, func(ctx context.Context) tea.Model {
+		return NewSetupBotCheckbox(ctx)
+	})
 
 	// Simulate selecting "Yes" to add keys
 	nextModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter}) // Confirm selection
@@ -71,7 +74,9 @@ func TestProcessingMinitiaConfig_Update_SkipKeys(t *testing.T) {
 	ctx = weavecontext.SetCurrentState(ctx, state)
 
 	// Initialize the ProcessingMinitiaConfig model
-	model := NewProcessingMinitiaConfig(ctx)
+	model := NewProcessingMinitiaConfig(ctx, func(ctx context.Context) tea.Model {
+		return NewSetupBotCheckbox(ctx)
+	})
 
 	// Simulate selecting "No" to skip adding keys
 	model.Update(tea.KeyMsg{Type: tea.KeyDown})                  // Navigate to "No" option
@@ -107,7 +112,7 @@ func TestSetupBotCheckbox_SelectBots(t *testing.T) {
 	ctx = weavecontext.SetCurrentState(ctx, state)
 
 	// Initialize SetupBotCheckbox model
-	model := NewSetupBotCheckbox(ctx, true, false)
+	model := NewSetupBotCheckbox(ctx)
 
 	// Simulate selecting two bots (e.g., BridgeExecutor and BatchSubmitter)
 	model.Update(tea.KeyMsg{Type: tea.KeySpace})
@@ -148,7 +153,7 @@ func TestSetupBotCheckbox_NoSelection(t *testing.T) {
 	ctx = weavecontext.SetCurrentState(ctx, state)
 
 	// Initialize SetupBotCheckbox model with no selection
-	model := NewSetupBotCheckbox(ctx, false, true)
+	model := NewSetupBotCheckbox(ctx)
 
 	// Press Enter without making any choice
 	nextModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})

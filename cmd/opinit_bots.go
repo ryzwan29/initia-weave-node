@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -47,7 +48,7 @@ func ValidateOPinitBotNameArgs(_ *cobra.Command, args []string) error {
 
 func OPInitBotsCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:                        "opinit-bots",
+		Use:                        "opinit",
 		Short:                      "OPInit bots subcommands",
 		DisableFlagParsing:         true,
 		SuggestionsMinimumDistance: 2,
@@ -64,30 +65,53 @@ func OPInitBotsCommand() *cobra.Command {
 	return cmd
 }
 
-func Setup(minitiaHome, opInitHome string) (tea.Model, error) {
+type HomeConfig struct {
+	MinitiaHome string
+	OPInitHome  string
+	UserHome    string
+}
 
+func RunOPInit(nextModelFunc func(ctx context.Context) tea.Model, homeConfig HomeConfig) (tea.Model, error) {
 	// Initialize the context with OPInitBotsState
 	ctx := weavecontext.NewAppContext(opinit_bots.NewOPInitBotsState())
-	ctx = weavecontext.SetMinitiaHome(ctx, minitiaHome)
-	ctx = weavecontext.SetOPInitHome(ctx, opInitHome)
+	ctx = weavecontext.SetMinitiaHome(ctx, homeConfig.MinitiaHome)
+	ctx = weavecontext.SetOPInitHome(ctx, homeConfig.OPInitHome)
 
 	// Start the program
-	finalModel, err := tea.NewProgram(opinit_bots.PrepareSetup(ctx)).Run()
+	finalModel, err := tea.NewProgram(
+		opinit_bots.NewEnsureOPInitBotsBinaryLoadingModel(
+			ctx,
+			func(nextCtx context.Context) tea.Model {
+				return opinit_bots.ProcessMinitiaConfig(nextCtx, nextModelFunc)
+			},
+		),
+	).Run()
+
 	if err != nil {
 		fmt.Println("Error running program:", err)
 	}
+
 	return finalModel, err
 }
 
 func OPInitBotsKeysSetupCommand() *cobra.Command {
 	setupCmd := &cobra.Command{
-		Use:   "setup",
+		Use:   "setup-keys",
 		Short: "Setup keys for OPInit bots",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			minitiaHome, _ := cmd.Flags().GetString(FlagMinitiaHome)
 			opInitHome, _ := cmd.Flags().GetString(FlagOPInitHome)
 
-			_, err := Setup(minitiaHome, opInitHome)
+			userHome, err := os.UserHomeDir()
+			if err != nil {
+				return fmt.Errorf("error getting user home directory: %v", err)
+			}
+
+			_, err = RunOPInit(opinit_bots.NewSetupBotCheckbox, HomeConfig{
+				MinitiaHome: minitiaHome,
+				OPInitHome:  opInitHome,
+				UserHome:    userHome,
+			})
 			return err
 		},
 	}
@@ -109,7 +133,7 @@ func OPInitBotsInitCommand() *cobra.Command {
 		Short: "Initialize OPinit bots",
 		Long: `Initialize the OPinit bot. The argument is optional, as you will be prompted to select a bot if no bot name is provided.
 Alternatively, you can specify a bot name as an argument to skip the selection. Valid options are [executor, challenger].
-Example: weave opinit-bots init executor`,
+Example: weave opinit init executor`,
 		Args: ValidateOPinitOptionalBotNameArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			minitiaHome, _ := cmd.Flags().GetString(FlagMinitiaHome)
@@ -117,43 +141,33 @@ Example: weave opinit-bots init executor`,
 
 			userHome, err := os.UserHomeDir()
 			if err != nil {
-				panic(err)
+				return fmt.Errorf("error getting user home directory: %v", err)
 			}
-			binaryPath := filepath.Join(userHome, common.WeaveDataDirectory, opinit_bots.AppName)
-			_, err = cosmosutils.GetBinaryVersion(binaryPath)
-			if err != nil {
-				finalModel, err := Setup(minitiaHome, opInitHome)
-				if err != nil {
-					return err
-				}
 
-				if _, ok := finalModel.(*opinit_bots.TerminalState); !ok {
-					return nil
-				}
-			}
-			// Initialize the context with OPInitBotsState
-			ctx := weavecontext.NewAppContext(opinit_bots.NewOPInitBotsState())
-			ctx = weavecontext.SetMinitiaHome(ctx, minitiaHome)
-			ctx = weavecontext.SetOPInitHome(ctx, opInitHome)
-
+			var rootProgram func(ctx context.Context) tea.Model
 			// Check if a bot name was provided as an argument
 			if len(args) == 1 {
 				botName := args[0]
 				switch botName {
 				case "executor":
-					_, err := tea.NewProgram(opinit_bots.OPInitBotInitSelectExecutor(ctx)).Run()
-					return err
+					rootProgram = opinit_bots.OPInitBotInitSelectExecutor
 				case "challenger":
-					_, err := tea.NewProgram(opinit_bots.OPInitBotInitSelectChallenger(ctx)).Run()
-					return err
+					rootProgram = opinit_bots.OPInitBotInitSelectChallenger
 				default:
 					return fmt.Errorf("invalid bot name provided: %s", botName)
 				}
 			} else {
 				// Start the bot selector program if no bot name is provided
-				_, err := tea.NewProgram(opinit_bots.NewOPInitBotInitSelector(ctx)).Run()
-				return err
+				rootProgram = opinit_bots.NewOPInitBotInitSelector
 			}
+
+			_, err = RunOPInit(rootProgram, HomeConfig{
+				MinitiaHome: minitiaHome,
+				OPInitHome:  opInitHome,
+				UserHome:    userHome,
+			})
+
+			return err
 		},
 	}
 
@@ -173,7 +187,7 @@ func OPInitBotsStartCommand() *cobra.Command {
 		Use:   "start [bot-name]",
 		Short: "Start the OPinit bot process.",
 		Long: `Use this command to start the OPinit bot, where the only argument required is the desired bot name. 
-Valid options are [executor, challenger] eg. weave opinit-bots start executor
+Valid options are [executor, challenger] eg. weave opinit start executor
  `,
 		Args: ValidateOPinitBotNameArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -187,7 +201,7 @@ Valid options are [executor, challenger] eg. weave opinit-bots start executor
 			if err != nil {
 				return err
 			}
-			fmt.Printf("Started the OPinit %[1]s bot. You can see the logs with `weave opinit-bots log %[1]s`\n", botName)
+			fmt.Printf("Started the OPinit %[1]s bot. You can see the logs with `weave opinit log %[1]s`\n", botName)
 			return nil
 		},
 	}
@@ -200,7 +214,7 @@ func OPInitBotsStopCommand() *cobra.Command {
 		Use:   "stop [bot-name]",
 		Short: "Stop the running OPinit bot process.",
 		Long: `Use this command to stop the running OPinit bot, where the only argument required is the desired bot name.
-Valid options are [executor, challenger] eg. weave opinit-bots stop challenger`,
+Valid options are [executor, challenger] eg. weave opinit stop challenger`,
 		Args: ValidateOPinitBotNameArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			botName := args[0]
@@ -226,7 +240,7 @@ func OPInitBotsRestartCommand() *cobra.Command {
 		Use:   "restart [bot-name]",
 		Short: "Restart the running OPinit bot process.",
 		Long: `Use this command to restart the running OPinit bot, where the only argument required is the desired bot name.
-Valid options are [executor, challenger] eg. weave opinit-bots restart executor`,
+Valid options are [executor, challenger] eg. weave opinit restart executor`,
 		Args: ValidateOPinitBotNameArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			botName := args[0]
@@ -239,7 +253,7 @@ Valid options are [executor, challenger] eg. weave opinit-bots restart executor`
 			if err != nil {
 				return err
 			}
-			fmt.Printf("Restart the OPinit %[1]s bot process. You can see the logs with `weave opinit-bots log %[1]s`\n", botName)
+			fmt.Printf("Restart the OPinit %[1]s bot process. You can see the logs with `weave opinit log %[1]s`\n", botName)
 			return nil
 		},
 	}
@@ -252,7 +266,7 @@ func OPInitBotsLogCommand() *cobra.Command {
 		Use:   "log [bot-name]",
 		Short: "Stream the logs of the running OPinit bot process.",
 		Long: `Stream the logs of the running OPinit bot. The only argument required is the desired bot name.
-Valid options are [executor, challenger] eg. weave opinit-bots logs executor`,
+Valid options are [executor, challenger] eg. weave opinit log executor`,
 		Args: ValidateOPinitBotNameArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			n, err := cmd.Flags().GetInt(FlagN)
@@ -280,17 +294,18 @@ func OPInitBotsResetCommand() *cobra.Command {
 		Use:   "reset [bot-name]",
 		Short: "Reset a OPinit bot's database",
 		Long: `Reset a OPinit bot's database. The only argument required is the desired bot name.
-Valid options are [executor, challenger] eg. weave opinit-bots reset challenger`,
+Valid options are [executor, challenger] eg. weave opinit reset challenger`,
 		Args: ValidateOPinitBotNameArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			userHome, err := os.UserHomeDir()
 			if err != nil {
-				panic(err)
+				return fmt.Errorf("error getting user home directory: %v", err)
 			}
+
 			binaryPath := filepath.Join(userHome, common.WeaveDataDirectory, opinit_bots.AppName)
 			_, err = cosmosutils.GetBinaryVersion(binaryPath)
 			if err != nil {
-				panic("error getting the opinitd binary")
+				return fmt.Errorf("error getting the opinitd binary: %v", err)
 			}
 
 			botName := args[0]

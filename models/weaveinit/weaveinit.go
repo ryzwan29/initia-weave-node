@@ -39,7 +39,6 @@ type Option string
 const (
 	RunL1NodeOption        Option = "Run L1 Node"
 	LaunchNewMinitiaOption Option = "Launch New Minitia"
-	SetupOPBotsKeys        Option = "Setup OPInit Bots Keys"
 	InitializeOPBotsOption Option = "Initialize OPInit Bots"
 	StartRelayerOption     Option = "Start a Relayer"
 )
@@ -54,7 +53,6 @@ func GetWeaveInitOptions() []Option {
 	}
 
 	if flags.IsEnabled(flags.OPInitBots) {
-		options = append(options, SetupOPBotsKeys)
 		options = append(options, InitializeOPBotsOption)
 	}
 
@@ -70,7 +68,6 @@ func NewWeaveInit() *WeaveInit {
 	tooltips := []ui.Tooltip{
 		ui.NewTooltip(string(RunL1NodeOption), "Bootstrap an Initia Layer 1 full node to be able to join the network whether it's Mainnet, Testnet, or your own local network. Weave also make state-syncing super easy for you.", "", []string{}, []string{}, []string{}),
 		ui.NewTooltip(string(LaunchNewMinitiaOption), "Customize and deploy a new Minitia, an L2 rollup on Initia in less than 5 minutes. This process includes configuring your L2 components (chain-id, gas, optimistic bridge, etc.) and fund OPinit Bots to facilitate communications between your Minitia and the underlying Initia L1.", "", []string{}, []string{}, []string{}),
-		ui.NewTooltip(string(SetupOPBotsKeys), "TBD", "", []string{}, []string{}, []string{}),
 		ui.NewTooltip(string(InitializeOPBotsOption), "Configure and run OPinit Bots, the glue between Minitia and the underlying Initia L1.", "", []string{}, []string{}, []string{}),
 	}
 
@@ -103,9 +100,6 @@ func (m *WeaveInit) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case LaunchNewMinitiaOption:
 			minitiaChecker := minitia.NewExistingMinitiaChecker(weavecontext.NewAppContext(*minitia.NewLaunchState()))
 			return minitiaChecker, minitiaChecker.Init()
-		case SetupOPBotsKeys:
-			ctx := weavecontext.NewAppContext(opinit_bots.NewOPInitBotsState())
-			return opinit_bots.PrepareSetup(ctx), nil
 		case InitializeOPBotsOption:
 			return opinit_bots.NewOPInitBotInitSelector(weavecontext.NewAppContext(opinit_bots.NewOPInitBotsState())), nil
 		}

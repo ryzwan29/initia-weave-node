@@ -46,7 +46,7 @@ func relayerInitCommand() *cobra.Command {
 
 			if config.IsFirstTimeSetup() {
 				checkerCtx := weavecontext.NewAppContext(models.NewExistingCheckerState())
-				finalModel, err := tea.NewProgram(models.NewExistingAppChecker(checkerCtx, relayer.NewRollupSelect(ctx))).Run()
+				finalModel, err := tea.NewProgram(models.NewGasStationMethodSelect(checkerCtx)).Run()
 				if err != nil {
 					return err
 				}

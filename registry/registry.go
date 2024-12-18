@@ -458,7 +458,7 @@ var OPInitBotsSpecVersion map[string]int
 func loadOPInitBotsSpecVersion() error {
 	httpClient := client.NewHTTPClient()
 	if _, err := httpClient.Get(OPInitBotsSpecEndpoint, "", nil, &OPInitBotsSpecVersion); err != nil {
-		return fmt.Errorf("failed to load opinit-bots spec_version: %v", err)
+		return fmt.Errorf("failed to load opinit spec_version: %v", err)
 	}
 	return nil
 }
