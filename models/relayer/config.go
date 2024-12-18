@@ -238,7 +238,7 @@ list = [
 	}
 
 	homeDir, _ := os.UserHomeDir()
-	outputPath := filepath.Join(homeDir, ".hermes", "config.toml")
+	outputPath := filepath.Join(homeDir, HermesHome, "config.toml")
 
 	// Ensure the directory exists
 	err = os.MkdirAll(filepath.Dir(outputPath), 0755) // Creates ~/.hermes if it doesn't exist

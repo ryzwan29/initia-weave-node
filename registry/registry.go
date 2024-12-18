@@ -487,7 +487,7 @@ func MustGetOPInitBotsSpecVersion(chainId string) int {
 	return version
 }
 
-func (cr *ChainRegistry) MustGetCounterPartyClientId(portID, channelID string) Connection {
+func (cr *ChainRegistry) MustGetCounterpartyClientId(portID, channelID string) Connection {
 	address := cr.MustGetActiveLcd()
 	httpClient := client.NewHTTPClient()
 

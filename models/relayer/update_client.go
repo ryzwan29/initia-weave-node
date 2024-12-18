@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/BurntSushi/toml"
+
 	"github.com/initia-labs/weave/common"
 	"github.com/initia-labs/weave/cosmosutils"
 	"github.com/initia-labs/weave/registry"
@@ -15,7 +16,7 @@ func UpdateClientFromConfig() error {
 	if err != nil {
 		return err
 	}
-	configPath := filepath.Join(userHome, ".hermes", "config.toml")
+	configPath := filepath.Join(userHome, HermesHome, "config.toml")
 	weaveDataPath := filepath.Join(userHome, common.WeaveDataDirectory)
 	hermesBinaryPath := filepath.Join(weaveDataPath, "hermes")
 
@@ -39,7 +40,7 @@ func UpdateClientFromConfig() error {
 
 	clientIds := make(map[string]bool)
 	for _, channel := range config.Chains[0].PacketFilter.List {
-		connection := chainRegistry.MustGetCounterPartyClientId(channel[0], channel[1])
+		connection := chainRegistry.MustGetCounterpartyClientId(channel[0], channel[1])
 		clientIds[connection.Connection.Counterparty.ClientID] = true
 	}
 	te := cosmosutils.NewHermesTxExecutor(hermesBinaryPath)
