@@ -19,7 +19,7 @@ func InitCommand() *cobra.Command {
 				ctx := weavecontext.NewAppContext(models.NewExistingCheckerState())
 
 				// Capture both the final model and the error from Run()
-				finalModel, err := tea.NewProgram(models.NewExistingAppChecker(ctx, weaveinit.NewWeaveInit())).Run()
+				finalModel, err := tea.NewProgram(models.NewGasStationMethodSelect(ctx)).Run()
 				if err != nil {
 					return err
 				}

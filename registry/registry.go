@@ -64,6 +64,24 @@ type Peer struct {
 	Provider string `json:"provider,omitempty"`
 }
 
+type Channel struct {
+	Channel struct {
+		ConnectionHops []string `json:"connection_hops"`
+		Counterparty   struct {
+			ChannelID string `json:"channel_id"`
+			PortID    string `json:"port_id"`
+		} `json:"counterparty"`
+	} `json:"channel"`
+}
+
+type Connection struct {
+	Connection struct {
+		Counterparty struct {
+			ClientID string `json:"client_id"`
+		} `json:"counterparty"`
+	} `json:"connection"`
+}
+
 func (cr *ChainRegistry) GetChainId() string {
 	return cr.ChainId
 }
@@ -467,4 +485,21 @@ func MustGetOPInitBotsSpecVersion(chainId string) int {
 	}
 
 	return version
+}
+
+func (cr *ChainRegistry) MustGetCounterpartyClientId(portID, channelID string) Connection {
+	address := cr.MustGetActiveLcd()
+	httpClient := client.NewHTTPClient()
+
+	var channel Channel
+	if _, err := httpClient.Get(address, fmt.Sprintf("/ibc/core/channel/v1/channels/%s/ports/%s", channelID, portID), nil, &channel); err != nil {
+		panic(err)
+	}
+
+	var connection Connection
+	if _, err := httpClient.Get(address, fmt.Sprintf("/ibc/core/connection/v1/connections/%s", channel.Channel.ConnectionHops[0]), nil, &connection); err != nil {
+		panic(err)
+	}
+
+	return connection
 }

@@ -17,7 +17,7 @@ type EventSource struct {
 
 // PacketFilter holds the packet filter configuration
 type PacketFilter struct {
-	List [][]string
+	List [][]string `toml:"list"`
 }
 
 type GasPrice struct {
@@ -27,17 +27,22 @@ type GasPrice struct {
 
 // Data holds all the dynamic data for the template
 type Data struct {
-	ID            string
+	ID            string `toml:"id"`
 	RPCAddr       string
 	GRPCAddr      string
 	EventSource   EventSource
-	PacketFilter  PacketFilter
+	PacketFilter  PacketFilter `toml:"packet_filter"`
 	ID2           string
 	RPCAddr2      string
 	GRPCAddr2     string
 	EventSource2  EventSource
 	PacketFilter2 PacketFilter
 	GasPrice2     GasPrice
+}
+
+// Define a structure for the top-level TOML
+type Config struct {
+	Chains []Data `toml:"chains"`
 }
 
 func transformToPacketFilter(pairs []types.IBCChannelPair, isL1 bool) PacketFilter {
@@ -233,7 +238,7 @@ list = [
 	}
 
 	homeDir, _ := os.UserHomeDir()
-	outputPath := filepath.Join(homeDir, ".hermes", "config.toml")
+	outputPath := filepath.Join(homeDir, HermesHome, "config.toml")
 
 	// Ensure the directory exists
 	err = os.MkdirAll(filepath.Dir(outputPath), 0755) // Creates ~/.hermes if it doesn't exist

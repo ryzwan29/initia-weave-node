@@ -9,4 +9,6 @@ const (
 	FlagInitiaHome  = "initia-dir"
 	FlagMinitiaHome = "minitia-dir"
 	FlagOPInitHome  = "opinit-dir"
+
+	FlagUpdateClient = "update-client"
 )

@@ -348,6 +348,15 @@ func (m *L2KeySelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return model, model.Init()
 			case L2SameKey:
 				state.l2RelayerAddress = state.l1RelayerAddress
+				userHome, err := os.UserHomeDir()
+				if err != nil {
+					panic(fmt.Errorf("could not get user home directory: %s", err))
+				}
+				l1ExistingKeyPath := filepath.Join(userHome, HermesKeysDirectory, MustGetL1ChainId(m.Ctx))
+				l2KeyPath := filepath.Join(userHome, HermesKeysDirectory, MustGetL2ChainId(m.Ctx))
+				if err = weaveio.CopyDirectory(l1ExistingKeyPath, l2KeyPath); err != nil {
+					panic(fmt.Errorf("could not copy L1 existing key: %s", err))
+				}
 				model := NewFetchingBalancesLoading(weavecontext.SetCurrentState(m.Ctx, state))
 				return model, model.Init()
 			case L2GenerateKey:
@@ -875,12 +884,12 @@ func (m *FundingAmountSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				styles.BoldUnderlineText("Important", styles.Yellow),
 				styles.Text("To ensure the relayer functions properly, make sure these accounts are funded.", styles.Yellow),
 				styles.CreateFrame(fmt.Sprintf(
-					"%s %s\n%s %s",
+					"%s %s    \n%s %s",
 					styles.BoldText("• Relayer key on L1", styles.White),
 					styles.Text(fmt.Sprintf("(%s)", state.l1RelayerAddress), styles.Gray),
 					styles.BoldText("• Relayer key on Rollup", styles.White),
 					styles.Text(fmt.Sprintf("(%s)", state.l2RelayerAddress), styles.Gray),
-				), 65),
+				), 69),
 			))
 			return NewTerminalState(weavecontext.SetCurrentState(m.Ctx, state)), tea.Quit
 		}
