@@ -92,7 +92,7 @@ func relayerStartCommand() *cobra.Command {
 				fmt.Println("Client updated successfully.")
 			case "false":
 			default:
-				panic("invalid update client flag")
+				return fmt.Errorf("invalid update-client flag value: %q, expected 'true' or 'false'", updateClient)
 			}
 			s, err := service.NewService(service.Relayer)
 			if err != nil {
@@ -106,8 +106,7 @@ func relayerStartCommand() *cobra.Command {
 			return nil
 		},
 	}
-	startCmd.Flags().String(FlagUpdateClient, "true", "Update the client configuration before starting the relayer")
-
+	startCmd.Flags().String(FlagUpdateClient, "true", "Update the client configuration before starting the relayer (can be 'true' or 'false')")
 	return startCmd
 }
 
