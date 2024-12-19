@@ -26,32 +26,24 @@ import (
 	"github.com/initia-labs/weave/registry"
 	"github.com/initia-labs/weave/service"
 	"github.com/initia-labs/weave/styles"
+	"github.com/initia-labs/weave/tooltip"
 	"github.com/initia-labs/weave/types"
 	"github.com/initia-labs/weave/ui"
 )
 
-var (
-	RollupChainIdTooltip   = ui.NewTooltip("Rollup Chain ID", "Chain ID is the unique identifier for the Rollup network.", "", []string{}, []string{}, []string{})
-	L2RPCAddressTooltip    = ui.NewTooltip("Rollup RPC endpoint", "URL of your Rollup node's RPC server. This allows relayer to query and send transactions to the Rollup network.", "", []string{}, []string{}, []string{})
-	L2GRPCAddressTooltip   = ui.NewTooltip("Rollup GRPC endpoint", "URL of your Rollup node's GRPC server. This allows relayer to query additional data from the Rollup network.", "", []string{}, []string{}, []string{})
-	L2WebSocketTooltip     = ui.NewTooltip("Rollup WebSocket endpoint", "URL of your Rollup node's WebSocket server. This allows relayer to listen to events from the Rollup network.", "", []string{}, []string{}, []string{})
-	L2GasPriceDenomTooltip = ui.NewTooltip("Rollup gas denom", "The token denomination for gas fees on the Rollup.", "", []string{}, []string{}, []string{})
-	L2GasPricePriceTooltip = ui.NewTooltip("Rollup gas price", "The gas price to be used for submitting transactions to the Rollup node. This value should be set to the minimum gas price for the rollup node.", "", []string{}, []string{}, []string{})
-)
-
 var defaultL2ConfigLocal = []*Field{
-	{Name: "l2.rpc_address", Type: StringField, Question: "Specify Rollup rpc_address", Placeholder: `Press tab to use "http://localhost:26657"`, DefaultValue: "http://localhost:26657", ValidateFn: common.ValidateURL, Tooltip: &L2RPCAddressTooltip},
-	{Name: "l2.grpc_address", Type: StringField, Question: "Specify Rollup grpc_address", Placeholder: `Press tab to use "http://localhost:9090"`, DefaultValue: "http://localhost:9090", ValidateFn: common.ValidateURL, Tooltip: &L2GRPCAddressTooltip},
-	{Name: "l2.websocket", Type: StringField, Question: "Specify Rollup websocket", Placeholder: `Press tab to use "ws://localhost:26657/websocket"`, DefaultValue: "ws://localhost:26657/websocket", ValidateFn: common.ValidateWSURL, Tooltip: &L2WebSocketTooltip},
+	{Name: "l2.rpc_address", Type: StringField, Question: "Specify rollup RPC endpoint", Highlights: []string{"rollup RPC endpoint"}, Placeholder: `Press tab to use "http://localhost:26657"`, DefaultValue: "http://localhost:26657", ValidateFn: common.ValidateURL, Tooltip: &tooltip.RollupRPCEndpointTooltip},
+	{Name: "l2.grpc_address", Type: StringField, Question: "Specify rollup GRPC endpoint", Highlights: []string{"rollup GRPC endpoint"}, Placeholder: `Press tab to use "http://localhost:9090"`, DefaultValue: "http://localhost:9090", ValidateFn: common.ValidateURL, Tooltip: &tooltip.RollupGRPCEndpointTooltip},
+	{Name: "l2.websocket", Type: StringField, Question: "Specify rollup WebSocket endpoint", Highlights: []string{"rollup WebSocket endpoint"}, Placeholder: `Press tab to use "ws://localhost:26657/websocket"`, DefaultValue: "ws://localhost:26657/websocket", ValidateFn: common.ValidateWSURL, Tooltip: &tooltip.RollupWebSocketEndpointTooltip},
 }
 
 var defaultL2ConfigManual = []*Field{
-	{Name: "l2.chain_id", Type: StringField, Question: "Specify Rollup chain_id", Placeholder: "ex. rollup-1", ValidateFn: common.ValidateEmptyString, Tooltip: &RollupChainIdTooltip},
-	{Name: "l2.rpc_address", Type: StringField, Question: "Specify Rollup rpc_address", Placeholder: "ex. http://localhost:26657", ValidateFn: common.ValidateURL, Tooltip: &L2RPCAddressTooltip},
-	{Name: "l2.grpc_address", Type: StringField, Question: "Specify Rollup grpc_address", Placeholder: "ex. http://localhost:9090", ValidateFn: common.ValidateURL, Tooltip: &L2GRPCAddressTooltip},
-	{Name: "l2.websocket", Type: StringField, Question: "Specify Rollup websocket", Placeholder: "ex. ws://localhost:26657/websocket", ValidateFn: common.ValidateWSURL, Tooltip: &L2WebSocketTooltip},
-	{Name: "l2.gas_price.denom", Type: StringField, Question: "Specify Rollup gas denom", Placeholder: "ex. umin", ValidateFn: common.ValidateDenom, Tooltip: &L2GasPriceDenomTooltip},
-	{Name: "l2.gas_price.price", Type: StringField, Question: "Specify Rollup gas price", Placeholder: "ex. 0.15", ValidateFn: common.ValidateDecFromStr, Tooltip: &L2GasPricePriceTooltip},
+	{Name: "l2.chain_id", Type: StringField, Question: "Specify rollup chain ID", Highlights: []string{"rollup chain ID"}, Placeholder: "ex. rollup-1", ValidateFn: common.ValidateEmptyString, Tooltip: &tooltip.RollupChainIdTooltip},
+	{Name: "l2.rpc_address", Type: StringField, Question: "Specify rollup RPC endpoint", Highlights: []string{"rollup RPC endpoint"}, Placeholder: "ex. http://localhost:26657", ValidateFn: common.ValidateURL, Tooltip: &tooltip.RollupRPCEndpointTooltip},
+	{Name: "l2.grpc_address", Type: StringField, Question: "Specify rollup GRPC endpoint", Highlights: []string{"rollup GRPC endpoint"}, Placeholder: "ex. http://localhost:9090", ValidateFn: common.ValidateURL, Tooltip: &tooltip.RollupGRPCEndpointTooltip},
+	{Name: "l2.websocket", Type: StringField, Question: "Specify rollup WebSocket endpoint", Highlights: []string{"rollup WebSocket endpoint"}, Placeholder: "ex. ws://localhost:26657/websocket", ValidateFn: common.ValidateWSURL, Tooltip: &tooltip.RollupWebSocketEndpointTooltip},
+	{Name: "l2.gas_price.denom", Type: StringField, Question: "Specify rollup gas denom", Highlights: []string{"rollup gas denom"}, Placeholder: "ex. umin", ValidateFn: common.ValidateDenom, Tooltip: &tooltip.RollupGasDenomTooltip},
+	{Name: "l2.gas_price.price", Type: StringField, Question: "Specify rollup gas price", Highlights: []string{"rollup gas price"}, Placeholder: "ex. 0.15", ValidateFn: common.ValidateDecFromStr, Tooltip: &tooltip.RollupGasPriceTooltip},
 }
 
 type RollupSelect struct {
@@ -64,40 +56,40 @@ type RollupSelectOption string
 
 const (
 	Whitelisted RollupSelectOption = "Whitelisted Rollup"
-	Local       RollupSelectOption = "Local Rollup"
 	Manual      RollupSelectOption = "Manual Relayer Setup"
 )
+
+var Local RollupSelectOption = "Local Rollup"
 
 func NewRollupSelect(ctx context.Context) *RollupSelect {
 	options := make([]RollupSelectOption, 0)
 	tooltips := make([]ui.Tooltip, 0)
-	if weaveio.FileOrFolderExists(weavecontext.GetMinitiaArtifactsConfigJson(ctx)) {
-		options = append(options, Whitelisted, Local, Manual)
-		tooltips = append(tooltips, ui.NewTooltip(
-			"Whitelisted Rollup",
-			"Run a relayer for any live Rollup in https://github.com/initia-labs/initia-registry.",
-			"", []string{}, []string{}, []string{},
-		), ui.NewTooltip(
-			"Local Rollup",
-			"Run a relayer for the Rollup that you just launched locally. Using artifacts from .minitia/artifacts to setup the relayer.",
-			"", []string{}, []string{}, []string{},
-		), ui.NewTooltip(
-			"Manual Relayer Setup",
-			"Setup the relayer manually by providing the L1 and Rollupchain id, RPC endpoints, GRPC endpoints, and more.",
-			"", []string{}, []string{}, []string{},
-		),
+	minitiaConfigPath := weavecontext.GetMinitiaArtifactsConfigJson(ctx)
+	if weaveio.FileOrFolderExists(minitiaConfigPath) {
+		configData, err := os.ReadFile(minitiaConfigPath)
+		if err != nil {
+			panic(err)
+		}
+
+		var minitiaConfig types.MinitiaConfig
+		err = json.Unmarshal(configData, &minitiaConfig)
+		if err != nil {
+			panic(err)
+		}
+
+		Local = RollupSelectOption(fmt.Sprintf("%s (%s)", Local, minitiaConfig.L2Config.ChainID))
+
+		options = append(options, Local, Whitelisted, Manual)
+		tooltips = append(tooltips,
+			tooltip.RelayerRollupSelectLocalTooltip,
+			tooltip.RelayerRollupSelectWhitelistedTooltip,
+			tooltip.RelayerRollupSelectManualTooltip,
 		)
 	} else {
 		options = append(options, Whitelisted, Manual)
-		tooltips = append(tooltips, ui.NewTooltip(
-			"Whitelisted Rollup",
-			"Run a relayer for a live Rollup in https://github.com/initia-labs/initia-registry.",
-			"", []string{}, []string{}, []string{},
-		), ui.NewTooltip(
-			"Manual Relayer Setup",
-			"Setup the relayer manually by providing the L1 and Rollup Chain IDs, RPC endpoints, GRPC endpoints, and more.",
-			"", []string{}, []string{}, []string{},
-		),
+		tooltips = append(tooltips,
+			tooltip.RelayerRollupSelectWhitelistedTooltip,
+			tooltip.RelayerRollupSelectManualTooltip,
 		)
 	}
 
@@ -108,7 +100,7 @@ func NewRollupSelect(ctx context.Context) *RollupSelect {
 			Tooltips:   &tooltips,
 		},
 		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
-		question:  "Select the type of Interwoven Rollups you want to relay",
+		question:  "Select the type of Interwoven rollup you want to relay",
 	}
 }
 
@@ -180,7 +172,7 @@ func (m *RollupSelect) View() string {
 	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
 	return state.weave.Render() + styles.RenderPrompt(
 		m.GetQuestion(),
-		[]string{},
+		[]string{"Interwoven rollup"},
 		styles.Question,
 	) + m.Selector.View()
 }
@@ -199,7 +191,7 @@ const (
 )
 
 var (
-	L1ExistingKey = L1KeySelectOption("Use an existing key " + styles.Text("(previously setup in Weave)", styles.Gray))
+	L1ExistingKey = L1KeySelectOption("Use an existing key " + styles.Text("(previously setup with Weave)", styles.Gray))
 	L1ImportKey   = L1KeySelectOption("Import existing key " + styles.Text("(you will be prompted to enter your mnemonic)", styles.Gray))
 )
 
@@ -215,11 +207,7 @@ func NewL1KeySelect(ctx context.Context) *L1KeySelect {
 		options = append([]L1KeySelectOption{L1ExistingKey}, options...)
 	}
 
-	tooltips := ui.NewTooltipSlice(ui.NewTooltip(
-		"L1 Relayer Key",
-		"The key/account that the relayer will use to interact with the L1 network.",
-		"", []string{}, []string{}, []string{},
-	), len(options))
+	tooltips := ui.NewTooltipSlice(tooltip.RelayerL1KeySelectTooltip, len(options))
 
 	return &L1KeySelect{
 		Selector: ui.Selector[L1KeySelectOption]{
@@ -303,11 +291,7 @@ func NewL2KeySelect(ctx context.Context) *L2KeySelect {
 		options = append([]L2KeySelectOption{L2ExistingKey}, options...)
 	}
 
-	tooltips := ui.NewTooltipSlice(ui.NewTooltip(
-		"Rollup Relayer Key",
-		"The key/account that the relayer will use to interact with the Rollup network.",
-		"", []string{}, []string{}, []string{},
-	), len(options))
+	tooltips := ui.NewTooltipSlice(tooltip.RelayerRollupKeySelectTooltip, len(options))
 
 	return &L2KeySelect{
 		Selector: ui.Selector[L2KeySelectOption]{
@@ -315,7 +299,7 @@ func NewL2KeySelect(ctx context.Context) *L2KeySelect {
 			Tooltips: &tooltips,
 		},
 		BaseModel: weavecontext.BaseModel{Ctx: weavecontext.SetCurrentState(ctx, state)},
-		question:  fmt.Sprintf("Select an option for setting up the relayer account key on Rollup (%s)", l2ChainId),
+		question:  fmt.Sprintf("Select an option for setting up the relayer account key on rollup (%s)", l2ChainId),
 		chainId:   l2ChainId,
 	}
 }
@@ -337,7 +321,7 @@ func (m *L2KeySelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if selected != nil {
 		state := weavecontext.PushPageAndGetState[State](m)
 
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"relayer account key", fmt.Sprintf("Rollup (%s)", m.chainId)}, string(*selected)))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"relayer account key", fmt.Sprintf("rollup (%s)", m.chainId)}, string(*selected)))
 		state.l2KeyMethod = string(*selected)
 
 		switch L1KeySelectOption(state.l1KeyMethod) {
@@ -381,7 +365,7 @@ func (m *L2KeySelect) View() string {
 	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
 	return state.weave.Render() + styles.RenderPrompt(
 		m.GetQuestion(),
-		[]string{"relayer account key", fmt.Sprintf("Rollup(%s)", m.chainId)},
+		[]string{"relayer account key", fmt.Sprintf("rollup (%s)", m.chainId)},
 		styles.Question,
 	) + m.Selector.View()
 }
@@ -395,7 +379,7 @@ func NewGenerateL1RelayerKeyLoading(ctx context.Context) *GenerateL1RelayerKeyLo
 	state := weavecontext.GetCurrentState[State](ctx)
 	layerText := "L1"
 	if state.l1KeyMethod == string(L1GenerateKey) && state.l2KeyMethod == string(L2SameKey) {
-		layerText = "L1 and Rollup"
+		layerText = "L1 and rollup"
 	}
 
 	return &GenerateL1RelayerKeyLoading{
@@ -447,7 +431,7 @@ func (m *GenerateL1RelayerKeyLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			state.l2RelayerMnemonic = state.l1RelayerMnemonic
 			_, err := cosmosutils.RecoverAndReplaceHermesKey(state.hermesBinaryPath, MustGetL2ChainId(m.Ctx), state.l2RelayerMnemonic)
 			if err != nil {
-				panic(fmt.Errorf("failed to recover Hermes key for Rollup: %w", err))
+				panic(fmt.Errorf("failed to recover Hermes key for rollup: %w", err))
 			}
 			return NewKeysMnemonicDisplayInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
 		case L2GenerateKey:
@@ -470,7 +454,7 @@ type GenerateL2RelayerKeyLoading struct {
 
 func NewGenerateL2RelayerKeyLoading(ctx context.Context) *GenerateL2RelayerKeyLoading {
 	return &GenerateL2RelayerKeyLoading{
-		loading:   ui.NewLoading("Generating new relayer account key for Rollup...", waitGenerateL2RelayerKeyLoading(ctx)),
+		loading:   ui.NewLoading("Generating new relayer account key for rollup...", waitGenerateL2RelayerKeyLoading(ctx)),
 		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
 	}
 }
@@ -579,7 +563,7 @@ func (m *KeysMnemonicDisplayInput) View() string {
 	if state.l1KeyMethod == string(L1GenerateKey) {
 		layerText := "L1"
 		if state.l2KeyMethod == string(L2SameKey) {
-			layerText = "L1 and Rollup"
+			layerText = "L1 and rollup"
 		}
 		mnemonicText += styles.RenderMnemonic(
 			styles.RenderPrompt(fmt.Sprintf("Weave Relayer on %s", layerText), []string{layerText}, styles.Empty),
@@ -613,7 +597,7 @@ func NewImportL1RelayerKeyInput(ctx context.Context) *ImportL1RelayerKeyInput {
 	state := weavecontext.GetCurrentState[State](ctx)
 	layerText := "L1"
 	if state.l1KeyMethod == string(L1ImportKey) && state.l2KeyMethod == string(L2SameKey) {
-		layerText = "L1 and Rollup"
+		layerText = "L1 and rollup"
 	}
 	model := &ImportL1RelayerKeyInput{
 		TextInput: ui.NewTextInput(false),
@@ -832,11 +816,7 @@ func NewFundingAmountSelect(ctx context.Context) *FundingAmountSelect {
 		FundingUserTransfer,
 	}
 	tooltips := ui.NewTooltipSlice(
-		ui.NewTooltip(
-			"Funding the relayer accounts",
-			"Relayer account on both L1 and Rollup need gas to interact with the chain. This funding is required to ensure the relayer can function properly.",
-			"", []string{}, []string{}, []string{},
-		), len(options),
+		tooltip.RelayerFundingAmountSelectTooltip, len(options),
 	)
 	return &FundingAmountSelect{
 		Selector: ui.Selector[FundingAmountSelectOption]{
@@ -887,7 +867,7 @@ func (m *FundingAmountSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					"%s %s    \n%s %s",
 					styles.BoldText("• Relayer key on L1", styles.White),
 					styles.Text(fmt.Sprintf("(%s)", state.l1RelayerAddress), styles.Gray),
-					styles.BoldText("• Relayer key on Rollup", styles.White),
+					styles.BoldText("• Relayer key on rollup", styles.White),
 					styles.Text(fmt.Sprintf("(%s)", state.l2RelayerAddress), styles.Gray),
 				), 69),
 			))
@@ -900,11 +880,12 @@ func (m *FundingAmountSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *FundingAmountSelect) View() string {
 	state := weavecontext.GetCurrentState[State](m.Ctx)
+	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
 
 	var informationLayer, warningLayer string
 	if state.l1NeedsFunding && state.l2NeedsFunding {
-		informationLayer = "both L1 and Rollup"
-		warningLayer = "L1 and Rollup have"
+		informationLayer = "both L1 and rollup"
+		warningLayer = "L1 and rollup have"
 	} else if state.l1NeedsFunding {
 		informationLayer = "L1"
 		warningLayer = "L1 has"
@@ -1149,7 +1130,7 @@ func NewFundManuallyL2BalanceInput(ctx context.Context) *FundManuallyL2BalanceIn
 	model := &FundManuallyL2BalanceInput{
 		TextInput: ui.NewTextInput(false),
 		BaseModel: weavecontext.BaseModel{Ctx: ctx},
-		question:  fmt.Sprintf("Specify amount that would be transferred to Relayer account on Rollup (%s)", MustGetL2GasDenom(ctx)),
+		question:  fmt.Sprintf("Specify amount that would be transferred to Relayer account on rollup (%s)", MustGetL2GasDenom(ctx)),
 	}
 	model.WithPlaceholder("Enter the amount (or 0 to skip)")
 	model.WithValidatorFn(common.IsValidInteger)
@@ -1220,11 +1201,7 @@ func NewSelectingL1Network(ctx context.Context) *SelectingL1Network {
 	//mainnetRegistry := registry.MustGetChainRegistry(registry.InitiaL1Mainnet)
 	Testnet = NetworkSelectOption(fmt.Sprintf("Testnet (%s)", testnetRegistry.GetChainId()))
 	//Mainnet = NetworkSelectOption(fmt.Sprintf("Mainnet (%s)", mainnetRegistry.GetChainId()))
-	tooltips := ui.NewTooltipSlice(ui.NewTooltip(
-		"L1 Network to relay messages",
-		"Testnet (initiation-2) is the only supported network for now.",
-		"", []string{}, []string{}, []string{},
-	), 2)
+	tooltips := ui.NewTooltipSlice(tooltip.RelayerL1NetworkSelectTooltip, 2)
 	return &SelectingL1Network{
 		Selector: ui.Selector[NetworkSelectOption]{
 			Options: []NetworkSelectOption{
@@ -1295,11 +1272,7 @@ func NewSelectingL2Network(ctx context.Context, chainType registry.ChainType) *S
 	}
 	sort.Slice(options, func(i, j int) bool { return strings.ToLower(options[i]) < strings.ToLower(options[j]) })
 
-	tooltips := ui.NewTooltipSlice(ui.NewTooltip(
-		"Whitelisted Rollup network",
-		"Checkout https://github.com/initia-labs/initia-registry for more information about the whitelisted Rollups.",
-		"", []string{}, []string{}, []string{},
-	), len(options))
+	tooltips := ui.NewTooltipSlice(tooltip.RelayerRollupSelectWhitelistedTooltip, len(options))
 
 	return &SelectingL2Network{
 		Selector: ui.Selector[string]{
@@ -1307,7 +1280,7 @@ func NewSelectingL2Network(ctx context.Context, chainType registry.ChainType) *S
 			Tooltips: &tooltips,
 		},
 		BaseModel: weavecontext.BaseModel{Ctx: ctx},
-		question:  "Specify the Rollup network",
+		question:  "Specify rollup network",
 	}
 }
 
@@ -1328,7 +1301,7 @@ func (m *SelectingL2Network) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	selected, cmd := m.Select(msg)
 	if selected != nil {
 		state := weavecontext.PushPageAndGetState[State](m)
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"Rollup network"}, *selected))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"rollup network"}, *selected))
 		m.Ctx = weavecontext.SetCurrentState(m.Ctx, state)
 
 		re := regexp.MustCompile(`\(([^)]+)\)`)
@@ -1377,7 +1350,7 @@ func (m *SelectingL2Network) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *SelectingL2Network) View() string {
 	state := weavecontext.GetCurrentState[State](m.Ctx)
 	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"Rollup network"}, styles.Question) + m.Selector.View()
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"rollup network"}, styles.Question) + m.Selector.View()
 }
 
 type TerminalState struct {
@@ -1414,11 +1387,7 @@ func NewSelectingL1NetworkRegistry(ctx context.Context) *SelectingL1NetworkRegis
 	//mainnetRegistry := registry.MustGetChainRegistry(registry.InitiaL1Mainnet)
 	Testnet = NetworkSelectOption(fmt.Sprintf("Testnet (%s)", testnetRegistry.GetChainId()))
 	//Mainnet = NetworkSelectOption(fmt.Sprintf("Mainnet (%s)", mainnetRegistry.GetChainId()))
-	tooltips := ui.NewTooltipSlice(ui.NewTooltip(
-		"L1 Network to relay messages",
-		"Testnet (initiation-2) is the only supported network for now.",
-		"", []string{}, []string{}, []string{},
-	), 2)
+	tooltips := ui.NewTooltipSlice(tooltip.RelayerL1NetworkSelectTooltip, 2)
 	return &SelectingL1NetworkRegistry{
 		Selector: ui.Selector[NetworkSelectOption]{
 			Options: []NetworkSelectOption{
@@ -1489,7 +1458,7 @@ type SettingUpIBCChannelOption string
 
 var (
 	Basic       SettingUpIBCChannelOption = "Subscribe to only `transfer` and `nft-transfer` IBC Channels (minimal setup)"
-	FillFromLCD SettingUpIBCChannelOption = "Fill in Rollup LCD endpoint to detect all available IBC Channels"
+	FillFromLCD SettingUpIBCChannelOption = "Fill in rollup LCD endpoint to detect all available IBC Channels"
 	Manually    SettingUpIBCChannelOption = "Setup IBC Channels manually"
 )
 
@@ -1504,25 +1473,13 @@ func NewSelectSettingUpIBCChannelsMethod(ctx context.Context) tea.Model {
 	tooltips := make([]ui.Tooltip, 0)
 	if weaveio.FileOrFolderExists(weavecontext.GetMinitiaArtifactsJson(ctx)) {
 		options = append(options, Basic)
-		tooltips = append(tooltips, ui.NewTooltip(
-			"Minimal setup",
-			"Subscribe to only `transfer` and `nft-transfer` IBC Channels created when launching the Rollup with `minitiad launch` or `weave minitia launch`. This is recommended for new networks or local testing.",
-			"", []string{}, []string{}, []string{},
-		))
+		tooltips = append(tooltips, tooltip.RelayerIBCMinimalSetupTooltip)
 	}
 	options = append(options, FillFromLCD, Manually)
 	tooltips = append(
 		tooltips,
-		ui.NewTooltip(
-			"Get all available IBC Channels",
-			"By filling in the Rollup LCD endpoint, Weave will be able to detect all available IBC Channels and show you all the IBC Channel pairs.",
-			"", []string{}, []string{}, []string{},
-		),
-		ui.NewTooltip(
-			"Manual setup",
-			"Setup each IBC Channel manually by specifying the port ID and channel ID.",
-			"", []string{}, []string{}, []string{},
-		),
+		tooltip.RelayerIBCFillFromLCDTooltip,
+		tooltip.RelayerIBCManualSetupTooltip,
 	)
 
 	return &SelectSettingUpIBCChannelsMethod{
@@ -1762,11 +1719,7 @@ func NewFillPortOnL1(ctx context.Context, idx int) *FillPortOnL1 {
 		idx:       idx,
 		extra:     extra,
 	}
-	tooltip := ui.NewTooltip(
-		"Port ID on L1",
-		"Port Identifier for the IBC channel on L1 that the relayer should relay messages. Refer to https://ibc.cosmos.network/main/ibc/overview/#ports for more information.",
-		"", []string{}, []string{}, []string{},
-	)
+	tooltip := tooltip.RelayerL1IBCPortIDTooltip
 	model.WithTooltip(&tooltip)
 	model.WithPlaceholder("ex. transfer")
 	return model
@@ -1825,11 +1778,7 @@ func NewFillChannelL1(ctx context.Context, port string, idx int) *FillChannelL1 
 		port:      port,
 		extra:     extra,
 	}
-	tooltip := ui.NewTooltip(
-		"Channel ID",
-		fmt.Sprintf("Channel Identifier that associated with `%s` port. Refer to https://ibc.cosmos.network/main/ibc/overview/#channels for more information.", port),
-		"", []string{}, []string{}, []string{},
-	)
+	tooltip := tooltip.RelayerL1IBCChannelIDTooltip
 	model.WithTooltip(&tooltip)
 	model.WithPlaceholder("ex. channel-1")
 	return model
@@ -1887,16 +1836,12 @@ func NewFillPortOnL2(ctx context.Context, idx int, counterParty CounterParty) *F
 	model := &FillPortOnL2{
 		TextInput:    ui.NewTextInput(false),
 		BaseModel:    weavecontext.BaseModel{Ctx: ctx},
-		question:     fmt.Sprintf("Specify the port ID on Rollup that associated with `%s:%s` on L1 %s", counterParty.Port, counterParty.Channel, extra),
+		question:     fmt.Sprintf("Specify the port ID on rollup that associated with `%s:%s` on L1 %s", counterParty.Port, counterParty.Channel, extra),
 		idx:          idx,
 		counterParty: counterParty,
 		extra:        extra,
 	}
-	tooltip := ui.NewTooltip(
-		"Port ID",
-		"Port Identifier for the IBC channel on Rollup that the relayer should relay messages. Refer to https://ibc.cosmos.network/main/ibc/overview/#ports for more information.",
-		"", []string{}, []string{}, []string{},
-	)
+	tooltip := tooltip.RelayerRollupIBCPortIDTooltip
 	model.WithTooltip(&tooltip)
 	model.WithPlaceholder("ex. transfer")
 	return model
@@ -1949,16 +1894,12 @@ func NewFillChannelL2(ctx context.Context, port string, idx int) *FillChannelL2 
 	model := &FillChannelL2{
 		TextInput: ui.NewTextInput(false),
 		BaseModel: weavecontext.BaseModel{Ctx: ctx},
-		question:  fmt.Sprintf("Specify the channel on the Rollup network that associated with `%s` port on Rollup network %s", port, extra),
+		question:  fmt.Sprintf("Specify the channel on rollup network that associated with `%s` port on rollup network %s", port, extra),
 		idx:       idx,
 		port:      port,
 		extra:     extra,
 	}
-	tooltip := ui.NewTooltip(
-		"Channel ID",
-		fmt.Sprintf("Channel Identifier that associated with `%s` port. Refer to https://ibc.cosmos.network/main/ibc/overview/#channels for more information.", port),
-		"", []string{}, []string{}, []string{},
-	)
+	tooltip := tooltip.RelayerRollupIBCChannelIDTooltip
 	model.WithTooltip(&tooltip)
 	model.WithPlaceholder("ex. channel-1")
 	return model
@@ -2057,11 +1998,7 @@ func NewIBCChannelsCheckbox(ctx context.Context, pairs []types.IBCChannelPair) *
 		prettyPairs = append(prettyPairs, fmt.Sprintf("(L1) %s : %s ◀ ▶︎ (L2) %s : %s", pair.L1.PortID, pair.L1.ChannelID, pair.L2.PortID, pair.L2.ChannelID))
 	}
 	cb := ui.NewCheckBox(prettyPairs)
-	tooltips := ui.NewTooltipSlice(ui.NewTooltip(
-		"IBC Channels",
-		"Relayer will listen to the selected channels (and ports) and relay messages between L1 and Rollup network. Relay all option is recommended if you don't want to miss any messages.\n\n Refer to https://ibc.cosmos.network/main/ibc/overview.html#channels for more information.",
-		"", []string{}, []string{}, []string{},
-	), len(prettyPairs))
+	tooltips := ui.NewTooltipSlice(tooltip.RelayerIBCChannelsTooltip, len(prettyPairs))
 	cb.WithTooltip(&tooltips)
 	cb.EnableSelectAll()
 	pairs = append([]types.IBCChannelPair{pairs[0]}, pairs...)
@@ -2144,15 +2081,11 @@ type FillL2LCD struct {
 func NewFillL2LCD(ctx context.Context) *FillL2LCD {
 	chainId, _ := GetL2ChainId(ctx)
 	extra := fmt.Sprintf("(%s)", chainId)
-	tooltip := ui.NewTooltip(
-		"Rollup LCD endpoint",
-		"LCD endpoint to your Rollup node server. By providing this, relayer will be able to fetch the IBC channels and ports from the Rollup node server.",
-		"", []string{}, []string{}, []string{},
-	)
+	tooltip := tooltip.RelayerRollupLCDTooltip
 	m := &FillL2LCD{
 		TextInput: ui.NewTextInput(false),
 		BaseModel: weavecontext.BaseModel{Ctx: ctx},
-		question:  fmt.Sprintf("Specify the Rollup LCD endpoint %s", extra),
+		question:  fmt.Sprintf("Specify rollup LCD endpoint %s", extra),
 		extra:     extra,
 	}
 	m.WithTooltip(&tooltip)

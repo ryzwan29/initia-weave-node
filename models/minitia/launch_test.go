@@ -35,7 +35,7 @@ func TestNewExistingMinitiaChecker(t *testing.T) {
 
 	assert.NotNil(t, model, "Expected ExistingMinitiaChecker to be created")
 	assert.NotNil(t, model.Init(), "Expected Init command to be returned")
-	assert.Contains(t, model.View(), "Checking for an existing Minitia app...")
+	assert.Contains(t, model.View(), "Checking for an existing rollup app...")
 }
 
 func TestExistingMinitiaChecker_Update(t *testing.T) {
@@ -115,7 +115,7 @@ func TestNewDeleteExistingMinitiaInput(t *testing.T) {
 
 	assert.Nil(t, model.Init(), "Expected Init command to be returned")
 	assert.NotNil(t, model, "Expected DeleteExistingMinitiaInput to be created")
-	assert.Equal(t, "Please type `delete` to delete the .minitia folder and proceed with weave minitia launch", model.GetQuestion())
+	assert.Equal(t, "Please type `delete` to delete the .minitia folder and proceed with weave rollup launch", model.GetQuestion())
 	assert.NotNil(t, model.TextInput, "Expected TextInput to be initialized")
 	assert.Equal(t, "Type `delete` to delete, Ctrl+C to keep the folder and quit this command.", model.TextInput.Placeholder, "Expected placeholder to be set correctly")
 	assert.NotNil(t, model.TextInput.ValidationFn, "Expected validation function to be set")
@@ -468,7 +468,7 @@ func TestGasDenomInput_View(t *testing.T) {
 	input := NewGasDenomInput(ctx)
 
 	view := input.View()
-	assert.Contains(t, view, "Please specify the L2 Gas Token Denom", "Expected question prompt in the view")
+	assert.Contains(t, view, "Please specify the rollup gas token denom", "Expected question prompt in the view")
 	assert.Contains(t, view, `Press tab to use "umin"`, "Expected placeholder in the view")
 }
 
@@ -1499,7 +1499,7 @@ func TestNewSystemKeyL2OperatorBalanceInput(t *testing.T) {
 	operatorInput := NewSystemKeyL2OperatorBalanceInput(ctx)
 
 	assert.NotNil(t, operatorInput)
-	assert.Equal(t, "Please specify initial balance for Operator on L2 ()", operatorInput.GetQuestion())
+	assert.Equal(t, "Please specify initial balance for Operator on rollup ()", operatorInput.GetQuestion())
 }
 
 func TestSystemKeyL2OperatorBalanceInput_Init(t *testing.T) {
@@ -1528,7 +1528,7 @@ func TestSystemKeyL2OperatorBalanceInput_Update_Valid(t *testing.T) {
 	assert.IsType(t, &SystemKeyL2BridgeExecutorBalanceInput{}, finalModel)
 	assert.Equal(t, validInput, state.systemKeyL2OperatorBalance)
 	assert.Contains(t, state.weave.PreviousResponse, styles.RenderPreviousResponse(
-		styles.DotsSeparator, operatorInput.GetQuestion(), []string{"Operator", "L2"}, validInput))
+		styles.DotsSeparator, operatorInput.GetQuestion(), []string{"Operator", "rollup"}, validInput))
 }
 
 func TestSystemKeyL2OperatorBalanceInput_Update_Invalid(t *testing.T) {
@@ -1556,7 +1556,7 @@ func TestSystemKeyL2OperatorBalanceInput_View(t *testing.T) {
 	operatorInput := NewSystemKeyL2OperatorBalanceInput(ctx)
 
 	view := operatorInput.View()
-	assert.Contains(t, view, "Please specify initial balance for Operator on L2 ()", "Expected question prompt in the view")
+	assert.Contains(t, view, "Please specify initial balance for Operator on rollup ()", "Expected question prompt in the view")
 	assert.Contains(t, view, "Enter the balance", "Expected placeholder in the view")
 }
 
@@ -1566,7 +1566,7 @@ func TestNewSystemKeyL2BridgeExecutorBalanceInput(t *testing.T) {
 	executorInput := NewSystemKeyL2BridgeExecutorBalanceInput(ctx)
 
 	assert.NotNil(t, executorInput)
-	assert.Equal(t, "Please specify initial balance for Bridge Executor on L2 ()", executorInput.GetQuestion())
+	assert.Equal(t, "Please specify initial balance for Bridge Executor on rollup ()", executorInput.GetQuestion())
 }
 
 func TestSystemKeyL2BridgeExecutorBalanceInput_Init(t *testing.T) {
@@ -1595,7 +1595,7 @@ func TestSystemKeyL2BridgeExecutorBalanceInput_Update_Valid(t *testing.T) {
 	assert.IsType(t, &AddGasStationToGenesisSelect{}, finalModel)
 	assert.Equal(t, validInput, state.systemKeyL2BridgeExecutorBalance)
 	assert.Contains(t, state.weave.PreviousResponse, styles.RenderPreviousResponse(
-		styles.DotsSeparator, executorInput.GetQuestion(), []string{"Bridge Executor", "L2"}, validInput))
+		styles.DotsSeparator, executorInput.GetQuestion(), []string{"Bridge Executor", "rollup"}, validInput))
 }
 
 func TestSystemKeyL2BridgeExecutorBalanceInput_Update_Invalid(t *testing.T) {
@@ -1623,7 +1623,7 @@ func TestSystemKeyL2BridgeExecutorBalanceInput_View(t *testing.T) {
 	executorInput := NewSystemKeyL2BridgeExecutorBalanceInput(ctx)
 
 	view := executorInput.View()
-	assert.Contains(t, view, "Please specify initial balance for Bridge Executor on L2 ()", "Expected question prompt in the view")
+	assert.Contains(t, view, "Please specify initial balance for Bridge Executor on rollup ()", "Expected question prompt in the view")
 	assert.Contains(t, view, "Enter the balance", "Expected placeholder in the view")
 }
 
