@@ -16,7 +16,6 @@ type CheckBox[T any] struct {
 	ToggleTooltip   bool
 	Tooltips        *[]Tooltip
 	enableSelectAll bool
-	styles.BaseWrapper
 }
 
 func NewCheckBox[T any](options []T) *CheckBox[T] {
@@ -76,8 +75,6 @@ func (s *CheckBox[T]) Select(msg tea.Msg) (*CheckBox[T], tea.Cmd, bool) {
 			// you can handle it here, or remove this case if it's unnecessary
 			return s, nil, true
 		}
-	case tea.WindowSizeMsg:
-		s.ContentWidth = msg.Width
 	}
 	return s, nil, false // Default to returning the current state with no command
 }

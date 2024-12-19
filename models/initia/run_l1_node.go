@@ -712,7 +712,7 @@ func (m *ExistingGenesisChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *ExistingGenesisChecker) View() string {
 	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
-	return m.loading.WrapView(state.weave.Render() + "\n" + m.loading.View())
+	return m.WrapView(state.weave.Render() + "\n" + m.loading.View())
 }
 
 type ExistingGenesisReplaceSelect struct {
@@ -1252,7 +1252,7 @@ func (m *ExistingDataChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *ExistingDataChecker) View() string {
 	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
-	return m.loading.WrapView(state.weave.Render() + "\n" + m.loading.View())
+	return m.WrapView(state.weave.Render() + "\n" + m.loading.View())
 }
 
 type ExistingDataReplaceSelect struct {
@@ -1734,16 +1734,11 @@ func setupStateSync(ctx context.Context) tea.Cmd {
 
 type TerminalState struct {
 	weavecontext.BaseModel
-	finalResponse string
 }
 
 func NewTerminalState(ctx context.Context) *TerminalState {
-	state := weavecontext.GetCurrentState[RunL1NodeState](ctx)
-	initiaConfigDir := weavecontext.GetInitiaConfigDirectory(ctx)
-	finalResponse := state.weave.Render() + styles.RenderPrompt(fmt.Sprintf("Initia node setup successfully. Config files are saved at %[1]s/config.toml and %[1]s/app.toml. Feel free to modify them as needed.", initiaConfigDir), []string{}, styles.Completed) + "\n" + styles.RenderPrompt("You can start the node by running `weave initia start`", []string{}, styles.Completed) + "\n"
 	return &TerminalState{
-		weavecontext.BaseModel{Ctx: weavecontext.SetFinalResponse(ctx, finalResponse), CannotBack: true},
-		finalResponse,
+		weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
 	}
 }
 
@@ -1756,5 +1751,7 @@ func (m *TerminalState) Update(_ tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *TerminalState) View() string {
-	return m.finalResponse
+	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
+	initiaConfigDir := weavecontext.GetInitiaConfigDirectory(m.Ctx)
+	return state.weave.Render() + styles.RenderPrompt(fmt.Sprintf("Initia node setup successfully. Config files are saved at %[1]s/config.toml and %[1]s/app.toml. Feel free to modify them as needed.", initiaConfigDir), []string{}, styles.Completed) + "\n" + styles.RenderPrompt("You can start the node by running `weave initia start`", []string{}, styles.Completed) + "\n"
 }

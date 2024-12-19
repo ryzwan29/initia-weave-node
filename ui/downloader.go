@@ -21,7 +21,6 @@ type Downloader struct {
 	done       bool
 	err        error
 	validateFn func(string) error
-	styles.BaseWrapper
 }
 
 func NewDownloader(text, url, dest string, validateFn func(string) error) *Downloader {
@@ -67,9 +66,6 @@ func (m *Downloader) Update(msg tea.Msg) (*Downloader, tea.Cmd) {
 		if msg.String() == "q" || msg.String() == "ctrl+c" {
 			return m, tea.Quit
 		}
-
-	case tea.WindowSizeMsg:
-		m.ContentWidth = msg.Width
 	}
 
 	model, cmd := m.progress.Update(msg)

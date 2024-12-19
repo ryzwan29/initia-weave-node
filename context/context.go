@@ -14,6 +14,7 @@ const (
 	StateKey         Key = "currentState"
 	PageStackKey     Key = "pageStack"
 	TooltipToggleKey Key = "tooltipToggle"
+	WindowWidth      Key = "windowWidth"
 
 	InitiaHomeKey  Key = "initiaHome"
 	MinitiaHomeKey Key = "minitiaHome"
@@ -29,6 +30,7 @@ var (
 		InitiaHomeKey,
 		MinitiaHomeKey,
 		OPInitHomeKey,
+		WindowWidth,
 	}
 )
 
@@ -40,6 +42,7 @@ func NewAppContext[S CloneableState[S]](initialState S) context.Context {
 	ctx = context.WithValue(ctx, StateKey, initialState)
 	ctx = context.WithValue(ctx, PageStackKey, []PageStatePair[S]{}) // Initialize with an empty slice
 	ctx = context.WithValue(ctx, TooltipToggleKey, false)            // Default to hiding more information
+	ctx = context.WithValue(ctx, WindowWidth, 0)
 
 	ctx = context.WithValue(ctx, InitiaHomeKey, "")
 	ctx = context.WithValue(ctx, MinitiaHomeKey, "")
