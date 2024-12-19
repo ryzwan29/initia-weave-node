@@ -45,15 +45,11 @@ func initiaInitCommand() *cobra.Command {
 
 			ctx := weavecontext.NewAppContext(initia.NewRunL1NodeState())
 			ctx = weavecontext.SetInitiaHome(ctx, initiaHome)
-			finalModel, err := tea.NewProgram(initia.NewRunL1NodeNetworkSelect(ctx), tea.WithAltScreen()).Run()
-			if err != nil {
-				return err
-			}
-			if model, ok := finalModel.(*initia.TerminalState); ok {
-				fmt.Println(weavecontext.GetFinalResponse(model.Ctx))
+			if finalModel, err := tea.NewProgram(initia.NewRunL1NodeNetworkSelect(ctx), tea.WithAltScreen()).Run(); err == nil {
+				fmt.Println(finalModel.View())
 				return nil
 			}
-			return nil
+			return err
 		},
 	}
 

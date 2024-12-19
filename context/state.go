@@ -106,16 +106,3 @@ func Undo[S CloneableState[S]](ctx context.Context, msg tea.Msg) (context.Contex
 	}
 	return ctx, nil, nil, false
 }
-
-// SetFinalResponse stores the final responses from the program
-func SetFinalResponse(ctx context.Context, response string) context.Context {
-	return context.WithValue(ctx, FinalResponseKey, response)
-}
-
-// GetFinalResponse retrieves the final responses from the context and panics if not found
-func GetFinalResponse(ctx context.Context) string {
-	if response, ok := ctx.Value(FinalResponseKey).(string); ok {
-		return response
-	}
-	panic("GetFinalResponse: response not found in the context")
-}

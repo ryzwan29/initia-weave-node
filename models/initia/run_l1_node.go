@@ -114,7 +114,7 @@ func (m *RunL1NodeNetworkSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case Local:
 			return NewRunL1NodeVersionSelect(weavecontext.SetCurrentState(m.Ctx, state)), nil
 		}
-		return m, tea.Quit
+		return NewTerminalState(weavecontext.SetCurrentState(m.Ctx, state)), tea.Quit
 	}
 
 	return m, cmd
@@ -308,7 +308,7 @@ func (m *ExistingAppReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			state.replaceExistingApp = true
 			return NewRunL1NodeMonikerInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
 		}
-		return m, tea.Quit
+		return NewTerminalState(weavecontext.SetCurrentState(m.Ctx, state)), tea.Quit
 	}
 	return m, cmd
 }
@@ -877,7 +877,7 @@ func (m *InitializingAppLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.Ctx = weavecontext.SetCurrentState(m.Ctx, state)
 		switch state.network {
 		case string(Local):
-			return m, tea.Quit
+			return NewTerminalState(weavecontext.SetCurrentState(m.Ctx, state)), tea.Quit
 		case string(Mainnet), string(Testnet):
 			return NewSyncMethodSelect(m.Ctx), nil
 		}
@@ -1240,7 +1240,7 @@ func (m *ExistingDataChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.Ctx = weavecontext.SetCurrentState(m.Ctx, state)
 				return NewStateSyncEndpointInput(m.Ctx), nil
 			}
-			return m, tea.Quit
+			return NewTerminalState(weavecontext.SetCurrentState(m.Ctx, state)), tea.Quit
 		} else {
 			state.existingData = true
 			m.Ctx = weavecontext.SetCurrentState(m.Ctx, state)
@@ -1303,8 +1303,7 @@ func (m *ExistingDataReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch *selected {
 		case Skip:
 			state.replaceExistingData = false
-			m.Ctx = weavecontext.SetCurrentState(m.Ctx, state)
-			return NewTerminalState(m.Ctx), tea.Quit
+			return NewTerminalState(weavecontext.SetCurrentState(m.Ctx, state)), tea.Quit
 		case ProceedWithSync:
 			state.replaceExistingData = true
 			m.Ctx = weavecontext.SetCurrentState(m.Ctx, state)
@@ -1316,7 +1315,7 @@ func (m *ExistingDataReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return NewStateSyncEndpointInput(m.Ctx), nil
 			}
 		}
-		return m, tea.Quit
+		return NewTerminalState(weavecontext.SetCurrentState(m.Ctx, state)), tea.Quit
 	}
 
 	return m, cmd
@@ -1369,11 +1368,8 @@ func (m *SnapshotEndpointInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		state.snapshotEndpoint = input.Text
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"snapshot url"}, input.Text))
 		m.Ctx = weavecontext.SetCurrentState(m.Ctx, state)
-		if snapshotDownload, err := NewSnapshotDownloadLoading(m.Ctx); err == nil {
-			return snapshotDownload, snapshotDownload.Init()
-		} else {
-			return snapshotDownload, tea.Quit
-		}
+		snapshotDownload := NewSnapshotDownloadLoading(m.Ctx)
+		return snapshotDownload, snapshotDownload.Init()
 	}
 	m.TextInput = input
 	return m, cmd
@@ -1512,11 +1508,11 @@ type SnapshotDownloadLoading struct {
 	weavecontext.BaseModel
 }
 
-func NewSnapshotDownloadLoading(ctx context.Context) (*SnapshotDownloadLoading, error) {
+func NewSnapshotDownloadLoading(ctx context.Context) *SnapshotDownloadLoading {
 	state := weavecontext.GetCurrentState[RunL1NodeState](ctx)
 	userHome, err := os.UserHomeDir()
 	if err != nil {
-		return nil, fmt.Errorf("[error] Failed to get user home: %v", err)
+		panic(fmt.Errorf("[error] Failed to get user home: %v", err))
 	}
 
 	return &SnapshotDownloadLoading{
@@ -1527,7 +1523,7 @@ func NewSnapshotDownloadLoading(ctx context.Context) (*SnapshotDownloadLoading, 
 			common.ValidateTarLz4Header,
 		),
 		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
-	}, nil
+	}
 }
 
 func (m *SnapshotDownloadLoading) Init() tea.Cmd {

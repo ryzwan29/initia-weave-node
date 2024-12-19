@@ -732,8 +732,9 @@ func TestInitializingAppLoading_Update_LocalNetwork(t *testing.T) {
 	nextModel, _ := model.Update(tea.KeyMsg{})
 
 	// Expect the model to quit for Local network
-	assert.Equal(t, model, nextModel)
-
+	if _, ok := nextModel.(*TerminalState); !ok {
+		t.Errorf("Expected model to be of type *TerminalState, but got %T", nextModel)
+	}
 	// Verify a final state message
 	state = weavecontext.GetCurrentState[RunL1NodeState](model.Ctx)
 	assert.Contains(t, state.weave.Render(), "Initialization successful.\n")
