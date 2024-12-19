@@ -35,6 +35,7 @@ func NewOPInitBotsState() OPInitBotsState {
 		weave:                types.NewWeaveState(),
 		MinitiaConfig:        nil,
 		botConfig:            make(map[string]string),
+		AddMinitiaConfig:     false,
 	}
 }
 
@@ -58,6 +59,7 @@ func (state OPInitBotsState) Clone() OPInitBotsState {
 		botConfig:            make(map[string]string),
 		dbPath:               state.dbPath,
 		isDeleteDB:           state.isDeleteDB,
+		AddMinitiaConfig:     state.AddMinitiaConfig,
 	}
 
 	if state.MinitiaConfig != nil {
