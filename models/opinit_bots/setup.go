@@ -137,6 +137,7 @@ func (m *ProcessingMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					assignBotInfo(&state.BotInfos[idx], state.MinitiaConfig)
 				}
 			}
+			state.AddMinitiaConfig = true
 			return m.nextModelFunc(weavecontext.SetCurrentState(m.Ctx, state)), nil
 
 		case NoAddMinitiaKeyOption:
@@ -160,7 +161,7 @@ func NextUpdateOpinitBotKey(ctx context.Context) (tea.Model, tea.Cmd) {
 			return NewRecoverKeySelector(ctx, idx), nil
 		}
 	}
-	if state.isSetupMissingKey {
+	if state.InitExecutorBot || state.InitChallengerBot {
 		model := NewSetupOPInitBotsMissingKey(ctx)
 		return model, model.Init()
 	}

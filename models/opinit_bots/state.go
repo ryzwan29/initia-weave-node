@@ -24,7 +24,7 @@ type OPInitBotsState struct {
 	daIsCelestia         bool
 	dbPath               string
 	isDeleteDB           bool
-	isSetupMissingKey    bool
+	AddMinitiaConfig     bool
 }
 
 // NewOPInitBotsState initializes OPInitBotsState with default values
@@ -35,7 +35,6 @@ func NewOPInitBotsState() OPInitBotsState {
 		weave:                types.NewWeaveState(),
 		MinitiaConfig:        nil,
 		botConfig:            make(map[string]string),
-		isSetupMissingKey:    false,
 	}
 }
 
@@ -59,7 +58,6 @@ func (state OPInitBotsState) Clone() OPInitBotsState {
 		botConfig:            make(map[string]string),
 		dbPath:               state.dbPath,
 		isDeleteDB:           state.isDeleteDB,
-		isSetupMissingKey:    state.isSetupMissingKey,
 	}
 
 	if state.MinitiaConfig != nil {
