@@ -97,6 +97,19 @@ var BotInfos = []BotInfo{
 	},
 }
 
+func (b BotInfo) IsNewKey() bool {
+	return b.Mnemonic != "" || b.IsGenerateKey
+}
+
+func GetBotInfo(botInfos []BotInfo, name BotName) BotInfo {
+	for _, botInfo := range botInfos {
+		if botInfo.BotName == name {
+			return botInfo
+		}
+	}
+	return BotInfo{}
+}
+
 // CheckIfKeysExist checks the output of `initiad keys list` and sets IsNotExist for missing keys
 func CheckIfKeysExist(botInfos []BotInfo) []BotInfo {
 	userHome, err := os.UserHomeDir()
