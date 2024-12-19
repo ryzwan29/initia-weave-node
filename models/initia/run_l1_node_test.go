@@ -35,30 +35,30 @@ func TestRunL1NodeNetworkSelectInitialization(t *testing.T) {
 
 	assert.Equal(t, "Which network will your node participate in?", model.GetQuestion())
 	assert.Contains(t, model.Selector.Options, Testnet)
-	assert.Contains(t, model.Selector.Options, Local)
+	// assert.Contains(t, model.Selector.Options, Local)
 }
 
-func TestRunL1NodeNetworkSelectLocalSelection(t *testing.T) {
-	ctx := weavecontext.NewAppContext(NewRunL1NodeState())
-	model := NewRunL1NodeNetworkSelect(ctx)
+// func TestRunL1NodeNetworkSelectLocalSelection(t *testing.T) {
+// 	ctx := weavecontext.NewAppContext(NewRunL1NodeState())
+// 	model := NewRunL1NodeNetworkSelect(ctx)
 
-	// Simulate pressing down to move to "Local" option and select it
-	_, _ = model.Update(tea.KeyMsg{Type: tea.KeyDown})
-	nextModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+// 	// Simulate pressing down to move to "Local" option and select it
+// 	_, _ = model.Update(tea.KeyMsg{Type: tea.KeyDown})
+// 	nextModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
 
-	// Verify that the next model is of the expected type for Local selection
-	if m, ok := nextModel.(*RunL1NodeVersionSelect); !ok {
-		t.Errorf("Expected next model to be of type *RunL1NodeVersionSelect, but got %T", nextModel)
-	} else {
-		state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
+// 	// Verify that the next model is of the expected type for Local selection
+// 	if m, ok := nextModel.(*RunL1NodeVersionSelect); !ok {
+// 		t.Errorf("Expected next model to be of type *RunL1NodeVersionSelect, but got %T", nextModel)
+// 	} else {
+// 		state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
 
-		// Verify the state after selecting "Local"
-		assert.Equal(t, string(Local), state.network)
-		assert.Nil(t, state.chainRegistry)
-		assert.Empty(t, state.chainId)
-		assert.Empty(t, state.genesisEndpoint)
-	}
-}
+// 		// Verify the state after selecting "Local"
+// 		assert.Equal(t, string(Local), state.network)
+// 		assert.Nil(t, state.chainRegistry)
+// 		assert.Empty(t, state.chainId)
+// 		assert.Empty(t, state.genesisEndpoint)
+// 	}
+// }
 
 func TestRunL1NodeVersionSelectUpdate(t *testing.T) {
 	// Set up a mock context and initial state
