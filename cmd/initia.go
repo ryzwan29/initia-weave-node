@@ -9,9 +9,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/initia-labs/weave/common"
-	"github.com/initia-labs/weave/config"
 	weavecontext "github.com/initia-labs/weave/context"
-	"github.com/initia-labs/weave/models"
 	"github.com/initia-labs/weave/models/initia"
 	"github.com/initia-labs/weave/service"
 )
