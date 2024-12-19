@@ -47,25 +47,6 @@ func initiaInitCommand() *cobra.Command {
 
 			ctx := weavecontext.NewAppContext(initia.NewRunL1NodeState())
 			ctx = weavecontext.SetInitiaHome(ctx, initiaHome)
-
-			if config.IsFirstTimeSetup() {
-				// Capture both the final model and the error from Run()
-
-				checkerCtx := weavecontext.NewAppContext(models.NewExistingCheckerState())
-				checkerCtx = weavecontext.SetInitiaHome(checkerCtx, initiaHome)
-
-				finalModel, err := tea.NewProgram(models.NewExistingAppChecker(checkerCtx, initia.NewRunL1NodeNetworkSelect(ctx)), tea.WithAltScreen()).Run()
-				if err != nil {
-					return err
-				}
-
-				// Check if the final model is of type WeaveAppSuccessfullyInitialized
-				if _, ok := finalModel.(*models.WeaveAppSuccessfullyInitialized); !ok {
-					// If the model is not of the expected type, return or handle as needed
-					return nil
-				}
-			}
-
 			finalModel, err := tea.NewProgram(initia.NewRunL1NodeNetworkSelect(ctx), tea.WithAltScreen()).Run()
 			if err != nil {
 				return err

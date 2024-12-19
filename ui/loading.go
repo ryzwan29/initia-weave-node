@@ -3,12 +3,20 @@ package ui
 import (
 	"context"
 	"fmt"
+	"io"
+	"os"
+	"os/exec"
+	"runtime/debug"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
 	"github.com/initia-labs/weave/styles"
+)
+
+const (
+	ShowCursor = "\x1b[?25h"
 )
 
 type TickMsg time.Time
@@ -53,8 +61,29 @@ func NewLoading(text string, executeFn tea.Cmd) Loading {
 	}
 }
 
+func restoreTerminal() {
+	_, err := io.WriteString(os.Stdout, ShowCursor)
+	if err != nil {
+		return
+	}
+	cmd := exec.Command("stty", "sane")
+	cmd.Stdin = os.Stdin
+	_ = cmd.Run()
+}
+
 func (m Loading) Init() tea.Cmd {
-	return tea.Batch(m.tick(), m.executeFn)
+	wrappedExecuteFn := func() tea.Msg {
+		defer func() {
+			if r := recover(); r != nil {
+				restoreTerminal()
+				fmt.Printf("\nCaught panic in loading:\n\n%s\n\nRestoring terminal...\n\n", r)
+				debug.PrintStack()
+				os.Exit(1)
+			}
+		}()
+		return m.executeFn()
+	}
+	return tea.Batch(m.tick(), wrappedExecuteFn)
 }
 
 func (m Loading) Update(msg tea.Msg) (Loading, tea.Cmd) {

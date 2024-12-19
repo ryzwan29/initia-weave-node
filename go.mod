@@ -3,6 +3,7 @@ module github.com/initia-labs/weave
 go 1.22.6
 
 require (
+	github.com/BurntSushi/toml v1.4.0
 	github.com/PuerkitoBio/goquery v1.9.3
 	github.com/btcsuite/btcd/btcec/v2 v2.3.4
 	github.com/btcsuite/btcutil v1.0.2
