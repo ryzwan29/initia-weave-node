@@ -277,8 +277,9 @@ func (m *OPInitBotInitSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *OPInitBotInitSelector) View() string {
+	state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
 	m.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return styles.RenderPrompt(m.GetQuestion(), []string{"bot"}, styles.Question) + m.Selector.View()
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"bot"}, styles.Question) + m.Selector.View()
 }
 
 type DeleteDBOption string
