@@ -248,9 +248,11 @@ func (m *OPInitBotInitSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			keyNames[BatchSubmitterKeyName] = true
 			keyNames[OracleBridgeExecutorKeyName] = true
 
-			state.BotInfos = CheckIfKeysExist(BotInfos)
+			state.BotInfos = CheckIfKeysExist(state.BotInfos)
 			for idx, botInfo := range state.BotInfos {
-				if keyNames[botInfo.KeyName] && botInfo.IsNotExist {
+				if botInfo.KeyName == OracleBridgeExecutorKeyName && botInfo.IsNotExist {
+					state.BotInfos[idx].IsSetup = true
+				} else if keyNames[botInfo.KeyName] && botInfo.IsNotExist && !state.AddMinitiaConfig {
 					state.BotInfos[idx].IsSetup = true
 				} else {
 					state.BotInfos[idx].IsSetup = false
@@ -262,9 +264,9 @@ func (m *OPInitBotInitSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			keyNames := make(map[string]bool)
 			keyNames[ChallengerKeyName] = true
 
-			state.BotInfos = CheckIfKeysExist(BotInfos)
+			state.BotInfos = CheckIfKeysExist(state.BotInfos)
 			for idx, botInfo := range state.BotInfos {
-				if keyNames[botInfo.KeyName] && botInfo.IsNotExist {
+				if keyNames[botInfo.KeyName] && botInfo.IsNotExist && !state.AddMinitiaConfig {
 					state.BotInfos[idx].IsSetup = true
 				} else {
 					state.BotInfos[idx].IsSetup = false
