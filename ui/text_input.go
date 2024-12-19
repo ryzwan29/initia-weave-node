@@ -20,6 +20,7 @@ type TextInput struct {
 	CannotBack    bool
 	ToggleTooltip bool
 	Tooltip       *Tooltip
+	styles.BaseWrapper
 }
 
 func NewTextInput(cannotBack bool) TextInput {
@@ -118,6 +119,8 @@ func (ti TextInput) Update(msg tea.Msg) (TextInput, tea.Cmd, bool) {
 			ti.Cursor += len(msg.Runes)
 
 		}
+	case tea.WindowSizeMsg:
+		ti.ContentWidth = msg.Width
 	}
 	return ti, nil, false
 }

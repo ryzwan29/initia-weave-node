@@ -54,7 +54,7 @@ func initiaInitCommand() *cobra.Command {
 				checkerCtx := weavecontext.NewAppContext(models.NewExistingCheckerState())
 				checkerCtx = weavecontext.SetInitiaHome(checkerCtx, initiaHome)
 
-				finalModel, err := tea.NewProgram(models.NewExistingAppChecker(checkerCtx, initia.NewRunL1NodeNetworkSelect(ctx))).Run()
+				finalModel, err := tea.NewProgram(models.NewExistingAppChecker(checkerCtx, initia.NewRunL1NodeNetworkSelect(ctx)), tea.WithAltScreen()).Run()
 				if err != nil {
 					return err
 				}
@@ -66,9 +66,13 @@ func initiaInitCommand() *cobra.Command {
 				}
 			}
 
-			_, err = tea.NewProgram(initia.NewRunL1NodeNetworkSelect(ctx)).Run()
+			finalModel, err := tea.NewProgram(initia.NewRunL1NodeNetworkSelect(ctx), tea.WithAltScreen()).Run()
 			if err != nil {
 				return err
+			}
+			if model, ok := finalModel.(*initia.TerminalState); ok {
+				fmt.Println(weavecontext.GetFinalResponse(model.Ctx))
+				return nil
 			}
 			return nil
 		},

@@ -41,6 +41,7 @@ type Loading struct {
 	executeFn  tea.Cmd
 	Err        error
 	EndContext context.Context
+	styles.BaseWrapper
 }
 
 func NewLoading(text string, executeFn tea.Cmd) Loading {
@@ -78,6 +79,9 @@ func (m Loading) Update(msg tea.Msg) (Loading, tea.Cmd) {
 		return m, nil
 	case ErrorLoading:
 		m.Err = msg.Err
+		return m, nil
+	case tea.WindowSizeMsg:
+		m.ContentWidth = msg.Width
 		return m, nil
 	default:
 		return m, nil

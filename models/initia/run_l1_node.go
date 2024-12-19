@@ -122,7 +122,7 @@ func (m *RunL1NodeNetworkSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *RunL1NodeNetworkSelect) View() string {
 	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return styles.RenderPrompt("Which network will your node participate in?", []string{"network"}, styles.Question) + m.Selector.View()
+	return m.WrapView(styles.RenderPrompt("Which network will your node participate in?", []string{"network"}, styles.Question) + m.Selector.View())
 }
 
 type RunL1NodeVersionSelect struct {
@@ -166,9 +166,9 @@ func (m *RunL1NodeVersionSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if selected != nil {
 		state := weavecontext.PushPageAndGetState[RunL1NodeState](m)
 
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"initiad version"}, state.initiadVersion))
 		state.initiadVersion = *selected
 		state.initiadEndpoint = m.versions[*selected]
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"initiad version"}, state.initiadVersion))
 
 		return NewRunL1NodeChainIdInput(weavecontext.SetCurrentState(m.Ctx, state)), cmd
 	}
@@ -179,7 +179,7 @@ func (m *RunL1NodeVersionSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *RunL1NodeVersionSelect) View() string {
 	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
 	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt("Which initiad version would you like to use?", []string{"initiad version"}, styles.Question) + m.Selector.View()
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt("Which initiad version would you like to use?", []string{"initiad version"}, styles.Question) + m.Selector.View())
 }
 
 type RunL1NodeChainIdInput struct {
@@ -232,7 +232,7 @@ func (m *RunL1NodeChainIdInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *RunL1NodeChainIdInput) View() string {
 	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
 	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"chain id"}, styles.Question) + m.TextInput.View()
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"chain id"}, styles.Question) + m.TextInput.View())
 }
 
 func IsExistApp(initiaConfigPath string) bool {
@@ -317,7 +317,7 @@ func (m *ExistingAppReplaceSelect) View() string {
 	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
 	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
 	initiaConfigDir := weavecontext.GetInitiaConfigDirectory(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{filepath.Join(initiaConfigDir, "app.toml"), filepath.Join(initiaConfigDir, "config.toml")}, styles.Question) + m.Selector.View()
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{filepath.Join(initiaConfigDir, "app.toml"), filepath.Join(initiaConfigDir, "config.toml")}, styles.Question) + m.Selector.View())
 }
 
 type RunL1NodeMonikerInput struct {
@@ -376,7 +376,7 @@ func (m *RunL1NodeMonikerInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *RunL1NodeMonikerInput) View() string {
 	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
 	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"moniker"}, styles.Question) + m.TextInput.View()
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"moniker"}, styles.Question) + m.TextInput.View())
 }
 
 type MinGasPriceInput struct {
@@ -436,7 +436,7 @@ func (m *MinGasPriceInput) View() string {
 		initiaConfigToml := filepath.Join(initiaConfigDir, "config.toml")
 		preText += styles.RenderPrompt(fmt.Sprintf("There is no %s or %s available. You will need to enter the required information to proceed.\n", initiaAppToml, initiaConfigToml), []string{initiaAppToml, initiaConfigToml}, styles.Information)
 	}
-	return state.weave.Render() + preText + styles.RenderPrompt(m.GetQuestion(), []string{"min-gas-price"}, styles.Question) + m.TextInput.View()
+	return m.WrapView(state.weave.Render() + preText + styles.RenderPrompt(m.GetQuestion(), []string{"min-gas-price"}, styles.Question) + m.TextInput.View())
 }
 
 type EnableFeaturesCheckbox struct {
@@ -511,7 +511,7 @@ func (m *EnableFeaturesCheckbox) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *EnableFeaturesCheckbox) View() string {
 	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
 	m.CheckBox.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{}, styles.Question) + "\n" + m.CheckBox.View()
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{}, styles.Question) + "\n" + m.CheckBox.View())
 }
 
 type SeedsInput struct {
@@ -577,7 +577,7 @@ func (m *SeedsInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *SeedsInput) View() string {
 	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
 	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"seeds"}, styles.Question) + m.TextInput.View()
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"seeds"}, styles.Question) + m.TextInput.View())
 }
 
 type PersistentPeersInput struct {
@@ -650,7 +650,7 @@ func (m *PersistentPeersInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *PersistentPeersInput) View() string {
 	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
 	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"persistent_peers"}, styles.Question) + m.TextInput.View()
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"persistent_peers"}, styles.Question) + m.TextInput.View())
 }
 
 type ExistingGenesisChecker struct {
@@ -712,7 +712,7 @@ func (m *ExistingGenesisChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *ExistingGenesisChecker) View() string {
 	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
-	return state.weave.Render() + "\n" + m.loading.View()
+	return m.loading.WrapView(state.weave.Render() + "\n" + m.loading.View())
 }
 
 type ExistingGenesisReplaceSelect struct {
@@ -776,11 +776,11 @@ func (m *ExistingGenesisReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) 
 
 func (m *ExistingGenesisReplaceSelect) View() string {
 	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(
 		m.GetQuestion(),
 		[]string{"config/genesis.json"},
 		styles.Question,
-	) + m.Selector.View()
+	) + m.Selector.View())
 }
 
 type GenesisEndpointInput struct {
@@ -842,9 +842,9 @@ func (m *GenesisEndpointInput) View() string {
 		preText += styles.RenderPrompt("There is no config/genesis.json available. You will need to enter the required information to proceed.\n", []string{"config/genesis.json"}, styles.Information)
 	}
 	if m.IsEntered && m.err != nil {
-		return state.weave.Render() + preText + styles.RenderPrompt(m.GetQuestion(), []string{"endpoint"}, styles.Question) + m.TextInput.ViewErr(m.err)
+		return m.WrapView(state.weave.Render() + preText + styles.RenderPrompt(m.GetQuestion(), []string{"endpoint"}, styles.Question) + m.TextInput.ViewErr(m.err))
 	}
-	return state.weave.Render() + preText + styles.RenderPrompt(m.GetQuestion(), []string{"endpoint"}, styles.Question) + m.TextInput.View()
+	return m.WrapView(state.weave.Render() + preText + styles.RenderPrompt(m.GetQuestion(), []string{"endpoint"}, styles.Question) + m.TextInput.View())
 }
 
 type InitializingAppLoading struct {
@@ -888,9 +888,9 @@ func (m *InitializingAppLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *InitializingAppLoading) View() string {
 	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
 	if m.Completing {
-		return state.weave.Render()
+		return m.WrapView(state.weave.Render())
 	}
-	return state.weave.Render() + m.Loading.View()
+	return m.WrapView(state.weave.Render() + m.Loading.View())
 }
 
 func initializeApp(ctx context.Context) tea.Cmd {
@@ -1109,11 +1109,11 @@ func (m *SyncMethodSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *SyncMethodSelect) View() string {
 	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
 	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(
 		m.GetQuestion(),
 		[]string{},
 		styles.Question,
-	) + m.Selector.View()
+	) + m.Selector.View())
 }
 
 type AutoUpgradeOption string
@@ -1182,11 +1182,11 @@ func (m *CosmovisorAutoUpgradeSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd)
 func (m *CosmovisorAutoUpgradeSelector) View() string {
 	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
 	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(
 		m.GetQuestion(),
 		[]string{},
 		styles.Question,
-	) + m.Selector.View()
+	) + m.Selector.View())
 }
 
 type ExistingDataChecker struct {
@@ -1252,7 +1252,7 @@ func (m *ExistingDataChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *ExistingDataChecker) View() string {
 	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
-	return state.weave.Render() + "\n" + m.loading.View()
+	return m.loading.WrapView(state.weave.Render() + "\n" + m.loading.View())
 }
 
 type ExistingDataReplaceSelect struct {
@@ -1324,7 +1324,7 @@ func (m *ExistingDataReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *ExistingDataReplaceSelect) View() string {
 	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{weavecontext.GetInitiaDataDirectory(m.Ctx)}, styles.Question) + m.Selector.View()
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{weavecontext.GetInitiaDataDirectory(m.Ctx)}, styles.Question) + m.Selector.View())
 }
 
 type SnapshotEndpointInput struct {
@@ -1383,9 +1383,9 @@ func (m *SnapshotEndpointInput) View() string {
 	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
 	view := state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"snapshot url"}, styles.Question)
 	if m.err != nil {
-		return view + "\n" + m.TextInput.ViewErr(m.err)
+		return m.WrapView(view + "\n" + m.TextInput.ViewErr(m.err))
 	}
-	return view + m.TextInput.View()
+	return m.WrapView(view + m.TextInput.View())
 }
 
 type StateSyncEndpointInput struct {
@@ -1441,9 +1441,9 @@ func (m *StateSyncEndpointInput) View() string {
 	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
 	view := state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"state sync RPC"}, styles.Question)
 	if m.err != nil {
-		return view + "\n" + m.TextInput.ViewErr(m.err)
+		return m.WrapView(view + "\n" + m.TextInput.ViewErr(m.err))
 	}
-	return view + m.TextInput.View()
+	return m.WrapView(view + m.TextInput.View())
 }
 
 type AdditionalStateSyncPeersInput struct {
@@ -1504,7 +1504,7 @@ func (m *AdditionalStateSyncPeersInput) Update(msg tea.Msg) (tea.Model, tea.Cmd)
 
 func (m *AdditionalStateSyncPeersInput) View() string {
 	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"additional peers"}, styles.Question) + m.TextInput.View()
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"additional peers"}, styles.Question) + m.TextInput.View())
 }
 
 type SnapshotDownloadLoading struct {
@@ -1561,7 +1561,7 @@ func (m *SnapshotDownloadLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *SnapshotDownloadLoading) View() string {
 	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
-	return state.weave.Render() + m.Downloader.View()
+	return m.WrapView(state.weave.Render() + m.Downloader.View())
 }
 
 type SnapshotExtractLoading struct {
@@ -1609,9 +1609,9 @@ func (m *SnapshotExtractLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *SnapshotExtractLoading) View() string {
 	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
 	if m.Completing {
-		return state.weave.Render()
+		return m.WrapView(state.weave.Render())
 	}
-	return state.weave.Render() + m.Loading.View()
+	return m.WrapView(state.weave.Render() + m.Loading.View())
 }
 
 func snapshotExtractor(ctx context.Context) tea.Cmd {
@@ -1686,9 +1686,9 @@ func (m *StateSyncSetupLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *StateSyncSetupLoading) View() string {
 	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
 	if m.Completing {
-		return state.weave.Render()
+		return m.WrapView(state.weave.Render())
 	}
-	return state.weave.Render() + m.Loading.View()
+	return m.WrapView(state.weave.Render() + m.Loading.View())
 }
 
 func setupStateSync(ctx context.Context) tea.Cmd {
@@ -1738,11 +1738,16 @@ func setupStateSync(ctx context.Context) tea.Cmd {
 
 type TerminalState struct {
 	weavecontext.BaseModel
+	finalResponse string
 }
 
 func NewTerminalState(ctx context.Context) *TerminalState {
+	state := weavecontext.GetCurrentState[RunL1NodeState](ctx)
+	initiaConfigDir := weavecontext.GetInitiaConfigDirectory(ctx)
+	finalResponse := state.weave.Render() + styles.RenderPrompt(fmt.Sprintf("Initia node setup successfully. Config files are saved at %[1]s/config.toml and %[1]s/app.toml. Feel free to modify them as needed.", initiaConfigDir), []string{}, styles.Completed) + "\n" + styles.RenderPrompt("You can start the node by running `weave initia start`", []string{}, styles.Completed) + "\n"
 	return &TerminalState{
-		weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
+		weavecontext.BaseModel{Ctx: weavecontext.SetFinalResponse(ctx, finalResponse), CannotBack: true},
+		finalResponse,
 	}
 }
 
@@ -1755,8 +1760,5 @@ func (m *TerminalState) Update(_ tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *TerminalState) View() string {
-	// TODO: revisit congratulations text
-	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
-	initiaConfigDir := weavecontext.GetInitiaConfigDirectory(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(fmt.Sprintf("Initia node setup successfully. Config files are saved at %[1]s/config.toml and %[1]s/app.toml. Feel free to modify them as needed.", initiaConfigDir), []string{}, styles.Completed) + "\n" + styles.RenderPrompt("You can start the node by running `weave initia start`", []string{}, styles.Completed) + "\n"
+	return m.finalResponse
 }

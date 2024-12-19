@@ -15,6 +15,7 @@ type Selector[T any] struct {
 	CannotBack    bool
 	ToggleTooltip bool
 	Tooltips      *[]Tooltip
+	styles.BaseWrapper
 }
 
 func (s *Selector[T]) Select(msg tea.Msg) (*T, tea.Cmd) {
@@ -32,6 +33,8 @@ func (s *Selector[T]) Select(msg tea.Msg) (*T, tea.Cmd) {
 		case "enter":
 			return &s.Options[s.Cursor], nil
 		}
+	case tea.WindowSizeMsg:
+		s.ContentWidth = msg.Width
 	}
 	return nil, nil
 }

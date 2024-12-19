@@ -18,6 +18,8 @@ const (
 	InitiaHomeKey  Key = "initiaHome"
 	MinitiaHomeKey Key = "minitiaHome"
 	OPInitHomeKey  Key = "opInitHomeKey"
+
+	FinalResponseKey Key = "finalResponse"
 )
 
 var (
@@ -29,6 +31,7 @@ var (
 		InitiaHomeKey,
 		MinitiaHomeKey,
 		OPInitHomeKey,
+		FinalResponseKey,
 	}
 )
 
@@ -44,6 +47,8 @@ func NewAppContext[S CloneableState[S]](initialState S) context.Context {
 	ctx = context.WithValue(ctx, InitiaHomeKey, "")
 	ctx = context.WithValue(ctx, MinitiaHomeKey, "")
 	ctx = context.WithValue(ctx, OPInitHomeKey, "")
+
+	ctx = context.WithValue(ctx, FinalResponseKey, "")
 
 	return ctx
 }
