@@ -144,7 +144,9 @@ func minitiaLaunchCommand() *cobra.Command {
 					return err
 				} else {
 					fmt.Println(finalModel.View())
-					return nil
+					if _, ok := finalModel.(*models.WeaveAppSuccessfullyInitialized); !ok {
+						return nil
+					}
 				}
 			}
 
