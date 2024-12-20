@@ -1083,7 +1083,7 @@ func NewFundManuallyL1BalanceInput(ctx context.Context) *FundManuallyL1BalanceIn
 	model := &FundManuallyL1BalanceInput{
 		TextInput: ui.NewTextInput(false),
 		BaseModel: weavecontext.BaseModel{Ctx: ctx},
-		question:  fmt.Sprintf("Specify amount that would be transferred to Relayer account on L1 (%s)", MustGetL1GasDenom(ctx)),
+		question:  fmt.Sprintf("Specify the amount that would be transferred to Relayer account on L1 (%s)", MustGetL1GasDenom(ctx)),
 	}
 	model.WithPlaceholder("Enter the amount (or 0 to skip)")
 	model.WithValidatorFn(common.IsValidInteger)
@@ -1130,7 +1130,7 @@ func NewFundManuallyL2BalanceInput(ctx context.Context) *FundManuallyL2BalanceIn
 	model := &FundManuallyL2BalanceInput{
 		TextInput: ui.NewTextInput(false),
 		BaseModel: weavecontext.BaseModel{Ctx: ctx},
-		question:  fmt.Sprintf("Specify amount that would be transferred to Relayer account on rollup (%s)", MustGetL2GasDenom(ctx)),
+		question:  fmt.Sprintf("Specify the amount that would be transferred to Relayer account on rollup (%s)", MustGetL2GasDenom(ctx)),
 	}
 	model.WithPlaceholder("Enter the amount (or 0 to skip)")
 	model.WithValidatorFn(common.IsValidInteger)

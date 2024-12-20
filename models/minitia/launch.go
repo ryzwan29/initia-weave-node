@@ -444,10 +444,10 @@ func NewChainIdInput(ctx context.Context) *ChainIdInput {
 	model := &ChainIdInput{
 		TextInput:  ui.NewTextInput(true),
 		BaseModel:  weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
-		question:   "Specify your rollup chain ID",
+		question:   "Specify rollup chain ID",
 		highlights: []string{"rollup chain ID"},
 	}
-	model.WithPlaceholder("Enter your chain ID")
+	model.WithPlaceholder("Enter your chain ID ex. local-minitia-1")
 	model.WithValidatorFn(common.ValidateNonEmptyAndLengthString("Chain ID", MaxChainIDLength))
 	model.WithTooltip(&tooltip)
 	return model
@@ -720,8 +720,9 @@ func NewOpBridgeBatchSubmissionTargetSelect(ctx context.Context) *OpBridgeBatchS
 			},
 			Tooltips: &tooltips,
 		},
-		BaseModel: weavecontext.BaseModel{Ctx: ctx},
-		question:  "Where should the rollup blocks and transaction data be submitted?",
+		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
+		question:   "Where should the rollup blocks and transaction data be submitted?",
+		highlights: []string{"rollup"},
 	}
 }
 
@@ -789,7 +790,7 @@ func NewOracleEnableSelect(ctx context.Context) *OracleEnableSelect {
 		},
 		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
 		question:   "Would you like to enable oracle price feed from L1?",
-		highlights: []string{"oracle"},
+		highlights: []string{"oracle price feed", "L1"},
 	}
 }
 
@@ -918,7 +919,7 @@ func NewSystemKeyOperatorMnemonicInput(ctx context.Context) *SystemKeyOperatorMn
 	model := &SystemKeyOperatorMnemonicInput{
 		TextInput:  ui.NewTextInput(false),
 		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
-		question:   "Specify the mnemonic for rollup operator",
+		question:   "Specify the mnemonic for the rollup operator",
 		highlights: []string{"rollup operator"},
 	}
 	model.WithPlaceholder("Enter the mnemonic")
@@ -967,16 +968,12 @@ type SystemKeyBridgeExecutorMnemonicInput struct {
 }
 
 func NewSystemKeyBridgeExecutorMnemonicInput(ctx context.Context) *SystemKeyBridgeExecutorMnemonicInput {
-	tooltip := ui.NewTooltip(
-		"Bridge Executor",
-		"Monitors the L1 and rollup transactions, facilitates token bridging and withdrawals between the Minitia and Initia L1 chain, and also relays oracle price feed to rollup.",
-		"", []string{}, []string{}, []string{},
-	)
+	tooltip := tooltip.SystemKeyBridgeExecutorMnemonicTooltip
 	model := &SystemKeyBridgeExecutorMnemonicInput{
 		TextInput:  ui.NewTextInput(false),
 		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
-		question:   "Please add mnemonic for Bridge Executor",
-		highlights: []string{"Bridge Executor"},
+		question:   "Specify the mnemonic for the bridge executor",
+		highlights: []string{"bridge executor"},
 	}
 	model.WithPlaceholder("Enter the mnemonic")
 	model.WithValidatorFn(common.ValidateMnemonic)
@@ -1023,16 +1020,12 @@ type SystemKeyOutputSubmitterMnemonicInput struct {
 }
 
 func NewSystemKeyOutputSubmitterMnemonicInput(ctx context.Context) *SystemKeyOutputSubmitterMnemonicInput {
-	tooltip := ui.NewTooltip(
-		"Output Submitter",
-		"Submits rollup output roots to L1 for verification and potential challenges. If the submitted output remains unchallenged beyond the output finalization period, it is considered finalized and immutable.",
-		"", []string{}, []string{}, []string{},
-	)
+	tooltip := tooltip.SystemKeyOutputSubmitterMnemonicTooltip
 	model := &SystemKeyOutputSubmitterMnemonicInput{
 		TextInput:  ui.NewTextInput(false),
 		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
-		question:   "Please add mnemonic for Output Submitter",
-		highlights: []string{"Output Submitter"},
+		question:   "Specify the mnemonic for the output submitter",
+		highlights: []string{"output submitter"},
 	}
 	model.WithPlaceholder("Enter the mnemonic")
 	model.WithValidatorFn(common.ValidateMnemonic)
@@ -1079,16 +1072,12 @@ type SystemKeyBatchSubmitterMnemonicInput struct {
 }
 
 func NewSystemKeyBatchSubmitterMnemonicInput(ctx context.Context) *SystemKeyBatchSubmitterMnemonicInput {
-	tooltip := ui.NewTooltip(
-		"Batch Submitter",
-		"Submits block and transactions data in batches into a chain to ensure Data Availability. Currently, submissions can be made to Initia L1 or Celestia.",
-		"", []string{}, []string{}, []string{},
-	)
+	tooltip := tooltip.SystemKeyBatchSubmitterMnemonicTooltip
 	model := &SystemKeyBatchSubmitterMnemonicInput{
 		TextInput:  ui.NewTextInput(false),
 		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
-		question:   "Please add mnemonic for Batch Submitter",
-		highlights: []string{"Batch Submitter"},
+		question:   "Specify the mnemonic for the batch submitter",
+		highlights: []string{"batch submitter"},
 	}
 	model.WithPlaceholder("Enter the mnemonic")
 	model.WithValidatorFn(common.ValidateMnemonic)
@@ -1135,16 +1124,12 @@ type SystemKeyChallengerMnemonicInput struct {
 }
 
 func NewSystemKeyChallengerMnemonicInput(ctx context.Context) *SystemKeyChallengerMnemonicInput {
-	tooltip := ui.NewTooltip(
-		"Challenger",
-		"Prevents misconduct and invalid rollup state submissions by monitoring for output proposals and challenging any that are invalid.",
-		"", []string{}, []string{}, []string{},
-	)
+	tooltip := tooltip.SystemKeyChallengerMnemonicTooltip
 	model := &SystemKeyChallengerMnemonicInput{
 		TextInput:  ui.NewTextInput(false),
 		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
-		question:   "Please add mnemonic for Challenger",
-		highlights: []string{"Challenger"},
+		question:   "Specify the mnemonic for the challenger",
+		highlights: []string{"challenger"},
 	}
 	model.WithPlaceholder("Enter the mnemonic")
 	model.WithValidatorFn(common.ValidateMnemonic)
@@ -1191,7 +1176,7 @@ type ExistingGasStationChecker struct {
 
 func NewExistingGasStationChecker(ctx context.Context) *ExistingGasStationChecker {
 	return &ExistingGasStationChecker{
-		loading:   ui.NewLoading("Checking for Gas Station account...", waitExistingGasStationChecker(ctx)),
+		loading:   ui.NewLoading("Checking for gas station account...", waitExistingGasStationChecker(ctx)),
 		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
 	}
 }
@@ -1252,15 +1237,12 @@ type GasStationMnemonicInput struct {
 }
 
 func NewGasStationMnemonicInput(ctx context.Context) *GasStationMnemonicInput {
-	tooltip := ui.NewTooltip(
-		"Gas station account",
-		"Gas Station account is the account from which Weave will use to fund necessary system accounts, enabling easier and more seamless experience while setting up things using Weave.",
-		"** Weave will NOT automatically send transactions without asking for your confirmation. **", []string{}, []string{}, []string{})
+	tooltip := tooltip.GasStationMnemonicTooltip
 	model := &GasStationMnemonicInput{
 		TextInput:  ui.NewTextInput(true),
 		BaseModel:  weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
-		question:   fmt.Sprintf("Please set up a Gas Station account %s\n%s", styles.Text("(The account that will hold the funds required by the OPinit-bots or relayer to send transactions)", styles.Gray), styles.BoldText("Weave will not send any transactions without your confirmation.", styles.Yellow)),
-		highlights: []string{"Gas Station account"},
+		question:   fmt.Sprintf("Please set up a gas station account %s\n%s", styles.Text("(The account that will hold the funds required by the OPinit-bots or relayer to send transactions)", styles.Gray), styles.BoldText("Weave will not send any transactions without your confirmation.", styles.Yellow)),
+		highlights: []string{"gas station account"},
 	}
 	model.WithPlaceholder("Enter the mnemonic")
 	model.WithValidatorFn(common.ValidateMnemonic)
@@ -1319,11 +1301,7 @@ const ManuallyFill AccountsFundingPresetOption = "○ Fill in an amount for each
 func NewAccountsFundingPresetSelect(ctx context.Context) *AccountsFundingPresetSelect {
 	state := weavecontext.GetCurrentState[LaunchState](ctx)
 	tooltips := ui.NewTooltipSlice(
-		ui.NewTooltip(
-			"OPInit Bots",
-			"Bridge Executor: Monitors the L1 and rollup transactions, facilitates token bridging and withdrawals between the rollup and Initia L1 chain, and also relays oracle price feed to rollup.\n\nOutput Submitter: Submits rollup output roots to L1 for verification and potential challenges. If the submitted output remains unchallenged beyond the output finalization period, it is considered finalized and immutable.\n\nBatch Submitter: Submits block and transactions data in batches into a chain to ensure Data Availability. Currently, submissions can be made to Initia L1 or Celestia.\n\nChallenger: Prevents misconduct and invalid rollup state submissions by monitoring for output proposals and challenging any that are invalid.\n\nRollup Operator: Also known as Sequencer, is responsible for creating blocks, ordering and including transactions within each block, and maintaining the operation of the rollup network.",
-			"", []string{"Bridge Executor:", "Output Submitter:", "Batch Submitter:", "Challenger:", "Rollup Operator:"}, []string{}, []string{},
-		), 2,
+		tooltip.SystemAccountsFundingPresetTooltip, 2,
 	)
 
 	gasStationMnemonic := config.GetGasStationMnemonic()
@@ -1378,7 +1356,7 @@ func NewAccountsFundingPresetSelect(ctx context.Context) *AccountsFundingPresetS
 			Tooltips:   &tooltips,
 		},
 		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
-		question:  "Please select the filling amount option",
+		question:  "Select system accounts funding option",
 	}
 }
 
@@ -1442,10 +1420,10 @@ func NewSystemKeyL1BridgeExecutorBalanceInput(ctx context.Context) *SystemKeyL1B
 	model := &SystemKeyL1BridgeExecutorBalanceInput{
 		TextInput:  ui.NewTextInput(true),
 		BaseModel:  weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
-		question:   "Please specify initial balance for Bridge Executor on L1 (uinit)",
-		highlights: []string{"Bridge Executor", "L1"},
+		question:   "Specify the amount to fund the bridge executor on L1 (uinit)",
+		highlights: []string{"bridge executor", "L1"},
 	}
-	model.WithPlaceholder("Enter the amount")
+	model.WithPlaceholder("Enter a positive amount")
 	model.WithValidatorFn(common.IsValidInteger)
 	model.Ctx = weavecontext.SetCurrentState(model.Ctx, state)
 	return model
@@ -1495,10 +1473,10 @@ func NewSystemKeyL1OutputSubmitterBalanceInput(ctx context.Context) *SystemKeyL1
 	model := &SystemKeyL1OutputSubmitterBalanceInput{
 		TextInput:  ui.NewTextInput(false),
 		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
-		question:   "Please specify initial balance for Output Submitter on L1 (uinit)",
-		highlights: []string{"Output Submitter", "L1"},
+		question:   "Specify the amount to fund the output submitter on L1 (uinit)",
+		highlights: []string{"output submitter", "L1"},
 	}
-	model.WithPlaceholder("Enter the balance")
+	model.WithPlaceholder("Enter a positive amount")
 	model.WithValidatorFn(common.IsValidInteger)
 	return model
 }
@@ -1555,10 +1533,10 @@ func NewSystemKeyL1BatchSubmitterBalanceInput(ctx context.Context) *SystemKeyL1B
 	model := &SystemKeyL1BatchSubmitterBalanceInput{
 		TextInput:  ui.NewTextInput(false),
 		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
-		question:   fmt.Sprintf("Please specify initial balance for Batch Submitter on %s (%s)", network, denom),
-		highlights: []string{"Batch Submitter", "L1", "Celestia Testnet"},
+		question:   fmt.Sprintf("Specify the amount to fund the batch submitter on %s (%s)", network, denom),
+		highlights: []string{"batch submitter", "L1", "Celestia Testnet"},
 	}
-	model.WithPlaceholder("Enter the balance")
+	model.WithPlaceholder("Enter a positive amount")
 	model.WithValidatorFn(common.IsValidInteger)
 	return model
 }
@@ -1605,10 +1583,10 @@ func NewSystemKeyL1ChallengerBalanceInput(ctx context.Context) *SystemKeyL1Chall
 	model := &SystemKeyL1ChallengerBalanceInput{
 		TextInput:  ui.NewTextInput(false),
 		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
-		question:   "Please specify initial balance for Challenger on L1 (uinit)",
-		highlights: []string{"Challenger", "L1"},
+		question:   "Specify the amount to fund the challenger on L1 (uinit)",
+		highlights: []string{"challenger", "L1"},
 	}
-	model.WithPlaceholder("Enter the balance")
+	model.WithPlaceholder("Enter a positive amount")
 	model.WithValidatorFn(common.IsValidInteger)
 	return model
 }
@@ -1658,10 +1636,10 @@ func NewSystemKeyL2OperatorBalanceInput(ctx context.Context) *SystemKeyL2Operato
 	model := &SystemKeyL2OperatorBalanceInput{
 		TextInput:  ui.NewTextInput(true),
 		BaseModel:  weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
-		question:   fmt.Sprintf("Please specify initial balance for Operator on rollup (%s)", state.gasDenom),
-		highlights: []string{"Operator", "rollup"},
+		question:   fmt.Sprintf("Specify the genesis balance for the operator on rollup (%s)", state.gasDenom),
+		highlights: []string{"operator", "rollup"},
 	}
-	model.WithPlaceholder("Enter the balance")
+	model.WithPlaceholder("Enter a positive amount")
 	model.WithValidatorFn(common.IsValidInteger)
 	model.Ctx = weavecontext.SetCurrentState(model.Ctx, state)
 	return model
@@ -1712,10 +1690,10 @@ func NewSystemKeyL2BridgeExecutorBalanceInput(ctx context.Context) *SystemKeyL2B
 	model := &SystemKeyL2BridgeExecutorBalanceInput{
 		TextInput:  ui.NewTextInput(false),
 		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
-		question:   fmt.Sprintf("Please specify initial balance for Bridge Executor on rollup (%s)", state.gasDenom),
-		highlights: []string{"Bridge Executor", "rollup"},
+		question:   fmt.Sprintf("Specify the genesis balance for the bridge executor on rollup (%s)", state.gasDenom),
+		highlights: []string{"bridge executor", "rollup"},
 	}
-	model.WithPlaceholder("Enter the balance")
+	model.WithPlaceholder("Enter a positive amount")
 	model.WithValidatorFn(common.IsValidInteger)
 	return model
 }
@@ -1770,11 +1748,7 @@ func NewAddGasStationToGenesisSelect(ctx context.Context) *AddGasStationToGenesi
 	state := weavecontext.GetCurrentState[LaunchState](ctx)
 
 	tooltips := ui.NewTooltipSlice(
-		ui.NewTooltip(
-			"Gas Station in rollup genesis",
-			"Adding gas station account as a genesis account grants initial balances to the gas station on the rollup at network launch. This ensures the gas station can fund relayer accounts during the Weave relayer flow, eliminating the need for later manual funding.",
-			"", []string{}, []string{}, []string{},
-		), 2,
+		tooltip.GasStationInRollupGenesisTooltip, 2,
 	)
 
 	return &AddGasStationToGenesisSelect{
@@ -1836,16 +1810,13 @@ func (m *AddGasStationToGenesisSelect) View() string {
 type GenesisGasStationBalanceInput struct {
 	ui.TextInput
 	weavecontext.BaseModel
-	question string
-	address  string
+	question   string
+	highlights []string
+	address    string
 }
 
 func NewGenesisGasStationBalanceInput(ctx context.Context) *GenesisGasStationBalanceInput {
-	tooltip := ui.NewTooltip(
-		"Gas Station Initial Balance on rollup",
-		"A genesis initial balance is the amount of tokens allocated to specific accounts when a blockchain network launches, in this case the gas station account. It allows these accounts to have immediate resources for transactions, testing, or operational roles without needing to acquire tokens afterward.",
-		"", []string{}, []string{}, []string{},
-	)
+	tooltip := tooltip.GasStationBalanceOnRollupGenesisTooltip
 	state := weavecontext.GetCurrentState[LaunchState](ctx)
 	gasStationAddress, err := crypto.MnemonicToBech32Address("init", config.GetGasStationMnemonic())
 	if err != nil {
@@ -1853,12 +1824,13 @@ func NewGenesisGasStationBalanceInput(ctx context.Context) *GenesisGasStationBal
 	}
 
 	model := &GenesisGasStationBalanceInput{
-		TextInput: ui.NewTextInput(false),
-		BaseModel: weavecontext.BaseModel{Ctx: ctx},
-		question:  fmt.Sprintf("Please specify initial balance for the gas station account (%s)", state.gasDenom),
-		address:   gasStationAddress,
+		TextInput:  ui.NewTextInput(false),
+		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
+		question:   fmt.Sprintf("Specify the genesis balance for the gas station account (%s)", state.gasDenom),
+		highlights: []string{"gas station"},
+		address:    gasStationAddress,
 	}
-	model.WithPlaceholder("Enter the desired balance")
+	model.WithPlaceholder("Enter a positive amount")
 	model.WithValidatorFn(common.IsValidInteger)
 	model.WithTooltip(&tooltip)
 	return model
@@ -1921,11 +1893,7 @@ func NewAddGenesisAccountsSelect(recurring bool, ctx context.Context) *AddGenesi
 	}
 
 	tooltips := ui.NewTooltipSlice(
-		ui.NewTooltip(
-			"Genesis Account",
-			"Adding genesis accounts grants initial balances to specific accounts at network launch, enabling early operations without later funding.\n\nWeave has already added rollup operator & bridge executor accounts to genesis accounts for you. No need to add those two again.",
-			"", []string{}, []string{}, []string{},
-		), 2,
+		tooltip.GenesisAccountSelectTooltip, 2,
 	)
 
 	return &AddGenesisAccountsSelect{
@@ -2016,9 +1984,9 @@ func NewGenesisAccountsAddressInput(ctx context.Context) *GenesisAccountsAddress
 	model := &GenesisAccountsAddressInput{
 		TextInput: ui.NewTextInput(false),
 		BaseModel: weavecontext.BaseModel{Ctx: ctx},
-		question:  "Please specify genesis account address",
+		question:  "Specify a genesis account address",
 	}
-	model.WithPlaceholder("Enter the address")
+	model.WithPlaceholder("Enter a valid address")
 	model.WithValidatorFn(common.IsValidAddress)
 	return model
 }
@@ -2060,19 +2028,15 @@ type GenesisAccountsBalanceInput struct {
 }
 
 func NewGenesisAccountsBalanceInput(address string, ctx context.Context) *GenesisAccountsBalanceInput {
-	tooltip := ui.NewTooltip(
-		"Genesis Initial Balance",
-		"A genesis initial balance is the amount of tokens allocated to specific accounts when a blockchain network launches. It allows these accounts to have immediate resources for transactions, testing, or operational roles without needing to acquire tokens afterward.",
-		"", []string{}, []string{}, []string{},
-	)
+	tooltip := tooltip.GenesisBalanceInputTooltip
 	state := weavecontext.GetCurrentState[LaunchState](ctx)
 	model := &GenesisAccountsBalanceInput{
 		TextInput: ui.NewTextInput(false),
 		BaseModel: weavecontext.BaseModel{Ctx: ctx},
 		address:   address,
-		question:  fmt.Sprintf("Please specify initial balance for %s (%s)", address, state.gasDenom),
+		question:  fmt.Sprintf("Specify the genesis balance for %s (%s)", address, state.gasDenom),
 	}
-	model.WithPlaceholder("Enter the desired balance")
+	model.WithPlaceholder("Enter a positive amount")
 	model.WithValidatorFn(common.IsValidInteger)
 	model.WithTooltip(&tooltip)
 	return model
@@ -2450,7 +2414,7 @@ func NewSystemKeysMnemonicDisplayInput(ctx context.Context) *SystemKeysMnemonicD
 	model := &SystemKeysMnemonicDisplayInput{
 		TextInput: ui.NewTextInput(true),
 		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
-		question:  "Please type `continue` to proceed after you have securely stored the mnemonic.",
+		question:  "Type `continue` to proceed after you have securely stored the mnemonic.",
 	}
 	model.WithPlaceholder("Type `continue` to continue, Ctrl+C to quit.")
 	model.WithValidatorFn(common.ValidateExactString("continue"))
