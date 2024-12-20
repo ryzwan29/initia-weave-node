@@ -24,7 +24,7 @@ check_version:
 	fi
 
 # Build settings
-LDFLAGS := -X github.com/initia-labs/weave/cmd.Version=$(WEAVE_VERSION) \
+LDFLAGS := -X github.com/initia-labs/weave/cmd.Version=$(WEAVE_VERSION)
 
 # Build targets
 build: check_version $(BUILDDIR)

@@ -34,6 +34,7 @@ type Field struct {
 }
 
 type SubModel struct {
+	weavecontext.BaseModel
 	ui.TextInput
 	field      Field
 	CannotBack bool
@@ -94,7 +95,12 @@ func (m *SubModel) UpdateWithContext(ctx context.Context, parent weavecontext.Ba
 	return ctx, m, cmd
 }
 
-// View is a common View method for all field models
 func (m *SubModel) View() string {
-	return styles.RenderPrompt(m.field.Question, m.highlights, styles.Question) + m.TextInput.View()
+	return ""
+}
+
+// ViewWithContext is a common View method for all field models
+func (m *SubModel) ViewWithContext(ctx context.Context) string {
+	m.Ctx = ctx
+	return m.WrapView(styles.RenderPrompt(m.field.Question, m.highlights, styles.Question) + m.TextInput.View())
 }

@@ -78,20 +78,20 @@ func RunOPInit(nextModelFunc func(ctx context.Context) tea.Model, homeConfig Hom
 	ctx = weavecontext.SetOPInitHome(ctx, homeConfig.OPInitHome)
 
 	// Start the program
-	finalModel, err := tea.NewProgram(
+	if finalModel, err := tea.NewProgram(
 		opinit_bots.NewEnsureOPInitBotsBinaryLoadingModel(
 			ctx,
 			func(nextCtx context.Context) tea.Model {
 				return opinit_bots.ProcessMinitiaConfig(nextCtx, nextModelFunc)
 			},
-		),
-	).Run()
-
-	if err != nil {
+		), tea.WithAltScreen(),
+	).Run(); err != nil {
 		fmt.Println("Error running program:", err)
+		return finalModel, err
+	} else {
+		fmt.Println(finalModel.View())
+		return finalModel, nil
 	}
-
-	return finalModel, err
 }
 
 func OPInitBotsKeysSetupCommand() *cobra.Command {

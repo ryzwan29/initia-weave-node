@@ -272,7 +272,7 @@ func (m *OPInitBotInitSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *OPInitBotInitSelector) View() string {
 	state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
 	m.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"bot"}, styles.Question) + m.Selector.View()
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"bot"}, styles.Question) + m.Selector.View())
 }
 
 type DeleteDBOption string
@@ -359,7 +359,7 @@ func (m *DeleteDBSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *DeleteDBSelector) View() string {
 	state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{}, styles.Question) + m.Selector.View()
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{}, styles.Question) + m.Selector.View())
 }
 
 type UseCurrentConfigSelector struct {
@@ -424,7 +424,7 @@ func (m *UseCurrentConfigSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *UseCurrentConfigSelector) View() string {
 	state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{m.configPath}, styles.Question) + m.Selector.View()
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{m.configPath}, styles.Question) + m.Selector.View())
 }
 
 type PrefillMinitiaConfigOption string
@@ -524,7 +524,7 @@ func (m *PrefillMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *PrefillMinitiaConfig) View() string {
 	state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{weavecontext.GetMinitiaArtifactsConfigJson(m.Ctx)}, styles.Question) + m.Selector.View()
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{weavecontext.GetMinitiaArtifactsConfigJson(m.Ctx)}, styles.Question) + m.Selector.View())
 }
 
 type L1PrefillOption string
@@ -601,7 +601,7 @@ func (m *L1PrefillSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *L1PrefillSelector) View() string {
 	state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"L1"}, styles.Question) + m.Selector.View()
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"L1"}, styles.Question) + m.Selector.View())
 }
 
 type DALayerNetwork string
@@ -691,7 +691,7 @@ func (m *SetDALayer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *SetDALayer) View() string {
 	state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
 	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"DA Layer"}, styles.Question) + m.Selector.View()
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"DA Layer"}, styles.Question) + m.Selector.View())
 }
 
 type StartingInitBot struct {
@@ -894,6 +894,9 @@ func (m *StartingInitBot) Init() tea.Cmd {
 }
 
 func (m *StartingInitBot) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := weavecontext.HandleCommonCommands[OPInitBotsState](m, msg); handled {
+		return model, cmd
+	}
 	loader, cmd := m.loading.Update(msg)
 	m.loading = loader
 	if m.loading.Completing {
@@ -904,7 +907,7 @@ func (m *StartingInitBot) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *StartingInitBot) View() string {
 	state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
-	return state.weave.Render() + m.loading.View()
+	return m.WrapView(state.weave.Render() + m.loading.View())
 }
 
 type OPinitBotSuccessful struct {
@@ -933,7 +936,7 @@ func (m *OPinitBotSuccessful) View() string {
 		botConfigFileName = "challenger"
 	}
 
-	return state.weave.Render() + styles.RenderPrompt(fmt.Sprintf("OPInit bot setup successfully. Config file is saved at %s. Feel free to modify it as needed.", filepath.Join(weavecontext.GetOPInitHome(m.Ctx), fmt.Sprintf("%s.json", botConfigFileName))), []string{}, styles.Completed) + "\n" + styles.RenderPrompt("You can start the bot by running `weave opinit start "+botConfigFileName+"`", []string{}, styles.Completed) + "\n"
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(fmt.Sprintf("OPInit bot setup successfully. Config file is saved at %s. Feel free to modify it as needed.", filepath.Join(weavecontext.GetOPInitHome(m.Ctx), fmt.Sprintf("%s.json", botConfigFileName))), []string{}, styles.Completed) + "\n" + styles.RenderPrompt("You can start the bot by running `weave opinit start "+botConfigFileName+"`", []string{}, styles.Completed) + "\n")
 }
 
 // SetupOPInitBotsMissingKey handles the loading and setup of OPInit bots
@@ -962,6 +965,9 @@ func handleBotInitSelection(ctx context.Context, state OPInitBotsState) (tea.Mod
 }
 
 func (m *SetupOPInitBotsMissingKey) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := weavecontext.HandleCommonCommands[OPInitBotsState](m, msg); handled {
+		return model, cmd
+	}
 	loader, cmd := m.loading.Update(msg)
 	m.loading = loader
 	if m.loading.Completing {
@@ -996,11 +1002,11 @@ func (m *SetupOPInitBotsMissingKey) View() string {
 			}
 		}
 
-		return state.weave.Render() + "\n" + styles.BoldUnderlineText("Important", styles.Yellow) + "\n" +
+		return m.WrapView(state.weave.Render() + "\n" + styles.BoldUnderlineText("Important", styles.Yellow) + "\n" +
 			styles.Text("Write down these mnemonic phrases and store them in a safe place. \nIt is the only way to recover your system keys.", styles.Yellow) + "\n\n" +
-			mnemonicText + "\nPress enter to go next step\n"
+			mnemonicText + "\nPress enter to go next step\n")
 	}
-	return state.weave.Render() + "\n"
+	return m.WrapView(state.weave.Render() + "\n")
 }
 
 func WaitSetupOPInitBotsMissingKey(ctx context.Context) tea.Cmd {

@@ -68,5 +68,5 @@ func (m *FieldInputModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *FieldInputModel) View() string {
 	state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
 	m.subModels[m.currentIndex].TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + m.subModels[m.currentIndex].View()
+	return m.WrapView(state.weave.Render() + m.subModels[m.currentIndex].ViewWithContext(m.Ctx))
 }

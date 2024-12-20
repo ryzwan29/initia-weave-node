@@ -151,7 +151,7 @@ func (m *ProcessingMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *ProcessingMinitiaConfig) View() string {
 	state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
 	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{weavecontext.GetMinitiaArtifactsConfigJson(m.Ctx)}, styles.Question) + m.Selector.View()
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{weavecontext.GetMinitiaArtifactsConfigJson(m.Ctx)}, styles.Question) + m.Selector.View())
 }
 
 func NextUpdateOpinitBotKey(ctx context.Context) (tea.Model, tea.Cmd) {
@@ -254,7 +254,7 @@ func (m *SetupBotCheckbox) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *SetupBotCheckbox) View() string {
 	state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
 	m.CheckBox.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"bots", "set", "override", weavecontext.GetMinitiaArtifactsConfigJson(m.Ctx)}, styles.Question) + "\n\n" + m.CheckBox.ViewWithBottom("For bots with an existing key, selecting them will override the key.")
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"bots", "set", "override", weavecontext.GetMinitiaArtifactsConfigJson(m.Ctx)}, styles.Question) + "\n\n" + m.CheckBox.ViewWithBottom("For bots with an existing key, selecting them will override the key."))
 }
 
 type RecoverKeySelector struct {
@@ -320,7 +320,7 @@ func (m *RecoverKeySelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *RecoverKeySelector) View() string {
 	state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{string(state.BotInfos[m.idx].BotName)}, styles.Question) + m.Selector.View()
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{string(state.BotInfos[m.idx].BotName)}, styles.Question) + m.Selector.View())
 }
 
 type RecoverFromMnemonic struct {
@@ -383,7 +383,7 @@ func (m *RecoverFromMnemonic) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *RecoverFromMnemonic) View() string {
 	state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{string(state.BotInfos[m.idx].BotName)}, styles.Question) + m.TextInput.View()
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{string(state.BotInfos[m.idx].BotName)}, styles.Question) + m.TextInput.View())
 }
 
 // SetupOPInitBots handles the loading and setup of OPInit bots
@@ -405,6 +405,10 @@ func (m *SetupOPInitBots) Init() tea.Cmd {
 }
 
 func (m *SetupOPInitBots) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := weavecontext.HandleCommonCommands[OPInitBotsState](m, msg); handled {
+		return model, cmd
+	}
+
 	loader, cmd := m.loading.Update(msg)
 	m.loading = loader
 	if m.loading.Completing {
@@ -426,16 +430,16 @@ func (m *SetupOPInitBots) View() string {
 				mnemonicText += renderMnemonic(string(botName), address[1], keyInfo[1])
 			}
 
-			return state.weave.Render() + "\n" + styles.RenderPrompt("Download binary and add keys successfully.", []string{}, styles.Completed) + "\n\n" +
+			return m.WrapView(state.weave.Render() + "\n" + styles.RenderPrompt("Download binary and add keys successfully.", []string{}, styles.Completed) + "\n\n" +
 				styles.BoldUnderlineText("Important", styles.Yellow) + "\n" +
 				styles.Text("Write down these mnemonic phrases and store them in a safe place. \nIt is the only way to recover your system keys.", styles.Yellow) + "\n\n" +
-				mnemonicText
+				mnemonicText)
 		} else {
-			return state.weave.Render() + "\n" + styles.RenderPrompt("Download binary and add keys successfully.", []string{}, styles.Completed)
+			return m.WrapView(state.weave.Render() + "\n" + styles.RenderPrompt("Download binary and add keys successfully.", []string{}, styles.Completed))
 		}
 	}
 
-	return state.weave.Render() + m.loading.View()
+	return m.WrapView(state.weave.Render() + m.loading.View())
 }
 
 func renderMnemonic(keyName, address, mnemonic string) string {
@@ -509,7 +513,7 @@ func (m *DALayerSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *DALayerSelector) View() string {
 	state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"DA Layer"}, styles.Question) + m.Selector.View()
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"DA Layer"}, styles.Question) + m.Selector.View())
 }
 
 func getBinaryURL(version, os, arch string) string {
@@ -655,12 +659,12 @@ func (m *TerminalState) View() string {
 			}
 		}
 
-		return state.weave.Render() + "\n" + styles.RenderPrompt("Setup keys successfully.", []string{}, styles.Completed) + "\n\n" +
+		return m.WrapView(state.weave.Render() + "\n" + styles.RenderPrompt("Setup keys successfully.", []string{}, styles.Completed) + "\n\n" +
 			styles.BoldUnderlineText("Important", styles.Yellow) + "\n" +
 			styles.Text("Write down these mnemonic phrases and store them in a safe place. \nIt is the only way to recover your system keys.", styles.Yellow) + "\n\n" +
-			mnemonicText
+			mnemonicText)
 	}
-	return state.weave.Render() + "\n"
+	return m.WrapView(state.weave.Render() + "\n")
 }
 
 type EnsureOPInitBotsBinaryLoadingModel struct {
@@ -682,6 +686,10 @@ func (m *EnsureOPInitBotsBinaryLoadingModel) Init() tea.Cmd {
 }
 
 func (m *EnsureOPInitBotsBinaryLoadingModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := weavecontext.HandleCommonCommands[OPInitBotsState](m, msg); handled {
+		return model, cmd
+	}
+
 	loader, cmd := m.loading.Update(msg)
 	m.loading = loader
 	if m.loading.Completing {
@@ -692,5 +700,5 @@ func (m *EnsureOPInitBotsBinaryLoadingModel) Update(msg tea.Msg) (tea.Model, tea
 
 func (m *EnsureOPInitBotsBinaryLoadingModel) View() string {
 	state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
-	return state.weave.Render() + m.loading.View()
+	return m.WrapView(state.weave.Render() + m.loading.View())
 }
