@@ -189,11 +189,11 @@ func NewSetupBotCheckbox(ctx context.Context) tea.Model {
 
 	question := "Which bots would you like to set/override?"
 	tooltips := []ui.Tooltip{
-		ui.NewTooltip("Bridge Executor", "Monitors the L1 and L2 transactions, facilitates token bridging and withdrawals between the minitia and Initia L1 chain, and also relays oracle price feed to L2.", "", []string{}, []string{}, []string{}),
-		ui.NewTooltip("Output Submitter", "Submits L2 output roots to L1 for verification and potential challenges. If the submitted output remains unchallenged beyond the output finalization period, it is considered finalized and immutable.", "", []string{}, []string{}, []string{}),
+		ui.NewTooltip("Bridge Executor", "Monitors the L1 and rollup transactions, facilitates token bridging and withdrawals between the minitia and Initia L1 chain, and also relays oracle price feed to rollup.", "", []string{}, []string{}, []string{}),
+		ui.NewTooltip("Output Submitter", "Submits rollup output roots to L1 for verification and potential challenges. If the submitted output remains unchallenged beyond the output finalization period, it is considered finalized and immutable.", "", []string{}, []string{}, []string{}),
 		ui.NewTooltip("Batch Submitter", "Submits block and transactions data in batches into a chain to ensure Data Availability. Currently, submissions can be made to Initia L1 or Celestia.", "", []string{}, []string{}, []string{}),
 		ui.NewTooltip("Challenger", "Prevents misconduct and invalid minitia state submissions by monitoring for output proposals and challenging any that are invalid.", "", []string{}, []string{}, []string{}),
-		ui.NewTooltip("Oracle Bridge Executor", "Relays oracle transaction from l1 to l2. If L2 is using oracle, you need to set this field.", "", []string{}, []string{}, []string{}),
+		ui.NewTooltip("Oracle Bridge Executor", "Relays oracle transaction from L1 to rollup. If rollup is using oracle, you need to set this field.", "", []string{}, []string{}, []string{}),
 	}
 
 	checkBox := ui.NewCheckBox(checkBoxOptions)

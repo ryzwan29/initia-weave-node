@@ -20,6 +20,7 @@ import (
 	"github.com/initia-labs/weave/registry"
 	"github.com/initia-labs/weave/service"
 	"github.com/initia-labs/weave/styles"
+	"github.com/initia-labs/weave/tooltip"
 	"github.com/initia-labs/weave/ui"
 )
 
@@ -33,7 +34,8 @@ func GetNextModelByExistingApp(ctx context.Context, existingApp bool) tea.Model 
 type RunL1NodeNetworkSelect struct {
 	weavecontext.BaseModel
 	ui.Selector[L1NodeNetworkOption]
-	question string
+	question   string
+	highlights []string
 }
 
 type L1NodeNetworkOption string
@@ -61,11 +63,7 @@ func NewRunL1NodeNetworkSelect(ctx context.Context) *RunL1NodeNetworkSelect {
 	//mainnetRegistry := registry.MustGetChainRegistry(registry.InitiaL1Mainnet)
 	Testnet = L1NodeNetworkOption(fmt.Sprintf("Testnet (%s)", testnetRegistry.GetChainId()))
 	//Mainnet = L1NodeNetworkOption(fmt.Sprintf("Mainnet (%s)", mainnetRegistry.GetChainId()))
-	tooltips := ui.NewTooltipSlice(ui.NewTooltip(
-		"Network to participate",
-		"Available options are Mainnet, Testnet, and local which means no network participation, no state syncing needed, but fully customizable (often used for development and testing purposes)",
-		"", []string{}, []string{}, []string{},
-	), 3)
+	tooltips := ui.NewTooltipSlice(tooltip.L1NetworkSelectTooltip, 2)
 
 	return &RunL1NodeNetworkSelect{
 		Selector: ui.Selector[L1NodeNetworkOption]{
@@ -77,8 +75,9 @@ func NewRunL1NodeNetworkSelect(ctx context.Context) *RunL1NodeNetworkSelect {
 			CannotBack: true,
 			Tooltips:   &tooltips,
 		},
-		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
-		question:  "Which network will your node participate in?",
+		BaseModel:  weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
+		question:   "Which network will your node participate in?",
+		highlights: []string{"network"},
 	}
 }
 
@@ -100,7 +99,7 @@ func (m *RunL1NodeNetworkSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		selectedString := string(*selected)
 		state.network = selectedString
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"network"}, selectedString))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), m.highlights, selectedString))
 		switch *selected {
 		case Mainnet, Testnet:
 			chainType := selected.ToChainType()
@@ -122,31 +121,29 @@ func (m *RunL1NodeNetworkSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *RunL1NodeNetworkSelect) View() string {
 	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return styles.RenderPrompt("Which network will your node participate in?", []string{"network"}, styles.Question) + m.Selector.View()
+	return styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.Selector.View()
 }
 
 type RunL1NodeVersionSelect struct {
 	ui.Selector[string]
 	weavecontext.BaseModel
-	versions cosmosutils.BinaryVersionWithDownloadURL
-	question string
+	versions   cosmosutils.BinaryVersionWithDownloadURL
+	question   string
+	highlights []string
 }
 
 func NewRunL1NodeVersionSelect(ctx context.Context) *RunL1NodeVersionSelect {
 	versions := cosmosutils.ListBinaryReleases("https://api.github.com/repos/initia-labs/initia/releases")
-	tooltips := ui.NewTooltipSlice(ui.NewTooltip(
-		"initiad version",
-		"Initiad version refers to the version of the Initia Daemon, which is software used to run an Initia Layer 1 node.",
-		"", []string{}, []string{}, []string{},
-	), len(versions))
+	tooltips := ui.NewTooltipSlice(tooltip.L1InitiadVersionTooltip, len(versions))
 	return &RunL1NodeVersionSelect{
 		Selector: ui.Selector[string]{
 			Options:  cosmosutils.SortVersions(versions),
 			Tooltips: &tooltips,
 		},
-		BaseModel: weavecontext.BaseModel{Ctx: ctx},
-		versions:  versions,
-		question:  "Which initiad version would you like to use?",
+		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
+		versions:   versions,
+		question:   "Which initiad version would you like to use?",
+		highlights: []string{"initiad version"},
 	}
 }
 
@@ -166,7 +163,7 @@ func (m *RunL1NodeVersionSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if selected != nil {
 		state := weavecontext.PushPageAndGetState[RunL1NodeState](m)
 
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"initiad version"}, state.initiadVersion))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), m.highlights, state.initiadVersion))
 		state.initiadVersion = *selected
 		state.initiadEndpoint = m.versions[*selected]
 
@@ -179,26 +176,25 @@ func (m *RunL1NodeVersionSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *RunL1NodeVersionSelect) View() string {
 	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
 	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt("Which initiad version would you like to use?", []string{"initiad version"}, styles.Question) + m.Selector.View()
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.Selector.View()
 }
 
 type RunL1NodeChainIdInput struct {
 	ui.TextInput
 	weavecontext.BaseModel
-	question string
+	question   string
+	highlights []string
 }
 
 func NewRunL1NodeChainIdInput(ctx context.Context) *RunL1NodeChainIdInput {
-	tooltip := ui.NewTooltip(
-		"Chain ID",
-		"Chain ID is the identifier of your blockchain network. For local development and testing purposes, you can choose whatever you like.",
-		"", []string{}, []string{}, []string{})
+	tooltip := tooltip.L1ChainIdTooltip
 	model := &RunL1NodeChainIdInput{
-		TextInput: ui.NewTextInput(false),
-		BaseModel: weavecontext.BaseModel{Ctx: ctx},
-		question:  "Please specify the chain id",
+		TextInput:  ui.NewTextInput(false),
+		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
+		question:   "Specify the chain ID",
+		highlights: []string{"chain ID"},
 	}
-	model.WithPlaceholder("Enter your chain ID")
+	model.WithPlaceholder("Enter your chain ID ex. local-initia-1")
 	model.WithTooltip(&tooltip)
 	return model
 }
@@ -220,7 +216,7 @@ func (m *RunL1NodeChainIdInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		state := weavecontext.PushPageAndGetState[RunL1NodeState](m)
 
 		state.chainId = input.Text
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"chain id"}, input.Text))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), m.highlights, input.Text))
 		state.existingApp = IsExistApp(weavecontext.GetInitiaConfigDirectory(m.Ctx))
 
 		return GetNextModelByExistingApp(weavecontext.SetCurrentState(m.Ctx, state), state.existingApp), nil
@@ -232,7 +228,7 @@ func (m *RunL1NodeChainIdInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *RunL1NodeChainIdInput) View() string {
 	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
 	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"chain id"}, styles.Question) + m.TextInput.View()
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View()
 }
 
 func IsExistApp(initiaConfigPath string) bool {
@@ -248,7 +244,8 @@ func IsExistApp(initiaConfigPath string) bool {
 type ExistingAppReplaceSelect struct {
 	ui.Selector[ExistingAppReplaceOption]
 	weavecontext.BaseModel
-	question string
+	question   string
+	highlights []string
 }
 
 type ExistingAppReplaceOption string
@@ -259,11 +256,8 @@ const (
 )
 
 func NewExistingAppReplaceSelect(ctx context.Context) *ExistingAppReplaceSelect {
-	tooltips := ui.NewTooltipSlice(ui.NewTooltip(
-		"app.toml / config.toml",
-		"app.toml contains application-specific configurations for the blockchain node, such as transaction limits, gas price, state pruning strategy.\n\nconfig.toml contains core network and protocol settings for the node, such as peers to connect to, timeouts, consensus configurations, etc.",
-		"", []string{"app.toml", "config.toml"}, []string{}, []string{},
-	), 2)
+	tooltips := ui.NewTooltipSlice(tooltip.L1ExistingAppTooltip, 2)
+	initiaConfigDir := weavecontext.GetInitiaConfigDirectory(ctx)
 	return &ExistingAppReplaceSelect{
 		Selector: ui.Selector[ExistingAppReplaceOption]{
 			Options: []ExistingAppReplaceOption{
@@ -272,8 +266,9 @@ func NewExistingAppReplaceSelect(ctx context.Context) *ExistingAppReplaceSelect 
 			},
 			Tooltips: &tooltips,
 		},
-		BaseModel: weavecontext.BaseModel{Ctx: ctx},
-		question:  fmt.Sprintf("Existing %[1]s/app.toml and %[1]s/config.toml detected. Would you like to use the current files or replace them", weavecontext.GetInitiaConfigDirectory(ctx)),
+		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
+		question:   fmt.Sprintf("Existing %[1]s/app.toml and %[1]s/config.toml detected. Would you like to use the current files or replace them", initiaConfigDir),
+		highlights: []string{filepath.Join(initiaConfigDir, "app.toml"), filepath.Join(initiaConfigDir, "config.toml")},
 	}
 }
 
@@ -292,8 +287,7 @@ func (m *ExistingAppReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	selected, cmd := m.Select(msg)
 	if selected != nil {
 		state := weavecontext.PushPageAndGetState[RunL1NodeState](m)
-		initiaConfigDir := weavecontext.GetInitiaConfigDirectory(m.Ctx)
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{filepath.Join(initiaConfigDir, "app.toml"), filepath.Join(initiaConfigDir, "config.toml")}, string(*selected)))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), m.highlights, string(*selected)))
 		switch *selected {
 		case UseCurrentApp:
 			state.replaceExistingApp = false
@@ -316,27 +310,25 @@ func (m *ExistingAppReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *ExistingAppReplaceSelect) View() string {
 	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
 	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	initiaConfigDir := weavecontext.GetInitiaConfigDirectory(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{filepath.Join(initiaConfigDir, "app.toml"), filepath.Join(initiaConfigDir, "config.toml")}, styles.Question) + m.Selector.View()
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.Selector.View()
 }
 
 type RunL1NodeMonikerInput struct {
 	ui.TextInput
 	weavecontext.BaseModel
-	question string
+	question   string
+	highlights []string
 }
 
 func NewRunL1NodeMonikerInput(ctx context.Context) *RunL1NodeMonikerInput {
-	tooltip := ui.NewTooltip(
-		"Moniker",
-		"A unique name assigned to a node in a blockchain network, used primarily for identification and distinction among nodes.",
-		"", []string{}, []string{}, []string{})
+	tooltip := tooltip.MonikerTooltip
 	model := &RunL1NodeMonikerInput{
-		TextInput: ui.NewTextInput(false),
-		BaseModel: weavecontext.BaseModel{Ctx: ctx},
-		question:  "Please specify the moniker",
+		TextInput:  ui.NewTextInput(false),
+		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
+		question:   "Specify node's moniker",
+		highlights: []string{"moniker"},
 	}
-	model.WithPlaceholder("Enter moniker")
+	model.WithPlaceholder("Enter moniker ex. my-initia-node")
 	model.WithValidatorFn(common.ValidateEmptyString)
 	model.WithTooltip(&tooltip)
 	return model
@@ -358,7 +350,7 @@ func (m *RunL1NodeMonikerInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if done {
 		state := weavecontext.PushPageAndGetState[RunL1NodeState](m)
 
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"moniker"}, input.Text))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), m.highlights, input.Text))
 		state.moniker = input.Text
 
 		switch state.network {
@@ -376,27 +368,25 @@ func (m *RunL1NodeMonikerInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *RunL1NodeMonikerInput) View() string {
 	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
 	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"moniker"}, styles.Question) + m.TextInput.View()
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View()
 }
 
 type MinGasPriceInput struct {
 	ui.TextInput
 	weavecontext.BaseModel
-	question string
+	question   string
+	highlights []string
 }
 
 func NewMinGasPriceInput(ctx context.Context) *MinGasPriceInput {
-	tooltip := ui.NewTooltip(
-		"Minimum Gas Price",
-		"Set the minimum gas price that the node will accept for processing transactions. This helps prevent spam by ensuring only transactions with a minimum fee are processed.",
-		"", []string{}, []string{}, []string{},
-	)
+	tooltip := tooltip.L1MinGasPriceTooltip
 	model := &MinGasPriceInput{
-		TextInput: ui.NewTextInput(false),
-		BaseModel: weavecontext.BaseModel{Ctx: ctx},
-		question:  "Please specify min-gas-price",
+		TextInput:  ui.NewTextInput(false),
+		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
+		question:   "Specify minimum gas price",
+		highlights: []string{"minimum gas price"},
 	}
-	model.WithPlaceholder("Enter a number with its denom")
+	model.WithPlaceholder("Enter a number with its denom ex. 0.15uinit")
 	model.WithValidatorFn(common.ValidateDecCoin)
 	model.WithTooltip(&tooltip)
 	return model
@@ -417,7 +407,7 @@ func (m *MinGasPriceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
 		state := weavecontext.PushPageAndGetState[RunL1NodeState](m)
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"min-gas-price"}, input.Text))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), m.highlights, input.Text))
 		state.minGasPrice = input.Text
 		m.Ctx = weavecontext.SetCurrentState(m.Ctx, state)
 		return NewEnableFeaturesCheckbox(weavecontext.SetCurrentState(m.Ctx, state)), cmd
@@ -429,14 +419,14 @@ func (m *MinGasPriceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *MinGasPriceInput) View() string {
 	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
 	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	preText := "\n"
+	preText := ""
 	if !state.existingApp {
 		initiaConfigDir := weavecontext.GetInitiaConfigDirectory(m.Ctx)
 		initiaAppToml := filepath.Join(initiaConfigDir, "app.toml")
 		initiaConfigToml := filepath.Join(initiaConfigDir, "config.toml")
 		preText += styles.RenderPrompt(fmt.Sprintf("There is no %s or %s available. You will need to enter the required information to proceed.\n", initiaAppToml, initiaConfigToml), []string{initiaAppToml, initiaConfigToml}, styles.Information)
 	}
-	return state.weave.Render() + preText + styles.RenderPrompt(m.GetQuestion(), []string{"min-gas-price"}, styles.Question) + m.TextInput.View()
+	return state.weave.Render() + preText + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View()
 }
 
 type EnableFeaturesCheckbox struct {
@@ -454,22 +444,14 @@ const (
 
 func NewEnableFeaturesCheckbox(ctx context.Context) *EnableFeaturesCheckbox {
 	tooltips := []ui.Tooltip{
-		ui.NewTooltip(
-			"REST",
-			"Enabling this option allows REST API calls to query data and submit transactions to your node. \n\nEnabling this is recommended.",
-			"", []string{}, []string{}, []string{},
-		),
-		ui.NewTooltip(
-			"gRPC",
-			"Enabling this option allows gRPC calls to your node.",
-			"", []string{}, []string{}, []string{},
-		),
+		tooltip.L1EnableRESTTooltip,
+		tooltip.L1EnablegRPCTooltip,
 	}
 
 	model := &EnableFeaturesCheckbox{
 		CheckBox:  *ui.NewCheckBox([]EnableFeaturesOption{REST, GRPC}),
 		BaseModel: weavecontext.BaseModel{Ctx: ctx},
-		question:  "Would you like to enable the following options?",
+		question:  "Would you like to enable the following options? (Press space to select/unselect)",
 	}
 	model.WithTooltip(&tooltips)
 
@@ -517,19 +499,17 @@ func (m *EnableFeaturesCheckbox) View() string {
 type SeedsInput struct {
 	ui.TextInput
 	weavecontext.BaseModel
-	question string
+	question   string
+	highlights []string
 }
 
 func NewSeedsInput(ctx context.Context) *SeedsInput {
-	tooltip := ui.NewTooltip(
-		"Seeds",
-		"Configure known nodes (<node-id>@<IP>:<port>) as initial contact points, mainly used to discover other nodes. If you're don't need your node to participate in the network, seeds may be unnecessary.\n\nThis step is optional but can quickly get your node up to date.",
-		"", []string{}, []string{}, []string{},
-	)
+	tooltip := tooltip.L1SeedsTooltip
 	model := &SeedsInput{
-		TextInput: ui.NewTextInput(false),
-		BaseModel: weavecontext.BaseModel{Ctx: ctx},
-		question:  "Please specify the seeds",
+		TextInput:  ui.NewTextInput(false),
+		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
+		question:   "Specify seeds",
+		highlights: []string{"seeds"},
 	}
 	model.WithValidatorFn(common.IsValidPeerOrSeed)
 	model.WithTooltip(&tooltip)
@@ -567,7 +547,7 @@ func (m *SeedsInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		} else {
 			prevAnswer = input.Text
 		}
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"seeds"}, prevAnswer))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), m.highlights, prevAnswer))
 		return NewPersistentPeersInput(weavecontext.SetCurrentState(m.Ctx, state)), cmd
 	}
 	m.TextInput = input
@@ -577,25 +557,23 @@ func (m *SeedsInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *SeedsInput) View() string {
 	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
 	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"seeds"}, styles.Question) + m.TextInput.View()
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View()
 }
 
 type PersistentPeersInput struct {
 	ui.TextInput
 	weavecontext.BaseModel
-	question string
+	question   string
+	highlights []string
 }
 
 func NewPersistentPeersInput(ctx context.Context) *PersistentPeersInput {
-	tooltip := ui.NewTooltip(
-		"Persistent Peers",
-		"Configure nodes (<node-id>@<IP>:<port>) to maintain constant connections. This is particularly useful for fast syncing if you have access to a trusted, reliable node.\n\nThis step is optional but can expedite the process of getting your node up to date.",
-		"", []string{}, []string{}, []string{},
-	)
+	tooltip := tooltip.L1PersistentPeersTooltip
 	model := &PersistentPeersInput{
-		TextInput: ui.NewTextInput(false),
-		BaseModel: weavecontext.BaseModel{Ctx: ctx},
-		question:  "Please specify the persistent_peers",
+		TextInput:  ui.NewTextInput(false),
+		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
+		question:   "Specify persistent peers",
+		highlights: []string{"persistent peers"},
 	}
 	model.WithValidatorFn(common.IsValidPeerOrSeed)
 	model.WithTooltip(&tooltip)
@@ -633,7 +611,7 @@ func (m *PersistentPeersInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		} else {
 			prevAnswer = input.Text
 		}
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"persistent_peers"}, prevAnswer))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), m.highlights, prevAnswer))
 		m.Ctx = weavecontext.SetCurrentState(m.Ctx, state)
 		switch state.network {
 		case string(Local):
@@ -650,7 +628,7 @@ func (m *PersistentPeersInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *PersistentPeersInput) View() string {
 	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
 	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"persistent_peers"}, styles.Question) + m.TextInput.View()
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View()
 }
 
 type ExistingGenesisChecker struct {
@@ -718,7 +696,8 @@ func (m *ExistingGenesisChecker) View() string {
 type ExistingGenesisReplaceSelect struct {
 	ui.Selector[ExistingGenesisReplaceOption]
 	weavecontext.BaseModel
-	question string
+	question   string
+	highlights []string
 }
 
 type ExistingGenesisReplaceOption string
@@ -729,6 +708,7 @@ const (
 )
 
 func NewExistingGenesisReplaceSelect(ctx context.Context) *ExistingGenesisReplaceSelect {
+	initiaConfigDir := weavecontext.GetInitiaConfigDirectory(ctx)
 	return &ExistingGenesisReplaceSelect{
 		Selector: ui.Selector[ExistingGenesisReplaceOption]{
 			Options: []ExistingGenesisReplaceOption{
@@ -736,8 +716,9 @@ func NewExistingGenesisReplaceSelect(ctx context.Context) *ExistingGenesisReplac
 				ReplaceGenesis,
 			},
 		},
-		BaseModel: weavecontext.BaseModel{Ctx: ctx},
-		question:  "Existing config/genesis.json detected. Would you like to use the current one or replace it?",
+		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
+		question:   fmt.Sprintf("Existing %s/genesis.json detected. Would you like to use the current one or replace it?", initiaConfigDir),
+		highlights: []string{filepath.Join(initiaConfigDir, "genesis.json")},
 	}
 }
 
@@ -753,7 +734,7 @@ func (m *ExistingGenesisReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) 
 	selected, cmd := m.Select(msg)
 	if selected != nil {
 		state := weavecontext.PushPageAndGetState[RunL1NodeState](m)
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"config/genesis.json"}, string(*selected)))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), m.highlights, string(*selected)))
 		if state.network != string(Local) {
 			m.Ctx = weavecontext.SetCurrentState(m.Ctx, state)
 			switch *selected {
@@ -778,7 +759,7 @@ func (m *ExistingGenesisReplaceSelect) View() string {
 	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
 	return state.weave.Render() + styles.RenderPrompt(
 		m.GetQuestion(),
-		[]string{"config/genesis.json"},
+		m.highlights,
 		styles.Question,
 	) + m.Selector.View()
 }
@@ -786,23 +767,21 @@ func (m *ExistingGenesisReplaceSelect) View() string {
 type GenesisEndpointInput struct {
 	ui.TextInput
 	weavecontext.BaseModel
-	question string
-	err      error
+	question   string
+	err        error
+	highlights []string
 }
 
 func NewGenesisEndpointInput(ctx context.Context) *GenesisEndpointInput {
-	tooltip := ui.NewTooltip(
-		"genesis.json",
-		"Provide the URL or network address where the genesis.json file can be accessed. This file should contains the initial state and configuration of the blockchain network, which is essential for new nodes to sync and participate in the network correctly.",
-		"", []string{}, []string{}, []string{},
-	)
+	tooltip := tooltip.L1GenesisEndpointTooltip
 	model := &GenesisEndpointInput{
-		TextInput: ui.NewTextInput(true),
-		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
-		question:  "Please specify the endpoint to fetch genesis.json",
-		err:       nil,
+		TextInput:  ui.NewTextInput(true),
+		BaseModel:  weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
+		question:   "Specify the endpoint to fetch genesis.json",
+		err:        nil,
+		highlights: []string{"genesis.json"},
 	}
-	model.WithPlaceholder("Enter endpoint URL")
+	model.WithPlaceholder("Enter a valid URL")
 	model.WithTooltip(&tooltip)
 	return model
 }
@@ -826,7 +805,7 @@ func (m *GenesisEndpointInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		dns := common.CleanString(input.Text)
 		m.err = common.ValidateURL(dns)
 		if m.err == nil {
-			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"endpoint"}, dns))
+			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), m.highlights, dns))
 			return NewCosmovisorAutoUpgradeSelector(weavecontext.SetCurrentState(m.Ctx, state)), nil
 		}
 	}
@@ -837,14 +816,15 @@ func (m *GenesisEndpointInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *GenesisEndpointInput) View() string {
 	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
 	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	initiaConfigDir := weavecontext.GetInitiaConfigDirectory(m.Ctx)
 	preText := "\n"
 	if !state.existingApp {
-		preText += styles.RenderPrompt("There is no config/genesis.json available. You will need to enter the required information to proceed.\n", []string{"config/genesis.json"}, styles.Information)
+		preText += styles.RenderPrompt(fmt.Sprintf("There is no %s available. You will need to enter the required information to proceed.\n", filepath.Join(initiaConfigDir, "genesis.json")), []string{"genesis.json"}, styles.Information)
 	}
 	if m.IsEntered && m.err != nil {
-		return state.weave.Render() + preText + styles.RenderPrompt(m.GetQuestion(), []string{"endpoint"}, styles.Question) + m.TextInput.ViewErr(m.err)
+		return state.weave.Render() + preText + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.ViewErr(m.err)
 	}
-	return state.weave.Render() + preText + styles.RenderPrompt(m.GetQuestion(), []string{"endpoint"}, styles.Question) + m.TextInput.View()
+	return state.weave.Render() + preText + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View()
 }
 
 type InitializingAppLoading struct {
@@ -1054,24 +1034,13 @@ func NewSyncMethodSelect(ctx context.Context) *SyncMethodSelect {
 			},
 			CannotBack: true,
 			Tooltips: &[]ui.Tooltip{
-				ui.NewTooltip(
-					"Snapshot",
-					"Downloads a recent state snapshot to quickly catch up without replaying all history. This is faster than full sync but relies on a trusted source for the snapshot.\n\nThis is necessary to participate in an existing network.",
-					"", []string{}, []string{}, []string{},
-				),
-				ui.NewTooltip(
-					"State Sync",
-					"Retrieves the latest blockchain state from peers without downloading the entire history. It's faster than syncing from genesis but may miss some historical data.\n\nThis is necessary to participate in an existing network.",
-					"", []string{}, []string{}, []string{},
-				), ui.NewTooltip(
-					"No Sync",
-					"The node will not download data from any sources to replace the existing (if any). The node will start syncing from its current state, potentially genesis state if this is the first run.\n\nThis is best for local development / testing.",
-					"", []string{}, []string{}, []string{},
-				),
+				tooltip.L1SnapshotSyncTooltip,
+				tooltip.L1StateSyncTooltip,
+				tooltip.L1NoSyncTooltip,
 			},
 		},
 		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
-		question:  "Please select a sync option",
+		question:  "Select a sync option",
 	}
 }
 
@@ -1119,39 +1088,35 @@ func (m *SyncMethodSelect) View() string {
 type AutoUpgradeOption string
 
 const (
-	AllowAutoUpgrade    AutoUpgradeOption = "Allow"
-	DisallowAutoUpgrade AutoUpgradeOption = "Disallow"
+	EnableAutoUpgrade  AutoUpgradeOption = "Yes"
+	DisableAutoUpgrade AutoUpgradeOption = "No"
 )
 
 type CosmovisorAutoUpgradeSelector struct {
 	ui.Selector[AutoUpgradeOption]
 	weavecontext.BaseModel
-	question string
+	question   string
+	highlights []string
 }
 
 func NewCosmovisorAutoUpgradeSelector(ctx context.Context) *CosmovisorAutoUpgradeSelector {
 	return &CosmovisorAutoUpgradeSelector{
 		Selector: ui.Selector[AutoUpgradeOption]{
 			Options: []AutoUpgradeOption{
-				AllowAutoUpgrade,
-				DisallowAutoUpgrade,
+				EnableAutoUpgrade,
+				DisableAutoUpgrade,
 			},
 			Tooltips: &[]ui.Tooltip{
-				ui.NewTooltip(
-					"Allow",
-					// TODO: revisit docs
-					"Enable automatic downloading of new binaries and upgrades via Cosmovisor. \nSee more: https://docs.initia.xyz/run-initia-node/automating-software-updates-with-cosmovisor",
-					"", []string{}, []string{}, []string{},
-				),
-				ui.NewTooltip(
-					"Disallow",
-					"Disable automatic downloading of new binaries and upgrades via Cosmovisor. You will need to manually upgrade the binaries and restart the node to apply the upgrades.",
-					"", []string{}, []string{}, []string{},
-				),
+				tooltip.L1CosmovisorAutoUpgradeEnableTooltip,
+				tooltip.L1CosmovisorAutoUpgradeDisableTooltip,
 			},
 		},
 		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
-		question:  "Would you like to allow automatic upgrades via Cosmovisor?",
+		question:  "Would you like to enable automatic upgrades via Cosmovisor?",
+		highlights: []string{
+			"automatic upgrades",
+			"Cosmovisor",
+		},
 	}
 }
 
@@ -1170,8 +1135,8 @@ func (m *CosmovisorAutoUpgradeSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd)
 	selected, cmd := m.Select(msg)
 	if selected != nil {
 		state := weavecontext.PushPageAndGetState[RunL1NodeState](m)
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, string(*selected)))
-		state.allowAutoUpgrade = AllowAutoUpgrade == (*selected)
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), m.highlights, string(*selected)))
+		state.allowAutoUpgrade = EnableAutoUpgrade == (*selected)
 		model := NewInitializingAppLoading(weavecontext.SetCurrentState(m.Ctx, state))
 		return model, model.Init()
 	}
@@ -1184,7 +1149,7 @@ func (m *CosmovisorAutoUpgradeSelector) View() string {
 	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
 	return state.weave.Render() + styles.RenderPrompt(
 		m.GetQuestion(),
-		[]string{},
+		m.highlights,
 		styles.Question,
 	) + m.Selector.View()
 }
@@ -1258,7 +1223,8 @@ func (m *ExistingDataChecker) View() string {
 type ExistingDataReplaceSelect struct {
 	ui.Selector[SyncConfirmationOption]
 	weavecontext.BaseModel
-	question string
+	question   string
+	highlights []string
 }
 
 type SyncConfirmationOption string
@@ -1269,7 +1235,8 @@ const (
 )
 
 func NewExistingDataReplaceSelect(ctx context.Context) *ExistingDataReplaceSelect {
-	// TODO: Paraphrase the question and options
+	initiaDataPath := weavecontext.GetInitiaDataDirectory(ctx)
+
 	return &ExistingDataReplaceSelect{
 		Selector: ui.Selector[SyncConfirmationOption]{
 			Options: []SyncConfirmationOption{
@@ -1279,7 +1246,10 @@ func NewExistingDataReplaceSelect(ctx context.Context) *ExistingDataReplaceSelec
 			CannotBack: true,
 		},
 		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
-		question:  fmt.Sprintf("Existing %s detected. By syncing, the existing data will be replaced. Would you want to proceed ?", weavecontext.GetInitiaDataDirectory(ctx)),
+		question:  fmt.Sprintf("Existing %s detected. By syncing, the existing data will be replaced. Would you want to proceed ?", initiaDataPath),
+		highlights: []string{
+			initiaDataPath,
+		},
 	}
 }
 
@@ -1299,7 +1269,7 @@ func (m *ExistingDataReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if selected != nil {
 		state := weavecontext.PushPageAndGetState[RunL1NodeState](m)
 
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{weavecontext.GetInitiaDataDirectory(m.Ctx)}, string(*selected)))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), m.highlights, string(*selected)))
 		switch *selected {
 		case Skip:
 			state.replaceExistingData = false
@@ -1324,14 +1294,15 @@ func (m *ExistingDataReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *ExistingDataReplaceSelect) View() string {
 	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{weavecontext.GetInitiaDataDirectory(m.Ctx)}, styles.Question) + m.Selector.View()
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.Selector.View()
 }
 
 type SnapshotEndpointInput struct {
 	ui.TextInput
 	weavecontext.BaseModel
-	question string
-	err      error
+	question   string
+	err        error
+	highlights []string
 }
 
 func NewSnapshotEndpointInput(ctx context.Context) *SnapshotEndpointInput {
@@ -1343,7 +1314,10 @@ func NewSnapshotEndpointInput(ctx context.Context) *SnapshotEndpointInput {
 	model := &SnapshotEndpointInput{
 		TextInput: ui.NewTextInput(false),
 		BaseModel: weavecontext.BaseModel{Ctx: ctx},
-		question:  "Please specify the snapshot url to download",
+		question:  "Specify the snapshot endpoint to download",
+		highlights: []string{
+			"snapshot endpoint",
+		},
 	}
 	model.WithPlaceholder(fmt.Sprintf("Press tab to use the latest snapshot provided by Polkachu (%s)", defaultSnapshot))
 	model.WithDefaultValue(defaultSnapshot)
@@ -1367,7 +1341,7 @@ func (m *SnapshotEndpointInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		state := weavecontext.PushPageAndGetState[RunL1NodeState](m)
 
 		state.snapshotEndpoint = input.Text
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"snapshot url"}, input.Text))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), m.highlights, input.Text))
 		m.Ctx = weavecontext.SetCurrentState(m.Ctx, state)
 		if snapshotDownload, err := NewSnapshotDownloadLoading(m.Ctx); err == nil {
 			return snapshotDownload, snapshotDownload.Init()
@@ -1381,7 +1355,7 @@ func (m *SnapshotEndpointInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *SnapshotEndpointInput) View() string {
 	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
-	view := state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"snapshot url"}, styles.Question)
+	view := state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question)
 	if m.err != nil {
 		return view + "\n" + m.TextInput.ViewErr(m.err)
 	}
@@ -1391,8 +1365,9 @@ func (m *SnapshotEndpointInput) View() string {
 type StateSyncEndpointInput struct {
 	ui.TextInput
 	weavecontext.BaseModel
-	question string
-	err      error
+	question   string
+	err        error
+	highlights []string
 }
 
 func NewStateSyncEndpointInput(ctx context.Context) *StateSyncEndpointInput {
@@ -1404,7 +1379,10 @@ func NewStateSyncEndpointInput(ctx context.Context) *StateSyncEndpointInput {
 	model := &StateSyncEndpointInput{
 		TextInput: ui.NewTextInput(false),
 		BaseModel: weavecontext.BaseModel{Ctx: ctx},
-		question:  "Please specify the state sync RPC server url",
+		question:  "Specify the state sync RPC endpoint",
+		highlights: []string{
+			"state sync RPC endpoint",
+		},
 	}
 	model.WithValidatorFn(common.ValidateEmptyString)
 	model.WithPlaceholder(fmt.Sprintf("Press tab to use the latest state sync RPC server provided by Polkachu (%s)", defaultStateSync))
@@ -1430,7 +1408,7 @@ func (m *StateSyncEndpointInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		state := weavecontext.PushPageAndGetState[RunL1NodeState](m)
 
 		state.stateSyncEndpoint = input.Text
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"state sync RPC"}, input.Text))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), m.highlights, input.Text))
 		return NewAdditionalStateSyncPeersInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
 	}
 	m.TextInput = input
@@ -1439,7 +1417,7 @@ func (m *StateSyncEndpointInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *StateSyncEndpointInput) View() string {
 	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
-	view := state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"state sync RPC"}, styles.Question)
+	view := state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question)
 	if m.err != nil {
 		return view + "\n" + m.TextInput.ViewErr(m.err)
 	}
@@ -1449,7 +1427,8 @@ func (m *StateSyncEndpointInput) View() string {
 type AdditionalStateSyncPeersInput struct {
 	ui.TextInput
 	weavecontext.BaseModel
-	question string
+	question   string
+	highlights []string
 }
 
 func NewAdditionalStateSyncPeersInput(ctx context.Context) *AdditionalStateSyncPeersInput {
@@ -1461,7 +1440,10 @@ func NewAdditionalStateSyncPeersInput(ctx context.Context) *AdditionalStateSyncP
 	model := &AdditionalStateSyncPeersInput{
 		TextInput: ui.NewTextInput(false),
 		BaseModel: weavecontext.BaseModel{Ctx: ctx},
-		question:  "Please specify the additional peers for state sync",
+		question:  "Specify the additional peers for state sync",
+		highlights: []string{
+			"additional peers",
+		},
 	}
 	model.WithValidatorFn(common.IsValidPeerOrSeed)
 	model.WithPlaceholder(fmt.Sprintf("Press tab to use the latest state sync peers provided by Polkachu (%s)", defaultStateSyncPeers))
@@ -1493,7 +1475,7 @@ func (m *AdditionalStateSyncPeersInput) Update(msg tea.Msg) (tea.Model, tea.Cmd)
 		} else {
 			prevAnswer = input.Text
 		}
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"additional peers"}, prevAnswer))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), m.highlights, prevAnswer))
 		m.Ctx = weavecontext.SetCurrentState(m.Ctx, state)
 		newLoader := NewStateSyncSetupLoading(m.Ctx)
 		return newLoader, newLoader.Init()
@@ -1504,7 +1486,7 @@ func (m *AdditionalStateSyncPeersInput) Update(msg tea.Msg) (tea.Model, tea.Cmd)
 
 func (m *AdditionalStateSyncPeersInput) View() string {
 	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"additional peers"}, styles.Question) + m.TextInput.View()
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View()
 }
 
 type SnapshotDownloadLoading struct {

@@ -1,6 +1,7 @@
 package relayer
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -30,6 +31,10 @@ func UpdateClientFromConfig() error {
 	if err != nil {
 		return err
 	}
+	if len(config.Chains) < 2 {
+		return fmt.Errorf("invalid configuration: missing chain configuration")
+	}
+
 	var chainRegistry *registry.ChainRegistry
 
 	if config.Chains[0].ID == registry.MustGetChainRegistry(registry.InitiaL1Testnet).GetChainId() {
@@ -46,10 +51,12 @@ func UpdateClientFromConfig() error {
 	te := cosmosutils.NewHermesTxExecutor(hermesBinaryPath)
 
 	for clientId := range clientIds {
+		fmt.Printf("Updating IBC client: %s of network: %s\n", clientId, config.Chains[1].ID)
 		_, err := te.UpdateClient(clientId, config.Chains[1].ID)
 		if err != nil {
 			return err
 		}
+		fmt.Printf("Successfully updated IBC client: %s of network: %s\n", clientId, config.Chains[1].ID)
 	}
 	return nil
 }

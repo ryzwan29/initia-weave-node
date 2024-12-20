@@ -18,6 +18,7 @@ import (
 	"github.com/initia-labs/weave/registry"
 	"github.com/initia-labs/weave/service"
 	"github.com/initia-labs/weave/styles"
+	"github.com/initia-labs/weave/tooltip"
 	"github.com/initia-labs/weave/types"
 	"github.com/initia-labs/weave/ui"
 )
@@ -35,39 +36,29 @@ type OPInitBotInitSelector struct {
 	question string
 }
 
-var (
-	ListenAddressTooltip          = ui.NewTooltip("listen_address", "The listen_address specifies the network address and port where the bot listens for incoming transaction execution requests, often formatted as tcp://0.0.0.0:<port>.", "", []string{}, []string{}, []string{})
-	L1RPCAddressTooltip           = ui.NewTooltip("L1 rpc_address", "The rpc_address for the Executor defines the network address and port where the bot's RPC interface listens. This allows other network components to communicate with the Executor via RPC calls, typically formatted as tcp://0.0.0.0:<port>.", "", []string{}, []string{}, []string{})
-	L2RPCAddressTooltip           = ui.NewTooltip("L2 rpc_address", "The rpc_address for the Executor defines the network address and port where the bot's RPC interface listens. This allows other network components to communicate with the Executor via RPC calls, typically formatted as tcp://0.0.0.0:<port>.", "", []string{}, []string{}, []string{})
-	L2GasPriceTooltip             = ui.NewTooltip("L2 gas_price", "The L2 gas_price specifies the minimum gas price for transactions submitted on the Layer 2 (L2) network. This value helps ensure that L2 transactions are processed with adequate priority and aligns with  Minitias or other L2 environments.", "", []string{}, []string{}, []string{})
-	InitiaDALayerTooltip          = ui.NewTooltip("Initia", "Ideal for projects that require close integration within the Initia network, offering streamlined communication and data handling within the Initia ecosystem.", "", []string{}, []string{}, []string{})
-	CelestiaMainnetDALayerTooltip = ui.NewTooltip("Celestia Mainnet", "Suitable for production environments that need reliable and secure data availability with Celestia's decentralized architecture, ensuring robust support for live applications.", "", []string{}, []string{}, []string{})
-	CelestiaTestnetDALayerTooltip = ui.NewTooltip("Celestia Testnet", "Best for testing purposes, allowing you to validate functionality and performance in a non-production setting before deploying to a mainnet environment.", "", []string{}, []string{}, []string{})
-)
-
 var defaultExecutorFields = []*Field{
 	// Listen Address
-	{Name: "listen_address", Type: StringField, Question: "Please specify the listen_address", Placeholder: `Press tab to use "localhost:3000"`, DefaultValue: "localhost:3000", ValidateFn: common.ValidateEmptyString, Tooltip: &ListenAddressTooltip},
+	{Name: "listen_address", Type: StringField, Question: "Specify listen address of the bot", Highlights: []string{"listen address"}, Placeholder: `Press tab to use "localhost:3000"`, DefaultValue: "localhost:3000", ValidateFn: common.ValidateEmptyString, Tooltip: &tooltip.ListenAddressTooltip},
 
 	// L1 Node Configuration
-	{Name: "l1_node.rpc_address", Type: StringField, Question: "Please specify the L1 rpc_address", Placeholder: "Add RPC address ex. http://localhost:26657", ValidateFn: common.ValidateURL, Tooltip: &L1RPCAddressTooltip},
+	{Name: "l1_node.rpc_address", Type: StringField, Question: "Specify L1 RPC endpoint", Highlights: []string{"L1 RPC endpoint"}, Placeholder: "Add RPC address ex. http://localhost:26657", ValidateFn: common.ValidateURL, Tooltip: &tooltip.L1RPCEndpointTooltip},
 
 	// L2 Node Configuration
-	{Name: "l2_node.chain_id", Type: StringField, Question: "Please specify the L2 chain_id", Placeholder: "Add alphanumeric", ValidateFn: common.ValidateEmptyString},
-	{Name: "l2_node.rpc_address", Type: StringField, Question: "Please specify the L2 rpc_address", Placeholder: `Press tab to use "http://localhost:26657"`, DefaultValue: "http://localhost:26657", ValidateFn: common.ValidateURL, Tooltip: &L2RPCAddressTooltip},
-	{Name: "l2_node.gas_price", Type: StringField, Question: "Please specify the L2 gas_price", Placeholder: `Press tab to use "0.15umin"`, DefaultValue: "0.15umin", ValidateFn: common.ValidateDecCoin, Tooltip: &L2GasPriceTooltip},
+	{Name: "l2_node.chain_id", Type: StringField, Question: "Specify rollup chain ID", Highlights: []string{"rollup chain ID"}, Placeholder: "Enter chain ID ex. rollup-1", ValidateFn: common.ValidateEmptyString},
+	{Name: "l2_node.rpc_address", Type: StringField, Question: "Specify rollup RPC endpoint", Highlights: []string{"rollup RPC endpoint"}, Placeholder: `Press tab to use "http://localhost:26657"`, DefaultValue: "http://localhost:26657", ValidateFn: common.ValidateURL, Tooltip: &tooltip.RollupRPCEndpointTooltip},
+	{Name: "l2_node.gas_price", Type: StringField, Question: "Specify rollup gas price", Highlights: []string{"rollup gas price"}, Placeholder: `Press tab to use "0.15umin"`, DefaultValue: "0.15umin", ValidateFn: common.ValidateDecCoin, Tooltip: &tooltip.RollupGasPriceTooltip},
 }
 
 var defaultChallengerFields = []*Field{
 	// Listen Address
-	{Name: "listen_address", Type: StringField, Question: "Please specify the listen_address", Placeholder: `Press tab to use "localhost:3000"`, DefaultValue: "localhost:3000", ValidateFn: common.ValidateEmptyString, Tooltip: &ListenAddressTooltip},
+	{Name: "listen_address", Type: StringField, Question: "Specify listen address of the bot", Highlights: []string{"listen address"}, Placeholder: `Press tab to use "localhost:3000"`, DefaultValue: "localhost:3000", ValidateFn: common.ValidateEmptyString, Tooltip: &tooltip.ListenAddressTooltip},
 
 	// L1 Node Configuration
-	{Name: "l1_node.rpc_address", Type: StringField, Question: "Please specify the L1 rpc_address", Placeholder: "Add RPC address ex. http://localhost:26657", ValidateFn: common.ValidateURL, Tooltip: &L1RPCAddressTooltip},
+	{Name: "l1_node.rpc_address", Type: StringField, Question: "Specify L1 RPC endpoint", Highlights: []string{"L1 RPC endpoint"}, Placeholder: "Add RPC address ex. http://localhost:26657", ValidateFn: common.ValidateURL, Tooltip: &tooltip.L1RPCEndpointTooltip},
 
 	// L2 Node Configuration
-	{Name: "l2_node.chain_id", Type: StringField, Question: "Please specify the L2 chain_id", Placeholder: "Add alphanumeric", ValidateFn: common.ValidateEmptyString},
-	{Name: "l2_node.rpc_address", Type: StringField, Question: "Please specify the L2 rpc_address", Placeholder: `Press tab to use "http://localhost:26657"`, DefaultValue: "http://localhost:26657", ValidateFn: common.ValidateURL, Tooltip: &L2RPCAddressTooltip},
+	{Name: "l2_node.chain_id", Type: StringField, Question: "Specify rollup chain ID", Highlights: []string{"rollup chain ID"}, Placeholder: "Enter chain ID ex. rollup-1", ValidateFn: common.ValidateEmptyString},
+	{Name: "l2_node.rpc_address", Type: StringField, Question: "Specify rollup RPC endpoint", Highlights: []string{"rollup RPC endpoint"}, Placeholder: `Press tab to use "http://localhost:26657"`, DefaultValue: "http://localhost:26657", ValidateFn: common.ValidateURL, Tooltip: &tooltip.RollupRPCEndpointTooltip},
 }
 
 func GetField(fields []*Field, name string) *Field {
@@ -631,16 +622,16 @@ type SetDALayer struct {
 
 func NewSetDALayer(ctx context.Context) tea.Model {
 	tooltips := []ui.Tooltip{
-		InitiaDALayerTooltip,
+		tooltip.InitiaDALayerTooltip,
 	}
 	state := weavecontext.GetCurrentState[OPInitBotsState](ctx)
 	var network registry.ChainType
 	if registry.MustGetChainRegistry(registry.InitiaL1Testnet).GetChainId() == state.botConfig["l1_node.chain_id"] {
 		network = registry.CelestiaTestnet
-		tooltips = append(tooltips, CelestiaTestnetDALayerTooltip)
+		tooltips = append(tooltips, tooltip.CelestiaTestnetDALayerTooltip)
 	} else {
 		network = registry.CelestiaMainnet
-		tooltips = append(tooltips, CelestiaMainnetDALayerTooltip)
+		tooltips = append(tooltips, tooltip.CelestiaMainnetDALayerTooltip)
 	}
 
 	chainRegistry := registry.MustGetChainRegistry(network)
