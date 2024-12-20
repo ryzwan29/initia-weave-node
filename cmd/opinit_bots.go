@@ -121,7 +121,7 @@ func OPInitBotsKeysSetupCommand() *cobra.Command {
 		panic(fmt.Errorf("cannot get user home directory: %v", err))
 	}
 
-	setupCmd.Flags().String(FlagMinitiaHome, filepath.Join(homeDir, common.MinitiaDirectory), "Minitia application directory to fetch artifacts from if existed")
+	setupCmd.Flags().String(FlagMinitiaHome, filepath.Join(homeDir, common.MinitiaDirectory), "Rollup application directory to fetch artifacts from if existed")
 	setupCmd.Flags().String(FlagOPInitHome, filepath.Join(homeDir, common.OPinitDirectory), "OPInit bots home directory")
 
 	return setupCmd
@@ -176,7 +176,7 @@ Example: weave opinit init executor`,
 		panic(fmt.Errorf("cannot get user home directory: %v", err))
 	}
 
-	initCmd.Flags().String(FlagMinitiaHome, filepath.Join(homeDir, common.MinitiaDirectory), "Minitia application directory to fetch artifacts from if existed")
+	initCmd.Flags().String(FlagMinitiaHome, filepath.Join(homeDir, common.MinitiaDirectory), "Rollup application directory to fetch artifacts from if existed")
 	initCmd.Flags().String(FlagOPInitHome, filepath.Join(homeDir, common.OPinitDirectory), "OPInit bots home directory")
 
 	return initCmd

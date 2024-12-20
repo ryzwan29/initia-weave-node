@@ -3,32 +3,16 @@ package weaveinit
 import (
 	"testing"
 
-	"github.com/initia-labs/weave/flags"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGetWeaveInitOptions(t *testing.T) {
-	testCases := []struct {
-		flags    string
-		expected []Option
-	}{
-		{"", []Option{RunL1NodeOption}},
-		{"minitia_launch", []Option{RunL1NodeOption, LaunchNewMinitiaOption}},
-		{"minitia_launch,opinit_bots", []Option{RunL1NodeOption, LaunchNewMinitiaOption, InitializeOPBotsOption}},
-		{"minitia_launch,opinit_bots,relayer", []Option{RunL1NodeOption, LaunchNewMinitiaOption, InitializeOPBotsOption, StartRelayerOption}},
-	}
+	options := GetWeaveInitOptions()
 
-	for _, tc := range testCases {
-		flags.EnabledFlags = tc.flags
-		options := GetWeaveInitOptions()
-
-		if len(options) != len(tc.expected) {
-			t.Errorf("For flags '%s': Expected %d options, but got %d", tc.flags, len(tc.expected), len(options))
-		}
-
-		for i, option := range options {
-			if option != tc.expected[i] {
-				t.Errorf("For flags '%s': Expected option %d to be %s, but got %s", tc.flags, i, tc.expected[i], option)
-			}
-		}
-	}
+	assert.Equal(t, 4, len(options))
+	// order of options is important
+	assert.Equal(t, RunL1NodeOption, options[0])
+	assert.Equal(t, LaunchNewRollupOption, options[1])
+	assert.Equal(t, RunOPBotsOption, options[2])
+	assert.Equal(t, RunRelayerOption, options[3])
 }

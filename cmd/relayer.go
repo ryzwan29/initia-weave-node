@@ -71,7 +71,7 @@ func relayerInitCommand() *cobra.Command {
 		panic(fmt.Errorf("cannot get user home directory: %v", err))
 	}
 
-	initCmd.Flags().String(FlagMinitiaHome, filepath.Join(homeDir, common.MinitiaDirectory), "Minitia application directory to fetch artifacts from if existed")
+	initCmd.Flags().String(FlagMinitiaHome, filepath.Join(homeDir, common.MinitiaDirectory), "Rollup application directory to fetch artifacts from if existed")
 
 	return initCmd
 }
@@ -92,7 +92,6 @@ func relayerStartCommand() *cobra.Command {
 				if err != nil {
 					return err
 				}
-				fmt.Println("Client updated successfully.")
 			case "false":
 			default:
 				return fmt.Errorf("invalid update-client flag value: %q, expected 'true' or 'false'", updateClient)

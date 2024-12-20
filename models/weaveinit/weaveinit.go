@@ -4,7 +4,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	weavecontext "github.com/initia-labs/weave/context"
-	"github.com/initia-labs/weave/flags"
 	"github.com/initia-labs/weave/models/initia"
 	"github.com/initia-labs/weave/models/minitia"
 	"github.com/initia-labs/weave/models/opinit_bots"
@@ -37,27 +36,18 @@ type WeaveInit struct {
 type Option string
 
 const (
-	RunL1NodeOption        Option = "Run L1 Node"
-	LaunchNewMinitiaOption Option = "Launch New Minitia"
-	InitializeOPBotsOption Option = "Initialize OPInit Bots"
-	StartRelayerOption     Option = "Start a Relayer"
+	RunL1NodeOption       Option = "Run an L1 node"
+	LaunchNewRollupOption Option = "Launch a new rollup"
+	RunOPBotsOption       Option = "Run OPinit bots"
+	RunRelayerOption      Option = "Run a relayer"
 )
 
 func GetWeaveInitOptions() []Option {
 	options := []Option{
 		RunL1NodeOption,
-	}
-
-	if flags.IsEnabled(flags.MinitiaLaunch) {
-		options = append(options, LaunchNewMinitiaOption)
-	}
-
-	if flags.IsEnabled(flags.OPInitBots) {
-		options = append(options, InitializeOPBotsOption)
-	}
-
-	if flags.IsEnabled(flags.Relayer) {
-		options = append(options, StartRelayerOption)
+		LaunchNewRollupOption,
+		RunOPBotsOption,
+		RunRelayerOption,
 	}
 
 	return options
@@ -66,9 +56,10 @@ func GetWeaveInitOptions() []Option {
 func NewWeaveInit() *WeaveInit {
 	ctx := weavecontext.NewAppContext(NewWeaveInitState())
 	tooltips := []ui.Tooltip{
-		ui.NewTooltip(string(RunL1NodeOption), "Bootstrap an Initia Layer 1 full node to be able to join the network whether it's Mainnet, Testnet, or your own local network. Weave also make state-syncing super easy for you.", "", []string{}, []string{}, []string{}),
-		ui.NewTooltip(string(LaunchNewMinitiaOption), "Customize and deploy a new Minitia, an L2 rollup on Initia in less than 5 minutes. This process includes configuring your L2 components (chain-id, gas, optimistic bridge, etc.) and fund OPinit Bots to facilitate communications between your Minitia and the underlying Initia L1.", "", []string{}, []string{}, []string{}),
-		ui.NewTooltip(string(InitializeOPBotsOption), "Configure and run OPinit Bots, the glue between Minitia and the underlying Initia L1.", "", []string{}, []string{}, []string{}),
+		ui.NewTooltip(string(RunL1NodeOption), "Bootstrap an Initia Layer 1 full node to be able to join the network whether it's mainnet, testnet, or your own local network. Weave also make state-syncing and automatic upgrades super easy for you.", "", []string{}, []string{}, []string{}),
+		ui.NewTooltip(string(LaunchNewRollupOption), "Customize and deploy a new rollup on Initia in less than 5 minutes. This process includes configuring your rollup components (chain ID, gas, optimistic bridge, etc.) and fund OPinit bots to facilitate communications between your rollup and the underlying Initia L1.", "", []string{}, []string{}, []string{}),
+		ui.NewTooltip(string(RunOPBotsOption), "Configure and run OPinit bots, the glue between rollup and the underlying Initia L1.", "", []string{}, []string{}, []string{}),
+		ui.NewTooltip(string(RunRelayerOption), "Run a relayer to facilitate communications between your rollup and the underlying Initia L1.", "", []string{}, []string{}, []string{}),
 	}
 
 	return &WeaveInit{
@@ -97,10 +88,10 @@ func (m *WeaveInit) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case RunL1NodeOption:
 			ctx := weavecontext.NewAppContext(initia.RunL1NodeState{})
 			return initia.NewRunL1NodeNetworkSelect(ctx), nil
-		case LaunchNewMinitiaOption:
+		case LaunchNewRollupOption:
 			minitiaChecker := minitia.NewExistingMinitiaChecker(weavecontext.NewAppContext(*minitia.NewLaunchState()))
 			return minitiaChecker, minitiaChecker.Init()
-		case InitializeOPBotsOption:
+		case RunOPBotsOption:
 			return opinit_bots.NewOPInitBotInitSelector(weavecontext.NewAppContext(opinit_bots.NewOPInitBotsState())), nil
 		}
 	}
@@ -110,5 +101,5 @@ func (m *WeaveInit) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *WeaveInit) View() string {
 	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return styles.RenderPrompt("What action would you like to perform?", []string{}, styles.Question) + m.Selector.View()
+	return styles.RenderPrompt("What do you want to do?", []string{}, styles.Question) + m.Selector.View()
 }

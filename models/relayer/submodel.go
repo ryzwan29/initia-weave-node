@@ -30,12 +30,14 @@ type Field struct {
 	PrefillValue string
 	ValidateFn   func(string) error
 	Tooltip      *ui.Tooltip
+	Highlights   []string
 }
 
 type SubModel struct {
 	ui.TextInput
 	field      Field
 	CannotBack bool
+	highlights []string
 }
 
 func NewSubModel(field Field) SubModel {
@@ -54,10 +56,18 @@ func NewSubModel(field Field) SubModel {
 			return nil
 		})
 	}
-	return SubModel{
+
+	s := SubModel{
 		TextInput: textInput,
 		field:     field,
 	}
+	if field.Highlights != nil {
+		s.highlights = field.Highlights
+	} else {
+		s.highlights = []string{"L1", "Rollup", "rollup"}
+	}
+
+	return s
 }
 
 // Init is a common Init method for all field models
@@ -75,8 +85,7 @@ func (m *SubModel) UpdateWithContext(ctx context.Context, parent weavecontext.Ba
 		state := weavecontext.PushPageAndGetState[State](parent)
 		res := strings.TrimSpace(input.Text)
 		state.Config[m.field.Name] = res
-		s := strings.Split(m.field.Name, ".")
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.field.Question, []string{s[len(s)-1], "L1", "L2", "gas_price"}, res))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.field.Question, m.highlights, res))
 		ctx = weavecontext.SetCurrentState(ctx, state)
 		return ctx, nil, nil // Done with this field, signal completion
 	}
@@ -86,8 +95,7 @@ func (m *SubModel) UpdateWithContext(ctx context.Context, parent weavecontext.Ba
 
 // View is a common View method for all field models
 func (m *SubModel) View() string {
-	s := strings.Split(m.field.Name, ".")
-	return styles.RenderPrompt(m.field.Question, []string{s[len(s)-1], "L1", "L2", "gas_price"}, styles.Question) + m.TextInput.View()
+	return styles.RenderPrompt(m.field.Question, m.highlights, styles.Question) + m.TextInput.View()
 }
 
 func GetField(fields []*Field, name string) *Field {

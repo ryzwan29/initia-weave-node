@@ -18,6 +18,7 @@ import (
 	"github.com/initia-labs/weave/registry"
 	"github.com/initia-labs/weave/service"
 	"github.com/initia-labs/weave/styles"
+	"github.com/initia-labs/weave/tooltip"
 	"github.com/initia-labs/weave/types"
 	"github.com/initia-labs/weave/ui"
 )
@@ -35,39 +36,29 @@ type OPInitBotInitSelector struct {
 	question string
 }
 
-var (
-	ListenAddressTooltip          = ui.NewTooltip("listen_address", "The listen_address specifies the network address and port where the bot listens for incoming transaction execution requests, often formatted as tcp://0.0.0.0:<port>.", "", []string{}, []string{}, []string{})
-	L1RPCAddressTooltip           = ui.NewTooltip("L1 rpc_address", "The rpc_address for the Executor defines the network address and port where the bot's RPC interface listens. This allows other network components to communicate with the Executor via RPC calls, typically formatted as tcp://0.0.0.0:<port>.", "", []string{}, []string{}, []string{})
-	L2RPCAddressTooltip           = ui.NewTooltip("L2 rpc_address", "The rpc_address for the Executor defines the network address and port where the bot's RPC interface listens. This allows other network components to communicate with the Executor via RPC calls, typically formatted as tcp://0.0.0.0:<port>.", "", []string{}, []string{}, []string{})
-	L2GasPriceTooltip             = ui.NewTooltip("L2 gas_price", "The L2 gas_price specifies the minimum gas price for transactions submitted on the Layer 2 (L2) network. This value helps ensure that L2 transactions are processed with adequate priority and aligns with  Minitias or other L2 environments.", "", []string{}, []string{}, []string{})
-	InitiaDALayerTooltip          = ui.NewTooltip("Initia", "Ideal for projects that require close integration within the Initia network, offering streamlined communication and data handling within the Initia ecosystem.", "", []string{}, []string{}, []string{})
-	CelestiaMainnetDALayerTooltip = ui.NewTooltip("Celestia Mainnet", "Suitable for production environments that need reliable and secure data availability with Celestia's decentralized architecture, ensuring robust support for live applications.", "", []string{}, []string{}, []string{})
-	CelestiaTestnetDALayerTooltip = ui.NewTooltip("Celestia Testnet", "Best for testing purposes, allowing you to validate functionality and performance in a non-production setting before deploying to a mainnet environment.", "", []string{}, []string{}, []string{})
-)
-
 var defaultExecutorFields = []*Field{
 	// Listen Address
-	{Name: "listen_address", Type: StringField, Question: "Please specify the listen_address", Placeholder: `Press tab to use "localhost:3000"`, DefaultValue: "localhost:3000", ValidateFn: common.ValidateEmptyString, Tooltip: &ListenAddressTooltip},
+	{Name: "listen_address", Type: StringField, Question: "Specify listen address of the bot", Highlights: []string{"listen address"}, Placeholder: `Press tab to use "localhost:3000"`, DefaultValue: "localhost:3000", ValidateFn: common.ValidateEmptyString, Tooltip: &tooltip.ListenAddressTooltip},
 
 	// L1 Node Configuration
-	{Name: "l1_node.rpc_address", Type: StringField, Question: "Please specify the L1 rpc_address", Placeholder: "Add RPC address ex. http://localhost:26657", ValidateFn: common.ValidateURL, Tooltip: &L1RPCAddressTooltip},
+	{Name: "l1_node.rpc_address", Type: StringField, Question: "Specify L1 RPC endpoint", Highlights: []string{"L1 RPC endpoint"}, Placeholder: "Add RPC address ex. http://localhost:26657", ValidateFn: common.ValidateURL, Tooltip: &tooltip.L1RPCEndpointTooltip},
 
 	// L2 Node Configuration
-	{Name: "l2_node.chain_id", Type: StringField, Question: "Please specify the L2 chain_id", Placeholder: "Add alphanumeric", ValidateFn: common.ValidateEmptyString},
-	{Name: "l2_node.rpc_address", Type: StringField, Question: "Please specify the L2 rpc_address", Placeholder: `Press tab to use "http://localhost:26657"`, DefaultValue: "http://localhost:26657", ValidateFn: common.ValidateURL, Tooltip: &L2RPCAddressTooltip},
-	{Name: "l2_node.gas_price", Type: StringField, Question: "Please specify the L2 gas_price", Placeholder: `Press tab to use "0.15umin"`, DefaultValue: "0.15umin", ValidateFn: common.ValidateDecCoin, Tooltip: &L2GasPriceTooltip},
+	{Name: "l2_node.chain_id", Type: StringField, Question: "Specify rollup chain ID", Highlights: []string{"rollup chain ID"}, Placeholder: "Enter chain ID ex. rollup-1", ValidateFn: common.ValidateEmptyString},
+	{Name: "l2_node.rpc_address", Type: StringField, Question: "Specify rollup RPC endpoint", Highlights: []string{"rollup RPC endpoint"}, Placeholder: `Press tab to use "http://localhost:26657"`, DefaultValue: "http://localhost:26657", ValidateFn: common.ValidateURL, Tooltip: &tooltip.RollupRPCEndpointTooltip},
+	{Name: "l2_node.gas_price", Type: StringField, Question: "Specify rollup gas price", Highlights: []string{"rollup gas price"}, Placeholder: `Press tab to use "0.15umin"`, DefaultValue: "0.15umin", ValidateFn: common.ValidateDecCoin, Tooltip: &tooltip.RollupGasPriceTooltip},
 }
 
 var defaultChallengerFields = []*Field{
 	// Listen Address
-	{Name: "listen_address", Type: StringField, Question: "Please specify the listen_address", Placeholder: `Press tab to use "localhost:3000"`, DefaultValue: "localhost:3000", ValidateFn: common.ValidateEmptyString, Tooltip: &ListenAddressTooltip},
+	{Name: "listen_address", Type: StringField, Question: "Specify listen address of the bot", Highlights: []string{"listen address"}, Placeholder: `Press tab to use "localhost:3000"`, DefaultValue: "localhost:3000", ValidateFn: common.ValidateEmptyString, Tooltip: &tooltip.ListenAddressTooltip},
 
 	// L1 Node Configuration
-	{Name: "l1_node.rpc_address", Type: StringField, Question: "Please specify the L1 rpc_address", Placeholder: "Add RPC address ex. http://localhost:26657", ValidateFn: common.ValidateURL, Tooltip: &L1RPCAddressTooltip},
+	{Name: "l1_node.rpc_address", Type: StringField, Question: "Specify L1 RPC endpoint", Highlights: []string{"L1 RPC endpoint"}, Placeholder: "Add RPC address ex. http://localhost:26657", ValidateFn: common.ValidateURL, Tooltip: &tooltip.L1RPCEndpointTooltip},
 
 	// L2 Node Configuration
-	{Name: "l2_node.chain_id", Type: StringField, Question: "Please specify the L2 chain_id", Placeholder: "Add alphanumeric", ValidateFn: common.ValidateEmptyString},
-	{Name: "l2_node.rpc_address", Type: StringField, Question: "Please specify the L2 rpc_address", Placeholder: `Press tab to use "http://localhost:26657"`, DefaultValue: "http://localhost:26657", ValidateFn: common.ValidateURL, Tooltip: &L2RPCAddressTooltip},
+	{Name: "l2_node.chain_id", Type: StringField, Question: "Specify rollup chain ID", Highlights: []string{"rollup chain ID"}, Placeholder: "Enter chain ID ex. rollup-1", ValidateFn: common.ValidateEmptyString},
+	{Name: "l2_node.rpc_address", Type: StringField, Question: "Specify rollup RPC endpoint", Highlights: []string{"rollup RPC endpoint"}, Placeholder: `Press tab to use "http://localhost:26657"`, DefaultValue: "http://localhost:26657", ValidateFn: common.ValidateURL, Tooltip: &tooltip.RollupRPCEndpointTooltip},
 }
 
 func GetField(fields []*Field, name string) *Field {
@@ -248,45 +239,30 @@ func (m *OPInitBotInitSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			keyNames[BatchSubmitterKeyName] = true
 			keyNames[OracleBridgeExecutorKeyName] = true
 
-			finished := true
-
-			state.BotInfos = CheckIfKeysExist(BotInfos)
+			state.BotInfos = CheckIfKeysExist(state.BotInfos)
 			for idx, botInfo := range state.BotInfos {
-				if keyNames[botInfo.KeyName] && botInfo.IsNotExist {
+				if botInfo.KeyName == OracleBridgeExecutorKeyName && botInfo.IsNotExist {
 					state.BotInfos[idx].IsSetup = true
-					finished = false
+				} else if keyNames[botInfo.KeyName] && botInfo.IsNotExist && !state.AddMinitiaConfig {
+					state.BotInfos[idx].IsSetup = true
 				} else {
 					state.BotInfos[idx].IsSetup = false
 				}
 			}
-			if finished {
-				return OPInitBotInitSelectExecutor(weavecontext.SetCurrentState(m.Ctx, state)), cmd
-			}
-
-			state.isSetupMissingKey = true
 			return NextUpdateOpinitBotKey(weavecontext.SetCurrentState(m.Ctx, state))
 		case ChallengerOPInitBotInitOption:
 			state.InitChallengerBot = true
 			keyNames := make(map[string]bool)
 			keyNames[ChallengerKeyName] = true
 
-			finished := true
-
-			state.BotInfos = CheckIfKeysExist(BotInfos)
+			state.BotInfos = CheckIfKeysExist(state.BotInfos)
 			for idx, botInfo := range state.BotInfos {
-				fmt.Println(botInfo.KeyName, keyNames[botInfo.KeyName], botInfo.IsNotExist)
-				if keyNames[botInfo.KeyName] && botInfo.IsNotExist {
+				if keyNames[botInfo.KeyName] && botInfo.IsNotExist && !state.AddMinitiaConfig {
 					state.BotInfos[idx].IsSetup = true
-					finished = false
 				} else {
 					state.BotInfos[idx].IsSetup = false
 				}
 			}
-			if finished {
-				return OPInitBotInitSelectChallenger(weavecontext.SetCurrentState(m.Ctx, state)), cmd
-			}
-
-			state.isSetupMissingKey = true
 			return NextUpdateOpinitBotKey(weavecontext.SetCurrentState(m.Ctx, state))
 		}
 	}
@@ -294,8 +270,9 @@ func (m *OPInitBotInitSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *OPInitBotInitSelector) View() string {
+	state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
 	m.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return styles.RenderPrompt(m.GetQuestion(), []string{"bot"}, styles.Question) + m.Selector.View()
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"bot"}, styles.Question) + m.Selector.View()
 }
 
 type DeleteDBOption string
@@ -645,16 +622,16 @@ type SetDALayer struct {
 
 func NewSetDALayer(ctx context.Context) tea.Model {
 	tooltips := []ui.Tooltip{
-		InitiaDALayerTooltip,
+		tooltip.InitiaDALayerTooltip,
 	}
 	state := weavecontext.GetCurrentState[OPInitBotsState](ctx)
 	var network registry.ChainType
 	if registry.MustGetChainRegistry(registry.InitiaL1Testnet).GetChainId() == state.botConfig["l1_node.chain_id"] {
 		network = registry.CelestiaTestnet
-		tooltips = append(tooltips, CelestiaTestnetDALayerTooltip)
+		tooltips = append(tooltips, tooltip.CelestiaTestnetDALayerTooltip)
 	} else {
 		network = registry.CelestiaMainnet
-		tooltips = append(tooltips, CelestiaMainnetDALayerTooltip)
+		tooltips = append(tooltips, tooltip.CelestiaMainnetDALayerTooltip)
 	}
 
 	chainRegistry := registry.MustGetChainRegistry(network)
@@ -977,19 +954,26 @@ func (m *SetupOPInitBotsMissingKey) Init() tea.Cmd {
 	return m.loading.Init()
 }
 
+func handleBotInitSelection(ctx context.Context, state OPInitBotsState) (tea.Model, tea.Cmd) {
+	if state.InitExecutorBot {
+		return OPInitBotInitSelectExecutor(ctx), nil
+	}
+	return OPInitBotInitSelectChallenger(ctx), nil
+}
+
 func (m *SetupOPInitBotsMissingKey) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	loader, cmd := m.loading.Update(msg)
 	m.loading = loader
 	if m.loading.Completing {
+		state := weavecontext.GetCurrentState[OPInitBotsState](m.loading.EndContext)
+		oracleBotInfo := GetBotInfo(BotInfos, OracleBridgeExecutor)
+		if (state.AddMinitiaConfig && !oracleBotInfo.IsNewKey()) || (!state.AddMinitiaConfig && len(state.SetupOpinitResponses) == 0) {
+			return handleBotInitSelection(m.loading.EndContext, state)
+		}
 		switch msg := msg.(type) {
 		case tea.KeyMsg:
 			if msg.String() == "enter" {
-				state := weavecontext.GetCurrentState[OPInitBotsState](m.loading.EndContext)
-				if state.InitExecutorBot {
-					return OPInitBotInitSelectExecutor(m.loading.EndContext), nil
-				} else if state.InitChallengerBot {
-					return OPInitBotInitSelectChallenger(m.loading.EndContext), nil
-				}
+				return handleBotInitSelection(m.loading.EndContext, state)
 			}
 		}
 	}
@@ -998,6 +982,10 @@ func (m *SetupOPInitBotsMissingKey) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *SetupOPInitBotsMissingKey) View() string {
 	state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
+	oracleBotInfo := GetBotInfo(BotInfos, OracleBridgeExecutor)
+	if state.AddMinitiaConfig && !oracleBotInfo.IsNewKey() {
+		return state.weave.Render() + "\n"
+	}
 	if len(state.SetupOpinitResponses) > 0 {
 		mnemonicText := ""
 		for _, botName := range BotNames {

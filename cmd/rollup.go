@@ -30,8 +30,8 @@ var (
 
 func MinitiaCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:                        "minitia",
-		Short:                      "Minitia subcommands",
+		Use:                        "rollup",
+		Short:                      "Rollup subcommands",
 		DisableFlagParsing:         true,
 		SuggestionsMinimumDistance: 2,
 	}
@@ -75,7 +75,7 @@ func loadAndParseMinitiaConfig(path string) (*types.MinitiaConfig, error) {
 func minitiaLaunchCommand() *cobra.Command {
 	launchCmd := &cobra.Command{
 		Use:   "launch",
-		Short: "Launch a new Minitia from scratch",
+		Short: "Launch a new rollup from scratch",
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			configPath, _ := cmd.Flags().GetString(FlagWithConfig)
 			vm, _ := cmd.Flags().GetString(FlagVm)
@@ -164,8 +164,8 @@ func minitiaLaunchCommand() *cobra.Command {
 		panic(fmt.Errorf("cannot get user home directory: %v", err))
 	}
 
-	launchCmd.Flags().String(FlagMinitiaHome, filepath.Join(homeDir, common.MinitiaDirectory), "The Minitia application home directory")
-	launchCmd.Flags().String(FlagWithConfig, "", "launch using an existing Minitia config file. The argument should be the path to the config file.")
+	launchCmd.Flags().String(FlagMinitiaHome, filepath.Join(homeDir, common.MinitiaDirectory), "The rollup application home directory")
+	launchCmd.Flags().String(FlagWithConfig, "", "launch using an existing rollup config file. The argument should be the path to the config file.")
 	launchCmd.Flags().String(FlagVm, "", fmt.Sprintf("vm to be used. Required when using --with-config. Valid options are: %s", strings.Join(validVMOptions, ", ")))
 	launchCmd.Flags().BoolP(FlagForce, "f", false, "force the launch by deleting the existing .minitia directory if it exists.")
 
@@ -175,7 +175,7 @@ func minitiaLaunchCommand() *cobra.Command {
 func minitiaStartCommand() *cobra.Command {
 	launchCmd := &cobra.Command{
 		Use:   "start",
-		Short: "Start the Minitia full node application.",
+		Short: "Start the rollup full node application.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := service.NewService(service.Minitia)
 			if err != nil {
@@ -185,7 +185,7 @@ func minitiaStartCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			fmt.Println("Started Minitia full node application. You can see the logs with `weave minitia log`")
+			fmt.Println("Started rollup full node application. You can see the logs with `weave rollup log`")
 			return nil
 		},
 	}
@@ -196,7 +196,7 @@ func minitiaStartCommand() *cobra.Command {
 func minitiaStopCommand() *cobra.Command {
 	startCmd := &cobra.Command{
 		Use:   "stop",
-		Short: "Stop the Minitia full node application.",
+		Short: "Stop the rollup full node application.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := service.NewService(service.Minitia)
 			if err != nil {
@@ -206,7 +206,7 @@ func minitiaStopCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			fmt.Println("Stopped the Minitia full node application.")
+			fmt.Println("Stopped the rollup full node application.")
 			return nil
 		},
 	}
@@ -217,7 +217,7 @@ func minitiaStopCommand() *cobra.Command {
 func minitiaRestartCommand() *cobra.Command {
 	restartCmd := &cobra.Command{
 		Use:   "restart",
-		Short: "Restart the Minitia full node application.",
+		Short: "Restart the rollup full node application.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := service.NewService(service.Minitia)
 			if err != nil {
@@ -228,7 +228,7 @@ func minitiaRestartCommand() *cobra.Command {
 				return err
 			}
 
-			fmt.Println("Restart Minitia full node application. You can see the logs with `weave minitia log`")
+			fmt.Println("Restart rollup full node application. You can see the logs with `weave rollup log`")
 			return nil
 		},
 	}
@@ -239,7 +239,7 @@ func minitiaRestartCommand() *cobra.Command {
 func minitiaLogCommand() *cobra.Command {
 	logCmd := &cobra.Command{
 		Use:   "log",
-		Short: "Stream the logs of the Minitia full node application.",
+		Short: "Stream the logs of the rollup full node application.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			n, err := cmd.Flags().GetInt(FlagN)
 			if err != nil {

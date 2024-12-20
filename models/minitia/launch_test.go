@@ -35,7 +35,7 @@ func TestNewExistingMinitiaChecker(t *testing.T) {
 
 	assert.NotNil(t, model, "Expected ExistingMinitiaChecker to be created")
 	assert.NotNil(t, model.Init(), "Expected Init command to be returned")
-	assert.Contains(t, model.View(), "Checking for an existing Minitia app...")
+	assert.Contains(t, model.View(), "Checking for an existing rollup app...")
 }
 
 func TestExistingMinitiaChecker_Update(t *testing.T) {
@@ -115,7 +115,7 @@ func TestNewDeleteExistingMinitiaInput(t *testing.T) {
 
 	assert.Nil(t, model.Init(), "Expected Init command to be returned")
 	assert.NotNil(t, model, "Expected DeleteExistingMinitiaInput to be created")
-	assert.Equal(t, "Please type `delete` to delete the .minitia folder and proceed with weave minitia launch", model.GetQuestion())
+	assert.Equal(t, "Type `delete` to delete the .minitia folder and proceed with weave rollup launch", model.GetQuestion())
 	assert.NotNil(t, model.TextInput, "Expected TextInput to be initialized")
 	assert.Equal(t, "Type `delete` to delete, Ctrl+C to keep the folder and quit this command.", model.TextInput.Placeholder, "Expected placeholder to be set correctly")
 	assert.NotNil(t, model.TextInput.ValidationFn, "Expected validation function to be set")
@@ -140,7 +140,7 @@ func TestDeleteExistingMinitiaInput_View(t *testing.T) {
 	view := model.View()
 	assert.Contains(t, view, "🚨 Existing ~/.minitia folder detected.", "Expected warning message for existing folder")
 	assert.Contains(t, view, "permanently deleted and cannot be reversed.", "Expected deletion warning")
-	assert.Contains(t, view, "Please type `delete` to delete", "Expected prompt for deletion confirmation")
+	assert.Contains(t, view, "Type `delete` to delete", "Expected prompt for deletion confirmation")
 }
 
 func TestNewNetworkSelect(t *testing.T) {
@@ -430,8 +430,8 @@ func TestChainIdInput_View(t *testing.T) {
 	input := NewChainIdInput(ctx)
 
 	view := input.View()
-	assert.Contains(t, view, "Please specify your rollup chain ID", "Expected question prompt in the view")
-	assert.Contains(t, view, "Enter your chain ID", "Expected placeholder in the view")
+	assert.Contains(t, view, "Specify rollup chain ID", "Expected question prompt in the view")
+	assert.Contains(t, view, "Enter your chain ID ex. local-minitia-1", "Expected placeholder in the view")
 }
 
 func TestGasDenomInput_Init(t *testing.T) {
@@ -468,7 +468,7 @@ func TestGasDenomInput_View(t *testing.T) {
 	input := NewGasDenomInput(ctx)
 
 	view := input.View()
-	assert.Contains(t, view, "Please specify the L2 Gas Token Denom", "Expected question prompt in the view")
+	assert.Contains(t, view, "Specify rollup gas denom", "Expected question prompt in the view")
 	assert.Contains(t, view, `Press tab to use "umin"`, "Expected placeholder in the view")
 }
 
@@ -506,7 +506,7 @@ func TestMonikerInput_View(t *testing.T) {
 	input := NewMonikerInput(ctx)
 
 	view := input.View()
-	assert.Contains(t, view, "Please specify the moniker", "Expected question prompt in the view")
+	assert.Contains(t, view, "Specify rollup node moniker", "Expected question prompt in the view")
 	assert.Contains(t, view, `Press tab to use "operator"`, "Expected placeholder in the view")
 }
 
@@ -516,7 +516,7 @@ func TestNewOpBridgeSubmissionIntervalInput(t *testing.T) {
 	input := NewOpBridgeSubmissionIntervalInput(ctx)
 
 	assert.NotNil(t, input)
-	assert.Equal(t, "Please specify OP bridge config: Submission Interval (format s, m or h - ex. 30s, 5m, 12h)", input.GetQuestion())
+	assert.Equal(t, "Specify OP bridge config: Submission Interval (format s, m or h - ex. 30s, 5m, 12h)", input.GetQuestion())
 	assert.Equal(t, "Press tab to use “1m”", input.TextInput.Placeholder)
 	assert.Equal(t, "1m", input.TextInput.DefaultValue)
 	assert.NotNil(t, input.TextInput.ValidationFn)
@@ -556,7 +556,7 @@ func TestOpBridgeSubmissionIntervalInput_View(t *testing.T) {
 	input := NewOpBridgeSubmissionIntervalInput(ctx)
 
 	view := input.View()
-	assert.Contains(t, view, "Please specify OP bridge config: Submission Interval (format s, m or h - ex. 30s, 5m, 12h)", "Expected question prompt in the view")
+	assert.Contains(t, view, "Specify OP bridge config: Submission Interval (format s, m or h - ex. 30s, 5m, 12h)", "Expected question prompt in the view")
 	assert.Contains(t, view, "Press tab to use “1m”", "Expected placeholder in the view")
 	assert.Contains(t, view, "1m", "Expected default value in the view") // Ensure the default value is displayed in the view
 }
@@ -567,7 +567,7 @@ func TestNewOpBridgeOutputFinalizationPeriodInput(t *testing.T) {
 	input := NewOpBridgeOutputFinalizationPeriodInput(ctx)
 
 	assert.NotNil(t, input)
-	assert.Equal(t, "Please specify OP bridge config: Output Finalization Period (format s, m or h - ex. 30s, 5m, 12h)", input.GetQuestion())
+	assert.Equal(t, "Specify OP bridge config: Output Finalization Period (format s, m or h - ex. 30s, 5m, 12h)", input.GetQuestion())
 	assert.Equal(t, "Press tab to use “168h” (7 days)", input.TextInput.Placeholder)
 	assert.Equal(t, "168h", input.TextInput.DefaultValue)
 	assert.NotNil(t, input.TextInput.ValidationFn)
@@ -607,7 +607,7 @@ func TestOpBridgeOutputFinalizationPeriodInput_View(t *testing.T) {
 	input := NewOpBridgeOutputFinalizationPeriodInput(ctx)
 
 	view := input.View()
-	assert.Contains(t, view, "Please specify OP bridge config: Output Finalization Period (format s, m or h - ex. 30s, 5m, 12h)", "Expected question prompt in the view")
+	assert.Contains(t, view, "Specify OP bridge config: Output Finalization Period (format s, m or h - ex. 30s, 5m, 12h)", "Expected question prompt in the view")
 	assert.Contains(t, view, "Press tab to use “168h”", "Expected placeholder in the view")
 	assert.Contains(t, view, "168h", "Expected default value in the view")
 }
@@ -618,7 +618,7 @@ func TestNewOpBridgeBatchSubmissionTargetSelect(t *testing.T) {
 	input := NewOpBridgeBatchSubmissionTargetSelect(ctx)
 
 	assert.NotNil(t, input)
-	assert.Equal(t, "Which OP bridge config: Batch Submission Target would you like to select?", input.GetQuestion())
+	assert.Equal(t, "Where should the rollup blocks and transaction data be submitted?", input.GetQuestion())
 }
 
 func TestOpBridgeBatchSubmissionTargetSelect_Init(t *testing.T) {
@@ -666,7 +666,7 @@ func TestOpBridgeBatchSubmissionTargetSelect_View(t *testing.T) {
 	input := NewOpBridgeBatchSubmissionTargetSelect(ctx)
 
 	view := input.View()
-	assert.Contains(t, view, "Which OP bridge config: Batch Submission Target would you like to select?", "Expected question prompt in the view")
+	assert.Contains(t, view, "Where should the rollup blocks and transaction data be submitted?", "Expected question prompt in the view")
 }
 
 func TestNewOracleEnableSelect(t *testing.T) {
@@ -675,7 +675,7 @@ func TestNewOracleEnableSelect(t *testing.T) {
 	selectInput := NewOracleEnableSelect(ctx)
 
 	assert.NotNil(t, selectInput)
-	assert.Equal(t, "Would you like to enable the oracle?", selectInput.GetQuestion())
+	assert.Equal(t, "Would you like to enable oracle price feed from L1?", selectInput.GetQuestion())
 	assert.Equal(t, 2, len(selectInput.Options))
 }
 
@@ -728,7 +728,7 @@ func TestOracleEnableSelect_View(t *testing.T) {
 	selectInput := NewOracleEnableSelect(ctx)
 
 	view := selectInput.View()
-	assert.Contains(t, view, "Would you like to enable the oracle?", "Expected question prompt in the view")
+	assert.Contains(t, view, "Would you like to enable oracle price feed from L1?", "Expected question prompt in the view")
 }
 
 func TestNewSystemKeysSelect(t *testing.T) {
@@ -737,7 +737,7 @@ func TestNewSystemKeysSelect(t *testing.T) {
 	selectInput := NewSystemKeysSelect(ctx)
 
 	assert.NotNil(t, selectInput)
-	assert.Equal(t, "Please select an option for the system keys", selectInput.GetQuestion())
+	assert.Equal(t, "Select a setup method for the system keys", selectInput.GetQuestion())
 	assert.Equal(t, 2, len(selectInput.Options))
 }
 
@@ -782,7 +782,7 @@ func TestSystemKeysSelect_View(t *testing.T) {
 
 	view := selectInput.View()
 	assert.Contains(t, view, "System keys are required for each of the following roles:", "Expected roles prompt in the view")
-	assert.Contains(t, view, "Please select an option for the system keys", "Expected question prompt in the view")
+	assert.Contains(t, view, "Select a setup method for the system keys", "Expected question prompt in the view")
 }
 
 func TestSystemKeyOperatorMnemonicInput_Init(t *testing.T) {
@@ -843,7 +843,7 @@ func TestNewSystemKeyBridgeExecutorMnemonicInput(t *testing.T) {
 	input := NewSystemKeyBridgeExecutorMnemonicInput(ctx)
 
 	assert.NotNil(t, input, "Expected non-nil input model")
-	assert.Equal(t, "Please add mnemonic for Bridge Executor", input.GetQuestion())
+	assert.Equal(t, "Specify the mnemonic for the bridge executor", input.GetQuestion())
 	assert.Equal(t, "Enter the mnemonic", input.TextInput.Placeholder)
 }
 
@@ -873,7 +873,7 @@ func TestSystemKeyBridgeExecutorMnemonicInput_Update(t *testing.T) {
 	assert.IsType(t, &SystemKeyOutputSubmitterMnemonicInput{}, finalModel)
 	assert.Equal(t, validMnemonic, state.systemKeyBridgeExecutorMnemonic)
 	assert.Contains(t, state.weave.PreviousResponse, styles.RenderPreviousResponse(
-		styles.DotsSeparator, input.GetQuestion(), []string{"Bridge Executor"}, styles.HiddenMnemonicText))
+		styles.DotsSeparator, input.GetQuestion(), []string{"bridge executor"}, styles.HiddenMnemonicText))
 
 	ctx = weavecontext.NewAppContext(*NewLaunchState())
 
@@ -887,7 +887,7 @@ func TestSystemKeyBridgeExecutorMnemonicInput_Update(t *testing.T) {
 	state = weavecontext.GetCurrentState[LaunchState](checkModel.Ctx)
 	assert.NotEqual(t, invalidMnemonic, state.systemKeyBridgeExecutorMnemonic)
 	assert.NotContains(t, state.weave.PreviousResponse, styles.RenderPreviousResponse(
-		styles.DotsSeparator, input.GetQuestion(), []string{"Bridge Executor"}, styles.HiddenMnemonicText))
+		styles.DotsSeparator, input.GetQuestion(), []string{"bridge executor"}, styles.HiddenMnemonicText))
 }
 
 func TestSystemKeyBridgeExecutorMnemonicInput_View(t *testing.T) {
@@ -906,7 +906,7 @@ func TestNewSystemKeyOutputSubmitterMnemonicInput(t *testing.T) {
 	input := NewSystemKeyOutputSubmitterMnemonicInput(ctx)
 
 	assert.NotNil(t, input, "Expected non-nil input model")
-	assert.Equal(t, "Please add mnemonic for Output Submitter", input.GetQuestion())
+	assert.Equal(t, "Specify the mnemonic for the output submitter", input.GetQuestion())
 	assert.Equal(t, "Enter the mnemonic", input.TextInput.Placeholder)
 }
 
@@ -936,7 +936,7 @@ func TestSystemKeyOutputSubmitterMnemonicInput_Update(t *testing.T) {
 	assert.IsType(t, &SystemKeyBatchSubmitterMnemonicInput{}, finalModel)
 	assert.Equal(t, validMnemonic, state.systemKeyOutputSubmitterMnemonic)
 	assert.Contains(t, state.weave.PreviousResponse, styles.RenderPreviousResponse(
-		styles.DotsSeparator, input.GetQuestion(), []string{"Output Submitter"}, styles.HiddenMnemonicText))
+		styles.DotsSeparator, input.GetQuestion(), []string{"output submitter"}, styles.HiddenMnemonicText))
 
 	ctx = weavecontext.NewAppContext(*NewLaunchState())
 	input = NewSystemKeyOutputSubmitterMnemonicInput(ctx)
@@ -949,7 +949,7 @@ func TestSystemKeyOutputSubmitterMnemonicInput_Update(t *testing.T) {
 	state = weavecontext.GetCurrentState[LaunchState](checkerModel.Ctx)
 	assert.NotEqual(t, invalidMnemonic, state.systemKeyOutputSubmitterMnemonic)
 	assert.NotContains(t, state.weave.PreviousResponse, styles.RenderPreviousResponse(
-		styles.DotsSeparator, input.GetQuestion(), []string{"Output Submitter"}, styles.HiddenMnemonicText))
+		styles.DotsSeparator, input.GetQuestion(), []string{"output submitter"}, styles.HiddenMnemonicText))
 }
 
 func TestSystemKeyOutputSubmitterMnemonicInput_View(t *testing.T) {
@@ -968,7 +968,7 @@ func TestNewSystemKeyBatchSubmitterMnemonicInput(t *testing.T) {
 	input := NewSystemKeyBatchSubmitterMnemonicInput(ctx)
 
 	assert.NotNil(t, input, "Expected non-nil input model")
-	assert.Equal(t, "Please add mnemonic for Batch Submitter", input.GetQuestion())
+	assert.Equal(t, "Specify the mnemonic for the batch submitter", input.GetQuestion())
 	assert.Equal(t, "Enter the mnemonic", input.TextInput.Placeholder)
 }
 
@@ -999,7 +999,7 @@ func TestSystemKeyBatchSubmitterMnemonicInput_Update(t *testing.T) {
 	assert.IsType(t, &SystemKeyChallengerMnemonicInput{}, finalModel)
 	assert.Equal(t, validMnemonic, state.systemKeyBatchSubmitterMnemonic)
 	assert.Contains(t, state.weave.PreviousResponse, styles.RenderPreviousResponse(
-		styles.DotsSeparator, input.GetQuestion(), []string{"Batch Submitter"}, styles.HiddenMnemonicText))
+		styles.DotsSeparator, input.GetQuestion(), []string{"batch submitter"}, styles.HiddenMnemonicText))
 
 	// Test invalid mnemonic input
 	ctx = weavecontext.NewAppContext(*NewLaunchState())
@@ -1013,7 +1013,7 @@ func TestSystemKeyBatchSubmitterMnemonicInput_Update(t *testing.T) {
 	state = weavecontext.GetCurrentState[LaunchState](checkerModel.Ctx)
 	assert.NotEqual(t, invalidMnemonic, state.systemKeyBatchSubmitterMnemonic)
 	assert.NotContains(t, state.weave.PreviousResponse, styles.RenderPreviousResponse(
-		styles.DotsSeparator, input.GetQuestion(), []string{"Batch Submitter"}, styles.HiddenMnemonicText))
+		styles.DotsSeparator, input.GetQuestion(), []string{"batch submitter"}, styles.HiddenMnemonicText))
 }
 
 func TestSystemKeyBatchSubmitterMnemonicInput_View(t *testing.T) {
@@ -1032,7 +1032,7 @@ func TestNewSystemKeyChallengerMnemonicInput(t *testing.T) {
 	input := NewSystemKeyChallengerMnemonicInput(ctx)
 
 	assert.NotNil(t, input, "Expected non-nil input model")
-	assert.Equal(t, "Please add mnemonic for Challenger", input.GetQuestion())
+	assert.Equal(t, "Specify the mnemonic for the challenger", input.GetQuestion())
 	assert.Equal(t, "Enter the mnemonic", input.TextInput.Placeholder)
 }
 
@@ -1063,7 +1063,7 @@ func TestSystemKeyChallengerMnemonicInput_Update(t *testing.T) {
 	assert.IsType(t, &ExistingGasStationChecker{}, finalModel)
 	assert.Equal(t, validMnemonic, state.systemKeyChallengerMnemonic)
 	assert.Contains(t, state.weave.PreviousResponse, styles.RenderPreviousResponse(
-		styles.DotsSeparator, input.GetQuestion(), []string{"Challenger"}, styles.HiddenMnemonicText))
+		styles.DotsSeparator, input.GetQuestion(), []string{"challenger"}, styles.HiddenMnemonicText))
 
 	// Test invalid mnemonic input
 	ctx = weavecontext.NewAppContext(*NewLaunchState())
@@ -1077,7 +1077,7 @@ func TestSystemKeyChallengerMnemonicInput_Update(t *testing.T) {
 	state = weavecontext.GetCurrentState[LaunchState](checkerModel.Ctx)
 	assert.NotEqual(t, invalidMnemonic, state.systemKeyChallengerMnemonic)
 	assert.NotContains(t, state.weave.PreviousResponse, styles.RenderPreviousResponse(
-		styles.DotsSeparator, input.GetQuestion(), []string{"Challenger"}, styles.HiddenMnemonicText))
+		styles.DotsSeparator, input.GetQuestion(), []string{"challenger"}, styles.HiddenMnemonicText))
 }
 
 func TestSystemKeyChallengerMnemonicInput_View(t *testing.T) {
@@ -1096,7 +1096,7 @@ func TestNewExistingGasStationChecker(t *testing.T) {
 	checker := NewExistingGasStationChecker(ctx)
 
 	assert.NotNil(t, checker, "Expected non-nil ExistingGasStationChecker")
-	assert.Contains(t, checker.loading.Text, "Checking for Gas Station account...", "Expected loading message to be set")
+	assert.Contains(t, checker.loading.Text, "Checking for gas station account...", "Expected loading message to be set")
 }
 
 func TestExistingGasStationChecker_Init(t *testing.T) {
@@ -1177,7 +1177,7 @@ func TestExistingGasStationChecker_View(t *testing.T) {
 
 	view := checker.View()
 
-	assert.Contains(t, view, "Checking for Gas Station account...", "Expected the view to contain the loading message")
+	assert.Contains(t, view, "Checking for gas station account...", "Expected the view to contain the loading message")
 }
 
 func TestNewGasStationMnemonicInput(t *testing.T) {
@@ -1186,9 +1186,9 @@ func TestNewGasStationMnemonicInput(t *testing.T) {
 	input := NewGasStationMnemonicInput(ctx)
 
 	assert.NotNil(t, input)
-	assert.Contains(t, input.GetQuestion(), "Please set up a Gas Station account")
+	assert.Contains(t, input.GetQuestion(), "Please set up a gas station account")
 	assert.NotNil(t, input.TextInput)
-	assert.Contains(t, input.question, "Please set up a Gas Station account", "Expected question prompt in the input")
+	assert.Contains(t, input.question, "Please set up a gas station account", "Expected question prompt in the input")
 }
 
 func TestGasStationMnemonicInput_Init(t *testing.T) {
@@ -1221,7 +1221,7 @@ func TestGasStationMnemonicInput_View(t *testing.T) {
 	input := NewGasStationMnemonicInput(ctx)
 
 	view := input.View()
-	assert.Contains(t, view, "Please set up a Gas Station account", "Expected question prompt in the view")
+	assert.Contains(t, view, "Please set up a gas station account", "Expected question prompt in the view")
 	assert.Contains(t, view, "Enter the mnemonic", "Expected placeholder prompt in the view")
 }
 
@@ -1231,7 +1231,7 @@ func TestNewSystemKeyL1BridgeExecutorBalanceInput(t *testing.T) {
 	balanceInput := NewSystemKeyL1BridgeExecutorBalanceInput(ctx)
 
 	assert.NotNil(t, balanceInput)
-	assert.Equal(t, "Please specify initial balance for Bridge Executor on L1 (uinit)", balanceInput.GetQuestion())
+	assert.Equal(t, "Specify the amount to fund the bridge executor on L1 (uinit)", balanceInput.GetQuestion())
 }
 
 func TestSystemKeyL1BridgeExecutorBalanceInput_Init(t *testing.T) {
@@ -1260,7 +1260,7 @@ func TestSystemKeyL1BridgeExecutorBalanceInput_Update_Valid(t *testing.T) {
 	assert.IsType(t, &SystemKeyL1OutputSubmitterBalanceInput{}, finalModel)
 	assert.Equal(t, validInput, state.systemKeyL1BridgeExecutorBalance)
 	assert.Contains(t, state.weave.PreviousResponse, styles.RenderPreviousResponse(
-		styles.DotsSeparator, balanceInput.GetQuestion(), []string{"Bridge Executor", "L1"}, validInput))
+		styles.DotsSeparator, balanceInput.GetQuestion(), []string{"bridge executor", "L1"}, validInput))
 }
 
 func TestSystemKeyL1BridgeExecutorBalanceInput_Update_Invalid(t *testing.T) {
@@ -1288,8 +1288,8 @@ func TestSystemKeyL1BridgeExecutorBalanceInput_View(t *testing.T) {
 	balanceInput := NewSystemKeyL1BridgeExecutorBalanceInput(ctx)
 
 	view := balanceInput.View()
-	assert.Contains(t, view, "Please specify initial balance for Bridge Executor on L1 (uinit)", "Expected question prompt in the view")
-	assert.Contains(t, view, "Enter the amount", "Expected placeholder in the view")
+	assert.Contains(t, view, "Specify the amount to fund the bridge executor on L1 (uinit)", "Expected question prompt in the view")
+	assert.Contains(t, view, "Enter a positive amount", "Expected placeholder in the view")
 }
 
 func TestNewSystemKeyL1OutputSubmitterBalanceInput(t *testing.T) {
@@ -1298,7 +1298,7 @@ func TestNewSystemKeyL1OutputSubmitterBalanceInput(t *testing.T) {
 	outputSubmitterInput := NewSystemKeyL1OutputSubmitterBalanceInput(ctx)
 
 	assert.NotNil(t, outputSubmitterInput)
-	assert.Equal(t, "Please specify initial balance for Output Submitter on L1 (uinit)", outputSubmitterInput.GetQuestion())
+	assert.Equal(t, "Specify the amount to fund the output submitter on L1 (uinit)", outputSubmitterInput.GetQuestion())
 }
 
 func TestSystemKeyL1OutputSubmitterBalanceInput_Init(t *testing.T) {
@@ -1327,7 +1327,7 @@ func TestSystemKeyL1OutputSubmitterBalanceInput_Update_Valid(t *testing.T) {
 	assert.IsType(t, &SystemKeyL1BatchSubmitterBalanceInput{}, finalModel)
 	assert.Equal(t, validInput, state.systemKeyL1OutputSubmitterBalance)
 	assert.Contains(t, state.weave.PreviousResponse, styles.RenderPreviousResponse(
-		styles.DotsSeparator, outputSubmitterInput.GetQuestion(), []string{"Output Submitter", "L1"}, validInput))
+		styles.DotsSeparator, outputSubmitterInput.GetQuestion(), []string{"output submitter", "L1"}, validInput))
 }
 
 func TestSystemKeyL1OutputSubmitterBalanceInput_Update_Invalid(t *testing.T) {
@@ -1355,8 +1355,8 @@ func TestSystemKeyL1OutputSubmitterBalanceInput_View(t *testing.T) {
 	outputSubmitterInput := NewSystemKeyL1OutputSubmitterBalanceInput(ctx)
 
 	view := outputSubmitterInput.View()
-	assert.Contains(t, view, "Please specify initial balance for Output Submitter on L1 (uinit)", "Expected question prompt in the view")
-	assert.Contains(t, view, "Enter the balance", "Expected placeholder in the view")
+	assert.Contains(t, view, "Specify the amount to fund the output submitter on L1 (uinit)", "Expected question prompt in the view")
+	assert.Contains(t, view, "Enter a positive amount", "Expected placeholder in the view")
 }
 
 func TestNewSystemKeyL1BatchSubmitterBalanceInput(t *testing.T) {
@@ -1365,7 +1365,7 @@ func TestNewSystemKeyL1BatchSubmitterBalanceInput(t *testing.T) {
 	batchSubmitterInput := NewSystemKeyL1BatchSubmitterBalanceInput(ctx)
 
 	assert.NotNil(t, batchSubmitterInput)
-	assert.Equal(t, "Please specify initial balance for Batch Submitter on L1 (uinit)", batchSubmitterInput.GetQuestion())
+	assert.Equal(t, "Specify the amount to fund the batch submitter on L1 (uinit)", batchSubmitterInput.GetQuestion())
 }
 
 func TestSystemKeyL1BatchSubmitterBalanceInput_Init(t *testing.T) {
@@ -1394,7 +1394,7 @@ func TestSystemKeyL1BatchSubmitterBalanceInput_Update_Valid(t *testing.T) {
 	assert.IsType(t, &SystemKeyL1ChallengerBalanceInput{}, finalModel)
 	assert.Equal(t, validInput, state.systemKeyL1BatchSubmitterBalance)
 	assert.Contains(t, state.weave.PreviousResponse, styles.RenderPreviousResponse(
-		styles.DotsSeparator, batchSubmitterInput.GetQuestion(), []string{"Batch Submitter", "L1"}, validInput))
+		styles.DotsSeparator, batchSubmitterInput.GetQuestion(), []string{"batch submitter", "L1"}, validInput))
 }
 
 func TestSystemKeyL1BatchSubmitterBalanceInput_Update_Invalid(t *testing.T) {
@@ -1422,8 +1422,8 @@ func TestSystemKeyL1BatchSubmitterBalanceInput_View(t *testing.T) {
 	batchSubmitterInput := NewSystemKeyL1BatchSubmitterBalanceInput(ctx)
 
 	view := batchSubmitterInput.View()
-	assert.Contains(t, view, "Please specify initial balance for Batch Submitter on L1 (uinit)", "Expected question prompt in the view")
-	assert.Contains(t, view, "Enter the balance", "Expected placeholder in the view")
+	assert.Contains(t, view, "Specify the amount to fund the batch submitter on L1 (uinit)", "Expected question prompt in the view")
+	assert.Contains(t, view, "Enter a positive amount", "Expected placeholder in the view")
 }
 
 func TestNewSystemKeyL1ChallengerBalanceInput(t *testing.T) {
@@ -1432,7 +1432,7 @@ func TestNewSystemKeyL1ChallengerBalanceInput(t *testing.T) {
 	challengerInput := NewSystemKeyL1ChallengerBalanceInput(ctx)
 
 	assert.NotNil(t, challengerInput)
-	assert.Equal(t, "Please specify initial balance for Challenger on L1 (uinit)", challengerInput.GetQuestion())
+	assert.Equal(t, "Specify the amount to fund the challenger on L1 (uinit)", challengerInput.GetQuestion())
 }
 
 func TestSystemKeyL1ChallengerBalanceInput_Init(t *testing.T) {
@@ -1461,7 +1461,7 @@ func TestSystemKeyL1ChallengerBalanceInput_Update_Valid(t *testing.T) {
 	assert.IsType(t, &SystemKeyL2OperatorBalanceInput{}, finalModel)
 	assert.Equal(t, validInput, state.systemKeyL1ChallengerBalance)
 	assert.Contains(t, state.weave.PreviousResponse, styles.RenderPreviousResponse(
-		styles.DotsSeparator, challengerInput.GetQuestion(), []string{"Challenger", "L1"}, validInput))
+		styles.DotsSeparator, challengerInput.GetQuestion(), []string{"challenger", "L1"}, validInput))
 }
 
 func TestSystemKeyL1ChallengerBalanceInput_Update_Invalid(t *testing.T) {
@@ -1489,8 +1489,8 @@ func TestSystemKeyL1ChallengerBalanceInput_View(t *testing.T) {
 	challengerInput := NewSystemKeyL1ChallengerBalanceInput(ctx)
 
 	view := challengerInput.View()
-	assert.Contains(t, view, "Please specify initial balance for Challenger on L1 (uinit)", "Expected question prompt in the view")
-	assert.Contains(t, view, "Enter the balance", "Expected placeholder in the view")
+	assert.Contains(t, view, "Specify the amount to fund the challenger on L1 (uinit)", "Expected question prompt in the view")
+	assert.Contains(t, view, "Enter a positive amount", "Expected placeholder in the view")
 }
 
 func TestNewSystemKeyL2OperatorBalanceInput(t *testing.T) {
@@ -1499,7 +1499,7 @@ func TestNewSystemKeyL2OperatorBalanceInput(t *testing.T) {
 	operatorInput := NewSystemKeyL2OperatorBalanceInput(ctx)
 
 	assert.NotNil(t, operatorInput)
-	assert.Equal(t, "Please specify initial balance for Operator on L2 ()", operatorInput.GetQuestion())
+	assert.Equal(t, "Specify the genesis balance for the operator on rollup ()", operatorInput.GetQuestion())
 }
 
 func TestSystemKeyL2OperatorBalanceInput_Init(t *testing.T) {
@@ -1528,7 +1528,7 @@ func TestSystemKeyL2OperatorBalanceInput_Update_Valid(t *testing.T) {
 	assert.IsType(t, &SystemKeyL2BridgeExecutorBalanceInput{}, finalModel)
 	assert.Equal(t, validInput, state.systemKeyL2OperatorBalance)
 	assert.Contains(t, state.weave.PreviousResponse, styles.RenderPreviousResponse(
-		styles.DotsSeparator, operatorInput.GetQuestion(), []string{"Operator", "L2"}, validInput))
+		styles.DotsSeparator, operatorInput.GetQuestion(), []string{"Operator", "rollup"}, validInput))
 }
 
 func TestSystemKeyL2OperatorBalanceInput_Update_Invalid(t *testing.T) {
@@ -1556,8 +1556,8 @@ func TestSystemKeyL2OperatorBalanceInput_View(t *testing.T) {
 	operatorInput := NewSystemKeyL2OperatorBalanceInput(ctx)
 
 	view := operatorInput.View()
-	assert.Contains(t, view, "Please specify initial balance for Operator on L2 ()", "Expected question prompt in the view")
-	assert.Contains(t, view, "Enter the balance", "Expected placeholder in the view")
+	assert.Contains(t, view, "Specify the genesis balance for the operator on rollup ()", "Expected question prompt in the view")
+	assert.Contains(t, view, "Enter a positive amount", "Expected placeholder in the view")
 }
 
 func TestNewSystemKeyL2BridgeExecutorBalanceInput(t *testing.T) {
@@ -1566,7 +1566,7 @@ func TestNewSystemKeyL2BridgeExecutorBalanceInput(t *testing.T) {
 	executorInput := NewSystemKeyL2BridgeExecutorBalanceInput(ctx)
 
 	assert.NotNil(t, executorInput)
-	assert.Equal(t, "Please specify initial balance for Bridge Executor on L2 ()", executorInput.GetQuestion())
+	assert.Equal(t, "Specify the genesis balance for the bridge executor on rollup ()", executorInput.GetQuestion())
 }
 
 func TestSystemKeyL2BridgeExecutorBalanceInput_Init(t *testing.T) {
@@ -1595,7 +1595,7 @@ func TestSystemKeyL2BridgeExecutorBalanceInput_Update_Valid(t *testing.T) {
 	assert.IsType(t, &AddGasStationToGenesisSelect{}, finalModel)
 	assert.Equal(t, validInput, state.systemKeyL2BridgeExecutorBalance)
 	assert.Contains(t, state.weave.PreviousResponse, styles.RenderPreviousResponse(
-		styles.DotsSeparator, executorInput.GetQuestion(), []string{"Bridge Executor", "L2"}, validInput))
+		styles.DotsSeparator, executorInput.GetQuestion(), []string{"Bridge Executor", "rollup"}, validInput))
 }
 
 func TestSystemKeyL2BridgeExecutorBalanceInput_Update_Invalid(t *testing.T) {
@@ -1623,8 +1623,8 @@ func TestSystemKeyL2BridgeExecutorBalanceInput_View(t *testing.T) {
 	executorInput := NewSystemKeyL2BridgeExecutorBalanceInput(ctx)
 
 	view := executorInput.View()
-	assert.Contains(t, view, "Please specify initial balance for Bridge Executor on L2 ()", "Expected question prompt in the view")
-	assert.Contains(t, view, "Enter the balance", "Expected placeholder in the view")
+	assert.Contains(t, view, "Specify the genesis balance for the bridge executor on rollup ()", "Expected question prompt in the view")
+	assert.Contains(t, view, "Enter a positive amount", "Expected placeholder in the view")
 }
 
 func TestAddGenesisAccountsSelect_Init(t *testing.T) {
@@ -1726,8 +1726,8 @@ func TestGenesisAccountsAddressInput_View(t *testing.T) {
 	addressInput := NewGenesisAccountsAddressInput(ctx)
 
 	view := addressInput.View()
-	assert.Contains(t, view, "Please specify genesis account address", "Expected question prompt in the view")
-	assert.Contains(t, view, "Enter the address", "Expected placeholder in the view")
+	assert.Contains(t, view, "Specify a genesis account address", "Expected question prompt in the view")
+	assert.Contains(t, view, "Enter a valid address", "Expected placeholder in the view")
 }
 
 func TestGenesisAccountsBalanceInput_Init(t *testing.T) {
@@ -1785,8 +1785,8 @@ func TestGenesisAccountsBalanceInput_View(t *testing.T) {
 	balanceInput := NewGenesisAccountsBalanceInput("init1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqpqr5e3d", ctx)
 
 	view := balanceInput.View()
-	assert.Contains(t, view, "Please specify initial balance for init1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqpqr5e3d", "Expected question prompt in the view")
-	assert.Contains(t, view, "Enter the desired balance", "Expected placeholder in the view")
+	assert.Contains(t, view, "Specify the genesis balance for init1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqpqr5e3d", "Expected question prompt in the view")
+	assert.Contains(t, view, "Enter a positive amount", "Expected placeholder in the view")
 }
 
 func TestAddGenesisAccountsSelect_Update_RecurringWithAccounts(t *testing.T) {
@@ -2039,7 +2039,7 @@ func TestNewSystemKeysMnemonicDisplayInput(t *testing.T) {
 	checkState := weavecontext.GetCurrentState[LaunchState](inputModel.Ctx)
 	assert.NotNil(t, inputModel)
 	assert.Equal(t, state, checkState)
-	assert.Equal(t, "Please type `continue` to proceed after you have securely stored the mnemonic.", inputModel.question)
+	assert.Equal(t, "Type `continue` to proceed after you have securely stored the mnemonic.", inputModel.question)
 	assert.Contains(t, inputModel.TextInput.Placeholder, "Type `continue` to continue, Ctrl+C to quit.")
 }
 
@@ -2050,7 +2050,7 @@ func TestSystemKeysMnemonicDisplayInput_GetQuestion(t *testing.T) {
 
 	question := inputModel.GetQuestion()
 
-	assert.Equal(t, "Please type `continue` to proceed after you have securely stored the mnemonic.", question)
+	assert.Equal(t, "Type `continue` to proceed after you have securely stored the mnemonic.", question)
 }
 
 func TestSystemKeysMnemonicDisplayInput_Init(t *testing.T) {
