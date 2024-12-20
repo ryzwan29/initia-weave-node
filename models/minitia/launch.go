@@ -26,6 +26,7 @@ import (
 	"github.com/initia-labs/weave/registry"
 	"github.com/initia-labs/weave/service"
 	"github.com/initia-labs/weave/styles"
+	"github.com/initia-labs/weave/tooltip"
 	"github.com/initia-labs/weave/types"
 	"github.com/initia-labs/weave/ui"
 )
@@ -38,7 +39,7 @@ type ExistingMinitiaChecker struct {
 func NewExistingMinitiaChecker(ctx context.Context) *ExistingMinitiaChecker {
 	return &ExistingMinitiaChecker{
 		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
-		loading:   ui.NewLoading("Checking for an existing Minitia app...", waitExistingMinitiaChecker(ctx)),
+		loading:   ui.NewLoading("Checking for an existing rollup app...", waitExistingMinitiaChecker(ctx)),
 	}
 }
 
@@ -102,7 +103,7 @@ func NewDeleteExistingMinitiaInput(ctx context.Context) *DeleteExistingMinitiaIn
 	model := &DeleteExistingMinitiaInput{
 		TextInput: ui.NewTextInput(true),
 		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
-		question:  "Please type `delete` to delete the .minitia folder and proceed with weave minitia launch",
+		question:  "Type `delete` to delete the .minitia folder and proceed with weave rollup launch",
 	}
 	model.WithPlaceholder("Type `delete` to delete, Ctrl+C to keep the folder and quit this command.")
 	model.WithValidatorFn(common.ValidateExactString("delete"))
@@ -142,15 +143,16 @@ func (m *DeleteExistingMinitiaInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *DeleteExistingMinitiaInput) View() string {
 	return styles.RenderPrompt(fmt.Sprintf("🚨 Existing %s folder detected.\n", weavecontext.GetMinitiaHome(m.Ctx)), []string{weavecontext.GetMinitiaHome(m.Ctx)}, styles.Empty) +
-		styles.RenderPrompt("To proceed with weave minitia launch, you must confirm the deletion of the .minitia folder.\nIf you do not confirm the deletion, the command will not run, and you will be returned to the homepage.\n\n", []string{".minitia", "weave minitia launch"}, styles.Empty) +
+		styles.RenderPrompt("To proceed with weave rollup launch, you must confirm the deletion of the .minitia folder.\nIf you do not confirm the deletion, the command will not run, and you will be returned to the homepage.\n\n", []string{".minitia", "weave rollup launch"}, styles.Empty) +
 		styles.Text("Please note that once you delete, all configurations, state, keys, and other data will be \n", styles.Yellow) + styles.BoldText("permanently deleted and cannot be reversed.\n", styles.Yellow) +
-		styles.RenderPrompt(m.GetQuestion(), []string{"`delete`", ".minitia", "weave minitia launch"}, styles.Question) + m.TextInput.View()
+		styles.RenderPrompt(m.GetQuestion(), []string{"`delete`", ".minitia", "weave rollup launch"}, styles.Question) + m.TextInput.View()
 }
 
 type NetworkSelect struct {
 	ui.Selector[NetworkSelectOption]
 	weavecontext.BaseModel
-	question string
+	question   string
+	highlights []string
 }
 
 type NetworkSelectOption string
@@ -184,8 +186,9 @@ func NewNetworkSelect(ctx context.Context) *NetworkSelect {
 			},
 			CannotBack: true,
 		},
-		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
-		question:  "Select the Initia L1 network you want to connect your rollup to",
+		BaseModel:  weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
+		question:   "Select the Initia L1 network you want to connect your rollup to",
+		highlights: []string{"Initia L1 network"},
 	}
 }
 
@@ -206,7 +209,7 @@ func (m *NetworkSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if selected != nil {
 		state := weavecontext.PushPageAndGetState[LaunchState](m)
 
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"Initia L1 network"}, string(*selected)))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), m.highlights, string(*selected)))
 		chainType := selected.ToChainType()
 		chainRegistry := registry.MustGetChainRegistry(chainType)
 		state.l1ChainId = chainRegistry.GetChainId()
@@ -223,7 +226,7 @@ func (m *NetworkSelect) View() string {
 	return styles.Text("🪢 When launching a rollup, after all configurations are set,\nthe rollup process will run for a few blocks to establish the necessary components.\nThis process may take some time.\n\n", styles.Ivory) +
 		state.weave.Render() + styles.RenderPrompt(
 		m.GetQuestion(),
-		[]string{"Initia L1 network"},
+		m.highlights,
 		styles.Question,
 	) + m.Selector.View()
 }
@@ -231,7 +234,8 @@ func (m *NetworkSelect) View() string {
 type VMTypeSelect struct {
 	ui.Selector[VMTypeSelectOption]
 	weavecontext.BaseModel
-	question string
+	question   string
+	highlights []string
 }
 
 type VMTypeSelectOption string
@@ -272,8 +276,9 @@ func NewVMTypeSelect(ctx context.Context) *VMTypeSelect {
 			},
 			Tooltips: &tooltips,
 		},
-		BaseModel: weavecontext.BaseModel{Ctx: ctx},
-		question:  "Select the Virtual Machine (VM) for your rollup",
+		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
+		question:   "Select the Virtual Machine (VM) for your rollup",
+		highlights: []string{"Virtual Machine (VM)"},
 	}
 }
 
@@ -294,7 +299,7 @@ func (m *VMTypeSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if selected != nil {
 		state := weavecontext.PushPageAndGetState[LaunchState](m)
 
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"VM type"}, string(*selected)))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), m.highlights, string(*selected)))
 		state.vmType = string(*selected)
 		model := NewLatestVersionLoading(weavecontext.SetCurrentState(m.Ctx, state))
 
@@ -309,7 +314,7 @@ func (m *VMTypeSelect) View() string {
 	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
 	return state.weave.Render() + styles.RenderPrompt(
 		m.GetQuestion(),
-		[]string{"VM type"},
+		m.highlights,
 		styles.Question,
 	) + m.Selector.View()
 }
@@ -377,8 +382,9 @@ func (m *LatestVersionLoading) View() string {
 type VersionSelect struct {
 	ui.Selector[string]
 	weavecontext.BaseModel
-	versions cosmosutils.BinaryVersionWithDownloadURL
-	question string
+	versions   cosmosutils.BinaryVersionWithDownloadURL
+	question   string
+	highlights []string
 }
 
 func NewVersionSelect(ctx context.Context) *VersionSelect {
@@ -388,9 +394,10 @@ func NewVersionSelect(ctx context.Context) *VersionSelect {
 		Selector: ui.Selector[string]{
 			Options: cosmosutils.SortVersions(versions),
 		},
-		BaseModel: weavecontext.BaseModel{Ctx: ctx},
-		versions:  versions,
-		question:  "Please specify the minitiad version?",
+		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
+		versions:   versions,
+		question:   "Specify the minitiad version?",
+		highlights: []string{"minitiad version"},
 	}
 }
 
@@ -413,7 +420,7 @@ func (m *VersionSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		state.minitiadVersion = *selected
 		state.minitiadEndpoint = m.versions[*selected]
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"minitiad version"}, *selected))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), m.highlights, *selected))
 		return NewChainIdInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
 	}
 
@@ -422,28 +429,26 @@ func (m *VersionSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *VersionSelect) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"minitiad version"}, styles.Question) + m.Selector.View()
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.Selector.View()
 }
 
 type ChainIdInput struct {
 	ui.TextInput
 	weavecontext.BaseModel
-	question string
+	question   string
+	highlights []string
 }
 
 func NewChainIdInput(ctx context.Context) *ChainIdInput {
-	tooltip := ui.NewTooltip(
-		"Chain ID",
-		"Identifier of your Minitia. It should be globally unique among all networks if this will be your production-ready public network, otherwise you can choose any name. However, creating Minitia with the same name from the same bridge executor account will result in an error. More on bridge executor later.",
-		"", []string{}, []string{}, []string{},
-	)
+	tooltip := tooltip.RollupChainIdTooltip
 	model := &ChainIdInput{
-		TextInput: ui.NewTextInput(true),
-		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
-		question:  "Please specify your rollup chain ID",
+		TextInput:  ui.NewTextInput(true),
+		BaseModel:  weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
+		question:   "Specify rollup chain ID",
+		highlights: []string{"rollup chain ID"},
 	}
-	model.WithPlaceholder("Enter your chain ID")
-	model.WithValidatorFn(common.ValidateNonEmptyAndLengthString("Chain id", MaxChainIDLength))
+	model.WithPlaceholder("Enter your chain ID ex. local-minitia-1")
+	model.WithValidatorFn(common.ValidateNonEmptyAndLengthString("Chain ID", MaxChainIDLength))
 	model.WithTooltip(&tooltip)
 	return model
 }
@@ -466,7 +471,7 @@ func (m *ChainIdInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		state := weavecontext.PushPageAndGetState[LaunchState](m)
 
 		state.chainId = input.Text
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"L2 chain id"}, input.Text))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), m.highlights, input.Text))
 		return NewGasDenomInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
 	}
 	m.TextInput = input
@@ -476,25 +481,23 @@ func (m *ChainIdInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *ChainIdInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
 	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"L2 chain id"}, styles.Question) + m.TextInput.View()
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View()
 }
 
 type GasDenomInput struct {
 	ui.TextInput
 	weavecontext.BaseModel
-	question string
+	question   string
+	highlights []string
 }
 
 func NewGasDenomInput(ctx context.Context) *GasDenomInput {
-	tooltip := ui.NewTooltip(
-		"Gas Token denom",
-		"Enter the token denomination for gas fees on your Minitia (e.g., umin). This defines the token used to pay transaction fees on your Layer 2 network.",
-		"", []string{}, []string{}, []string{},
-	)
+	tooltip := tooltip.RollupGasDenomTooltip
 	model := &GasDenomInput{
-		TextInput: ui.NewTextInput(false),
-		BaseModel: weavecontext.BaseModel{Ctx: ctx},
-		question:  "Please specify the L2 Gas Token Denom",
+		TextInput:  ui.NewTextInput(false),
+		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
+		question:   "Specify rollup gas denom",
+		highlights: []string{"rollup gas denom"},
 	}
 	model.WithPlaceholder(`Press tab to use "umin"`)
 	model.WithDefaultValue("umin")
@@ -521,7 +524,7 @@ func (m *GasDenomInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		state := weavecontext.PushPageAndGetState[LaunchState](m)
 
 		state.gasDenom = input.Text
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"L2 Gas Token Denom"}, input.Text))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), m.highlights, input.Text))
 		return NewMonikerInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
 	}
 	m.TextInput = input
@@ -531,25 +534,23 @@ func (m *GasDenomInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *GasDenomInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
 	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"L2 Gas Token Denom"}, styles.Question) + m.TextInput.View()
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View()
 }
 
 type MonikerInput struct {
 	ui.TextInput
 	weavecontext.BaseModel
-	question string
+	question   string
+	highlights []string
 }
 
 func NewMonikerInput(ctx context.Context) *MonikerInput {
-	tooltip := ui.NewTooltip(
-		"Moniker",
-		"A unique name assigned to a node in a blockchain network, used primarily for identification and distinction among nodes.",
-		"", []string{}, []string{}, []string{},
-	)
+	tooltip := tooltip.MonikerTooltip
 	model := &MonikerInput{
-		TextInput: ui.NewTextInput(false),
-		BaseModel: weavecontext.BaseModel{Ctx: ctx},
-		question:  "Please specify the moniker",
+		TextInput:  ui.NewTextInput(false),
+		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
+		question:   "Specify rollup node moniker",
+		highlights: []string{"rollup node moniker"},
 	}
 	model.WithPlaceholder(`Press tab to use "operator"`)
 	model.WithDefaultValue("operator")
@@ -576,7 +577,7 @@ func (m *MonikerInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		state := weavecontext.PushPageAndGetState[LaunchState](m)
 
 		state.moniker = input.Text
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"moniker"}, input.Text))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), m.highlights, input.Text))
 		return NewOpBridgeSubmissionIntervalInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
 	}
 	m.TextInput = input
@@ -586,25 +587,23 @@ func (m *MonikerInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *MonikerInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
 	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"moniker"}, styles.Question) + m.TextInput.View()
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View()
 }
 
 type OpBridgeSubmissionIntervalInput struct {
 	ui.TextInput
 	weavecontext.BaseModel
-	question string
+	question   string
+	highlights []string
 }
 
 func NewOpBridgeSubmissionIntervalInput(ctx context.Context) *OpBridgeSubmissionIntervalInput {
-	tooltip := ui.NewTooltip(
-		"Submission Interval",
-		"The maximum waiting time before submitting the L2 output root to L1 again.",
-		"", []string{}, []string{}, []string{},
-	)
+	tooltip := tooltip.OpBridgeSubmissionIntervalTooltip
 	model := &OpBridgeSubmissionIntervalInput{
-		TextInput: ui.NewTextInput(false),
-		BaseModel: weavecontext.BaseModel{Ctx: ctx},
-		question:  "Please specify OP bridge config: Submission Interval (format s, m or h - ex. 30s, 5m, 12h)",
+		TextInput:  ui.NewTextInput(false),
+		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
+		question:   "Specify OP bridge config: Submission Interval (format s, m or h - ex. 30s, 5m, 12h)",
+		highlights: []string{"Submission Interval"},
 	}
 	model.WithPlaceholder("Press tab to use “1m”")
 	model.WithDefaultValue("1m")
@@ -631,7 +630,7 @@ func (m *OpBridgeSubmissionIntervalInput) Update(msg tea.Msg) (tea.Model, tea.Cm
 		state := weavecontext.PushPageAndGetState[LaunchState](m)
 
 		state.opBridgeSubmissionInterval = input.Text
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Submission Interval"}, input.Text))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), m.highlights, input.Text))
 		return NewOpBridgeOutputFinalizationPeriodInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
 	}
 	m.TextInput = input
@@ -641,25 +640,23 @@ func (m *OpBridgeSubmissionIntervalInput) Update(msg tea.Msg) (tea.Model, tea.Cm
 func (m *OpBridgeSubmissionIntervalInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
 	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"Submission Interval"}, styles.Question) + m.TextInput.View()
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View()
 }
 
 type OpBridgeOutputFinalizationPeriodInput struct {
 	ui.TextInput
 	weavecontext.BaseModel
-	question string
+	question   string
+	highlights []string
 }
 
 func NewOpBridgeOutputFinalizationPeriodInput(ctx context.Context) *OpBridgeOutputFinalizationPeriodInput {
-	tooltip := ui.NewTooltip(
-		"Output Finalization Period",
-		"Also known as Challenge Period, is the time frame during which an output must remain unchallenged before it is deemed finalized and immutable on L1.",
-		"", []string{}, []string{}, []string{},
-	)
+	tooltip := tooltip.OpBridgeOutputFinalizationPeriodTooltip
 	model := &OpBridgeOutputFinalizationPeriodInput{
-		TextInput: ui.NewTextInput(false),
-		BaseModel: weavecontext.BaseModel{Ctx: ctx},
-		question:  "Please specify OP bridge config: Output Finalization Period (format s, m or h - ex. 30s, 5m, 12h)",
+		TextInput:  ui.NewTextInput(false),
+		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
+		question:   "Specify OP bridge config: Output Finalization Period (format s, m or h - ex. 30s, 5m, 12h)",
+		highlights: []string{"Output Finalization Period"},
 	}
 	model.WithPlaceholder("Press tab to use “168h” (7 days)")
 	model.WithDefaultValue("168h")
@@ -686,7 +683,7 @@ func (m *OpBridgeOutputFinalizationPeriodInput) Update(msg tea.Msg) (tea.Model, 
 		state := weavecontext.PushPageAndGetState[LaunchState](m)
 
 		state.opBridgeOutputFinalizationPeriod = input.Text
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Output Finalization Period"}, input.Text))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), m.highlights, input.Text))
 		return NewOpBridgeBatchSubmissionTargetSelect(weavecontext.SetCurrentState(m.Ctx, state)), nil
 	}
 	m.TextInput = input
@@ -696,13 +693,14 @@ func (m *OpBridgeOutputFinalizationPeriodInput) Update(msg tea.Msg) (tea.Model, 
 func (m *OpBridgeOutputFinalizationPeriodInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
 	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"Output Finalization Period"}, styles.Question) + m.TextInput.View()
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View()
 }
 
 type OpBridgeBatchSubmissionTargetSelect struct {
 	ui.Selector[OpBridgeBatchSubmissionTargetOption]
 	weavecontext.BaseModel
-	question string
+	question   string
+	highlights []string
 }
 
 type OpBridgeBatchSubmissionTargetOption string
@@ -713,13 +711,7 @@ const (
 )
 
 func NewOpBridgeBatchSubmissionTargetSelect(ctx context.Context) *OpBridgeBatchSubmissionTargetSelect {
-	tooltips := ui.NewTooltipSlice(
-		ui.NewTooltip(
-			"Batch Submission Target",
-			"The target chain for submitting L2 blocks and transaction data to ensure Data Availability. Currently, submissions can be made to Initia L1 or Celestia.\n\nFor production use, we recommend Celestia due to its cost-effective block space and faster query capabilities.",
-			"", []string{}, []string{}, []string{},
-		), 2,
-	)
+	tooltips := ui.NewTooltipSlice(tooltip.OpBridgeBatchSubmissionTargetTooltip, 2)
 	return &OpBridgeBatchSubmissionTargetSelect{
 		Selector: ui.Selector[OpBridgeBatchSubmissionTargetOption]{
 			Options: []OpBridgeBatchSubmissionTargetOption{
@@ -728,8 +720,9 @@ func NewOpBridgeBatchSubmissionTargetSelect(ctx context.Context) *OpBridgeBatchS
 			},
 			Tooltips: &tooltips,
 		},
-		BaseModel: weavecontext.BaseModel{Ctx: ctx},
-		question:  "Which OP bridge config: Batch Submission Target would you like to select?",
+		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
+		question:   "Where should the rollup blocks and transaction data be submitted?",
+		highlights: []string{"rollup"},
 	}
 }
 
@@ -751,7 +744,7 @@ func (m *OpBridgeBatchSubmissionTargetSelect) Update(msg tea.Msg) (tea.Model, te
 		state := weavecontext.PushPageAndGetState[LaunchState](m)
 
 		state.opBridgeBatchSubmissionTarget = common.TransformFirstWordUpperCase(string(*selected))
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"Batch Submission Target"}, string(*selected)))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), m.highlights, string(*selected)))
 		if *selected == Celestia {
 			state.batchSubmissionIsCelestia = true
 		}
@@ -766,7 +759,7 @@ func (m *OpBridgeBatchSubmissionTargetSelect) View() string {
 	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
 	return state.weave.Render() + styles.RenderPrompt(
 		m.GetQuestion(),
-		[]string{"Batch Submission Target"},
+		m.highlights,
 		styles.Question,
 	) + m.Selector.View()
 }
@@ -774,7 +767,8 @@ func (m *OpBridgeBatchSubmissionTargetSelect) View() string {
 type OracleEnableSelect struct {
 	ui.Selector[OracleEnableOption]
 	weavecontext.BaseModel
-	question string
+	question   string
+	highlights []string
 }
 
 type OracleEnableOption string
@@ -785,13 +779,7 @@ const (
 )
 
 func NewOracleEnableSelect(ctx context.Context) *OracleEnableSelect {
-	tooltips := ui.NewTooltipSlice(
-		ui.NewTooltip(
-			"Oracle",
-			"Oracle fetches and submits real-world price data to the blockchain, with validators running both an on-chain component and a sidecar process to gather and relay prices. \nEnabling this is recommended.",
-			"", []string{}, []string{}, []string{},
-		), 2,
-	)
+	tooltips := ui.NewTooltipSlice(tooltip.EnableOracleTooltip, 2)
 	return &OracleEnableSelect{
 		Selector: ui.Selector[OracleEnableOption]{
 			Options: []OracleEnableOption{
@@ -800,8 +788,9 @@ func NewOracleEnableSelect(ctx context.Context) *OracleEnableSelect {
 			},
 			Tooltips: &tooltips,
 		},
-		BaseModel: weavecontext.BaseModel{Ctx: ctx},
-		question:  "Would you like to enable the oracle?",
+		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
+		question:   "Would you like to enable oracle price feed from L1?",
+		highlights: []string{"oracle price feed", "L1"},
 	}
 }
 
@@ -827,7 +816,7 @@ func (m *OracleEnableSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		} else {
 			state.enableOracle = false
 		}
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"oracle"}, string(*selected)))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), m.highlights, string(*selected)))
 		return NewSystemKeysSelect(weavecontext.SetCurrentState(m.Ctx, state)), nil
 	}
 
@@ -839,7 +828,7 @@ func (m *OracleEnableSelect) View() string {
 	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
 	return state.weave.Render() + styles.RenderPrompt(
 		m.GetQuestion(),
-		[]string{"oracle"},
+		m.highlights,
 		styles.Question,
 	) + m.Selector.View()
 }
@@ -847,7 +836,8 @@ func (m *OracleEnableSelect) View() string {
 type SystemKeysSelect struct {
 	ui.Selector[SystemKeysOption]
 	weavecontext.BaseModel
-	question string
+	question   string
+	highlights []string
 }
 
 type SystemKeysOption string
@@ -865,8 +855,9 @@ func NewSystemKeysSelect(ctx context.Context) *SystemKeysSelect {
 				Import,
 			},
 		},
-		BaseModel: weavecontext.BaseModel{Ctx: ctx},
-		question:  "Please select an option for the system keys",
+		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
+		question:   "Select a setup method for the system keys",
+		highlights: []string{"system keys"},
 	}
 }
 
@@ -887,7 +878,7 @@ func (m *SystemKeysSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if selected != nil {
 		state := weavecontext.PushPageAndGetState[LaunchState](m)
 
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"the system keys"}, string(*selected)))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), m.highlights, string(*selected)))
 		switch *selected {
 		case Generate:
 			state.generateKeys = true
@@ -905,13 +896,13 @@ func (m *SystemKeysSelect) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
 	return state.weave.Render() + "\n" +
 		styles.RenderPrompt(
-			"System keys are required for each of the following roles:\nL2 Operator, Bridge Executor, Output Submitter, Batch Submitter, Challenger",
+			"System keys are required for each of the following roles:\nRollup Operator, Bridge Executor, Output Submitter, Batch Submitter, Challenger",
 			[]string{"System keys"},
 			styles.Information,
 		) + "\n" +
 		styles.RenderPrompt(
 			m.GetQuestion(),
-			[]string{"the system keys"},
+			m.highlights,
 			styles.Question,
 		) + m.Selector.View()
 }
@@ -919,19 +910,17 @@ func (m *SystemKeysSelect) View() string {
 type SystemKeyOperatorMnemonicInput struct {
 	ui.TextInput
 	weavecontext.BaseModel
-	question string
+	question   string
+	highlights []string
 }
 
 func NewSystemKeyOperatorMnemonicInput(ctx context.Context) *SystemKeyOperatorMnemonicInput {
-	tooltip := ui.NewTooltip(
-		"L2 Operator",
-		"Also known as Sequencer, is responsible for creating blocks, ordering and including transactions within each block, and maintaining the operation of the L2 network.",
-		"", []string{}, []string{}, []string{},
-	)
+	tooltip := tooltip.SystemKeyOperatorMnemonicTooltip
 	model := &SystemKeyOperatorMnemonicInput{
-		TextInput: ui.NewTextInput(false),
-		BaseModel: weavecontext.BaseModel{Ctx: ctx},
-		question:  "Please add mnemonic for Operator",
+		TextInput:  ui.NewTextInput(false),
+		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
+		question:   "Specify the mnemonic for the rollup operator",
+		highlights: []string{"rollup operator"},
 	}
 	model.WithPlaceholder("Enter the mnemonic")
 	model.WithValidatorFn(common.ValidateMnemonic)
@@ -958,7 +947,7 @@ func (m *SystemKeyOperatorMnemonicInput) Update(msg tea.Msg) (tea.Model, tea.Cmd
 
 		// TODO: Check if duplicate
 		state.systemKeyOperatorMnemonic = input.Text
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Operator"}, styles.HiddenMnemonicText))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), m.highlights, styles.HiddenMnemonicText))
 		return NewSystemKeyBridgeExecutorMnemonicInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
 	}
 	m.TextInput = input
@@ -968,25 +957,23 @@ func (m *SystemKeyOperatorMnemonicInput) Update(msg tea.Msg) (tea.Model, tea.Cmd
 func (m *SystemKeyOperatorMnemonicInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
 	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"Operator"}, styles.Question) + m.TextInput.View()
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View()
 }
 
 type SystemKeyBridgeExecutorMnemonicInput struct {
 	ui.TextInput
 	weavecontext.BaseModel
-	question string
+	question   string
+	highlights []string
 }
 
 func NewSystemKeyBridgeExecutorMnemonicInput(ctx context.Context) *SystemKeyBridgeExecutorMnemonicInput {
-	tooltip := ui.NewTooltip(
-		"Bridge Executor",
-		"Monitors the L1 and L2 transactions, facilitates token bridging and withdrawals between the Minitia and Initia L1 chain, and also relays oracle price feed to L2.",
-		"", []string{}, []string{}, []string{},
-	)
+	tooltip := tooltip.SystemKeyBridgeExecutorMnemonicTooltip
 	model := &SystemKeyBridgeExecutorMnemonicInput{
-		TextInput: ui.NewTextInput(false),
-		BaseModel: weavecontext.BaseModel{Ctx: ctx},
-		question:  "Please add mnemonic for Bridge Executor",
+		TextInput:  ui.NewTextInput(false),
+		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
+		question:   "Specify the mnemonic for the bridge executor",
+		highlights: []string{"bridge executor"},
 	}
 	model.WithPlaceholder("Enter the mnemonic")
 	model.WithValidatorFn(common.ValidateMnemonic)
@@ -1012,7 +999,7 @@ func (m *SystemKeyBridgeExecutorMnemonicInput) Update(msg tea.Msg) (tea.Model, t
 		state := weavecontext.PushPageAndGetState[LaunchState](m)
 
 		state.systemKeyBridgeExecutorMnemonic = input.Text
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Bridge Executor"}, styles.HiddenMnemonicText))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), m.highlights, styles.HiddenMnemonicText))
 		return NewSystemKeyOutputSubmitterMnemonicInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
 	}
 	m.TextInput = input
@@ -1022,25 +1009,23 @@ func (m *SystemKeyBridgeExecutorMnemonicInput) Update(msg tea.Msg) (tea.Model, t
 func (m *SystemKeyBridgeExecutorMnemonicInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
 	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"Bridge Executor"}, styles.Question) + m.TextInput.View()
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View()
 }
 
 type SystemKeyOutputSubmitterMnemonicInput struct {
 	ui.TextInput
 	weavecontext.BaseModel
-	question string
+	question   string
+	highlights []string
 }
 
 func NewSystemKeyOutputSubmitterMnemonicInput(ctx context.Context) *SystemKeyOutputSubmitterMnemonicInput {
-	tooltip := ui.NewTooltip(
-		"Output Submitter",
-		"Submits L2 output roots to L1 for verification and potential challenges. If the submitted output remains unchallenged beyond the output finalization period, it is considered finalized and immutable.",
-		"", []string{}, []string{}, []string{},
-	)
+	tooltip := tooltip.SystemKeyOutputSubmitterMnemonicTooltip
 	model := &SystemKeyOutputSubmitterMnemonicInput{
-		TextInput: ui.NewTextInput(false),
-		BaseModel: weavecontext.BaseModel{Ctx: ctx},
-		question:  "Please add mnemonic for Output Submitter",
+		TextInput:  ui.NewTextInput(false),
+		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
+		question:   "Specify the mnemonic for the output submitter",
+		highlights: []string{"output submitter"},
 	}
 	model.WithPlaceholder("Enter the mnemonic")
 	model.WithValidatorFn(common.ValidateMnemonic)
@@ -1066,7 +1051,7 @@ func (m *SystemKeyOutputSubmitterMnemonicInput) Update(msg tea.Msg) (tea.Model, 
 		state := weavecontext.PushPageAndGetState[LaunchState](m)
 
 		state.systemKeyOutputSubmitterMnemonic = input.Text
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Output Submitter"}, styles.HiddenMnemonicText))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), m.highlights, styles.HiddenMnemonicText))
 		return NewSystemKeyBatchSubmitterMnemonicInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
 	}
 	m.TextInput = input
@@ -1076,25 +1061,23 @@ func (m *SystemKeyOutputSubmitterMnemonicInput) Update(msg tea.Msg) (tea.Model, 
 func (m *SystemKeyOutputSubmitterMnemonicInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
 	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"Output Submitter"}, styles.Question) + m.TextInput.View()
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View()
 }
 
 type SystemKeyBatchSubmitterMnemonicInput struct {
 	ui.TextInput
 	weavecontext.BaseModel
-	question string
+	question   string
+	highlights []string
 }
 
 func NewSystemKeyBatchSubmitterMnemonicInput(ctx context.Context) *SystemKeyBatchSubmitterMnemonicInput {
-	tooltip := ui.NewTooltip(
-		"Batch Submitter",
-		"Submits block and transactions data in batches into a chain to ensure Data Availability. Currently, submissions can be made to Initia L1 or Celestia.",
-		"", []string{}, []string{}, []string{},
-	)
+	tooltip := tooltip.SystemKeyBatchSubmitterMnemonicTooltip
 	model := &SystemKeyBatchSubmitterMnemonicInput{
-		TextInput: ui.NewTextInput(false),
-		BaseModel: weavecontext.BaseModel{Ctx: ctx},
-		question:  "Please add mnemonic for Batch Submitter",
+		TextInput:  ui.NewTextInput(false),
+		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
+		question:   "Specify the mnemonic for the batch submitter",
+		highlights: []string{"batch submitter"},
 	}
 	model.WithPlaceholder("Enter the mnemonic")
 	model.WithValidatorFn(common.ValidateMnemonic)
@@ -1120,7 +1103,7 @@ func (m *SystemKeyBatchSubmitterMnemonicInput) Update(msg tea.Msg) (tea.Model, t
 		state := weavecontext.PushPageAndGetState[LaunchState](m)
 
 		state.systemKeyBatchSubmitterMnemonic = input.Text
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Batch Submitter"}, styles.HiddenMnemonicText))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), m.highlights, styles.HiddenMnemonicText))
 		return NewSystemKeyChallengerMnemonicInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
 	}
 	m.TextInput = input
@@ -1130,25 +1113,23 @@ func (m *SystemKeyBatchSubmitterMnemonicInput) Update(msg tea.Msg) (tea.Model, t
 func (m *SystemKeyBatchSubmitterMnemonicInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
 	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"Batch Submitter"}, styles.Question) + m.TextInput.View()
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View()
 }
 
 type SystemKeyChallengerMnemonicInput struct {
 	ui.TextInput
 	weavecontext.BaseModel
-	question string
+	question   string
+	highlights []string
 }
 
 func NewSystemKeyChallengerMnemonicInput(ctx context.Context) *SystemKeyChallengerMnemonicInput {
-	tooltip := ui.NewTooltip(
-		"Challenger",
-		"Prevents misconduct and invalid Minitia state submissions by monitoring for output proposals and challenging any that are invalid.",
-		"", []string{}, []string{}, []string{},
-	)
+	tooltip := tooltip.SystemKeyChallengerMnemonicTooltip
 	model := &SystemKeyChallengerMnemonicInput{
-		TextInput: ui.NewTextInput(false),
-		BaseModel: weavecontext.BaseModel{Ctx: ctx},
-		question:  "Please add mnemonic for Challenger",
+		TextInput:  ui.NewTextInput(false),
+		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
+		question:   "Specify the mnemonic for the challenger",
+		highlights: []string{"challenger"},
 	}
 	model.WithPlaceholder("Enter the mnemonic")
 	model.WithValidatorFn(common.ValidateMnemonic)
@@ -1174,7 +1155,7 @@ func (m *SystemKeyChallengerMnemonicInput) Update(msg tea.Msg) (tea.Model, tea.C
 		state := weavecontext.PushPageAndGetState[LaunchState](m)
 
 		state.systemKeyChallengerMnemonic = input.Text
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Challenger"}, styles.HiddenMnemonicText))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), m.highlights, styles.HiddenMnemonicText))
 		model := NewExistingGasStationChecker(weavecontext.SetCurrentState(m.Ctx, state))
 		return model, model.Init()
 	}
@@ -1185,7 +1166,7 @@ func (m *SystemKeyChallengerMnemonicInput) Update(msg tea.Msg) (tea.Model, tea.C
 func (m *SystemKeyChallengerMnemonicInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
 	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"Challenger"}, styles.Question) + m.TextInput.View()
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View()
 }
 
 type ExistingGasStationChecker struct {
@@ -1195,7 +1176,7 @@ type ExistingGasStationChecker struct {
 
 func NewExistingGasStationChecker(ctx context.Context) *ExistingGasStationChecker {
 	return &ExistingGasStationChecker{
-		loading:   ui.NewLoading("Checking for Gas Station account...", waitExistingGasStationChecker(ctx)),
+		loading:   ui.NewLoading("Checking for gas station account...", waitExistingGasStationChecker(ctx)),
 		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
 	}
 }
@@ -1251,18 +1232,17 @@ func (m *ExistingGasStationChecker) View() string {
 type GasStationMnemonicInput struct {
 	ui.TextInput
 	weavecontext.BaseModel
-	question string
+	question   string
+	highlights []string
 }
 
 func NewGasStationMnemonicInput(ctx context.Context) *GasStationMnemonicInput {
-	tooltip := ui.NewTooltip(
-		"Gas station account",
-		"Gas Station account is the account from which Weave will use to fund necessary system accounts, enabling easier and more seamless experience while setting up things using Weave.",
-		"** Weave will NOT automatically send transactions without asking for your confirmation. **", []string{}, []string{}, []string{})
+	tooltip := tooltip.GasStationMnemonicTooltip
 	model := &GasStationMnemonicInput{
-		TextInput: ui.NewTextInput(true),
-		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
-		question:  fmt.Sprintf("Please set up a Gas Station account %s\n%s", styles.Text("(The account that will hold the funds required by the OPinit-bots or relayer to send transactions)", styles.Gray), styles.BoldText("Weave will not send any transactions without your confirmation.", styles.Yellow)),
+		TextInput:  ui.NewTextInput(true),
+		BaseModel:  weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
+		question:   fmt.Sprintf("Please set up a gas station account %s\n%s", styles.Text("(The account that will hold the funds required by the OPinit-bots or relayer to send transactions)", styles.Gray), styles.BoldText("Weave will not send any transactions without your confirmation.", styles.Yellow)),
+		highlights: []string{"gas station account"},
 	}
 	model.WithPlaceholder("Enter the mnemonic")
 	model.WithValidatorFn(common.ValidateMnemonic)
@@ -1291,7 +1271,7 @@ func (m *GasStationMnemonicInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if err != nil {
 			panic(err)
 		}
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, "Please set up a Gas Station account", []string{"Gas Station account"}, styles.HiddenMnemonicText))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), m.highlights, styles.HiddenMnemonicText))
 		return NewAccountsFundingPresetSelect(weavecontext.SetCurrentState(m.Ctx, state)), nil
 	}
 	m.TextInput = input
@@ -1302,8 +1282,8 @@ func (m *GasStationMnemonicInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
 	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
 	return state.weave.Render() + "\n" +
-		styles.RenderPrompt(fmt.Sprintf("%s %s", styles.BoldUnderlineText("Please note that", styles.Yellow), styles.Text("you will need to set up a Gas Station account to fund the following accounts in order to run the weave minitia launch command:\n  • Bridge Executor\n  • Output Submitter\n  • Batch Submitter\n  • Challenger", styles.Yellow)), []string{}, styles.Information) + "\n" +
-		styles.RenderPrompt(m.GetQuestion(), []string{"Gas Station account"}, styles.Question) + m.TextInput.View()
+		styles.RenderPrompt(fmt.Sprintf("%s %s", styles.BoldUnderlineText("Please note that", styles.Yellow), styles.Text("you will need to set up a Gas Station account to fund the following accounts in order to run the weave rollup launch command:\n  • Bridge Executor\n  • Output Submitter\n  • Batch Submitter\n  • Challenger", styles.Yellow)), []string{}, styles.Information) + "\n" +
+		styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View()
 }
 
 type AccountsFundingPresetSelect struct {
@@ -1321,11 +1301,7 @@ const ManuallyFill AccountsFundingPresetOption = "○ Fill in an amount for each
 func NewAccountsFundingPresetSelect(ctx context.Context) *AccountsFundingPresetSelect {
 	state := weavecontext.GetCurrentState[LaunchState](ctx)
 	tooltips := ui.NewTooltipSlice(
-		ui.NewTooltip(
-			"OPInit Bots",
-			"Bridge Executor: Monitors the L1 and L2 transactions, facilitates token bridging and withdrawals between the minitia and Initia L1 chain, and also relays oracle price feed to L2.\n\nOutput Submitter: Submits L2 output roots to L1 for verification and potential challenges. If the submitted output remains unchallenged beyond the output finalization period, it is considered finalized and immutable.\n\nBatch Submitter: Submits block and transactions data in batches into a chain to ensure Data Availability. Currently, submissions can be made to Initia L1 or Celestia.\n\nChallenger: Prevents misconduct and invalid minitia state submissions by monitoring for output proposals and challenging any that are invalid.\n\nL2 Operator: Also known as Sequencer, is responsible for creating blocks, ordering and including transactions within each block, and maintaining the operation of the L2 network.",
-			"", []string{"Bridge Executor:", "Output Submitter:", "Batch Submitter:", "Challenger:", "L2 Operator:"}, []string{}, []string{},
-		), 2,
+		tooltip.SystemAccountsFundingPresetTooltip, 2,
 	)
 
 	gasStationMnemonic := config.GetGasStationMnemonic()
@@ -1355,14 +1331,14 @@ func NewAccountsFundingPresetSelect(ctx context.Context) *AccountsFundingPresetS
 	}
 	separator := styles.Text("------------------------------------------------------------------------------------", styles.Gray)
 	DefaultPreset = AccountsFundingPresetOption(fmt.Sprintf(
-		"○ Use the default preset\n    %s\n    %s\n    %s %s on L1, %s will be minted on L2\n    %s %s\n    %s %s%s\n    %s %s\n    %s %s will be minted on L2 \n    %s\n    %s\n    %s %s (%s)\n    %s%s\n",
+		"○ Use the default preset\n    %s\n    %s\n    %s %s on L1, %s will be minted on the rollup\n    %s %s\n    %s %s%s\n    %s %s\n    %s %s will be minted on the rollup \n    %s\n    %s\n    %s %s (%s)\n    %s%s\n",
 		separator,
 		styles.BoldText("• Executor", styles.Cyan),
 		styles.BoldText("  • Bridge Executor:", styles.Cyan), styles.BoldText(fmt.Sprintf("%s%s", DefaultL1BridgeExecutorBalance, DefaultL1GasDenom), styles.White), styles.BoldText(fmt.Sprintf("%s%s", DefaultL2BridgeExecutorBalance, state.gasDenom), styles.White),
 		styles.BoldText("  • Output Submitter:", styles.Cyan), styles.BoldText(fmt.Sprintf("%s%s", DefaultL1OutputSubmitterBalance, DefaultL1GasDenom), styles.White),
 		styles.BoldText("  • Batch Submitter:", styles.Cyan), styles.BoldText(fmt.Sprintf("%s%s", DefaultL1BatchSubmitterBalance, batchSubmitterDenom), styles.White), batchSubmitterText,
 		styles.BoldText("• Challenger:", styles.Cyan), styles.BoldText(fmt.Sprintf("%s%s", DefaultL1ChallengerBalance, DefaultL1GasDenom), styles.White),
-		styles.BoldText("• L2 Operator:", styles.Cyan), styles.BoldText(fmt.Sprintf("%s%s", DefaultL2OperatorBalance, state.gasDenom), styles.White),
+		styles.BoldText("• Rollup Operator:", styles.Cyan), styles.BoldText(fmt.Sprintf("%s%s", DefaultL2OperatorBalance, state.gasDenom), styles.White),
 		separator,
 		styles.Text("Total amount required from the Gas Station account:", styles.Ivory),
 		styles.Text(fmt.Sprintf("• L1 (%s):", state.l1ChainId), styles.Cyan), styles.BoldText(fmt.Sprintf("%s%s", initiaNeededBalance, DefaultL1GasDenom), styles.White),
@@ -1380,7 +1356,7 @@ func NewAccountsFundingPresetSelect(ctx context.Context) *AccountsFundingPresetS
 			Tooltips:   &tooltips,
 		},
 		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
-		question:  "Please select the filling amount option",
+		question:  "Select system accounts funding option",
 	}
 }
 
@@ -1420,8 +1396,8 @@ func (m *AccountsFundingPresetSelect) View() string {
 	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
 	return state.weave.Render() + "\n" +
 		styles.RenderPrompt(
-			"You will need to fund the following accounts on ...\n  L1:\n  • Bridge Executor\n  • Output Submitter\n  • Batch Submitter\n  • Challenger\n  L2:\n  • Operator\n  • Bridge Executor",
-			[]string{"L1", "L2"},
+			"You will need to fund the following accounts on ...\n  L1:\n  • Bridge Executor\n  • Output Submitter\n  • Batch Submitter\n  • Challenger\n  Rollup:\n  • Operator\n  • Bridge Executor",
+			[]string{"L1", "Rollup"},
 			styles.Information,
 		) + "\n" +
 		styles.RenderPrompt(
@@ -1434,18 +1410,20 @@ func (m *AccountsFundingPresetSelect) View() string {
 type SystemKeyL1BridgeExecutorBalanceInput struct {
 	ui.TextInput
 	weavecontext.BaseModel
-	question string
+	question   string
+	highlights []string
 }
 
 func NewSystemKeyL1BridgeExecutorBalanceInput(ctx context.Context) *SystemKeyL1BridgeExecutorBalanceInput {
 	state := weavecontext.GetCurrentState[LaunchState](ctx)
 	state.preL1BalancesResponsesCount = len(state.weave.PreviousResponse)
 	model := &SystemKeyL1BridgeExecutorBalanceInput{
-		TextInput: ui.NewTextInput(true),
-		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
-		question:  "Please specify initial balance for Bridge Executor on L1 (uinit)",
+		TextInput:  ui.NewTextInput(true),
+		BaseModel:  weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
+		question:   "Specify the amount to fund the bridge executor on L1 (uinit)",
+		highlights: []string{"bridge executor", "L1"},
 	}
-	model.WithPlaceholder("Enter the amount")
+	model.WithPlaceholder("Enter a positive amount")
 	model.WithValidatorFn(common.IsValidInteger)
 	model.Ctx = weavecontext.SetCurrentState(model.Ctx, state)
 	return model
@@ -1470,7 +1448,7 @@ func (m *SystemKeyL1BridgeExecutorBalanceInput) Update(msg tea.Msg) (tea.Model, 
 
 		state.systemKeyL1BridgeExecutorBalance = input.Text
 		state.weave.PushPreviousResponse(fmt.Sprintf("\n%s\n", styles.RenderPrompt("Please fund the following accounts on L1:\n  • Bridge Executor\n  • Output Submitter\n  • Batch Submitter\n  • Challenger\n", []string{"L1"}, styles.Information)))
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Bridge Executor", "L1"}, input.Text))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), m.highlights, input.Text))
 		return NewSystemKeyL1OutputSubmitterBalanceInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
 	}
 	m.TextInput = input
@@ -1481,22 +1459,24 @@ func (m *SystemKeyL1BridgeExecutorBalanceInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
 	return state.weave.Render() + "\n" +
 		styles.RenderPrompt("Please fund the following accounts on L1:\n  • Bridge Executor\n  • Output Submitter\n  • Batch Submitter\n  • Challenger", []string{"L1"}, styles.Information) + "\n" +
-		styles.RenderPrompt(m.GetQuestion(), []string{"Bridge Executor", "L1"}, styles.Question) + m.TextInput.View()
+		styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View()
 }
 
 type SystemKeyL1OutputSubmitterBalanceInput struct {
 	ui.TextInput
 	weavecontext.BaseModel
-	question string
+	question   string
+	highlights []string
 }
 
 func NewSystemKeyL1OutputSubmitterBalanceInput(ctx context.Context) *SystemKeyL1OutputSubmitterBalanceInput {
 	model := &SystemKeyL1OutputSubmitterBalanceInput{
-		TextInput: ui.NewTextInput(false),
-		BaseModel: weavecontext.BaseModel{Ctx: ctx},
-		question:  "Please specify initial balance for Output Submitter on L1 (uinit)",
+		TextInput:  ui.NewTextInput(false),
+		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
+		question:   "Specify the amount to fund the output submitter on L1 (uinit)",
+		highlights: []string{"output submitter", "L1"},
 	}
-	model.WithPlaceholder("Enter the balance")
+	model.WithPlaceholder("Enter a positive amount")
 	model.WithValidatorFn(common.IsValidInteger)
 	return model
 }
@@ -1519,7 +1499,7 @@ func (m *SystemKeyL1OutputSubmitterBalanceInput) Update(msg tea.Msg) (tea.Model,
 		state := weavecontext.PushPageAndGetState[LaunchState](m)
 
 		state.systemKeyL1OutputSubmitterBalance = input.Text
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Output Submitter", "L1"}, input.Text))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), m.highlights, input.Text))
 		return NewSystemKeyL1BatchSubmitterBalanceInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
 	}
 	m.TextInput = input
@@ -1529,13 +1509,14 @@ func (m *SystemKeyL1OutputSubmitterBalanceInput) Update(msg tea.Msg) (tea.Model,
 func (m *SystemKeyL1OutputSubmitterBalanceInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
 	return state.weave.Render() +
-		styles.RenderPrompt(m.GetQuestion(), []string{"Output Submitter", "L1"}, styles.Question) + m.TextInput.View()
+		styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View()
 }
 
 type SystemKeyL1BatchSubmitterBalanceInput struct {
 	ui.TextInput
 	weavecontext.BaseModel
-	question string
+	question   string
+	highlights []string
 }
 
 func NewSystemKeyL1BatchSubmitterBalanceInput(ctx context.Context) *SystemKeyL1BatchSubmitterBalanceInput {
@@ -1550,11 +1531,12 @@ func NewSystemKeyL1BatchSubmitterBalanceInput(ctx context.Context) *SystemKeyL1B
 	}
 
 	model := &SystemKeyL1BatchSubmitterBalanceInput{
-		TextInput: ui.NewTextInput(false),
-		BaseModel: weavecontext.BaseModel{Ctx: ctx},
-		question:  fmt.Sprintf("Please specify initial balance for Batch Submitter on %s (%s)", network, denom),
+		TextInput:  ui.NewTextInput(false),
+		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
+		question:   fmt.Sprintf("Specify the amount to fund the batch submitter on %s (%s)", network, denom),
+		highlights: []string{"batch submitter", "L1", "Celestia Testnet"},
 	}
-	model.WithPlaceholder("Enter the balance")
+	model.WithPlaceholder("Enter a positive amount")
 	model.WithValidatorFn(common.IsValidInteger)
 	return model
 }
@@ -1577,7 +1559,7 @@ func (m *SystemKeyL1BatchSubmitterBalanceInput) Update(msg tea.Msg) (tea.Model, 
 		state := weavecontext.PushPageAndGetState[LaunchState](m)
 
 		state.systemKeyL1BatchSubmitterBalance = input.Text
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Batch Submitter", "L1", "Celestia Testnet"}, input.Text))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), m.highlights, input.Text))
 		return NewSystemKeyL1ChallengerBalanceInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
 	}
 	m.TextInput = input
@@ -1587,22 +1569,24 @@ func (m *SystemKeyL1BatchSubmitterBalanceInput) Update(msg tea.Msg) (tea.Model, 
 func (m *SystemKeyL1BatchSubmitterBalanceInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
 	return state.weave.Render() +
-		styles.RenderPrompt(m.GetQuestion(), []string{"Batch Submitter", "L1", "Celestia Testnet"}, styles.Question) + m.TextInput.View()
+		styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View()
 }
 
 type SystemKeyL1ChallengerBalanceInput struct {
 	ui.TextInput
 	weavecontext.BaseModel
-	question string
+	question   string
+	highlights []string
 }
 
 func NewSystemKeyL1ChallengerBalanceInput(ctx context.Context) *SystemKeyL1ChallengerBalanceInput {
 	model := &SystemKeyL1ChallengerBalanceInput{
-		TextInput: ui.NewTextInput(false),
-		BaseModel: weavecontext.BaseModel{Ctx: ctx},
-		question:  "Please specify initial balance for Challenger on L1 (uinit)",
+		TextInput:  ui.NewTextInput(false),
+		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
+		question:   "Specify the amount to fund the challenger on L1 (uinit)",
+		highlights: []string{"challenger", "L1"},
 	}
-	model.WithPlaceholder("Enter the balance")
+	model.WithPlaceholder("Enter a positive amount")
 	model.WithValidatorFn(common.IsValidInteger)
 	return model
 }
@@ -1626,7 +1610,7 @@ func (m *SystemKeyL1ChallengerBalanceInput) Update(msg tea.Msg) (tea.Model, tea.
 
 		state.systemKeyL1ChallengerBalance = input.Text
 		state.weave.PopPreviousResponseAtIndex(state.preL1BalancesResponsesCount)
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Challenger", "L1"}, input.Text))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), m.highlights, input.Text))
 		return NewSystemKeyL2OperatorBalanceInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
 	}
 	m.TextInput = input
@@ -1636,24 +1620,26 @@ func (m *SystemKeyL1ChallengerBalanceInput) Update(msg tea.Msg) (tea.Model, tea.
 func (m *SystemKeyL1ChallengerBalanceInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
 	return state.weave.Render() +
-		styles.RenderPrompt(m.GetQuestion(), []string{"Challenger", "L1"}, styles.Question) + m.TextInput.View()
+		styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View()
 }
 
 type SystemKeyL2OperatorBalanceInput struct {
 	ui.TextInput
 	weavecontext.BaseModel
-	question string
+	question   string
+	highlights []string
 }
 
 func NewSystemKeyL2OperatorBalanceInput(ctx context.Context) *SystemKeyL2OperatorBalanceInput {
 	state := weavecontext.GetCurrentState[LaunchState](ctx)
 	state.preL2BalancesResponsesCount = len(state.weave.PreviousResponse)
 	model := &SystemKeyL2OperatorBalanceInput{
-		TextInput: ui.NewTextInput(true),
-		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
-		question:  fmt.Sprintf("Please specify initial balance for Operator on L2 (%s)", state.gasDenom),
+		TextInput:  ui.NewTextInput(true),
+		BaseModel:  weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
+		question:   fmt.Sprintf("Specify the genesis balance for the operator on rollup (%s)", state.gasDenom),
+		highlights: []string{"operator", "rollup"},
 	}
-	model.WithPlaceholder("Enter the balance")
+	model.WithPlaceholder("Enter a positive amount")
 	model.WithValidatorFn(common.IsValidInteger)
 	model.Ctx = weavecontext.SetCurrentState(model.Ctx, state)
 	return model
@@ -1677,8 +1663,8 @@ func (m *SystemKeyL2OperatorBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cm
 		state := weavecontext.PushPageAndGetState[LaunchState](m)
 
 		state.systemKeyL2OperatorBalance = fmt.Sprintf("%s%s", input.Text, state.gasDenom)
-		state.weave.PushPreviousResponse(fmt.Sprintf("\n%s\n", styles.RenderPrompt("Please fund the following accounts on L2:\n  • Operator\n  • Bridge Executor\n", []string{"L2"}, styles.Information)))
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Operator", "L2"}, input.Text))
+		state.weave.PushPreviousResponse(fmt.Sprintf("\n%s\n", styles.RenderPrompt("Please fund the following accounts on rollup:\n  • Operator\n  • Bridge Executor\n", []string{"rollup"}, styles.Information)))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), m.highlights, input.Text))
 		return NewSystemKeyL2BridgeExecutorBalanceInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
 	}
 	m.TextInput = input
@@ -1688,24 +1674,26 @@ func (m *SystemKeyL2OperatorBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cm
 func (m *SystemKeyL2OperatorBalanceInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
 	return state.weave.Render() + "\n" +
-		styles.RenderPrompt("Please fund the following accounts on L2:\n  • Operator\n  • Bridge Executor", []string{"L2"}, styles.Information) + "\n" +
-		styles.RenderPrompt(m.GetQuestion(), []string{"Operator", "L2"}, styles.Question) + m.TextInput.View()
+		styles.RenderPrompt("Please fund the following accounts on rollup:\n  • Operator\n  • Bridge Executor", []string{"rollup"}, styles.Information) + "\n" +
+		styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View()
 }
 
 type SystemKeyL2BridgeExecutorBalanceInput struct {
 	ui.TextInput
 	weavecontext.BaseModel
-	question string
+	question   string
+	highlights []string
 }
 
 func NewSystemKeyL2BridgeExecutorBalanceInput(ctx context.Context) *SystemKeyL2BridgeExecutorBalanceInput {
 	state := weavecontext.GetCurrentState[LaunchState](ctx)
 	model := &SystemKeyL2BridgeExecutorBalanceInput{
-		TextInput: ui.NewTextInput(false),
-		BaseModel: weavecontext.BaseModel{Ctx: ctx},
-		question:  fmt.Sprintf("Please specify initial balance for Bridge Executor on L2 (%s)", state.gasDenom),
+		TextInput:  ui.NewTextInput(false),
+		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
+		question:   fmt.Sprintf("Specify the genesis balance for the bridge executor on rollup (%s)", state.gasDenom),
+		highlights: []string{"bridge executor", "rollup"},
 	}
-	model.WithPlaceholder("Enter the balance")
+	model.WithPlaceholder("Enter a positive amount")
 	model.WithValidatorFn(common.IsValidInteger)
 	return model
 }
@@ -1729,7 +1717,7 @@ func (m *SystemKeyL2BridgeExecutorBalanceInput) Update(msg tea.Msg) (tea.Model, 
 
 		state.systemKeyL2BridgeExecutorBalance = fmt.Sprintf("%s%s", input.Text, state.gasDenom)
 		state.weave.PopPreviousResponseAtIndex(state.preL2BalancesResponsesCount)
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Bridge Executor", "L2"}, input.Text))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), m.highlights, input.Text))
 		return NewAddGasStationToGenesisSelect(weavecontext.SetCurrentState(m.Ctx, state)), nil
 	}
 	m.TextInput = input
@@ -1739,7 +1727,7 @@ func (m *SystemKeyL2BridgeExecutorBalanceInput) Update(msg tea.Msg) (tea.Model, 
 func (m *SystemKeyL2BridgeExecutorBalanceInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
 	return state.weave.Render() +
-		styles.RenderPrompt(m.GetQuestion(), []string{"Bridge Executor", "L2"}, styles.Question) + m.TextInput.View()
+		styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View()
 }
 
 type AddGasStationToGenesisSelect struct {
@@ -1760,11 +1748,7 @@ func NewAddGasStationToGenesisSelect(ctx context.Context) *AddGasStationToGenesi
 	state := weavecontext.GetCurrentState[LaunchState](ctx)
 
 	tooltips := ui.NewTooltipSlice(
-		ui.NewTooltip(
-			"Gas Station in Rollup Genesis",
-			"Adding gas station account as a genesis account grants initial balances to the gas station on the rollup at network launch. This ensures the gas station can fund relayer accounts during the Weave relayer flow, eliminating the need for later manual funding.",
-			"", []string{}, []string{}, []string{},
-		), 2,
+		tooltip.GasStationInRollupGenesisTooltip, 2,
 	)
 
 	return &AddGasStationToGenesisSelect{
@@ -1826,16 +1810,13 @@ func (m *AddGasStationToGenesisSelect) View() string {
 type GenesisGasStationBalanceInput struct {
 	ui.TextInput
 	weavecontext.BaseModel
-	question string
-	address  string
+	question   string
+	highlights []string
+	address    string
 }
 
 func NewGenesisGasStationBalanceInput(ctx context.Context) *GenesisGasStationBalanceInput {
-	tooltip := ui.NewTooltip(
-		"Gas Station Initial Balance on rollup",
-		"A genesis initial balance is the amount of tokens allocated to specific accounts when a blockchain network launches, in this case the gas station account. It allows these accounts to have immediate resources for transactions, testing, or operational roles without needing to acquire tokens afterward.",
-		"", []string{}, []string{}, []string{},
-	)
+	tooltip := tooltip.GasStationBalanceOnRollupGenesisTooltip
 	state := weavecontext.GetCurrentState[LaunchState](ctx)
 	gasStationAddress, err := crypto.MnemonicToBech32Address("init", config.GetGasStationMnemonic())
 	if err != nil {
@@ -1843,12 +1824,13 @@ func NewGenesisGasStationBalanceInput(ctx context.Context) *GenesisGasStationBal
 	}
 
 	model := &GenesisGasStationBalanceInput{
-		TextInput: ui.NewTextInput(false),
-		BaseModel: weavecontext.BaseModel{Ctx: ctx},
-		question:  fmt.Sprintf("Please specify initial balance for the gas station account (%s)", state.gasDenom),
-		address:   gasStationAddress,
+		TextInput:  ui.NewTextInput(false),
+		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
+		question:   fmt.Sprintf("Specify the genesis balance for the gas station account (%s)", state.gasDenom),
+		highlights: []string{"gas station"},
+		address:    gasStationAddress,
 	}
-	model.WithPlaceholder("Enter the desired balance")
+	model.WithPlaceholder("Enter a positive amount")
 	model.WithValidatorFn(common.IsValidInteger)
 	model.WithTooltip(&tooltip)
 	return model
@@ -1911,11 +1893,7 @@ func NewAddGenesisAccountsSelect(recurring bool, ctx context.Context) *AddGenesi
 	}
 
 	tooltips := ui.NewTooltipSlice(
-		ui.NewTooltip(
-			"Genesis Account",
-			"Adding genesis accounts grants initial balances to specific accounts at network launch, enabling early operations without later funding.\n\nWeave has already added L2 operator & bridge executor accounts to genesis accounts for you. No need to add those two again.",
-			"", []string{}, []string{}, []string{},
-		), 2,
+		tooltip.GenesisAccountSelectTooltip, 2,
 	)
 
 	return &AddGenesisAccountsSelect{
@@ -2006,9 +1984,9 @@ func NewGenesisAccountsAddressInput(ctx context.Context) *GenesisAccountsAddress
 	model := &GenesisAccountsAddressInput{
 		TextInput: ui.NewTextInput(false),
 		BaseModel: weavecontext.BaseModel{Ctx: ctx},
-		question:  "Please specify genesis account address",
+		question:  "Specify a genesis account address",
 	}
-	model.WithPlaceholder("Enter the address")
+	model.WithPlaceholder("Enter a valid address")
 	model.WithValidatorFn(common.IsValidAddress)
 	return model
 }
@@ -2050,19 +2028,15 @@ type GenesisAccountsBalanceInput struct {
 }
 
 func NewGenesisAccountsBalanceInput(address string, ctx context.Context) *GenesisAccountsBalanceInput {
-	tooltip := ui.NewTooltip(
-		"Genesis Initial Balance",
-		"A genesis initial balance is the amount of tokens allocated to specific accounts when a blockchain network launches. It allows these accounts to have immediate resources for transactions, testing, or operational roles without needing to acquire tokens afterward.",
-		"", []string{}, []string{}, []string{},
-	)
+	tooltip := tooltip.GenesisBalanceInputTooltip
 	state := weavecontext.GetCurrentState[LaunchState](ctx)
 	model := &GenesisAccountsBalanceInput{
 		TextInput: ui.NewTextInput(false),
 		BaseModel: weavecontext.BaseModel{Ctx: ctx},
 		address:   address,
-		question:  fmt.Sprintf("Please specify initial balance for %s (%s)", address, state.gasDenom),
+		question:  fmt.Sprintf("Specify the genesis balance for %s (%s)", address, state.gasDenom),
 	}
-	model.WithPlaceholder("Enter the desired balance")
+	model.WithPlaceholder("Enter a positive amount")
 	model.WithValidatorFn(common.IsValidInteger)
 	model.WithTooltip(&tooltip)
 	return model
@@ -2440,7 +2414,7 @@ func NewSystemKeysMnemonicDisplayInput(ctx context.Context) *SystemKeysMnemonicD
 	model := &SystemKeysMnemonicDisplayInput{
 		TextInput: ui.NewTextInput(true),
 		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
-		question:  "Please type `continue` to proceed after you have securely stored the mnemonic.",
+		question:  "Type `continue` to proceed after you have securely stored the mnemonic.",
 	}
 	model.WithPlaceholder("Type `continue` to continue, Ctrl+C to quit.")
 	model.WithValidatorFn(common.ValidateExactString("continue"))
@@ -2868,8 +2842,8 @@ func (m *LaunchingNewMinitiaLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		link := fmt.Sprintf("%s/custom-network/add/link?config=%s", InitiaScanURL, encodedPayload)
 		scanText := fmt.Sprintf(
-			"\n✨ %s 🪄 (We already started the minitia app for you)\n%s\n\n",
-			styles.BoldText("Explore your new Minitia here", styles.White),
+			"\n✨ %s 🪄 (We already started the rollup app for you)\n%s\n\n",
+			styles.BoldText("Explore your new rollup here", styles.White),
 			common.WrapText(link),
 		)
 		state.weave.PushPreviousResponse(scanText)
@@ -2879,7 +2853,7 @@ func (m *LaunchingNewMinitiaLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "Invalid OS: only Linux and Darwin are supported", []string{}, fmt.Sprintf("%v", err)))
 		}
 		if err = srv.Start(); err != nil {
-			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "Failed to start Minitia service", []string{}, fmt.Sprintf("%v", err)))
+			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "Failed to start rollup service", []string{}, fmt.Sprintf("%v", err)))
 		}
 
 		return NewTerminalState(weavecontext.SetCurrentState(m.Ctx, state)), tea.Quit

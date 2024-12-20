@@ -7,7 +7,6 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/initia-labs/weave/config"
-	"github.com/initia-labs/weave/flags"
 )
 
 var Version string
@@ -32,19 +31,10 @@ func Execute() error {
 		GasStationCommand(),
 		VersionCommand(),
 		UpgradeCommand(),
+		MinitiaCommand(),
+		OPInitBotsCommand(),
+		RelayerCommand(),
 	)
-
-	if flags.IsEnabled(flags.MinitiaLaunch) {
-		rootCmd.AddCommand(MinitiaCommand())
-	}
-
-	if flags.IsEnabled(flags.OPInitBots) {
-		rootCmd.AddCommand(OPInitBotsCommand())
-	}
-
-	if flags.IsEnabled(flags.Relayer) {
-		rootCmd.AddCommand(RelayerCommand())
-	}
 
 	return rootCmd.ExecuteContext(context.Background())
 }
