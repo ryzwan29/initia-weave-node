@@ -38,7 +38,11 @@ func NonDaemonStart(s Service) error {
 			_ = s.Stop()
 			panic(err)
 		}
-		_ = s.Log(100)
+		err = s.Log(100)
+		if err != nil {
+			_ = s.Stop()
+			panic(err)
+		}
 	}()
 
 	<-signalChan
