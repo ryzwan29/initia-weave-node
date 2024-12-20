@@ -70,7 +70,7 @@ func NewRunL1NodeNetworkSelect(ctx context.Context) *RunL1NodeNetworkSelect {
 			Options: []L1NodeNetworkOption{
 				// Mainnet,
 				Testnet,
-				Local,
+				// Local,
 			},
 			CannotBack: true,
 			Tooltips:   &tooltips,
