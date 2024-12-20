@@ -239,45 +239,30 @@ func (m *OPInitBotInitSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			keyNames[BatchSubmitterKeyName] = true
 			keyNames[OracleBridgeExecutorKeyName] = true
 
-			finished := true
-
-			state.BotInfos = CheckIfKeysExist(BotInfos)
+			state.BotInfos = CheckIfKeysExist(state.BotInfos)
 			for idx, botInfo := range state.BotInfos {
-				if keyNames[botInfo.KeyName] && botInfo.IsNotExist {
+				if botInfo.KeyName == OracleBridgeExecutorKeyName && botInfo.IsNotExist {
 					state.BotInfos[idx].IsSetup = true
-					finished = false
+				} else if keyNames[botInfo.KeyName] && botInfo.IsNotExist && !state.AddMinitiaConfig {
+					state.BotInfos[idx].IsSetup = true
 				} else {
 					state.BotInfos[idx].IsSetup = false
 				}
 			}
-			if finished {
-				return OPInitBotInitSelectExecutor(weavecontext.SetCurrentState(m.Ctx, state)), cmd
-			}
-
-			state.isSetupMissingKey = true
 			return NextUpdateOpinitBotKey(weavecontext.SetCurrentState(m.Ctx, state))
 		case ChallengerOPInitBotInitOption:
 			state.InitChallengerBot = true
 			keyNames := make(map[string]bool)
 			keyNames[ChallengerKeyName] = true
 
-			finished := true
-
-			state.BotInfos = CheckIfKeysExist(BotInfos)
+			state.BotInfos = CheckIfKeysExist(state.BotInfos)
 			for idx, botInfo := range state.BotInfos {
-				fmt.Println(botInfo.KeyName, keyNames[botInfo.KeyName], botInfo.IsNotExist)
-				if keyNames[botInfo.KeyName] && botInfo.IsNotExist {
+				if keyNames[botInfo.KeyName] && botInfo.IsNotExist && !state.AddMinitiaConfig {
 					state.BotInfos[idx].IsSetup = true
-					finished = false
 				} else {
 					state.BotInfos[idx].IsSetup = false
 				}
 			}
-			if finished {
-				return OPInitBotInitSelectChallenger(weavecontext.SetCurrentState(m.Ctx, state)), cmd
-			}
-
-			state.isSetupMissingKey = true
 			return NextUpdateOpinitBotKey(weavecontext.SetCurrentState(m.Ctx, state))
 		}
 	}
@@ -285,8 +270,9 @@ func (m *OPInitBotInitSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *OPInitBotInitSelector) View() string {
+	state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
 	m.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return styles.RenderPrompt(m.GetQuestion(), []string{"bot"}, styles.Question) + m.Selector.View()
+	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"bot"}, styles.Question) + m.Selector.View()
 }
 
 type DeleteDBOption string
@@ -968,19 +954,26 @@ func (m *SetupOPInitBotsMissingKey) Init() tea.Cmd {
 	return m.loading.Init()
 }
 
+func handleBotInitSelection(ctx context.Context, state OPInitBotsState) (tea.Model, tea.Cmd) {
+	if state.InitExecutorBot {
+		return OPInitBotInitSelectExecutor(ctx), nil
+	}
+	return OPInitBotInitSelectChallenger(ctx), nil
+}
+
 func (m *SetupOPInitBotsMissingKey) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	loader, cmd := m.loading.Update(msg)
 	m.loading = loader
 	if m.loading.Completing {
+		state := weavecontext.GetCurrentState[OPInitBotsState](m.loading.EndContext)
+		oracleBotInfo := GetBotInfo(BotInfos, OracleBridgeExecutor)
+		if (state.AddMinitiaConfig && !oracleBotInfo.IsNewKey()) || (!state.AddMinitiaConfig && len(state.SetupOpinitResponses) == 0) {
+			return handleBotInitSelection(m.loading.EndContext, state)
+		}
 		switch msg := msg.(type) {
 		case tea.KeyMsg:
 			if msg.String() == "enter" {
-				state := weavecontext.GetCurrentState[OPInitBotsState](m.loading.EndContext)
-				if state.InitExecutorBot {
-					return OPInitBotInitSelectExecutor(m.loading.EndContext), nil
-				} else if state.InitChallengerBot {
-					return OPInitBotInitSelectChallenger(m.loading.EndContext), nil
-				}
+				return handleBotInitSelection(m.loading.EndContext, state)
 			}
 		}
 	}
@@ -989,6 +982,10 @@ func (m *SetupOPInitBotsMissingKey) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *SetupOPInitBotsMissingKey) View() string {
 	state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
+	oracleBotInfo := GetBotInfo(BotInfos, OracleBridgeExecutor)
+	if state.AddMinitiaConfig && !oracleBotInfo.IsNewKey() {
+		return state.weave.Render() + "\n"
+	}
 	if len(state.SetupOpinitResponses) > 0 {
 		mnemonicText := ""
 		for _, botName := range BotNames {
