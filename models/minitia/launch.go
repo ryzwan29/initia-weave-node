@@ -80,17 +80,17 @@ func (m *ExistingMinitiaChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				model := NewDownloadMinitiaBinaryLoading(weavecontext.SetCurrentState(m.Ctx, state))
 				return model, model.Init()
 			}
-			return NewNetworkSelect(weavecontext.SetCurrentState(m.Ctx, state)), nil
+			return NewNetworkSelect(weavecontext.SetCurrentState(m.Ctx, state)), cmd
 		} else {
-			return NewDeleteExistingMinitiaInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
+			return NewDeleteExistingMinitiaInput(weavecontext.SetCurrentState(m.Ctx, state)), cmd
 		}
 	}
 	return m, cmd
 }
 
 func (m *ExistingMinitiaChecker) View() string {
-	return styles.Text("🪢 When launching a rollup, after all configurations are set,\nthe rollup process will run for a few blocks to establish the necessary components.\nThis process may take some time.\n\n", styles.Ivory) +
-		m.loading.View()
+	return m.WrapView(styles.Text("🪢 When launching a rollup, after all configurations are set,\nthe rollup process will run for a few blocks to establish the necessary components.\nThis process may take some time.\n\n", styles.Ivory) +
+		m.loading.View())
 }
 
 type DeleteExistingMinitiaInput struct {
@@ -142,10 +142,10 @@ func (m *DeleteExistingMinitiaInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *DeleteExistingMinitiaInput) View() string {
-	return styles.RenderPrompt(fmt.Sprintf("🚨 Existing %s folder detected.\n", weavecontext.GetMinitiaHome(m.Ctx)), []string{weavecontext.GetMinitiaHome(m.Ctx)}, styles.Empty) +
+	return m.WrapView(styles.RenderPrompt(fmt.Sprintf("🚨 Existing %s folder detected.\n", weavecontext.GetMinitiaHome(m.Ctx)), []string{weavecontext.GetMinitiaHome(m.Ctx)}, styles.Empty) +
 		styles.RenderPrompt("To proceed with weave rollup launch, you must confirm the deletion of the .minitia folder.\nIf you do not confirm the deletion, the command will not run, and you will be returned to the homepage.\n\n", []string{".minitia", "weave rollup launch"}, styles.Empty) +
 		styles.Text("Please note that once you delete, all configurations, state, keys, and other data will be \n", styles.Yellow) + styles.BoldText("permanently deleted and cannot be reversed.\n", styles.Yellow) +
-		styles.RenderPrompt(m.GetQuestion(), []string{"`delete`", ".minitia", "weave rollup launch"}, styles.Question) + m.TextInput.View()
+		styles.RenderPrompt(m.GetQuestion(), []string{"`delete`", ".minitia", "weave rollup launch"}, styles.Question) + m.TextInput.View())
 }
 
 type NetworkSelect struct {
@@ -223,12 +223,12 @@ func (m *NetworkSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *NetworkSelect) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
-	return styles.Text("🪢 When launching a rollup, after all configurations are set,\nthe rollup process will run for a few blocks to establish the necessary components.\nThis process may take some time.\n\n", styles.Ivory) +
+	return m.WrapView(styles.Text("🪢 When launching a rollup, after all configurations are set,\nthe rollup process will run for a few blocks to establish the necessary components.\nThis process may take some time.\n\n", styles.Ivory) +
 		state.weave.Render() + styles.RenderPrompt(
 		m.GetQuestion(),
 		m.highlights,
 		styles.Question,
-	) + m.Selector.View()
+	) + m.Selector.View())
 }
 
 type VMTypeSelect struct {
@@ -312,11 +312,11 @@ func (m *VMTypeSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *VMTypeSelect) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
 	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(
 		m.GetQuestion(),
 		m.highlights,
 		styles.Question,
-	) + m.Selector.View()
+	) + m.Selector.View())
 }
 
 type LatestVersionLoading struct {
@@ -376,7 +376,7 @@ func (m *LatestVersionLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *LatestVersionLoading) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
-	return state.weave.Render() + "\n" + m.loading.View()
+	return m.WrapView(state.weave.Render() + "\n" + m.loading.View())
 }
 
 type VersionSelect struct {
@@ -429,7 +429,7 @@ func (m *VersionSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *VersionSelect) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.Selector.View()
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.Selector.View())
 }
 
 type ChainIdInput struct {
@@ -481,7 +481,7 @@ func (m *ChainIdInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *ChainIdInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
 	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View()
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View())
 }
 
 type GasDenomInput struct {
@@ -534,7 +534,7 @@ func (m *GasDenomInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *GasDenomInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
 	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View()
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View())
 }
 
 type MonikerInput struct {
@@ -587,7 +587,7 @@ func (m *MonikerInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *MonikerInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
 	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View()
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View())
 }
 
 type OpBridgeSubmissionIntervalInput struct {
@@ -640,7 +640,7 @@ func (m *OpBridgeSubmissionIntervalInput) Update(msg tea.Msg) (tea.Model, tea.Cm
 func (m *OpBridgeSubmissionIntervalInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
 	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View()
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View())
 }
 
 type OpBridgeOutputFinalizationPeriodInput struct {
@@ -693,7 +693,7 @@ func (m *OpBridgeOutputFinalizationPeriodInput) Update(msg tea.Msg) (tea.Model, 
 func (m *OpBridgeOutputFinalizationPeriodInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
 	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View()
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View())
 }
 
 type OpBridgeBatchSubmissionTargetSelect struct {
@@ -757,11 +757,11 @@ func (m *OpBridgeBatchSubmissionTargetSelect) Update(msg tea.Msg) (tea.Model, te
 func (m *OpBridgeBatchSubmissionTargetSelect) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
 	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(
 		m.GetQuestion(),
 		m.highlights,
 		styles.Question,
-	) + m.Selector.View()
+	) + m.Selector.View())
 }
 
 type OracleEnableSelect struct {
@@ -826,11 +826,11 @@ func (m *OracleEnableSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *OracleEnableSelect) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
 	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(
 		m.GetQuestion(),
 		m.highlights,
 		styles.Question,
-	) + m.Selector.View()
+	) + m.Selector.View())
 }
 
 type SystemKeysSelect struct {
@@ -894,7 +894,7 @@ func (m *SystemKeysSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *SystemKeysSelect) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
-	return state.weave.Render() + "\n" +
+	return m.WrapView(state.weave.Render() + "\n" +
 		styles.RenderPrompt(
 			"System keys are required for each of the following roles:\nRollup Operator, Bridge Executor, Output Submitter, Batch Submitter, Challenger",
 			[]string{"System keys"},
@@ -904,7 +904,7 @@ func (m *SystemKeysSelect) View() string {
 			m.GetQuestion(),
 			m.highlights,
 			styles.Question,
-		) + m.Selector.View()
+		) + m.Selector.View())
 }
 
 type SystemKeyOperatorMnemonicInput struct {
@@ -957,7 +957,7 @@ func (m *SystemKeyOperatorMnemonicInput) Update(msg tea.Msg) (tea.Model, tea.Cmd
 func (m *SystemKeyOperatorMnemonicInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
 	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View()
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View())
 }
 
 type SystemKeyBridgeExecutorMnemonicInput struct {
@@ -1009,7 +1009,7 @@ func (m *SystemKeyBridgeExecutorMnemonicInput) Update(msg tea.Msg) (tea.Model, t
 func (m *SystemKeyBridgeExecutorMnemonicInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
 	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View()
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View())
 }
 
 type SystemKeyOutputSubmitterMnemonicInput struct {
@@ -1061,7 +1061,7 @@ func (m *SystemKeyOutputSubmitterMnemonicInput) Update(msg tea.Msg) (tea.Model, 
 func (m *SystemKeyOutputSubmitterMnemonicInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
 	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View()
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View())
 }
 
 type SystemKeyBatchSubmitterMnemonicInput struct {
@@ -1113,7 +1113,7 @@ func (m *SystemKeyBatchSubmitterMnemonicInput) Update(msg tea.Msg) (tea.Model, t
 func (m *SystemKeyBatchSubmitterMnemonicInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
 	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View()
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View())
 }
 
 type SystemKeyChallengerMnemonicInput struct {
@@ -1166,7 +1166,7 @@ func (m *SystemKeyChallengerMnemonicInput) Update(msg tea.Msg) (tea.Model, tea.C
 func (m *SystemKeyChallengerMnemonicInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
 	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View()
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View())
 }
 
 type ExistingGasStationChecker struct {
@@ -1226,7 +1226,7 @@ func (m *ExistingGasStationChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *ExistingGasStationChecker) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
-	return state.weave.Render() + "\n" + m.loading.View()
+	return m.WrapView(state.weave.Render() + "\n" + m.loading.View())
 }
 
 type GasStationMnemonicInput struct {
@@ -1281,9 +1281,9 @@ func (m *GasStationMnemonicInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *GasStationMnemonicInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
 	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + "\n" +
+	return m.WrapView(state.weave.Render() + "\n" +
 		styles.RenderPrompt(fmt.Sprintf("%s %s", styles.BoldUnderlineText("Please note that", styles.Yellow), styles.Text("you will need to set up a Gas Station account to fund the following accounts in order to run the weave rollup launch command:\n  • Bridge Executor\n  • Output Submitter\n  • Batch Submitter\n  • Challenger", styles.Yellow)), []string{}, styles.Information) + "\n" +
-		styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View()
+		styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View())
 }
 
 type AccountsFundingPresetSelect struct {
@@ -1394,7 +1394,7 @@ func (m *AccountsFundingPresetSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *AccountsFundingPresetSelect) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
 	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + "\n" +
+	return m.WrapView(state.weave.Render() + "\n" +
 		styles.RenderPrompt(
 			"You will need to fund the following accounts on ...\n  L1:\n  • Bridge Executor\n  • Output Submitter\n  • Batch Submitter\n  • Challenger\n  Rollup:\n  • Operator\n  • Bridge Executor",
 			[]string{"L1", "Rollup"},
@@ -1404,7 +1404,7 @@ func (m *AccountsFundingPresetSelect) View() string {
 			m.GetQuestion(),
 			[]string{},
 			styles.Question,
-		) + m.Selector.View()
+		) + m.Selector.View())
 }
 
 type SystemKeyL1BridgeExecutorBalanceInput struct {
@@ -1457,9 +1457,9 @@ func (m *SystemKeyL1BridgeExecutorBalanceInput) Update(msg tea.Msg) (tea.Model, 
 
 func (m *SystemKeyL1BridgeExecutorBalanceInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
-	return state.weave.Render() + "\n" +
+	return m.WrapView(state.weave.Render() + "\n" +
 		styles.RenderPrompt("Please fund the following accounts on L1:\n  • Bridge Executor\n  • Output Submitter\n  • Batch Submitter\n  • Challenger", []string{"L1"}, styles.Information) + "\n" +
-		styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View()
+		styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View())
 }
 
 type SystemKeyL1OutputSubmitterBalanceInput struct {
@@ -1508,8 +1508,8 @@ func (m *SystemKeyL1OutputSubmitterBalanceInput) Update(msg tea.Msg) (tea.Model,
 
 func (m *SystemKeyL1OutputSubmitterBalanceInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
-	return state.weave.Render() +
-		styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View()
+	return m.WrapView(state.weave.Render() +
+		styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View())
 }
 
 type SystemKeyL1BatchSubmitterBalanceInput struct {
@@ -1568,8 +1568,8 @@ func (m *SystemKeyL1BatchSubmitterBalanceInput) Update(msg tea.Msg) (tea.Model, 
 
 func (m *SystemKeyL1BatchSubmitterBalanceInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
-	return state.weave.Render() +
-		styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View()
+	return m.WrapView(state.weave.Render() +
+		styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View())
 }
 
 type SystemKeyL1ChallengerBalanceInput struct {
@@ -1619,8 +1619,8 @@ func (m *SystemKeyL1ChallengerBalanceInput) Update(msg tea.Msg) (tea.Model, tea.
 
 func (m *SystemKeyL1ChallengerBalanceInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
-	return state.weave.Render() +
-		styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View()
+	return m.WrapView(state.weave.Render() +
+		styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View())
 }
 
 type SystemKeyL2OperatorBalanceInput struct {
@@ -1673,9 +1673,9 @@ func (m *SystemKeyL2OperatorBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cm
 
 func (m *SystemKeyL2OperatorBalanceInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
-	return state.weave.Render() + "\n" +
+	return m.WrapView(state.weave.Render() + "\n" +
 		styles.RenderPrompt("Please fund the following accounts on rollup:\n  • Operator\n  • Bridge Executor", []string{"rollup"}, styles.Information) + "\n" +
-		styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View()
+		styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View())
 }
 
 type SystemKeyL2BridgeExecutorBalanceInput struct {
@@ -1726,8 +1726,8 @@ func (m *SystemKeyL2BridgeExecutorBalanceInput) Update(msg tea.Msg) (tea.Model, 
 
 func (m *SystemKeyL2BridgeExecutorBalanceInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
-	return state.weave.Render() +
-		styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View()
+	return m.WrapView(state.weave.Render() +
+		styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View())
 }
 
 type AddGasStationToGenesisSelect struct {
@@ -1798,13 +1798,13 @@ func (m *AddGasStationToGenesisSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) 
 func (m *AddGasStationToGenesisSelect) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
 	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + "\n" +
+	return m.WrapView(state.weave.Render() + "\n" +
 		styles.RenderPrompt("Adding a gas station account to the rollup genesis ensures that when running relayer init you would have funds to distribute to the relayer account.", []string{"gas station", "relayer init"}, styles.Information) + "\n" +
 		styles.RenderPrompt(
 			m.GetQuestion(),
 			m.highlights,
 			styles.Question,
-		) + m.Selector.View()
+		) + m.Selector.View())
 }
 
 type GenesisGasStationBalanceInput struct {
@@ -1868,7 +1868,7 @@ func (m *GenesisGasStationBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd)
 func (m *GenesisGasStationBalanceInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
 	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{m.address}, styles.Question) + m.TextInput.View()
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{m.address}, styles.Question) + m.TextInput.View())
 }
 
 type AddGenesisAccountsSelect struct {
@@ -1967,11 +1967,11 @@ func (m *AddGenesisAccountsSelect) View() string {
 		preText += "\n" + styles.RenderPrompt("You can add extra genesis accounts by first entering the addresses, then assigning the initial balance one by one.", []string{"genesis accounts"}, styles.Information) + "\n"
 	}
 	question, highlight := m.GetQuestionAndHighlight()
-	return state.weave.Render() + preText + styles.RenderPrompt(
+	return m.WrapView(state.weave.Render() + preText + styles.RenderPrompt(
 		question,
 		[]string{highlight},
 		styles.Question,
-	) + m.Selector.View()
+	) + m.Selector.View())
 }
 
 type GenesisAccountsAddressInput struct {
@@ -2017,7 +2017,7 @@ func (m *GenesisAccountsAddressInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *GenesisAccountsAddressInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"moniker"}, styles.Question) + m.TextInput.View()
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"moniker"}, styles.Question) + m.TextInput.View())
 }
 
 type GenesisAccountsBalanceInput struct {
@@ -2073,7 +2073,7 @@ func (m *GenesisAccountsBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *GenesisAccountsBalanceInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
 	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{m.address}, styles.Question) + m.TextInput.View()
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{m.address}, styles.Question) + m.TextInput.View())
 }
 
 type DownloadMinitiaBinaryLoading struct {
@@ -2180,7 +2180,7 @@ func (m *DownloadMinitiaBinaryLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) 
 
 func (m *DownloadMinitiaBinaryLoading) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
-	return state.weave.Render() + "\n" + m.loading.View()
+	return m.WrapView(state.weave.Render() + "\n" + m.loading.View())
 }
 
 type DownloadCelestiaBinaryLoading struct {
@@ -2301,7 +2301,7 @@ func (m *DownloadCelestiaBinaryLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd)
 
 func (m *DownloadCelestiaBinaryLoading) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
-	return state.weave.Render() + "\n" + m.loading.View()
+	return m.WrapView(state.weave.Render() + "\n" + m.loading.View())
 }
 
 type GenerateOrRecoverSystemKeysLoading struct {
@@ -2401,7 +2401,7 @@ func (m *GenerateOrRecoverSystemKeysLoading) Update(msg tea.Msg) (tea.Model, tea
 
 func (m *GenerateOrRecoverSystemKeysLoading) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
-	return state.weave.Render() + "\n" + m.loading.View()
+	return m.WrapView(state.weave.Render() + "\n" + m.loading.View())
 }
 
 type SystemKeysMnemonicDisplayInput struct {
@@ -2453,10 +2453,10 @@ func (m *SystemKeysMnemonicDisplayInput) View() string {
 	mnemonicText += styles.RenderMnemonic("Batch Submitter", state.systemKeyBatchSubmitterAddress, state.systemKeyBatchSubmitterMnemonic)
 	mnemonicText += styles.RenderMnemonic("Challenger", state.systemKeyChallengerAddress, state.systemKeyChallengerMnemonic)
 
-	return state.weave.Render() + "\n" +
+	return m.WrapView(state.weave.Render() + "\n" +
 		styles.BoldUnderlineText("Important", styles.Yellow) + "\n" +
 		styles.Text("Write down these mnemonic phrases and store them in a safe place. \nIt is the only way to recover your system keys.", styles.Yellow) + "\n\n" +
-		mnemonicText + styles.RenderPrompt(m.GetQuestion(), []string{"`continue`"}, styles.Question) + m.TextInput.View()
+		mnemonicText + styles.RenderPrompt(m.GetQuestion(), []string{"`continue`"}, styles.Question) + m.TextInput.View())
 }
 
 type FundGasStationConfirmationInput struct {
@@ -2530,7 +2530,7 @@ func (m *FundGasStationConfirmationInput) View() string {
 		true:  fmt.Sprintf("\nSending tokens from the Gas Station account on Celestia Testnet %s ⛽️\n%s", styles.Text(fmt.Sprintf("(%s)", m.celestiaGasStationAddress), styles.Gray), formatSendMsg(state.systemKeyL1BatchSubmitterBalance, DefaultCelestiaGasDenom, "Batch Submitter on Celestia Testnet", state.systemKeyBatchSubmitterAddress)),
 		false: "",
 	}
-	return state.weave.Render() + "\n" +
+	return m.WrapView(state.weave.Render() + "\n" +
 		styles.Text("i ", styles.Yellow) +
 		styles.RenderPrompt(
 			styles.BoldUnderlineText(headerText[state.batchSubmissionIsCelestia], styles.Yellow),
@@ -2542,7 +2542,7 @@ func (m *FundGasStationConfirmationInput) View() string {
 		batchSubmitterText[state.batchSubmissionIsCelestia] +
 		formatSendMsg(state.systemKeyL1ChallengerBalance, "uinit", "Challenger on Initia L1", state.systemKeyChallengerAddress) +
 		celestiaText[state.batchSubmissionIsCelestia] +
-		styles.RenderPrompt(m.GetQuestion(), []string{"`continue`"}, styles.Question) + m.TextInput.View()
+		styles.RenderPrompt(m.GetQuestion(), []string{"`continue`"}, styles.Question) + m.TextInput.View())
 }
 
 type FundGasStationBroadcastLoading struct {
@@ -2621,7 +2621,7 @@ func (m *FundGasStationBroadcastLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd
 
 func (m *FundGasStationBroadcastLoading) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
-	return state.weave.Render() + "\n" + m.loading.View()
+	return m.WrapView(state.weave.Render() + "\n" + m.loading.View())
 }
 
 type ScanPayload struct {
@@ -2863,7 +2863,7 @@ func (m *LaunchingNewMinitiaLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *LaunchingNewMinitiaLoading) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
-	return state.weave.Render() + "\n" + m.loading.View() + "\n" + strings.Join(*m.streamingLogs, "\n")
+	return m.WrapView(state.weave.Render() + "\n" + m.loading.View() + "\n" + strings.Join(*m.streamingLogs, "\n"))
 }
 
 type TerminalState struct {
@@ -2886,5 +2886,5 @@ func (m *TerminalState) Update(_ tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *TerminalState) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
-	return state.weave.Render()
+	return m.WrapView(state.weave.Render())
 }

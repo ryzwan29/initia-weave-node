@@ -104,7 +104,7 @@ func (m Loading) Update(msg tea.Msg) (Loading, tea.Cmd) {
 	case EndLoading:
 		m.Completing = true
 		m.EndContext = msg.Ctx
-		return m, nil
+		return m, tea.WindowSize()
 	case ErrorLoading:
 		m.Err = msg.Err
 		return m, nil
