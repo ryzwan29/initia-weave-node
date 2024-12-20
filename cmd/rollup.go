@@ -177,18 +177,30 @@ func minitiaStartCommand() *cobra.Command {
 		Use:   "start",
 		Short: "Start the rollup full node application.",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			daemon, err := cmd.Flags().GetBool(FlagDaemon)
+			if err != nil {
+				return err
+			}
+
 			s, err := service.NewService(service.Minitia)
 			if err != nil {
 				return err
 			}
-			err = s.Start()
-			if err != nil {
-				return err
+
+			if daemon {
+				err = s.Start()
+				if err != nil {
+					return err
+				}
+				fmt.Println("Started rollup full node application. You can see the logs with `weave rollup log`")
+				return nil
 			}
-			fmt.Println("Started rollup full node application. You can see the logs with `weave rollup log`")
-			return nil
+
+			return service.NonDaemonStart(s)
 		},
 	}
+
+	launchCmd.Flags().BoolP(FlagDaemon, "d", false, "Run the rollup full node application as a daemon")
 
 	return launchCmd
 }

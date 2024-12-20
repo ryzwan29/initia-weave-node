@@ -191,20 +191,32 @@ Valid options are [executor, challenger] eg. weave opinit start executor
  `,
 		Args: ValidateOPinitBotNameArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			daemon, err := cmd.Flags().GetBool(FlagDaemon)
+			if err != nil {
+				return err
+			}
+
 			botName := args[0]
 			bot := service.CommandName(botName)
 			s, err := service.NewService(bot)
 			if err != nil {
 				return err
 			}
-			err = s.Start()
-			if err != nil {
-				return err
+
+			if daemon {
+				err = s.Start()
+				if err != nil {
+					return err
+				}
+				fmt.Printf("Started the OPinit %[1]s bot. You can see the logs with `weave opinit log %[1]s`\n", botName)
+				return nil
 			}
-			fmt.Printf("Started the OPinit %[1]s bot. You can see the logs with `weave opinit log %[1]s`\n", botName)
-			return nil
+
+			return service.NonDaemonStart(s)
 		},
 	}
+
+	startCmd.Flags().BoolP(FlagDaemon, "d", false, "Run the OPinit bot as a daemon")
 
 	return startCmd
 }
