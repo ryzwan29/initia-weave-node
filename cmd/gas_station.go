@@ -45,7 +45,7 @@ func gasStationSetupCommand() *cobra.Command {
 				}
 			}
 
-			fmt.Println("Loading Gas Station balances...\n")
+			fmt.Println("Loading Gas Station balances...")
 			return showGasStationBalance()
 		},
 	}
