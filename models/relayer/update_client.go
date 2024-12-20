@@ -31,6 +31,10 @@ func UpdateClientFromConfig() error {
 	if err != nil {
 		return err
 	}
+	if len(config.Chains) < 2 {
+		return fmt.Errorf("invalid configuration: missing chain configuration")
+	}
+
 	var chainRegistry *registry.ChainRegistry
 
 	if config.Chains[0].ID == registry.MustGetChainRegistry(registry.InitiaL1Testnet).GetChainId() {
