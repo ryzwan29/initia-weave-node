@@ -1,4 +1,7 @@
-package opinit_test
+//go:build integration
+// +build integration
+
+package cmd_test
 
 //const (
 //	TestOPInitHome = ".opinit.weave.test"

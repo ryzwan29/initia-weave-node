@@ -1,4 +1,7 @@
-package gas_station_test
+//go:build integration
+// +build integration
+
+package cmd_test
 
 import (
 	"os"
@@ -9,11 +12,11 @@ import (
 
 	"github.com/initia-labs/weave/common"
 	"github.com/initia-labs/weave/models"
-	"github.com/initia-labs/weave/tests/integration"
+	"github.com/initia-labs/weave/testutil"
 )
 
 func TestGasStationSetup(t *testing.T) {
-	finalModel := integration.SetupGasStation(t)
+	finalModel := testutil.SetupGasStation(t)
 
 	// Check the final state here
 	assert.IsType(t, &models.WeaveAppSuccessfullyInitialized{}, finalModel)
@@ -30,5 +33,5 @@ func TestGasStationSetup(t *testing.T) {
 
 	// Assert values
 	weaveConfig := filepath.Join(weaveDir, "config.json")
-	integration.CompareJsonValue(t, weaveConfig, "common.gas_station_mnemonic", integration.GasStationMnemonic)
+	testutil.CompareJsonValue(t, weaveConfig, "common.gas_station_mnemonic", testutil.GasStationMnemonic)
 }
