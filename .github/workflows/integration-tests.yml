@@ -27,7 +27,7 @@ jobs:
       - name: Run Integration Tests
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: cd tests && go test -v ./...
+        run: go test -v ./... -tags=integration
 
   integration-tests-macos:
     name: Run Integration Tests on macOS
@@ -44,4 +44,4 @@ jobs:
       - name: Run Integration Tests
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: cd tests && go test -v ./...
+        run: go test -v ./... -tags=integration

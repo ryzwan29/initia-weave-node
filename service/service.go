@@ -2,7 +2,10 @@ package service
 
 import (
 	"fmt"
+	"os"
+	"os/signal"
 	"runtime"
+	"syscall"
 )
 
 type Service interface {
@@ -22,4 +25,26 @@ func NewService(commandName CommandName) (Service, error) {
 	default:
 		return nil, fmt.Errorf("unsupported OS: %s", runtime.GOOS)
 	}
+}
+
+func NonDaemonStart(s Service) error {
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM)
+	defer signal.Stop(signalChan)
+
+	go func() {
+		err := s.Start()
+		if err != nil {
+			_ = s.Stop()
+			panic(err)
+		}
+		err = s.Log(100)
+		if err != nil {
+			_ = s.Stop()
+			panic(err)
+		}
+	}()
+
+	<-signalChan
+	return s.Stop()
 }
