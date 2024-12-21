@@ -170,11 +170,11 @@ func (m *RollupSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *RollupSelect) View() string {
 	state := weavecontext.GetCurrentState[State](m.Ctx)
 	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(
 		m.GetQuestion(),
 		[]string{"Interwoven rollup"},
 		styles.Question,
-	) + m.Selector.View()
+	) + m.Selector.View())
 }
 
 type L1KeySelect struct {
@@ -249,14 +249,14 @@ func (m *L1KeySelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *L1KeySelect) View() string {
 	state := weavecontext.GetCurrentState[State](m.Ctx)
 	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + "\n" + styles.InformationMark + styles.BoldText(
+	return m.WrapView(state.weave.Render() + "\n" + styles.InformationMark + styles.BoldText(
 		"Relayer account keys with funds",
 		styles.White,
 	) + " are required to setup and run the relayer properly." + "\n" + styles.RenderPrompt(
 		m.GetQuestion(),
 		[]string{"relayer account key", fmt.Sprintf("L1 (%s)", m.chainId)},
 		styles.Question,
-	) + m.Selector.View()
+	) + m.Selector.View())
 }
 
 type L2KeySelect struct {
@@ -363,11 +363,11 @@ func (m *L2KeySelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *L2KeySelect) View() string {
 	state := weavecontext.GetCurrentState[State](m.Ctx)
 	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(
 		m.GetQuestion(),
 		[]string{"relayer account key", fmt.Sprintf("rollup (%s)", m.chainId)},
 		styles.Question,
-	) + m.Selector.View()
+	) + m.Selector.View())
 }
 
 type GenerateL1RelayerKeyLoading struct {
@@ -444,7 +444,7 @@ func (m *GenerateL1RelayerKeyLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *GenerateL1RelayerKeyLoading) View() string {
 	state := weavecontext.GetCurrentState[State](m.Ctx)
-	return state.weave.Render() + "\n" + m.loading.View()
+	return m.WrapView(state.weave.Render() + "\n" + m.loading.View())
 }
 
 type GenerateL2RelayerKeyLoading struct {
@@ -501,7 +501,7 @@ func (m *GenerateL2RelayerKeyLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *GenerateL2RelayerKeyLoading) View() string {
 	state := weavecontext.GetCurrentState[State](m.Ctx)
-	return state.weave.Render() + "\n" + m.loading.View()
+	return m.WrapView(state.weave.Render() + "\n" + m.loading.View())
 }
 
 type KeysMnemonicDisplayInput struct {
@@ -580,10 +580,10 @@ func (m *KeysMnemonicDisplayInput) View() string {
 		)
 	}
 
-	return state.weave.Render() + "\n" +
+	return m.WrapView(state.weave.Render() + "\n" +
 		styles.BoldUnderlineText("Important", styles.Yellow) + "\n" +
 		styles.Text("Write down these mnemonic phrases and store them in a safe place. \nIt is the only way to recover your system keys.", styles.Yellow) + "\n\n" +
-		mnemonicText + styles.RenderPrompt(m.GetQuestion(), []string{"`continue`"}, styles.Question) + m.TextInput.View()
+		mnemonicText + styles.RenderPrompt(m.GetQuestion(), []string{"`continue`"}, styles.Question) + m.TextInput.View())
 }
 
 type ImportL1RelayerKeyInput struct {
@@ -658,7 +658,7 @@ func (m *ImportL1RelayerKeyInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *ImportL1RelayerKeyInput) View() string {
 	state := weavecontext.GetCurrentState[State](m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"relayer account key", m.layerText}, styles.Question) + m.TextInput.View()
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"relayer account key", m.layerText}, styles.Question) + m.TextInput.View())
 }
 
 type ImportL2RelayerKeyInput struct {
@@ -713,7 +713,7 @@ func (m *ImportL2RelayerKeyInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *ImportL2RelayerKeyInput) View() string {
 	state := weavecontext.GetCurrentState[State](m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"relayer account key", "L2"}, styles.Question) + m.TextInput.View()
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"relayer account key", "L2"}, styles.Question) + m.TextInput.View())
 }
 
 type FetchingBalancesLoading struct {
@@ -779,7 +779,7 @@ func (m *FetchingBalancesLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *FetchingBalancesLoading) View() string {
 	state := weavecontext.GetCurrentState[State](m.Ctx)
-	return state.weave.Render() + "\n" + m.loading.View()
+	return m.WrapView(state.weave.Render() + "\n" + m.loading.View())
 }
 
 type FundingAmountSelect struct {
@@ -894,19 +894,19 @@ func (m *FundingAmountSelect) View() string {
 		warningLayer = "Rollup has"
 	}
 
-	return state.weave.Render() + "\n" +
+	return m.WrapView(state.weave.Render() + "\n" +
 		styles.RenderPrompt(
 			fmt.Sprintf("You will need to fund the relayer account on %s.\n  You can either transfer funds from created Gas Station Account or transfer manually.", informationLayer),
 			[]string{informationLayer},
 			styles.Information,
 		) + "\n\n" +
 		styles.BoldUnderlineText("Important", styles.Yellow) + "\n" +
-		styles.Text(fmt.Sprintf("The relayer account on %s have no funds.\nYou will need to fund the account in order to run the relayer properly.", warningLayer), styles.Yellow) + "\n\n" +
+		styles.Text(fmt.Sprintf("The relayer account on %s no funds.\nYou will need to fund the account in order to run the relayer properly.", warningLayer), styles.Yellow) + "\n\n" +
 		styles.RenderPrompt(
 			m.GetQuestion(),
 			[]string{},
 			styles.Question,
-		) + m.Selector.View()
+		) + m.Selector.View())
 }
 
 type FundDefaultPresetConfirmationInput struct {
@@ -976,7 +976,7 @@ func (m *FundDefaultPresetConfirmationInput) View() string {
 		false: fmt.Sprintf("Sending tokens from the Gas Station account on L2 %s ⛽️\n", styles.Text(fmt.Sprintf("(%s)", m.initiaGasStationAddress), styles.Gray)) +
 			formatSendMsg(state.l2FundingAmount, MustGetL2GasDenom(m.Ctx), "Relayer key on L2", state.l2RelayerAddress),
 	}
-	return state.weave.Render() + "\n" +
+	return m.WrapView(state.weave.Render() + "\n" +
 		styles.Text("i ", styles.Yellow) +
 		styles.RenderPrompt(
 			styles.BoldUnderlineText("Weave will now broadcast the following transactions", styles.Yellow),
@@ -984,7 +984,7 @@ func (m *FundDefaultPresetConfirmationInput) View() string {
 		) + "\n\n" +
 		l1FundingText[state.l1FundingAmount == "0"] +
 		l2FundingText[state.l2FundingAmount == "0"] +
-		styles.RenderPrompt(m.GetQuestion(), []string{}, styles.Question) + m.TextInput.View()
+		styles.RenderPrompt(m.GetQuestion(), []string{}, styles.Question) + m.TextInput.View())
 }
 
 type FundDefaultPresetBroadcastLoading struct {
@@ -1070,7 +1070,7 @@ func (m *FundDefaultPresetBroadcastLoading) Update(msg tea.Msg) (tea.Model, tea.
 
 func (m *FundDefaultPresetBroadcastLoading) View() string {
 	state := weavecontext.GetCurrentState[State](m.Ctx)
-	return state.weave.Render() + "\n" + m.loading.View()
+	return m.WrapView(state.weave.Render() + "\n" + m.loading.View())
 }
 
 type FundManuallyL1BalanceInput struct {
@@ -1117,7 +1117,7 @@ func (m *FundManuallyL1BalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *FundManuallyL1BalanceInput) View() string {
 	state := weavecontext.GetCurrentState[State](m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"Relayer account", "L1"}, styles.Question) + m.TextInput.View()
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"Relayer account", "L1"}, styles.Question) + m.TextInput.View())
 }
 
 type FundManuallyL2BalanceInput struct {
@@ -1169,7 +1169,7 @@ func (m *FundManuallyL2BalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *FundManuallyL2BalanceInput) View() string {
 	state := weavecontext.GetCurrentState[State](m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"Relayer account", "L2"}, styles.Question) + m.TextInput.View()
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"Relayer account", "L2"}, styles.Question) + m.TextInput.View())
 }
 
 type NetworkSelectOption string
@@ -1254,7 +1254,7 @@ func (m *SelectingL1Network) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *SelectingL1Network) View() string {
 	state := weavecontext.GetCurrentState[State](m.Ctx)
 	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"Initia L1 network"}, styles.Question) + m.Selector.View()
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"Initia L1 network"}, styles.Question) + m.Selector.View())
 }
 
 type SelectingL2Network struct {
@@ -1350,7 +1350,7 @@ func (m *SelectingL2Network) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *SelectingL2Network) View() string {
 	state := weavecontext.GetCurrentState[State](m.Ctx)
 	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"rollup network"}, styles.Question) + m.Selector.View()
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"rollup network"}, styles.Question) + m.Selector.View())
 }
 
 type TerminalState struct {
@@ -1373,7 +1373,7 @@ func (m *TerminalState) Update(_ tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *TerminalState) View() string {
 	state := weavecontext.GetCurrentState[State](m.Ctx)
-	return state.weave.Render()
+	return m.WrapView(state.weave.Render())
 }
 
 type SelectingL1NetworkRegistry struct {
@@ -1451,7 +1451,7 @@ func (m *SelectingL1NetworkRegistry) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *SelectingL1NetworkRegistry) View() string {
 	state := weavecontext.GetCurrentState[State](m.Ctx)
 	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"Initia L1 network"}, styles.Question) + m.Selector.View()
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"Initia L1 network"}, styles.Question) + m.Selector.View())
 }
 
 type SettingUpIBCChannelOption string
@@ -1553,7 +1553,7 @@ func (m *SelectSettingUpIBCChannelsMethod) Update(msg tea.Msg) (tea.Model, tea.C
 func (m *SelectSettingUpIBCChannelsMethod) View() string {
 	state := weavecontext.GetCurrentState[State](m.Ctx)
 	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{}, styles.Question) + m.Selector.View()
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{}, styles.Question) + m.Selector.View())
 }
 
 func GetL1ChainId(ctx context.Context) (string, bool) {
@@ -1753,7 +1753,7 @@ func (m *FillPortOnL1) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *FillPortOnL1) View() string {
 	state := weavecontext.GetCurrentState[State](m.Ctx)
 	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"L1", m.extra}, styles.Question) + m.TextInput.View()
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"L1", m.extra}, styles.Question) + m.TextInput.View())
 }
 
 type FillChannelL1 struct {
@@ -1811,7 +1811,7 @@ func (m *FillChannelL1) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *FillChannelL1) View() string {
 	state := weavecontext.GetCurrentState[State](m.Ctx)
 	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"L1", m.port, m.extra}, styles.Question) + m.TextInput.View()
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"L1", m.port, m.extra}, styles.Question) + m.TextInput.View())
 }
 
 type CounterParty struct {
@@ -1874,7 +1874,7 @@ func (m *FillPortOnL2) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *FillPortOnL2) View() string {
 	state := weavecontext.GetCurrentState[State](m.Ctx)
 	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"L2", m.extra}, styles.Question) + m.TextInput.View()
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"L2", m.extra}, styles.Question) + m.TextInput.View())
 }
 
 type FillChannelL2 struct {
@@ -1932,7 +1932,7 @@ func (m *FillChannelL2) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *FillChannelL2) View() string {
 	state := weavecontext.GetCurrentState[State](m.Ctx)
 	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"L2", m.port, m.extra}, styles.Question) + m.TextInput.View()
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"L2", m.port, m.extra}, styles.Question) + m.TextInput.View())
 }
 
 type AddMoreIBCChannels struct {
@@ -1981,7 +1981,7 @@ func (m *AddMoreIBCChannels) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *AddMoreIBCChannels) View() string {
 	state := weavecontext.GetCurrentState[State](m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{}, styles.Question) + m.Selector.View()
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{}, styles.Question) + m.Selector.View())
 }
 
 type IBCChannelsCheckbox struct {
@@ -2065,9 +2065,9 @@ func (m *IBCChannelsCheckbox) View() string {
 	state := weavecontext.GetCurrentState[State](m.Ctx)
 	m.CheckBox.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
 	if m.alert {
-		return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{}, styles.Question) + "\n" + m.CheckBox.View() + "\n" + styles.Text("Select at least one IBC channel to proceed to the next step.", styles.Yellow) + "\n"
+		return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{}, styles.Question) + "\n" + m.CheckBox.View() + "\n" + styles.Text("Select at least one IBC channel to proceed to the next step.", styles.Yellow) + "\n")
 	}
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{}, styles.Question) + "\n" + m.CheckBox.View()
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{}, styles.Question) + "\n" + m.CheckBox.View())
 }
 
 type FillL2LCD struct {
@@ -2141,9 +2141,9 @@ func (m *FillL2LCD) View() string {
 	state := weavecontext.GetCurrentState[State](m.Ctx)
 	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
 	if m.err != nil {
-		return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"L2", "LCD_address", m.extra}, styles.Question) + m.TextInput.ViewErr(m.err)
+		return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"L2", "LCD_address", m.extra}, styles.Question) + m.TextInput.ViewErr(m.err))
 	}
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"L2", "LCD_address", m.extra}, styles.Question) + m.TextInput.View()
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"L2", "LCD_address", m.extra}, styles.Question) + m.TextInput.View())
 
 }
 
@@ -2266,7 +2266,7 @@ func (m *SettingUpRelayer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *SettingUpRelayer) View() string {
 	state := weavecontext.GetCurrentState[State](m.Ctx)
-	return state.weave.Render() + "\n" + m.loading.View()
+	return m.WrapView(state.weave.Render() + "\n" + m.loading.View())
 }
 
 func removeQuarantineAttribute(filePath string) error {
