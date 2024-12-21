@@ -51,6 +51,14 @@ test: check_version
 	go clean -testcache
 	go test -v ./...
 
+integration-test: check_version
+	go clean -testcache
+	go test -v ./... -tags=integration
+
+test-all: test integration-test
+
+precommit: lint test-all
+
 # Release process
 release:
 	@if [ -z "$(release_version)" ]; then \

@@ -80,6 +80,11 @@ func relayerStartCommand() *cobra.Command {
 		Use:   "start",
 		Short: "Start the Hermes relayer application.",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			daemon, err := cmd.Flags().GetBool(FlagDaemon)
+			if err != nil {
+				return err
+			}
+
 			updateClient, err := cmd.Flags().GetString(FlagUpdateClient)
 			if err != nil {
 				return err
@@ -95,19 +100,27 @@ func relayerStartCommand() *cobra.Command {
 			default:
 				return fmt.Errorf("invalid update-client flag value: %q, expected 'true' or 'false'", updateClient)
 			}
+
 			s, err := service.NewService(service.Relayer)
 			if err != nil {
 				return err
 			}
-			err = s.Start()
-			if err != nil {
-				return err
+
+			if daemon {
+				err = s.Start()
+				if err != nil {
+					return err
+				}
+				fmt.Println("Started Hermes relayer application. You can see the logs with `weave relayer log`")
+				return nil
 			}
-			fmt.Println("Started Hermes relayer application. You can see the logs with `weave relayer log`")
-			return nil
+
+			return service.NonDaemonStart(s)
 		},
 	}
 	startCmd.Flags().String(FlagUpdateClient, "true", "Update light clients with new header information before starting the relayer (can be 'true' or 'false')")
+	startCmd.Flags().BoolP(FlagDaemon, "d", false, "Run the Hermes relayer application as a daemon")
+
 	return startCmd
 }
 

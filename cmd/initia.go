@@ -69,18 +69,30 @@ func initiaStartCommand() *cobra.Command {
 		Use:   "start",
 		Short: "Start the initiad full node application.",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			daemon, err := cmd.Flags().GetBool(FlagDaemon)
+			if err != nil {
+				return err
+			}
+
 			s, err := service.NewService(service.UpgradableInitia)
 			if err != nil {
 				return err
 			}
-			err = s.Start()
-			if err != nil {
-				return err
+
+			if daemon {
+				err = s.Start()
+				if err != nil {
+					return err
+				}
+				fmt.Println("Started Initia full node application. You can see the logs with `weave initia log`")
+				return nil
 			}
-			fmt.Println("Started Initia full node application. You can see the logs with `weave initia log`")
-			return nil
+
+			return service.NonDaemonStart(s)
 		},
 	}
+
+	startCmd.Flags().BoolP(FlagDaemon, "d", false, "Run the initiad full node application as a daemon")
 
 	return startCmd
 }
