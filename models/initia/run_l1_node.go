@@ -1032,7 +1032,7 @@ func initializeApp(ctx context.Context) tea.Cmd {
 				panic(fmt.Sprintf("failed to update api swagger: %v", err))
 			}
 			if err = config.UpdateTomlValue(filepath.Join(initiaConfigPath, "app.toml"), "pruning", state.pruning); err != nil {
-				return ui.ErrorLoading{Err: fmt.Errorf("[error] Failed to setup state sync trust_hash: %v", err)}
+				panic(fmt.Sprintf("failed to update pruning strategy: %v", err))
 			}
 		}
 
