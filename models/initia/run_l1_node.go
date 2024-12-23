@@ -668,7 +668,7 @@ func NewSelectingPruningStrategy(ctx context.Context) *SelectingPruningStrategy 
 		},
 		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
 		highlights: []string{"pruning strategy"},
-		question:   fmt.Sprintf("Select pruning strategy"),
+		question:   "Select pruning strategy",
 	}
 }
 
