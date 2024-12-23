@@ -141,7 +141,7 @@ func generateGasStationAccount(ctx context.Context) tea.Cmd {
 
 		mnemonic, err := crypto.GenerateMnemonic()
 		if err != nil {
-			panic(fmt.Errorf("failed to generate gas station mnemonic: %w", err))
+			return ui.PanicLoading{Err: fmt.Errorf("failed to generate gas station mnemonic: %w", err)}
 		}
 		state.generatedMnemonic = mnemonic
 
@@ -160,6 +160,9 @@ func (m *GenerateGasStationLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	loader, cmd := m.loading.Update(msg)
 	m.loading = loader
+	if m.loading.PanicErr != nil {
+		return m, m.Panic(m.loading.PanicErr)
+	}
 	if m.loading.Completing {
 		m.Ctx = m.loading.EndContext
 		state := weavecontext.PushPageAndGetState[ExistingCheckerState](m)
@@ -218,7 +221,7 @@ func (m *GasStationMnemonicDisplayInput) View() string {
 	state := weavecontext.GetCurrentState[ExistingCheckerState](m.Ctx)
 	gasStationAddress, err := crypto.MnemonicToBech32Address("init", state.generatedMnemonic)
 	if err != nil {
-		panic(fmt.Errorf("failed to convert mnemonic to bech32 address: %w", err))
+		m.Panic(fmt.Errorf("failed to convert mnemonic to bech32 address: %w", err))
 	}
 
 	var mnemonicText string

@@ -111,10 +111,10 @@ func GetBotInfo(botInfos []BotInfo, name BotName) BotInfo {
 }
 
 // CheckIfKeysExist checks the output of `initiad keys list` and sets IsNotExist for missing keys
-func CheckIfKeysExist(botInfos []BotInfo) []BotInfo {
+func CheckIfKeysExist(botInfos []BotInfo) ([]BotInfo, error) {
 	userHome, err := os.UserHomeDir()
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("could not get user home dir: %v", err)
 	}
 	binaryPath := filepath.Join(userHome, common.WeaveDataDirectory, fmt.Sprintf("opinitd@%s", OpinitBotBinaryVersion), AppName)
 	cmd := exec.Command(binaryPath, "keys", "list", "weave-dummy")
@@ -123,7 +123,7 @@ func CheckIfKeysExist(botInfos []BotInfo) []BotInfo {
 		for i := range botInfos {
 			botInfos[i].IsNotExist = true
 		}
-		return botInfos
+		return botInfos, nil
 	}
 	output := string(outputBytes)
 
@@ -133,5 +133,5 @@ func CheckIfKeysExist(botInfos []BotInfo) []BotInfo {
 			botInfos[i].IsNotExist = true
 		}
 	}
-	return botInfos
+	return botInfos, nil
 }

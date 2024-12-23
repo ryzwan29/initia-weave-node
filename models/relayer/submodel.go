@@ -98,11 +98,11 @@ func (m *SubModel) View() string {
 	return styles.RenderPrompt(m.field.Question, m.highlights, styles.Question) + m.TextInput.View()
 }
 
-func GetField(fields []*Field, name string) *Field {
+func GetField(fields []*Field, name string) (*Field, error) {
 	for _, field := range fields {
 		if field.Name == name {
-			return field
+			return field, nil
 		}
 	}
-	panic(fmt.Sprintf("field %s not found", name))
+	return nil, fmt.Errorf("field %s not found", name)
 }

@@ -29,8 +29,12 @@ type OPInitBotsState struct {
 
 // NewOPInitBotsState initializes OPInitBotsState with default values
 func NewOPInitBotsState() OPInitBotsState {
+	botInfos, err := CheckIfKeysExist(BotInfos)
+	if err != nil {
+		panic(err)
+	}
 	return OPInitBotsState{
-		BotInfos:             CheckIfKeysExist(BotInfos),
+		BotInfos:             botInfos,
 		SetupOpinitResponses: make(map[BotName]string),
 		weave:                types.NewWeaveState(),
 		MinitiaConfig:        nil,

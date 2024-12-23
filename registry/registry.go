@@ -99,22 +99,13 @@ func (cr *ChainRegistry) GetMinGasPriceByDenom(denom string) (string, error) {
 	return "", fmt.Errorf("denomination %s not found in fee tokens", denom)
 }
 
-func (cr *ChainRegistry) MustGetFixedMinGasPriceByDenom(denom string) string {
+func (cr *ChainRegistry) GetFixedMinGasPriceByDenom(denom string) (string, error) {
 	for _, feeToken := range cr.Fees.FeeTokens {
 		if feeToken.Denom == denom {
-			return fmt.Sprintf("%g", feeToken.FixedMinGasPrice)
+			return fmt.Sprintf("%g", feeToken.FixedMinGasPrice), nil
 		}
 	}
-	panic(fmt.Errorf("denomination %s not found in fee tokens", denom))
-}
-
-func (cr *ChainRegistry) MustGetMinGasPriceByDenom(denom string) string {
-	minGasPrice, err := cr.GetMinGasPriceByDenom(denom)
-	if err != nil {
-		panic(err)
-	}
-
-	return minGasPrice
+	return "", fmt.Errorf("denomination %s not found in fee tokens", denom)
 }
 
 func checkAndAddPort(addr string) (string, error) {
@@ -153,15 +144,6 @@ func (cr *ChainRegistry) GetActiveRpc() (string, error) {
 	return "", fmt.Errorf("no active RPC endpoints available")
 }
 
-func (cr *ChainRegistry) MustGetActiveRpc() string {
-	rpc, err := cr.GetActiveRpc()
-	if err != nil {
-		panic(err)
-	}
-
-	return rpc
-}
-
 func (cr *ChainRegistry) GetActiveLcd() (string, error) {
 	httpClient := client.NewHTTPClient()
 	for _, lcd := range cr.Apis.Rest {
@@ -176,35 +158,32 @@ func (cr *ChainRegistry) GetActiveLcd() (string, error) {
 	return "", fmt.Errorf("no active LCD endpoints available")
 }
 
-func (cr *ChainRegistry) MustGetActiveLcd() string {
-	lcd, err := cr.GetActiveLcd()
+func (cr *ChainRegistry) GetOpinitBridgeInfo(id string) (types.Bridge, error) {
+	address, err := cr.GetActiveLcd()
 	if err != nil {
-		panic(err)
+		return types.Bridge{}, err
 	}
-
-	return lcd
-}
-
-func (cr *ChainRegistry) MustGetOpinitBridgeInfo(id string) types.Bridge {
-	address := cr.MustGetActiveLcd()
 	httpClient := client.NewHTTPClient()
 
 	var bridgeInfo types.Bridge
 	if _, err := httpClient.Get(address, fmt.Sprintf("/opinit/ophost/v1/bridges/%s", id), nil, &bridgeInfo); err != nil {
-		panic(err)
+		return types.Bridge{}, err
 	}
-	return bridgeInfo
+	return bridgeInfo, nil
 }
 
-func (cr *ChainRegistry) MustGetCounterPartyIBCChannel(port, channel string) types.Channel {
-	address := cr.MustGetActiveLcd()
+func (cr *ChainRegistry) GetCounterPartyIBCChannel(port, channel string) (types.Channel, error) {
+	address, err := cr.GetActiveLcd()
+	if err != nil {
+		return types.Channel{}, err
+	}
 	httpClient := client.NewHTTPClient()
 
 	var response types.MinimalIBCChannelResponse
 	if _, err := httpClient.Get(address, fmt.Sprintf("/ibc/core/channel/v1/channels/%s/ports/%s", channel, port), nil, &response); err != nil {
-		panic(err)
+		return types.Channel{}, err
 	}
-	return response.Channel.Counterparty
+	return response.Channel.Counterparty, nil
 }
 
 func normalizeGRPCAddress(addr string) (string, error) {
@@ -245,15 +224,6 @@ func (cr *ChainRegistry) GetActiveGrpc() (string, error) {
 	return "", fmt.Errorf("no active gRPC endpoints available")
 }
 
-func (cr *ChainRegistry) MustGetActiveGrpc() string {
-	grpc, err := cr.GetActiveGrpc()
-	if err != nil {
-		panic(err)
-	}
-
-	return grpc
-}
-
 // normalizeRPCToWebSocket converts an RPC endpoint (HTTP/HTTPS) to WebSocket (WS/WSS).
 func normalizeRPCToWebSocket(rpcEndpoint string) (string, error) {
 	// Parse the URL
@@ -275,13 +245,16 @@ func normalizeRPCToWebSocket(rpcEndpoint string) (string, error) {
 	return u.String() + "/websocket", nil
 }
 
-func (cr *ChainRegistry) MustGetActiveWebSocket() string {
-	rpc := cr.MustGetActiveRpc()
+func (cr *ChainRegistry) GetActiveWebSocket() (string, error) {
+	rpc, err := cr.GetActiveRpc()
+	if err != nil {
+		return "", fmt.Errorf("failed to get RPC endpoint: %v", err)
+	}
 	websocket, err := normalizeRPCToWebSocket(rpc)
 	if err != nil {
-		panic(err)
+		return "", fmt.Errorf("failed to normalize RPC endpoint: %v", err)
 	}
-	return websocket
+	return websocket, nil
 }
 
 func (cr *ChainRegistry) GetSeeds() string {
@@ -311,19 +284,13 @@ func (cr *ChainRegistry) GetDefaultFeeToken() (FeeTokens, error) {
 	return FeeTokens{}, fmt.Errorf("fee token not found")
 }
 
-func (cr *ChainRegistry) MustGetDefaultFeeToken() FeeTokens {
+func (cr *ChainRegistry) GetDefaultMinGasPrices() (string, error) {
 	feeToken, err := cr.GetDefaultFeeToken()
 	if err != nil {
-		panic(err)
+		return "", fmt.Errorf("failed to get default fee token: %v", err)
 	}
 
-	return feeToken
-}
-
-func (cr *ChainRegistry) MustGetDefaultMinGasPrices() string {
-	feeToken := cr.MustGetDefaultFeeToken()
-
-	return fmt.Sprintf("%s%s", strconv.FormatFloat(feeToken.FixedMinGasPrice, 'f', -1, 64), feeToken.Denom)
+	return fmt.Sprintf("%s%s", strconv.FormatFloat(feeToken.FixedMinGasPrice, 'f', -1, 64), feeToken.Denom), nil
 }
 
 func loadChainRegistry(chainType ChainType) error {
@@ -347,15 +314,6 @@ func GetChainRegistry(chainType ChainType) (*ChainRegistry, error) {
 	}
 
 	return chainRegistry, nil
-}
-
-func MustGetChainRegistry(chainType ChainType) *ChainRegistry {
-	chainRegistry, err := GetChainRegistry(chainType)
-	if err != nil {
-		panic(err)
-	}
-
-	return chainRegistry
 }
 
 type ChainRegistryWithChainType struct {
@@ -405,15 +363,6 @@ func GetL2Registry(chainType ChainType, chainId string) (*ChainRegistry, error) 
 	return &registry.ChainRegistry, nil
 }
 
-func MustGetL2Registry(chainType ChainType, chainId string) *ChainRegistry {
-	registry, err := GetL2Registry(chainType, chainId)
-	if err != nil {
-		panic(err)
-	}
-
-	return registry
-}
-
 type L2AvailableNetwork struct {
 	PrettyName string
 	ChainId    string
@@ -444,15 +393,6 @@ func GetAllL2AvailableNetwork(chainType ChainType) ([]L2AvailableNetwork, error)
 	return networks, nil
 }
 
-func MustGetAllL2AvailableNetwork(chainType ChainType) []L2AvailableNetwork {
-	networks, err := GetAllL2AvailableNetwork(chainType)
-	if err != nil {
-		panic(err)
-	}
-
-	return networks
-}
-
 var OPInitBotsSpecVersion map[string]int
 
 func loadOPInitBotsSpecVersion() error {
@@ -478,28 +418,22 @@ func GetOPInitBotsSpecVersion(chainId string) (int, error) {
 	return version, nil
 }
 
-func MustGetOPInitBotsSpecVersion(chainId string) int {
-	version, err := GetOPInitBotsSpecVersion(chainId)
+func (cr *ChainRegistry) GetCounterpartyClientId(portID, channelID string) (Connection, error) {
+	address, err := cr.GetActiveLcd()
 	if err != nil {
-		panic(err)
+		return Connection{}, err
 	}
-
-	return version
-}
-
-func (cr *ChainRegistry) MustGetCounterpartyClientId(portID, channelID string) Connection {
-	address := cr.MustGetActiveLcd()
 	httpClient := client.NewHTTPClient()
 
 	var channel Channel
 	if _, err := httpClient.Get(address, fmt.Sprintf("/ibc/core/channel/v1/channels/%s/ports/%s", channelID, portID), nil, &channel); err != nil {
-		panic(err)
+		return Connection{}, err
 	}
 
 	var connection Connection
 	if _, err := httpClient.Get(address, fmt.Sprintf("/ibc/core/connection/v1/connections/%s", channel.Channel.ConnectionHops[0]), nil, &connection); err != nil {
-		panic(err)
+		return Connection{}, err
 	}
 
-	return connection
+	return connection, nil
 }

@@ -33,15 +33,24 @@ type InitiadTxExecutor struct {
 	binaryPath string
 }
 
-func NewInitiadTxExecutor(rest string) *InitiadTxExecutor {
+func NewInitiadTxExecutor(rest string) (*InitiadTxExecutor, error) {
 	httpClient := client.NewHTTPClient()
-	nodeVersion, url := MustGetInitiaBinaryUrlFromLcd(httpClient, rest)
-	binaryPath := GetInitiaBinaryPath(nodeVersion)
-	MustInstallInitiaBinary(nodeVersion, url, binaryPath)
+	nodeVersion, url, err := GetInitiaBinaryUrlFromLcd(httpClient, rest)
+	if err != nil {
+		return nil, err
+	}
+	binaryPath, err := GetInitiaBinaryPath(nodeVersion)
+	if err != nil {
+		return nil, err
+	}
+	err = InstallInitiaBinary(nodeVersion, url, binaryPath)
+	if err != nil {
+		return nil, err
+	}
 
 	return &InitiadTxExecutor{
 		binaryPath: binaryPath,
-	}
+	}, nil
 }
 
 func (te *InitiadTxExecutor) BroadcastMsgSend(senderMnemonic, recipientAddress, amount, gasPrices, rpc, chainId string) (*InitiadTxResponse, error) {
@@ -49,7 +58,7 @@ func (te *InitiadTxExecutor) BroadcastMsgSend(senderMnemonic, recipientAddress, 
 	if err != nil {
 		return nil, fmt.Errorf("failed to recover gas station key: %v", err)
 	}
-	defer MustDeleteKey(te.binaryPath, TmpKeyName)
+	defer DeleteKey(te.binaryPath, TmpKeyName)
 
 	cmd := exec.Command(te.binaryPath, "tx", "bank", "send", TmpKeyName, recipientAddress, amount, "--from",
 		TmpKeyName, "--chain-id", chainId, "--gas", "auto", "--gas-adjustment", DefaultGasAdjustment,
@@ -63,7 +72,7 @@ func (te *InitiadTxExecutor) BroadcastMsgSend(senderMnemonic, recipientAddress, 
 	var txResponse InitiadTxResponse
 	err = json.Unmarshal(outputBytes, &txResponse)
 	if err != nil {
-		panic(fmt.Sprintf("failed to unmarshal JSON: %v", err))
+		return nil, fmt.Errorf("failed to unmarshal JSON: %v", err)
 	}
 
 	if txResponse.Code != 0 {

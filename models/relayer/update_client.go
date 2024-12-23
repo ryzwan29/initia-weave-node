@@ -37,15 +37,29 @@ func UpdateClientFromConfig() error {
 
 	var chainRegistry *registry.ChainRegistry
 
-	if config.Chains[0].ID == registry.MustGetChainRegistry(registry.InitiaL1Testnet).GetChainId() {
-		chainRegistry = registry.MustGetChainRegistry(registry.InitiaL1Testnet)
-	} else if config.Chains[0].ID == registry.MustGetChainRegistry(registry.InitiaL1Mainnet).GetChainId() {
-		chainRegistry = registry.MustGetChainRegistry(registry.InitiaL1Mainnet)
+	// Avoid panic until mainnet launches
+	testnetRegistry, err := registry.GetChainRegistry(registry.InitiaL1Testnet)
+	if err != nil {
+		return fmt.Errorf("error loading testnet registry: %v", err)
+	}
+	if config.Chains[0].ID == testnetRegistry.GetChainId() {
+		chainRegistry = testnetRegistry
+	} else {
+		mainnetRegistry, err := registry.GetChainRegistry(registry.InitiaL1Mainnet)
+		if err != nil {
+			return fmt.Errorf("error loading mainnet registry: %v", err)
+		}
+		if config.Chains[0].ID == mainnetRegistry.GetChainId() {
+			chainRegistry = mainnetRegistry
+		}
 	}
 
 	clientIds := make(map[string]bool)
 	for _, channel := range config.Chains[0].PacketFilter.List {
-		connection := chainRegistry.MustGetCounterpartyClientId(channel[0], channel[1])
+		connection, err := chainRegistry.GetCounterpartyClientId(channel[0], channel[1])
+		if err != nil {
+			return err
+		}
 		clientIds[connection.Connection.Counterparty.ClientID] = true
 	}
 	te := cosmosutils.NewHermesTxExecutor(hermesBinaryPath)

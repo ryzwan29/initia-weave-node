@@ -63,7 +63,7 @@ func transformToPacketFilter(pairs []types.IBCChannelPair, isL1 bool) PacketFilt
 	return packetFilter
 }
 
-func createHermesConfig(state State) {
+func createHermesConfig(state State) error {
 	// Define the template directly in a variable
 	const configTemplate = `
 # The global section has parameters that apply globally to the relayer operation.
@@ -234,7 +234,7 @@ list = [
 	// Parse the hardcoded template
 	tmpl, err := template.New("config").Parse(configTemplate)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	homeDir, _ := os.UserHomeDir()
@@ -243,20 +243,21 @@ list = [
 	// Ensure the directory exists
 	err = os.MkdirAll(filepath.Dir(outputPath), 0755) // Creates ~/.hermes if it doesn't exist
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	// Open the file for writing
 	outputFile, err := os.Create(outputPath)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	defer outputFile.Close()
 
 	// Execute the template with data
 	err = tmpl.Execute(outputFile, data)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
+	return nil
 }

@@ -56,7 +56,11 @@ func relayerInitCommand() *cobra.Command {
 				}
 			}
 
-			if finalModel, err := tea.NewProgram(relayer.NewRollupSelect(ctx), tea.WithAltScreen()).Run(); err != nil {
+			model, err := relayer.NewRollupSelect(ctx)
+			if err != nil {
+				return err
+			}
+			if finalModel, err := tea.NewProgram(model, tea.WithAltScreen()).Run(); err != nil {
 				return err
 			} else {
 				fmt.Println(finalModel.View())

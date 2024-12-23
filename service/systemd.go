@@ -24,8 +24,12 @@ func (j *Systemd) GetCommandName() string {
 	return string(j.commandName)
 }
 
-func (j *Systemd) GetServiceName() string {
-	return j.commandName.MustGetServiceSlug() + ".service"
+func (j *Systemd) GetServiceName() (string, error) {
+	slug, err := j.commandName.GetServiceSlug()
+	if err != nil {
+		return "", fmt.Errorf("failed to get service name: %v", err)
+	}
+	return slug + ".service", nil
 }
 
 func (j *Systemd) Create(binaryVersion, appHome string) error {
@@ -39,7 +43,10 @@ func (j *Systemd) Create(binaryVersion, appHome string) error {
 		return fmt.Errorf("failed to get user home directory: %v", err)
 	}
 
-	binaryName := j.commandName.MustGetBinaryName()
+	binaryName, err := j.commandName.GetBinaryName()
+	if err != nil {
+		return fmt.Errorf("failed to get current binary name: %v", err)
+	}
 	var binaryPath string
 	switch j.commandName {
 	case UpgradableInitia, NonUpgradableInitia:
@@ -50,7 +57,11 @@ func (j *Systemd) Create(binaryVersion, appHome string) error {
 		binaryPath = filepath.Join(userHome, common.WeaveDataDirectory)
 	}
 
-	cmd := exec.Command("sudo", "tee", fmt.Sprintf("/etc/systemd/system/%s", j.GetServiceName()))
+	serviceName, err := j.GetServiceName()
+	if err != nil {
+		return err
+	}
+	cmd := exec.Command("sudo", "tee", fmt.Sprintf("/etc/systemd/system/%s", serviceName))
 	template := LinuxTemplateMap[j.commandName]
 	cmd.Stdin = strings.NewReader(fmt.Sprintf(string(template), binaryName, currentUser.Username, binaryPath, string(j.commandName), appHome))
 	if err = cmd.Run(); err != nil {
@@ -71,7 +82,11 @@ func (j *Systemd) daemonReload() error {
 }
 
 func (j *Systemd) enableService() error {
-	cmd := exec.Command("sudo", "systemctl", "enable", j.GetServiceName())
+	serviceName, err := j.GetServiceName()
+	if err != nil {
+		return err
+	}
+	cmd := exec.Command("sudo", "systemctl", "enable", serviceName)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to enable service: %v", err)
 	}
@@ -79,9 +94,13 @@ func (j *Systemd) enableService() error {
 }
 
 func (j *Systemd) Log(n int) error {
-	fmt.Printf("Streaming logs from systemd %s\n", j.GetServiceName())
+	serviceName, err := j.GetServiceName()
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Streaming logs from systemd %s\n", serviceName)
 
-	cmd := exec.Command("journalctl", "-f", "-u", j.GetServiceName(), "-n", strconv.Itoa(n))
+	cmd := exec.Command("journalctl", "-f", "-u", serviceName, "-n", strconv.Itoa(n))
 
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -90,16 +109,28 @@ func (j *Systemd) Log(n int) error {
 }
 
 func (j *Systemd) Start() error {
-	cmd := exec.Command("systemctl", "start", j.GetServiceName())
+	serviceName, err := j.GetServiceName()
+	if err != nil {
+		return err
+	}
+	cmd := exec.Command("systemctl", "start", serviceName)
 	return cmd.Run()
 }
 
 func (j *Systemd) Stop() error {
-	cmd := exec.Command("systemctl", "stop", j.GetServiceName())
+	serviceName, err := j.GetServiceName()
+	if err != nil {
+		return err
+	}
+	cmd := exec.Command("systemctl", "stop", serviceName)
 	return cmd.Run()
 }
 
 func (j *Systemd) Restart() error {
-	cmd := exec.Command("systemctl", "restart", j.GetServiceName())
+	serviceName, err := j.GetServiceName()
+	if err != nil {
+		return err
+	}
+	cmd := exec.Command("systemctl", "restart", serviceName)
 	return cmd.Run()
 }

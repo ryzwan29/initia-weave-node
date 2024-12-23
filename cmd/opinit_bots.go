@@ -71,7 +71,7 @@ type HomeConfig struct {
 	UserHome    string
 }
 
-func RunOPInit(nextModelFunc func(ctx context.Context) tea.Model, homeConfig HomeConfig) (tea.Model, error) {
+func RunOPInit(nextModelFunc func(ctx context.Context) (tea.Model, error), homeConfig HomeConfig) (tea.Model, error) {
 	// Initialize the context with OPInitBotsState
 	ctx := weavecontext.NewAppContext(opinit_bots.NewOPInitBotsState())
 	ctx = weavecontext.SetMinitiaHome(ctx, homeConfig.MinitiaHome)
@@ -81,7 +81,7 @@ func RunOPInit(nextModelFunc func(ctx context.Context) tea.Model, homeConfig Hom
 	if finalModel, err := tea.NewProgram(
 		opinit_bots.NewEnsureOPInitBotsBinaryLoadingModel(
 			ctx,
-			func(nextCtx context.Context) tea.Model {
+			func(nextCtx context.Context) (tea.Model, error) {
 				return opinit_bots.ProcessMinitiaConfig(nextCtx, nextModelFunc)
 			},
 		), tea.WithAltScreen(),
@@ -144,7 +144,7 @@ Example: weave opinit init executor`,
 				return fmt.Errorf("error getting user home directory: %v", err)
 			}
 
-			var rootProgram func(ctx context.Context) tea.Model
+			var rootProgram func(ctx context.Context) (tea.Model, error)
 			// Check if a bot name was provided as an argument
 			if len(args) == 1 {
 				botName := args[0]

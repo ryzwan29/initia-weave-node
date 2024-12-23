@@ -30,9 +30,10 @@ type BinaryRelease struct {
 
 type BinaryVersionWithDownloadURL map[string]string
 
-func getOSArch() (os, arch string) {
+func getOSArch() (os, arch string, err error) {
 	goos := runtime.GOOS
 	goarch := runtime.GOARCH
+	err = nil
 
 	switch goos {
 	case "darwin":
@@ -40,7 +41,7 @@ func getOSArch() (os, arch string) {
 	case "linux":
 		os = "Linux"
 	default:
-		panic(fmt.Errorf("unsupported OS: %s", goos))
+		err = fmt.Errorf("unsupported OS: %s", goos)
 	}
 
 	switch goarch {
@@ -49,26 +50,29 @@ func getOSArch() (os, arch string) {
 	case "arm64":
 		arch = "aarch64"
 	default:
-		panic(fmt.Errorf("unsupported architecture: %s", goarch))
+		err = fmt.Errorf("unsupported architecture: %s", goarch)
 	}
 
-	return os, arch
+	return os, arch, err
 }
 
-func fetchReleases(url string) []BinaryRelease {
+func fetchReleases(url string) ([]BinaryRelease, error) {
 	httpClient := client.NewHTTPClient()
 	var releases []BinaryRelease
 	_, err := httpClient.Get(url, "", nil, &releases)
 	if err != nil {
-		panic(fmt.Errorf("failed to fetch releases: %v", err))
+		return nil, fmt.Errorf("failed to fetch releases: %v", err)
 	}
 
-	return releases
+	return releases, nil
 }
 
-func mapReleasesToVersions(releases []BinaryRelease) BinaryVersionWithDownloadURL {
+func mapReleasesToVersions(releases []BinaryRelease) (BinaryVersionWithDownloadURL, error) {
 	versions := make(BinaryVersionWithDownloadURL)
-	goos, arch := getOSArch()
+	goos, arch, err := getOSArch()
+	if err != nil {
+		return nil, err
+	}
 	searchString := fmt.Sprintf("%s_%s.tar.gz", goos, arch)
 
 	for _, release := range releases {
@@ -79,16 +83,22 @@ func mapReleasesToVersions(releases []BinaryRelease) BinaryVersionWithDownloadUR
 		}
 	}
 
-	return versions
+	return versions, nil
 }
 
-func ListBinaryReleases(url string) BinaryVersionWithDownloadURL {
-	releases := fetchReleases(url)
+func ListBinaryReleases(url string) (BinaryVersionWithDownloadURL, error) {
+	releases, err := fetchReleases(url)
+	if err != nil {
+		return nil, err
+	}
 	return mapReleasesToVersions(releases)
 }
 
-func ListWeaveReleases(url string) BinaryVersionWithDownloadURL {
-	releases := fetchReleases(url)
+func ListWeaveReleases(url string) (BinaryVersionWithDownloadURL, error) {
+	releases, err := fetchReleases(url)
+	if err != nil {
+		return nil, err
+	}
 	versions := make(BinaryVersionWithDownloadURL)
 	searchString := fmt.Sprintf("%s_%s.tar.gz", runtime.GOOS, runtime.GOARCH)
 
@@ -100,18 +110,24 @@ func ListWeaveReleases(url string) BinaryVersionWithDownloadURL {
 		}
 	}
 
-	return versions
+	return versions, nil
 }
 
 func GetLatestMinitiaVersion(vm string) (string, string, error) {
 	url := fmt.Sprintf("https://api.github.com/repos/initia-labs/mini%s/releases", vm)
-	releases := fetchReleases(url)
+	releases, err := fetchReleases(url)
+	if err != nil {
+		return "", "", err
+	}
 
 	if len(releases) < 1 {
 		return "", "", fmt.Errorf("no releases found")
 	}
 
-	goos, arch := getOSArch()
+	goos, arch, err := getOSArch()
+	if err != nil {
+		return "", "", err
+	}
 	searchString := fmt.Sprintf("%s_%s.tar.gz", goos, arch)
 
 	var latestRelease *BinaryRelease
@@ -218,32 +234,38 @@ func padVersionParts(version string) []string {
 	return parts
 }
 
-func GetOPInitVersions() (BinaryVersionWithDownloadURL, string) {
-	versions := ListBinaryReleases("https://api.github.com/repos/initia-labs/opinit-bots/releases")
+func GetOPInitVersions() (BinaryVersionWithDownloadURL, string, error) {
+	versions, err := ListBinaryReleases("https://api.github.com/repos/initia-labs/opinit-bots/releases")
+	if err != nil {
+		return nil, "", err
+	}
 	userHome, err := os.UserHomeDir()
 	if err != nil {
-		panic(err)
+		return nil, "", err
 	}
 	binaryPath := filepath.Join(userHome, common.WeaveDataDirectory, common.OPinitAppName)
 	currentVersion, _ := GetBinaryVersion(binaryPath)
 
-	return versions, currentVersion
+	return versions, currentVersion, nil
 }
 
-func MustGetInitiaBinaryUrlFromLcd(httpClient *client.HTTPClient, rest string) (string, string) {
+func GetInitiaBinaryUrlFromLcd(httpClient *client.HTTPClient, rest string) (string, string, error) {
 	var result NodeInfoResponse
 	_, err := httpClient.Get(rest, "/cosmos/base/tendermint/v1beta1/node_info", nil, &result)
 	if err != nil {
-		panic(err)
+		return "", "", fmt.Errorf("error getting node info from LCD: %w", err)
 	}
 
 	version := result.ApplicationVersion.Version
-	url := getBinaryURL(version)
+	url, err := getBinaryURL(version)
+	if err != nil {
+		return "", "", err
+	}
 
-	return version, url
+	return version, url, nil
 }
 
-func getBinaryURL(version string) string {
+func getBinaryURL(version string) (string, error) {
 	goos := runtime.GOOS
 	goarch := runtime.GOARCH
 
@@ -251,54 +273,54 @@ func getBinaryURL(version string) string {
 	case "darwin":
 		switch goarch {
 		case "amd64":
-			return fmt.Sprintf("https://github.com/initia-labs/initia/releases/download/%s/initia_%s_Darwin_x86_64.tar.gz", version, version)
+			return fmt.Sprintf("https://github.com/initia-labs/initia/releases/download/%s/initia_%s_Darwin_x86_64.tar.gz", version, version), nil
 		case "arm64":
-			return fmt.Sprintf("https://github.com/initia-labs/initia/releases/download/%s/initia_%s_Darwin_aarch64.tar.gz", version, version)
+			return fmt.Sprintf("https://github.com/initia-labs/initia/releases/download/%s/initia_%s_Darwin_aarch64.tar.gz", version, version), nil
 		}
 	case "linux":
 		switch goarch {
 		case "amd64":
-			return fmt.Sprintf("https://github.com/initia-labs/initia/releases/download/%s/initia_%s_Linux_x86_64.tar.gz", version, version)
+			return fmt.Sprintf("https://github.com/initia-labs/initia/releases/download/%s/initia_%s_Linux_x86_64.tar.gz", version, version), nil
 		case "arm64":
-			return fmt.Sprintf("https://github.com/initia-labs/initia/releases/download/%s/initia_%s_Linux_aarch64.tar.gz", version, version)
+			return fmt.Sprintf("https://github.com/initia-labs/initia/releases/download/%s/initia_%s_Linux_aarch64.tar.gz", version, version), nil
 		}
 	}
-	panic("unsupported OS or architecture")
+	return "", fmt.Errorf("unsupported OS or architecture: %v %v", goos, goarch)
 }
 
-func GetInitiaBinaryPath(version string) string {
+func GetInitiaBinaryPath(version string) (string, error) {
 	if strings.Contains(version, "@") {
 		parts := strings.Split(version, "@")
 		if len(parts) == 2 {
 			version = parts[1]
 		} else {
-			panic(fmt.Sprintf("invalid version format: %s", version))
+			return "", fmt.Errorf("invalid version format: %s", version)
 		}
 	}
 
 	userHome, err := os.UserHomeDir()
 	if err != nil {
-		panic(fmt.Sprintf("failed to get user home directory: %v", err))
+		return "", fmt.Errorf("failed to get user home directory: %v", err)
 	}
 	extractedPath := filepath.Join(userHome, common.WeaveDataDirectory, fmt.Sprintf("initia@%s", version))
 
 	switch runtime.GOOS {
 	case "linux":
 		if CompareSemVer(version, "v0.6.1") {
-			return filepath.Join(extractedPath, "initiad")
+			return filepath.Join(extractedPath, "initiad"), nil
 		}
-		return filepath.Join(extractedPath, "initia_"+version, "initiad")
+		return filepath.Join(extractedPath, "initia_"+version, "initiad"), nil
 	case "darwin":
-		return filepath.Join(extractedPath, "initiad")
+		return filepath.Join(extractedPath, "initiad"), nil
 	default:
-		panic("unsupported OS")
+		return "", fmt.Errorf("unsupported OS: %v", runtime.GOOS)
 	}
 }
 
-func MustInstallInitiaBinary(version, url, binaryPath string) {
+func InstallInitiaBinary(version, url, binaryPath string) error {
 	userHome, err := os.UserHomeDir()
 	if err != nil {
-		panic(fmt.Sprintf("failed to get user home directory: %v", err))
+		return fmt.Errorf("failed to get user home directory: %v", err)
 	}
 	tarballPath := filepath.Join(userHome, common.WeaveDataDirectory, "initia.tar.gz")
 	extractedPath := filepath.Join(userHome, common.WeaveDataDirectory, fmt.Sprintf("initia@%s", version))
@@ -307,27 +329,27 @@ func MustInstallInitiaBinary(version, url, binaryPath string) {
 		if _, err := os.Stat(extractedPath); os.IsNotExist(err) {
 			err := os.MkdirAll(extractedPath, os.ModePerm)
 			if err != nil {
-				panic(fmt.Sprintf("failed to create weave data directory: %v", err))
+				return fmt.Errorf("failed to create weave data directory: %v", err)
 			}
 		}
 
 		if err = io.DownloadAndExtractTarGz(url, tarballPath, extractedPath); err != nil {
-			panic(fmt.Sprintf("failed to download and extract binary: %v", err))
+			return fmt.Errorf("failed to download and extract binary: %v", err)
 		}
 
 		err = os.Chmod(binaryPath, 0755)
 		if err != nil {
-			panic(fmt.Sprintf("failed to set permissions for binary: %v", err))
+			return fmt.Errorf("failed to set permissions for binary: %v", err)
 		}
 	}
 
-	io.SetLibraryPaths(filepath.Dir(binaryPath))
+	return io.SetLibraryPaths(filepath.Dir(binaryPath))
 }
 
-func MustInstallCosmovisor(version string) string {
+func InstallCosmovisor(version string) (string, error) {
 	userHome, err := os.UserHomeDir()
 	if err != nil {
-		panic(fmt.Sprintf("failed to get user home directory: %v", err))
+		return "", fmt.Errorf("failed to get user home directory: %v", err)
 	}
 	targetDirectory := filepath.Join(userHome, common.WeaveDataDirectory)
 	tarballPath := filepath.Join(userHome, common.WeaveDataDirectory, "cosmovisor.tar.gz")
@@ -350,7 +372,7 @@ func MustInstallCosmovisor(version string) string {
 	key := fmt.Sprintf("%s-%s", osType, arch)
 	template, exists := supportedCombinations[key]
 	if !exists {
-		panic(fmt.Sprintf("unsupported combination of OS and architecture: %s-%s", osType, arch))
+		return "", fmt.Errorf("unsupported combination of OS and architecture: %s-%s", osType, arch)
 	}
 
 	url := fmt.Sprintf("https://github.com/cosmos/cosmos-sdk/releases/download/cosmovisor%%2F%s/%s", version, fmt.Sprintf(template, version))
@@ -361,21 +383,21 @@ func MustInstallCosmovisor(version string) string {
 		if _, err := os.Stat(extractedPath); os.IsNotExist(err) {
 			err := os.MkdirAll(extractedPath, os.ModePerm)
 			if err != nil {
-				panic(fmt.Sprintf("failed to create cosmovisor directory: %v", err))
+				return "", fmt.Errorf("failed to create cosmovisor directory: %v", err)
 			}
 		}
 
 		// Download and extract the tarball
 		if err = io.DownloadAndExtractTarGz(url, tarballPath, extractedPath); err != nil {
-			panic(fmt.Sprintf("failed to download and extract cosmovisor binary: %v", err))
+			return "", fmt.Errorf("failed to download and extract cosmovisor binary: %v", err)
 		}
 
 		// Set permissions for the binary
 		err = os.Chmod(binaryPath, 0755)
 		if err != nil {
-			panic(fmt.Sprintf("failed to set permissions for cosmovisor binary: %v", err))
+			return "", fmt.Errorf("failed to set permissions for cosmovisor binary: %v", err)
 		}
 	}
 
-	return binaryPath
+	return binaryPath, nil
 }

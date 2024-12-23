@@ -49,6 +49,7 @@ type Loading struct {
 	executeFn  tea.Cmd
 	Err        error
 	EndContext context.Context
+	PanicErr   error
 }
 
 func NewLoading(text string, executeFn tea.Cmd) Loading {
@@ -108,6 +109,9 @@ func (m Loading) Update(msg tea.Msg) (Loading, tea.Cmd) {
 	case ErrorLoading:
 		m.Err = msg.Err
 		return m, nil
+	case PanicLoading:
+		m.PanicErr = msg.Err
+		return m, nil
 	default:
 		return m, nil
 	}
@@ -134,6 +138,10 @@ func (m Loading) tick() tea.Cmd {
 
 type EndLoading struct {
 	Ctx context.Context
+}
+
+type PanicLoading struct {
+	Err error
 }
 
 func DefaultWait() tea.Cmd {
