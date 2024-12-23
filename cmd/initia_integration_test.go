@@ -47,6 +47,7 @@ func TestInitiaInitTestnetNoSync(t *testing.T) {
 		testutil.PressEnter, // press enter to confirm the seeds
 		testutil.TypeText("3715cdb41efb45714eb534c3943c5947f4894787@34.143.179.242:26656"), // type in the persistent peers
 		testutil.PressEnter, // press enter to confirm the persistent peers
+		testutil.PressEnter, // press enter to confirm pruning default
 		testutil.PressEnter, // press enter to confirm Allow Upgrade
 		testutil.WaitFor(func() bool {
 			if _, err := os.Stat(initiaHome); os.IsNotExist(err) {
@@ -115,6 +116,7 @@ func TestInitiaInitTestnetStatesync(t *testing.T) {
 		testutil.PressEnter, // press enter to confirm the seeds
 		testutil.TypeText("3715cdb41efb45714eb534c3943c5947f4894787@34.143.179.242:26656"), // type in the persistent peers
 		testutil.PressEnter, // press enter to confirm the persistent peers
+		testutil.PressEnter, // press enter to confirm pruning default
 		testutil.PressEnter, // press enter to confirm Allow Upgrade
 		testutil.WaitFor(func() bool {
 			if _, err := os.Stat(initiaHome); os.IsNotExist(err) {
@@ -203,6 +205,7 @@ func TestInitiaInitTestnetStatesync(t *testing.T) {
 // 		testutil.WaitFor(func() bool {
 // 			return true
 // 		}),
+// testutil.PressEnter, // press enter to confirm pruning default
 // 		testutil.PressDown,  // press down once to select disallow upgrade
 // 		testutil.PressEnter, // press enter to confirm
 // 		testutil.WaitFor(func() bool {
@@ -279,6 +282,7 @@ func TestInitiaInitTestnetStatesync(t *testing.T) {
 // 		testutil.WaitFor(func() bool {
 // 			return true
 // 		}), // wait for the app to be created
+// testutil.PressEnter, // press enter to confirm pruning default
 // 		testutil.PressEnter, // press enter to confirm allow upgrade
 // 		testutil.WaitFor(func() bool {
 // 			if _, err := os.Stat(initiaHome); os.IsNotExist(err) {
@@ -348,6 +352,7 @@ func TestInitiaInitTestnetStatesync(t *testing.T) {
 // 			return true
 // 		}), // wait for the checking of existing genesis
 // 		testutil.PressEnter, // press enter to use the current genesis
+// testutil.PressEnter, // press enter to confirm pruning default
 // 		testutil.PressEnter, // press enter to comfirm allow upgrade
 // 	}
 
@@ -400,6 +405,7 @@ func TestInitiaInitTestnetStatesync(t *testing.T) {
 // 		}), // wait for the checking of existing genesis
 // 		testutil.PressUp,    // press up once to select replacing the genesis
 // 		testutil.PressEnter, // press enter to confirm replacing the genesis
+// testutil.PressEnter, // press enter to confirm pruning default
 // 		testutil.PressEnter, // press enter to comfirm allow upgrade
 // 	}
 
