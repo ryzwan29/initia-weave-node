@@ -612,14 +612,7 @@ func (m *PersistentPeersInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			prevAnswer = input.Text
 		}
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), m.highlights, prevAnswer))
-		m.Ctx = weavecontext.SetCurrentState(m.Ctx, state)
-		switch state.network {
-		case string(Local):
-			model := NewExistingGenesisChecker(m.Ctx)
-			return model, model.Init()
-		case string(Mainnet), string(Testnet):
-			return NewCosmovisorAutoUpgradeSelector(weavecontext.SetCurrentState(m.Ctx, state)), nil
-		}
+		return NewSelectingPruningStrategy(weavecontext.SetCurrentState(m.Ctx, state)), nil
 	}
 	m.TextInput = input
 	return m, cmd
@@ -629,6 +622,93 @@ func (m *PersistentPeersInput) View() string {
 	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
 	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
 	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View()
+}
+
+type PruningOption string
+
+const (
+	DefaultPruningOption    PruningOption = "Default (recommended)"
+	NothingPruningOption    PruningOption = "Nothing"
+	EverythingPruningOption PruningOption = "Everything"
+)
+
+func (po PruningOption) toString() string {
+	switch po {
+	case DefaultPruningOption:
+		return "default"
+	case NothingPruningOption:
+		return "nothing"
+	case EverythingPruningOption:
+		return "everything"
+	}
+	return "default"
+}
+
+type SelectingPruningStrategy struct {
+	ui.Selector[PruningOption]
+	weavecontext.BaseModel
+	question   string
+	highlights []string
+}
+
+func NewSelectingPruningStrategy(ctx context.Context) *SelectingPruningStrategy {
+	tooltips := []ui.Tooltip{
+		tooltip.L1DefaultPruningStrategiesTooltip,
+		tooltip.L1NothingPruningStrategiesTooltip,
+		tooltip.L1EverythingPruningStrategiesTooltip,
+	}
+	return &SelectingPruningStrategy{
+		Selector: ui.Selector[PruningOption]{
+			Options: []PruningOption{
+				DefaultPruningOption,
+				NothingPruningOption,
+				EverythingPruningOption,
+			},
+			Tooltips: &tooltips,
+		},
+		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
+		highlights: []string{"pruning strategy"},
+		question:   "Select pruning strategy",
+	}
+}
+
+func (m *SelectingPruningStrategy) GetQuestion() string {
+	return m.question
+}
+
+func (m *SelectingPruningStrategy) Init() tea.Cmd {
+	return nil
+}
+
+func (m *SelectingPruningStrategy) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := weavecontext.HandleCommonCommands[RunL1NodeState](m, msg); handled {
+		return model, cmd
+	}
+	selected, cmd := m.Select(msg)
+	if selected != nil {
+		state := weavecontext.PushPageAndGetState[RunL1NodeState](m)
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), m.highlights, string(*selected)))
+		state.pruning = selected.toString()
+		m.Ctx = weavecontext.SetCurrentState(m.Ctx, state)
+
+		if state.network == string(Local) {
+			return NewGenesisEndpointInput(m.Ctx), nil
+		} else {
+			return NewCosmovisorAutoUpgradeSelector(m.Ctx), nil
+		}
+	}
+
+	return m, cmd
+}
+
+func (m *SelectingPruningStrategy) View() string {
+	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
+	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	return state.weave.Render() + styles.RenderPrompt(
+		m.GetQuestion(),
+		m.highlights,
+		styles.Question,
+	) + m.Selector.View()
 }
 
 type ExistingGenesisChecker struct {
@@ -905,7 +985,7 @@ func initializeApp(ctx context.Context) tea.Cmd {
 		cosmovisorPath := cosmosutils.MustInstallCosmovisor(CosmovisorVersion)
 		initiaHome := weavecontext.GetInitiaHome(ctx)
 		if _, err := os.Stat(initiaHome); os.IsNotExist(err) {
-			runCmd := exec.Command(binaryPath, "init", state.moniker, "--chain-id", state.chainId, "--home", initiaHome)
+			runCmd := exec.Command(binaryPath, "init", fmt.Sprintf("'%s'", state.moniker), "--chain-id", state.chainId, "--home", initiaHome)
 			if err := runCmd.Run(); err != nil {
 				panic(fmt.Sprintf("failed to run initiad init: %v", err))
 			}
@@ -950,6 +1030,9 @@ func initializeApp(ctx context.Context) tea.Cmd {
 
 			if err := config.UpdateTomlValue(filepath.Join(initiaConfigPath, "app.toml"), "api.swagger", strconv.FormatBool(state.enableLCD)); err != nil {
 				panic(fmt.Sprintf("failed to update api swagger: %v", err))
+			}
+			if err = config.UpdateTomlValue(filepath.Join(initiaConfigPath, "app.toml"), "pruning", state.pruning); err != nil {
+				panic(fmt.Sprintf("failed to update pruning strategy: %v", err))
 			}
 		}
 
@@ -1176,7 +1259,13 @@ func WaitExistingDataChecker(ctx context.Context) tea.Cmd {
 		initiaDataPath := weavecontext.GetInitiaDataDirectory(ctx)
 		time.Sleep(1500 * time.Millisecond)
 
-		if !io.FileOrFolderExists(initiaDataPath) {
+		dirEntries, err := os.ReadDir(initiaDataPath)
+		if err != nil {
+			state.existingData = false
+			return ui.EndLoading{Ctx: weavecontext.SetCurrentState(ctx, state)}
+		}
+
+		if len(dirEntries) == 1 {
 			state.existingData = false
 			return ui.EndLoading{Ctx: weavecontext.SetCurrentState(ctx, state)}
 		} else {
@@ -1207,7 +1296,6 @@ func (m *ExistingDataChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, tea.Quit
 		} else {
-			state.existingData = true
 			m.Ctx = weavecontext.SetCurrentState(m.Ctx, state)
 			return NewExistingDataReplaceSelect(m.Ctx), nil
 		}

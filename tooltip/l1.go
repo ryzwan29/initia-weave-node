@@ -28,4 +28,8 @@ var (
 	// Cosmovisor Tooltips
 	L1CosmovisorAutoUpgradeEnableTooltip  = ui.NewTooltip("Enable", "Enable automatic downloading of new binaries and upgrades via Cosmovisor. \nSee more: https://docs.initia.xyz/run-initia-node/automating-software-updates-with-cosmovisor", "", []string{}, []string{}, []string{})
 	L1CosmovisorAutoUpgradeDisableTooltip = ui.NewTooltip("Disable", "Disable automatic downloading of new binaries and upgrades via Cosmovisor. You will need to manually upgrade the binaries and restart the node to apply the upgrades.", "", []string{}, []string{}, []string{})
+
+	L1DefaultPruningStrategiesTooltip    = ui.NewTooltip("Default", "Keep the last 100 states in addition to every 500th state, and prunes on 10-block intervals. This configuration is safe to use on all types of nodes, especially validator nodes.", "", []string{}, []string{"recommended"}, []string{})
+	L1NothingPruningStrategiesTooltip    = ui.NewTooltip("Nothing", "Disable Cosmos SDK pruning and set your node to behave like an 'archive' node. This mode consumes the highest disk usage.", "", []string{}, []string{"disable"}, []string{})
+	L1EverythingPruningStrategiesTooltip = ui.NewTooltip("Everything", "Keep the current state and also prune on 10 blocks intervals. This settings is useful for nodes such as seed/sentry nodes, as long as they are not used to query RPC/REST API requests. This mode is not recommended when running validator nodes.", "", []string{}, []string{"not recommended "}, []string{})
 )

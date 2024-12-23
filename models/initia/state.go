@@ -31,6 +31,7 @@ type RunL1NodeState struct {
 	stateSyncEndpoint                 string
 	additionalStateSyncPeers          string
 	allowAutoUpgrade                  bool
+	pruning                           string
 }
 
 // NewRunL1NodeState initializes a new RunL1NodeState with default values.
@@ -67,5 +68,6 @@ func (s RunL1NodeState) Clone() RunL1NodeState {
 		stateSyncEndpoint:                 s.stateSyncEndpoint,
 		additionalStateSyncPeers:          s.additionalStateSyncPeers,
 		allowAutoUpgrade:                  s.allowAutoUpgrade,
+		pruning:                           s.pruning,
 	}
 }
