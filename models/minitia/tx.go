@@ -76,7 +76,7 @@ func (lsk *L1SystemKeys) FundAccountsWithGasStation(state *LaunchState) (*FundAc
 		celestiaChainId := celestiaRegistry.GetChainId()
 		sendCmd := exec.Command(state.celestiaBinaryPath, "tx", "bank", "send", common.WeaveGasStationKeyName,
 			lsk.BatchSubmitter.Address, fmt.Sprintf("%sutia", lsk.BatchSubmitter.Coins), "--node", celestiaRpc,
-			"--chain-id", celestiaChainId, "--gas", "200000", "--gas-prices", "0.1utia", "--output", "json", "-y",
+			"--chain-id", celestiaChainId, "--gas", "200000", "--gas-prices", celestiaRegistry.MustGetMinGasPriceByDenom(DefaultCelestiaGasDenom), "--output", "json", "-y",
 		)
 		broadcastRes, err := sendCmd.CombinedOutput()
 		if err != nil {
