@@ -1178,7 +1178,8 @@ func WaitExistingDataChecker(ctx context.Context) tea.Cmd {
 
 		dirEntries, err := os.ReadDir(initiaDataPath)
 		if err != nil {
-			panic(err)
+			state.existingData = false
+			return ui.EndLoading{Ctx: weavecontext.SetCurrentState(ctx, state)}
 		}
 
 		if len(dirEntries) == 1 {
