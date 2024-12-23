@@ -905,7 +905,7 @@ func initializeApp(ctx context.Context) tea.Cmd {
 		cosmovisorPath := cosmosutils.MustInstallCosmovisor(CosmovisorVersion)
 		initiaHome := weavecontext.GetInitiaHome(ctx)
 		if _, err := os.Stat(initiaHome); os.IsNotExist(err) {
-			runCmd := exec.Command(binaryPath, "init", state.moniker, "--chain-id", state.chainId, "--home", initiaHome)
+			runCmd := exec.Command(binaryPath, "init", fmt.Sprintf("'%s'", state.moniker), "--chain-id", state.chainId, "--home", initiaHome)
 			if err := runCmd.Run(); err != nil {
 				panic(fmt.Sprintf("failed to run initiad init: %v", err))
 			}
@@ -1176,7 +1176,12 @@ func WaitExistingDataChecker(ctx context.Context) tea.Cmd {
 		initiaDataPath := weavecontext.GetInitiaDataDirectory(ctx)
 		time.Sleep(1500 * time.Millisecond)
 
-		if !io.FileOrFolderExists(initiaDataPath) {
+		dirEntries, err := os.ReadDir(initiaDataPath)
+		if err != nil {
+			panic(err)
+		}
+
+		if len(dirEntries) == 1 {
 			state.existingData = false
 			return ui.EndLoading{Ctx: weavecontext.SetCurrentState(ctx, state)}
 		} else {
@@ -1207,7 +1212,6 @@ func (m *ExistingDataChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, tea.Quit
 		} else {
-			state.existingData = true
 			m.Ctx = weavecontext.SetCurrentState(m.Ctx, state)
 			return NewExistingDataReplaceSelect(m.Ctx), nil
 		}

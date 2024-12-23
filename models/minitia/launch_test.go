@@ -431,7 +431,7 @@ func TestChainIdInput_View(t *testing.T) {
 
 	view := input.View()
 	assert.Contains(t, view, "Specify rollup chain ID", "Expected question prompt in the view")
-	assert.Contains(t, view, "Enter your chain ID ex. local-minitia-1", "Expected placeholder in the view")
+	assert.Contains(t, view, "Enter your chain ID ex. local-rollup-1", "Expected placeholder in the view")
 }
 
 func TestGasDenomInput_Init(t *testing.T) {

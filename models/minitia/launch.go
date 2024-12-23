@@ -447,7 +447,7 @@ func NewChainIdInput(ctx context.Context) *ChainIdInput {
 		question:   "Specify rollup chain ID",
 		highlights: []string{"rollup chain ID"},
 	}
-	model.WithPlaceholder("Enter your chain ID ex. local-minitia-1")
+	model.WithPlaceholder("Enter your chain ID ex. local-rollup-1")
 	model.WithValidatorFn(common.ValidateNonEmptyAndLengthString("Chain ID", MaxChainIDLength))
 	model.WithTooltip(&tooltip)
 	return model
@@ -2817,8 +2817,16 @@ func (m *LaunchingNewMinitiaLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.Ctx = m.loading.EndContext
 		state := weavecontext.PushPageAndGetState[LaunchState](m)
 
-		artifactsDir := filepath.Dir(weavecontext.GetMinitiaArtifactsConfigJson(m.Ctx))
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, fmt.Sprintf("New Minitia has been launched. (More details about your Minitia in %[1]s/artifacts.json & %[1]s/config.json)", artifactsDir), []string{}, ""))
+		artifactsConfigJsonDir := weavecontext.GetMinitiaArtifactsConfigJson(m.Ctx)
+		artifactsJsonDir := weavecontext.GetMinitiaArtifactsJson(m.Ctx)
+		state.weave.PushPreviousResponse(
+			styles.RenderPreviousResponse(
+				styles.NoSeparator,
+				fmt.Sprintf("New rollup has been launched. (More details about your rollup in %s and %s)", artifactsJsonDir, artifactsConfigJsonDir),
+				[]string{artifactsJsonDir, artifactsConfigJsonDir},
+				"",
+			),
+		)
 
 		var jsonRpc string
 		if state.vmType == string(EVM) {
