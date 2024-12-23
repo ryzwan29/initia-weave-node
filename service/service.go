@@ -27,7 +27,7 @@ func NewService(commandName CommandName) (Service, error) {
 	}
 }
 
-func NonDaemonStart(s Service) error {
+func NonDetachStart(s Service) error {
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM)
 	defer signal.Stop(signalChan)
