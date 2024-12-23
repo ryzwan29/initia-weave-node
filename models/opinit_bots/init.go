@@ -750,14 +750,6 @@ func WaitStartingInitBot(ctx context.Context) tea.Cmd {
 			}
 		}
 
-		// TODO: Remove these once our rpcs are compatible
-		if strings.Contains(configMap["l1_node.rpc_address"], "initia.xyz") {
-			configMap["l1_node.rpc_address"] = DefaultInitiaL1Rpc
-		}
-		if strings.Contains(configMap["da_node.rpc_address"], "initia.xyz") {
-			configMap["da_node.rpc_address"] = DefaultInitiaL1Rpc
-		}
-
 		if state.InitExecutorBot {
 			srv, err := service.NewService(service.OPinitExecutor)
 			if err != nil {
