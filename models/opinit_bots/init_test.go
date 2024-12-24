@@ -13,7 +13,7 @@ import (
 
 func TestUseCurrentConfigSelector_Update_UseCurrentFile(t *testing.T) {
 	ctx := weavecontext.NewAppContext(NewOPInitBotsState())
-	model := NewUseCurrentConfigSelector(ctx, "test-bot")
+	model, _ := NewUseCurrentConfigSelector(ctx, "test-bot")
 
 	// Simulate selecting "use current file"
 	nextModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter}) // Confirm selection with Enter
@@ -32,7 +32,7 @@ func TestUseCurrentConfigSelector_Update_ReplaceWithMinitiaConfig(t *testing.T) 
 	state := weavecontext.GetCurrentState[OPInitBotsState](ctx)
 	state.MinitiaConfig = &types.MinitiaConfig{} // Assume MinitiaConfig is defined
 	ctx = weavecontext.SetCurrentState(ctx, state)
-	model := NewUseCurrentConfigSelector(ctx, "test-bot")
+	model, _ := NewUseCurrentConfigSelector(ctx, "test-bot")
 
 	// Simulate selecting "replace"
 	model.Update(tea.KeyMsg{Type: tea.KeyDown})                  // Navigate to "replace"
@@ -52,7 +52,7 @@ func TestUseCurrentConfigSelector_Update_ReplaceWithL1PrefillSelector(t *testing
 	state := weavecontext.GetCurrentState[OPInitBotsState](ctx)
 	state.InitExecutorBot = true // Example setup, assume InitExecutorBot is true
 	ctx = weavecontext.SetCurrentState(ctx, state)
-	model := NewUseCurrentConfigSelector(ctx, "test-bot")
+	model, _ := NewUseCurrentConfigSelector(ctx, "test-bot")
 
 	// Simulate selecting "replace"
 	model.Update(tea.KeyMsg{Type: tea.KeyDown})                  // Navigate to "replace"
@@ -87,7 +87,7 @@ func TestPrefillMinitiaConfig_Update_PrefillYes(t *testing.T) {
 	state.InitExecutorBot = true
 	ctx = weavecontext.SetCurrentState(ctx, state)
 
-	model := NewPrefillMinitiaConfig(ctx)
+	model, _ := NewPrefillMinitiaConfig(ctx)
 
 	nextModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter}) // Confirm selection with Enter
 
@@ -96,10 +96,11 @@ func TestPrefillMinitiaConfig_Update_PrefillYes(t *testing.T) {
 		t.Errorf("Expected model to be of type *FieldInputModel, but got %T", nextModel)
 	} else {
 		state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
+		gasField, _ := getField(defaultExecutorFields, "l2_node.gas_price")
 		assert.Equal(t, "l1-chain-id", state.botConfig["l1_node.chain_id"])
 		assert.Equal(t, "http://l1-rpc-url", state.botConfig["l1_node.rpc_address"])
 		assert.Equal(t, "0.01", state.botConfig["l1_node.gas_price"])
-		assert.Equal(t, "0.15denom", GetField(defaultExecutorFields, "l2_node.gas_price").PrefillValue)
+		assert.Equal(t, "0.15denom", gasField.PrefillValue)
 		assert.True(t, state.daIsCelestia)
 	}
 }
@@ -110,7 +111,7 @@ func TestPrefillMinitiaConfig_Update_PrefillNo(t *testing.T) {
 	state.MinitiaConfig = &types.MinitiaConfig{}
 	ctx = weavecontext.SetCurrentState(ctx, state)
 
-	model := NewPrefillMinitiaConfig(ctx)
+	model, _ := NewPrefillMinitiaConfig(ctx)
 
 	// Simulate selecting "No" for a prefilled option
 	model.Update(tea.KeyMsg{Type: tea.KeyDown})                  // Navigate to "PrefillMinitiaConfigNo"
@@ -145,7 +146,7 @@ func TestPrefillMinitiaConfig_Update_PrefillYes_NonCelestia(t *testing.T) {
 	state.InitExecutorBot = true
 	ctx = weavecontext.SetCurrentState(ctx, state)
 
-	model := NewPrefillMinitiaConfig(ctx)
+	model, _ := NewPrefillMinitiaConfig(ctx)
 
 	// Simulate selecting "Yes" for a prefilled option
 	nextModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter}) // Confirm selection with Enter
@@ -182,7 +183,7 @@ func TestSetDALayer_Update_SelectInitia(t *testing.T) {
 	}
 	ctx = weavecontext.SetCurrentState(ctx, state)
 
-	model := NewSetDALayer(ctx) // Assuming NewSetDALayer initializes SetDALayer
+	model, _ := NewSetDALayer(ctx) // Assuming NewSetDALayer initializes SetDALayer
 
 	// Simulate selecting "Initia"
 	nextModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter}) // Confirm selection with Enter
@@ -206,8 +207,8 @@ func TestSetDALayer_Update_SelectCelestia(t *testing.T) {
 	state.botConfig["l1_node.chain_id"] = "initiation-2"
 	ctx = weavecontext.SetCurrentState(ctx, state)
 
-	chainRegistry := registry.MustGetChainRegistry(registry.CelestiaTestnet)
-	model := NewSetDALayer(ctx)
+	chainRegistry, _ := registry.GetChainRegistry(registry.CelestiaTestnet)
+	model, _ := NewSetDALayer(ctx)
 
 	// Simulate selecting "Celestia"
 	model.Update(tea.KeyMsg{Type: tea.KeyDown})                  // Navigate to "Celestia" option

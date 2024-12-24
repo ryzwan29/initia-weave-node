@@ -146,7 +146,7 @@ func TestDeleteExistingMinitiaInput_View(t *testing.T) {
 func TestNewNetworkSelect(t *testing.T) {
 	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
-	model := NewNetworkSelect(ctx)
+	model, _ := NewNetworkSelect(ctx)
 
 	assert.Nil(t, model.Init(), "Expected Init command to be returned")
 	assert.NotNil(t, model, "Expected NetworkSelect to be created")
@@ -161,7 +161,7 @@ func TestNetworkSelect_Update_Selection(t *testing.T) {
 	ctx := weavecontext.NewAppContext(*NewLaunchState())
 	state := weavecontext.GetCurrentState[LaunchState](ctx)
 	state.weave = types.WeaveState{}
-	model := NewNetworkSelect(ctx)
+	model, _ := NewNetworkSelect(ctx)
 
 	msg := tea.KeyMsg{Type: tea.KeyDown}
 	updatedModel, cmd := model.Update(msg)
@@ -176,7 +176,7 @@ func TestNetworkSelect_Update_Selection(t *testing.T) {
 func TestNetworkSelect_View(t *testing.T) {
 	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
-	model := NewNetworkSelect(ctx)
+	model, _ := NewNetworkSelect(ctx)
 
 	view := model.View()
 	assert.Contains(t, view, "Select the Initia L1 network you want to connect your rollup to", "Expected question prompt in the view")
@@ -272,7 +272,7 @@ func TestNetworkSelect_SaveToState(t *testing.T) {
 	InitializeViperForTest(t)
 	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
-	networkSelect := NewNetworkSelect(ctx)
+	networkSelect, _ := NewNetworkSelect(ctx)
 	//m, _ := networkSelect.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	//
 	//assert.Equal(t, "", mockState.l1ChainId)
@@ -1945,7 +1945,7 @@ func TestGetCelestiaBinaryURL(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("%s_%s", tt.os, tt.arch), func(t *testing.T) {
-			url := getCelestiaBinaryURL("1.0.0", tt.os, tt.arch)
+			url, _ := getCelestiaBinaryURL("1.0.0", tt.os, tt.arch)
 			assert.Equal(t, tt.expect, url)
 		})
 	}
@@ -2156,6 +2156,7 @@ func TestBroadcastFundingFromGasStation_Failure(t *testing.T) {
 	assert.Panics(t, func() {
 		ctx := weavecontext.NewAppContext(state)
 		cmd := broadcastFundingFromGasStation(ctx)
+		viper.Reset()
 		cmd()
 	})
 }
