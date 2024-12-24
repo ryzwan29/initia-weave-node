@@ -28,8 +28,12 @@ func (j *Launchd) GetCommandName() string {
 	return string(j.commandName)
 }
 
-func (j *Launchd) GetServiceName() string {
-	return fmt.Sprintf("com.%s.daemon", j.commandName.MustGetServiceSlug())
+func (j *Launchd) GetServiceName() (string, error) {
+	slug, err := j.commandName.GetServiceSlug()
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("com.%s.daemon", slug), nil
 }
 
 func (j *Launchd) Create(binaryVersion, appHome string) error {
@@ -40,17 +44,24 @@ func (j *Launchd) Create(binaryVersion, appHome string) error {
 
 	weaveDataPath := filepath.Join(userHome, common.WeaveDataDirectory)
 	weaveLogPath := filepath.Join(userHome, common.WeaveLogDirectory)
-	binaryName := j.commandName.MustGetBinaryName()
+	binaryName, err := j.commandName.GetBinaryName()
+	if err != nil {
+		return fmt.Errorf("failed to get binary name: %v", err)
+	}
 	binaryPath := filepath.Join(weaveDataPath, binaryVersion)
 	if err = os.Setenv("HOME", userHome); err != nil {
-		panic(fmt.Errorf("failed to set HOME: %v", err))
+		return fmt.Errorf("failed to set HOME: %v", err)
 	}
 
-	plistPath := filepath.Join(userHome, fmt.Sprintf("Library/LaunchAgents/%s.plist", j.GetServiceName()))
+	serviceName, err := j.GetServiceName()
+	if err != nil {
+		return fmt.Errorf("failed to get service name: %v", err)
+	}
+	plistPath := filepath.Join(userHome, fmt.Sprintf("Library/LaunchAgents/%s.plist", serviceName))
 	if weaveio.FileOrFolderExists(plistPath) {
 		err = weaveio.DeleteFile(plistPath)
 		if err != nil {
-			panic(err)
+			return err
 		}
 	}
 	cmd := exec.Command("tee", plistPath)
@@ -79,9 +90,13 @@ func (j *Launchd) reloadService() error {
 	if err != nil {
 		return fmt.Errorf("failed to get user home directory: %v", err)
 	}
-	unloadCmd := exec.Command("launchctl", "unload", filepath.Join(userHome, fmt.Sprintf("Library/LaunchAgents/%s.plist", j.GetServiceName())))
+	serviceName, err := j.GetServiceName()
+	if err != nil {
+		return fmt.Errorf("failed to get service name: %v", err)
+	}
+	unloadCmd := exec.Command("launchctl", "unload", filepath.Join(userHome, fmt.Sprintf("Library/LaunchAgents/%s.plist", serviceName)))
 	_ = unloadCmd.Run()
-	loadCmd := exec.Command("launchctl", "load", filepath.Join(userHome, fmt.Sprintf("Library/LaunchAgents/%s.plist", j.GetServiceName())))
+	loadCmd := exec.Command("launchctl", "load", filepath.Join(userHome, fmt.Sprintf("Library/LaunchAgents/%s.plist", serviceName)))
 	if err := loadCmd.Run(); err != nil {
 		return fmt.Errorf("failed to load service: %v", err)
 	}
@@ -89,12 +104,20 @@ func (j *Launchd) reloadService() error {
 }
 
 func (j *Launchd) Start() error {
-	cmd := exec.Command("launchctl", "start", j.GetServiceName())
+	serviceName, err := j.GetServiceName()
+	if err != nil {
+		return fmt.Errorf("failed to get service name: %v", err)
+	}
+	cmd := exec.Command("launchctl", "start", serviceName)
 	return cmd.Run()
 }
 
 func (j *Launchd) Stop() error {
-	cmd := exec.Command("launchctl", "stop", j.GetServiceName())
+	serviceName, err := j.GetServiceName()
+	if err != nil {
+		return fmt.Errorf("failed to get service name: %v", err)
+	}
+	cmd := exec.Command("launchctl", "stop", serviceName)
 	return cmd.Run()
 }
 
@@ -112,7 +135,11 @@ func (j *Launchd) Restart() error {
 }
 
 func (j *Launchd) Log(n int) error {
-	fmt.Printf("Streaming logs from launchd %s\n", j.GetServiceName())
+	serviceName, err := j.GetServiceName()
+	if err != nil {
+		return fmt.Errorf("failed to get service name: %v", err)
+	}
+	fmt.Printf("Streaming logs from launchd %s\n", serviceName)
 	return j.streamLogsFromFiles(n)
 }
 
@@ -123,8 +150,12 @@ func (j *Launchd) streamLogsFromFiles(n int) error {
 		return fmt.Errorf("failed to get user home directory: %v", err)
 	}
 
-	logFilePathOut := filepath.Join(userHome, common.WeaveLogDirectory, fmt.Sprintf("%s.stdout.log", j.commandName.MustGetServiceSlug()))
-	logFilePathErr := filepath.Join(userHome, common.WeaveLogDirectory, fmt.Sprintf("%s.stderr.log", j.commandName.MustGetServiceSlug()))
+	slug, err := j.commandName.GetServiceSlug()
+	if err != nil {
+		return fmt.Errorf("failed to get service slug: %v", err)
+	}
+	logFilePathOut := filepath.Join(userHome, common.WeaveLogDirectory, fmt.Sprintf("%s.stdout.log", slug))
+	logFilePathErr := filepath.Join(userHome, common.WeaveLogDirectory, fmt.Sprintf("%s.stderr.log", slug))
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)

@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"fmt"
+
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 
@@ -19,24 +21,22 @@ func InitCommand() *cobra.Command {
 				ctx := weavecontext.NewAppContext(models.NewExistingCheckerState())
 
 				// Capture both the final model and the error from Run()
-				finalModel, err := tea.NewProgram(models.NewGasStationMethodSelect(ctx)).Run()
-				if err != nil {
+				if finalModel, err := tea.NewProgram(models.NewGasStationMethodSelect(ctx), tea.WithAltScreen()).Run(); err != nil {
 					return err
-				}
-
-				// Check if the final model is of type WeaveAppSuccessfullyInitialized
-				if _, ok := finalModel.(*models.WeaveAppSuccessfullyInitialized); !ok {
-					// If the model is not of the expected type, return or handle as needed
-					return nil
+				} else {
+					fmt.Println(finalModel.View())
+					if _, ok := finalModel.(*models.WeaveAppSuccessfullyInitialized); !ok {
+						return nil
+					}
 				}
 			}
 
-			_, err := tea.NewProgram(weaveinit.NewWeaveInit()).Run()
-			if err != nil {
+			if finalModel, err := tea.NewProgram(weaveinit.NewWeaveInit(), tea.WithAltScreen()).Run(); err != nil {
 				return err
+			} else {
+				fmt.Println(finalModel.View())
+				return nil
 			}
-
-			return nil
 		},
 	}
 

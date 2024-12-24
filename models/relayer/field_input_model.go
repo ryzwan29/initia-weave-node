@@ -11,12 +11,12 @@ import (
 type FieldInputModel struct {
 	currentIndex int // The index of the current active submodel
 	weavecontext.BaseModel
-	newTerminalModel func(context.Context) tea.Model
+	newTerminalModel func(context.Context) (tea.Model, error)
 	subModels        []SubModel
 }
 
 // NewFieldInputModel initializes the parent model with the submodels
-func NewFieldInputModel(ctx context.Context, fields []*Field, newTerminalModel func(context.Context) tea.Model) *FieldInputModel {
+func NewFieldInputModel(ctx context.Context, fields []*Field, newTerminalModel func(context.Context) (tea.Model, error)) *FieldInputModel {
 	subModels := make([]SubModel, len(fields))
 
 	// Create submodels based on the field types
@@ -56,7 +56,10 @@ func (m *FieldInputModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, cmd
 		}
 
-		model := m.newTerminalModel(m.Ctx)
+		model, err := m.newTerminalModel(m.Ctx)
+		if err != nil {
+			return m, m.HandlePanic(err)
+		}
 		return model, model.Init()
 	}
 

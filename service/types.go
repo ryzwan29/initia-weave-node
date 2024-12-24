@@ -1,5 +1,7 @@
 package service
 
+import "fmt"
+
 type CommandName string
 
 const (
@@ -11,36 +13,36 @@ const (
 	Relayer             CommandName = "relayer"
 )
 
-func (cmd CommandName) MustGetBinaryName() string {
+func (cmd CommandName) GetBinaryName() (string, error) {
 	switch cmd {
 	case UpgradableInitia, NonUpgradableInitia:
-		return "cosmovisor"
+		return "cosmovisor", nil
 	case Minitia:
-		return "minitiad"
+		return "minitiad", nil
 	case OPinitExecutor, OPinitChallenger:
-		return "opinitd"
+		return "opinitd", nil
 	case Relayer:
-		return "hermes"
+		return "hermes", nil
 	default:
-		panic("unsupported command")
+		return "", fmt.Errorf("unsupported command: %v", cmd)
 	}
 }
 
-func (cmd CommandName) MustGetServiceSlug() string {
+func (cmd CommandName) GetServiceSlug() (string, error) {
 	switch cmd {
 	case UpgradableInitia:
-		return "cosmovisor"
+		return "cosmovisor", nil
 	case NonUpgradableInitia:
-		return "cosmovisor"
+		return "cosmovisor", nil
 	case Minitia:
-		return "minitiad"
+		return "minitiad", nil
 	case OPinitExecutor:
-		return "opinitd.executor"
+		return "opinitd.executor", nil
 	case OPinitChallenger:
-		return "opinitd.challenger"
+		return "opinitd.challenger", nil
 	case Relayer:
-		return "hermes"
+		return "hermes", nil
 	default:
-		panic("unsupported command")
+		return "", fmt.Errorf("unsupported command: %v", cmd)
 	}
 }

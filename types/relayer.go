@@ -59,11 +59,11 @@ type ChannelsResponse struct {
 	Channels []ChannelInfo `json:"channels"`
 }
 
-func MustDecodeBridgeMetadata(base64Str string) Metadata {
+func DecodeBridgeMetadata(base64Str string) (Metadata, error) {
 	// Decode the Base64 string
 	jsonData, err := base64.StdEncoding.DecodeString(base64Str)
 	if err != nil {
-		panic(err)
+		return Metadata{}, err
 	}
 
 	// Struct to hold the decoded JSON
@@ -73,8 +73,8 @@ func MustDecodeBridgeMetadata(base64Str string) Metadata {
 	err = json.Unmarshal(jsonData, &metadata)
 	if err != nil {
 		fmt.Printf("Error decoding JSON: %v %s\n", err, base64Str)
-		panic(err)
+		return Metadata{}, err
 	}
 
-	return metadata
+	return metadata, nil
 }

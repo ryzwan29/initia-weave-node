@@ -20,26 +20,32 @@ import (
 	"github.com/initia-labs/weave/ui"
 )
 
-func ProcessMinitiaConfig(ctx context.Context, nextModelFunc func(ctx context.Context) tea.Model) tea.Model {
-	minitiaConfigPath := weavecontext.GetMinitiaArtifactsConfigJson(ctx)
+func ProcessMinitiaConfig(ctx context.Context, nextModelFunc func(ctx context.Context) (tea.Model, error)) (tea.Model, error) {
+	minitiaConfigPath, err := weavecontext.GetMinitiaArtifactsConfigJson(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load minitia config json: %w", err)
+	}
 	state := weavecontext.GetCurrentState[OPInitBotsState](ctx)
 
 	// no config file, proceed to next model
 	if !io.FileOrFolderExists(minitiaConfigPath) {
-		model := nextModelFunc(weavecontext.SetCurrentState(ctx, state))
-		return model
+		model, err := nextModelFunc(weavecontext.SetCurrentState(ctx, state))
+		if err != nil {
+			return nil, err
+		}
+		return model, nil
 	}
 
 	// Load the config if found
 	configData, err := os.ReadFile(minitiaConfigPath)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("failed to read minitia config: %w", err)
 	}
 
 	var minitiaConfig types.MinitiaConfig
 	err = json.Unmarshal(configData, &minitiaConfig)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("failed to unmarshal minitia config: %w", err)
 	}
 
 	// Set the loaded config to the state variable
@@ -58,7 +64,7 @@ type ProcessingMinitiaConfig struct {
 	weavecontext.BaseModel
 	ui.Selector[AddMinitiaKeyOption]
 	question      string
-	nextModelFunc func(ctx context.Context) tea.Model
+	nextModelFunc func(ctx context.Context) (tea.Model, error)
 }
 
 func assignBotInfo(botInfo *BotInfo, minitiaConfig *types.MinitiaConfig) {
@@ -93,7 +99,11 @@ func getDALayer(address string) string {
 	return string(CelestiaLayerOption)
 }
 
-func NewProcessingMinitiaConfig(ctx context.Context, nextModelFunc func(ctx context.Context) tea.Model) *ProcessingMinitiaConfig {
+func NewProcessingMinitiaConfig(ctx context.Context, nextModelFunc func(ctx context.Context) (tea.Model, error)) (*ProcessingMinitiaConfig, error) {
+	artifactsDir, err := weavecontext.GetMinitiaArtifactsConfigJson(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load artifacts directory: %w", err)
+	}
 	return &ProcessingMinitiaConfig{
 		Selector: ui.Selector[AddMinitiaKeyOption]{
 			Options: []AddMinitiaKeyOption{
@@ -102,9 +112,9 @@ func NewProcessingMinitiaConfig(ctx context.Context, nextModelFunc func(ctx cont
 			},
 		},
 		BaseModel:     weavecontext.BaseModel{Ctx: ctx},
-		question:      fmt.Sprintf("Existing keys in %s detected. Would you like to add these to the keyring before proceeding?", weavecontext.GetMinitiaArtifactsConfigJson(ctx)),
+		question:      fmt.Sprintf("Existing keys in %s detected. Would you like to add these to the keyring before proceeding?", artifactsDir),
 		nextModelFunc: nextModelFunc,
-	}
+	}, nil
 }
 
 func (m *ProcessingMinitiaConfig) GetQuestion() string {
@@ -123,10 +133,14 @@ func (m *ProcessingMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// Handle selection logic
 	selected, cmd := m.Select(msg)
 	if selected != nil {
-		state := weavecontext.PushPageAndGetState[OPInitBotsState](m)
+		artifactsDir, err := weavecontext.GetMinitiaArtifactsConfigJson(m.Ctx)
+		if err != nil {
+			return m, m.HandlePanic(err)
+		}
 
+		state := weavecontext.PushPageAndGetState[OPInitBotsState](m)
 		state.weave.PushPreviousResponse(
-			styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{weavecontext.GetMinitiaArtifactsConfigJson(m.Ctx)}, string(*selected)),
+			styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{artifactsDir}, string(*selected)),
 		)
 
 		switch *selected {
@@ -138,10 +152,18 @@ func (m *ProcessingMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 			state.AddMinitiaConfig = true
-			return m.nextModelFunc(weavecontext.SetCurrentState(m.Ctx, state)), nil
+			nextModel, err := m.nextModelFunc(weavecontext.SetCurrentState(m.Ctx, state))
+			if err != nil {
+				return m, m.HandlePanic(err)
+			}
+			return nextModel, nil
 
 		case NoAddMinitiaKeyOption:
-			return m.nextModelFunc(weavecontext.SetCurrentState(m.Ctx, state)), nil
+			nextModel, err := m.nextModelFunc(weavecontext.SetCurrentState(m.Ctx, state))
+			if err != nil {
+				return m, m.HandlePanic(err)
+			}
+			return nextModel, nil
 		}
 	}
 
@@ -151,7 +173,11 @@ func (m *ProcessingMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *ProcessingMinitiaConfig) View() string {
 	state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
 	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{weavecontext.GetMinitiaArtifactsConfigJson(m.Ctx)}, styles.Question) + m.Selector.View()
+	artifactsDir, err := weavecontext.GetMinitiaArtifactsConfigJson(m.Ctx)
+	if err != nil {
+		m.HandlePanic(err)
+	}
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{artifactsDir}, styles.Question) + m.Selector.View())
 }
 
 func NextUpdateOpinitBotKey(ctx context.Context) (tea.Model, tea.Cmd) {
@@ -176,7 +202,7 @@ type SetupBotCheckbox struct {
 	question string
 }
 
-func NewSetupBotCheckbox(ctx context.Context) tea.Model {
+func NewSetupBotCheckbox(ctx context.Context) (tea.Model, error) {
 	state := weavecontext.GetCurrentState[OPInitBotsState](ctx)
 	checkBoxOptions := make([]string, 0)
 	for idx, botInfo := range state.BotInfos {
@@ -202,7 +228,7 @@ func NewSetupBotCheckbox(ctx context.Context) tea.Model {
 		CheckBox:  *checkBox,
 		BaseModel: weavecontext.BaseModel{Ctx: ctx},
 		question:  question,
-	}
+	}, nil
 }
 
 func (m *SetupBotCheckbox) GetQuestion() string {
@@ -220,11 +246,14 @@ func (m *SetupBotCheckbox) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	cb, cmd, done := m.Select(msg)
 	if done {
-		state := weavecontext.PushPageAndGetState[OPInitBotsState](m)
+		artifactsDir, err := weavecontext.GetMinitiaArtifactsConfigJson(m.Ctx)
+		if err != nil {
+			return m, m.HandlePanic(err)
+		}
 
-		// Save the selection response
+		state := weavecontext.PushPageAndGetState[OPInitBotsState](m)
 		state.weave.PushPreviousResponse(
-			styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"bots", "set", "override", weavecontext.GetMinitiaArtifactsConfigJson(m.Ctx)}, cb.GetSelectedString()),
+			styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"bots", "set", "override", artifactsDir}, cb.GetSelectedString()),
 		)
 
 		empty := true
@@ -254,7 +283,11 @@ func (m *SetupBotCheckbox) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *SetupBotCheckbox) View() string {
 	state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
 	m.CheckBox.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"bots", "set", "override", weavecontext.GetMinitiaArtifactsConfigJson(m.Ctx)}, styles.Question) + "\n\n" + m.CheckBox.ViewWithBottom("For bots with an existing key, selecting them will override the key.")
+	artifactsDir, err := weavecontext.GetMinitiaArtifactsConfigJson(m.Ctx)
+	if err != nil {
+		m.HandlePanic(err)
+	}
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"bots", "set", "override", artifactsDir}, styles.Question) + "\n\n" + m.CheckBox.ViewWithBottom("For bots with an existing key, selecting them will override the key."))
 }
 
 type RecoverKeySelector struct {
@@ -320,7 +353,7 @@ func (m *RecoverKeySelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *RecoverKeySelector) View() string {
 	state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{string(state.BotInfos[m.idx].BotName)}, styles.Question) + m.Selector.View()
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{string(state.BotInfos[m.idx].BotName)}, styles.Question) + m.Selector.View())
 }
 
 type RecoverFromMnemonic struct {
@@ -383,7 +416,7 @@ func (m *RecoverFromMnemonic) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *RecoverFromMnemonic) View() string {
 	state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{string(state.BotInfos[m.idx].BotName)}, styles.Question) + m.TextInput.View()
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{string(state.BotInfos[m.idx].BotName)}, styles.Question) + m.TextInput.View())
 }
 
 // SetupOPInitBots handles the loading and setup of OPInit bots
@@ -405,8 +438,15 @@ func (m *SetupOPInitBots) Init() tea.Cmd {
 }
 
 func (m *SetupOPInitBots) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := weavecontext.HandleCommonCommands[OPInitBotsState](m, msg); handled {
+		return model, cmd
+	}
+
 	loader, cmd := m.loading.Update(msg)
 	m.loading = loader
+	if m.loading.NonRetryableErr != nil {
+		return m, m.HandlePanic(m.loading.NonRetryableErr)
+	}
 	if m.loading.Completing {
 		return NewTerminalState(m.loading.EndContext), tea.Quit
 	}
@@ -426,16 +466,16 @@ func (m *SetupOPInitBots) View() string {
 				mnemonicText += renderMnemonic(string(botName), address[1], keyInfo[1])
 			}
 
-			return state.weave.Render() + "\n" + styles.RenderPrompt("Download binary and add keys successfully.", []string{}, styles.Completed) + "\n\n" +
+			return m.WrapView(state.weave.Render() + "\n" + styles.RenderPrompt("Download binary and add keys successfully.", []string{}, styles.Completed) + "\n\n" +
 				styles.BoldUnderlineText("Important", styles.Yellow) + "\n" +
 				styles.Text("Write down these mnemonic phrases and store them in a safe place. \nIt is the only way to recover your system keys.", styles.Yellow) + "\n\n" +
-				mnemonicText
+				mnemonicText)
 		} else {
-			return state.weave.Render() + "\n" + styles.RenderPrompt("Download binary and add keys successfully.", []string{}, styles.Completed)
+			return m.WrapView(state.weave.Render() + "\n" + styles.RenderPrompt("Download binary and add keys successfully.", []string{}, styles.Completed))
 		}
 	}
 
-	return state.weave.Render() + m.loading.View()
+	return m.WrapView(state.weave.Render() + m.loading.View())
 }
 
 func renderMnemonic(keyName, address, mnemonic string) string {
@@ -509,27 +549,27 @@ func (m *DALayerSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *DALayerSelector) View() string {
 	state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
-	return state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"DA Layer"}, styles.Question) + m.Selector.View()
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"DA Layer"}, styles.Question) + m.Selector.View())
 }
 
-func getBinaryURL(version, os, arch string) string {
+func getBinaryURL(version, os, arch string) (string, error) {
 	switch os {
 	case "darwin":
 		switch arch {
 		case "amd64":
-			return fmt.Sprintf("https://github.com/initia-labs/opinit-bots/releases/download/%s/opinitd_%s_Darwin_x86_64.tar.gz", version, version)
+			return fmt.Sprintf("https://github.com/initia-labs/opinit-bots/releases/download/%s/opinitd_%s_Darwin_x86_64.tar.gz", version, version), nil
 		case "arm64":
-			return fmt.Sprintf("https://github.com/initia-labs/opinit-bots/releases/download/%s/opinitd_%s_Darwin_aarch64.tar.gz", version, version)
+			return fmt.Sprintf("https://github.com/initia-labs/opinit-bots/releases/download/%s/opinitd_%s_Darwin_aarch64.tar.gz", version, version), nil
 		}
 	case "linux":
 		switch arch {
 		case "amd64":
-			return fmt.Sprintf("https://github.com/initia-labs/opinit-bots/releases/download/%s/opinitd_%s_Linux_x86_64.tar.gz", version, version)
+			return fmt.Sprintf("https://github.com/initia-labs/opinit-bots/releases/download/%s/opinitd_%s_Linux_x86_64.tar.gz", version, version), nil
 		case "arm64":
-			return fmt.Sprintf("https://github.com/initia-labs/opinit-bots/releases/download/%s/opinitd_%s_Linux_aarch64.tar.gz", version, version)
+			return fmt.Sprintf("https://github.com/initia-labs/opinit-bots/releases/download/%s/opinitd_%s_Linux_aarch64.tar.gz", version, version), nil
 		}
 	}
-	panic("unsupported OS or architecture")
+	return "", fmt.Errorf("unsupported OS or architecture: %v %v", os, arch)
 }
 
 func GetBinaryPath(userHome string) string {
@@ -540,7 +580,7 @@ func EnsureOPInitBotsBinary(ctx context.Context) tea.Cmd {
 	return func() tea.Msg {
 		userHome, err := os.UserHomeDir()
 		if err != nil {
-			panic(fmt.Sprintf("failed to get user home directory: %v", err))
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to get user home directory: %v", err)}
 		}
 
 		binaryPath := GetBinaryPath(userHome)
@@ -556,7 +596,10 @@ func EnsureOPInitBotsBinary(ctx context.Context) tea.Cmd {
 
 		goos := runtime.GOOS
 		goarch := runtime.GOARCH
-		url := getBinaryURL(OpinitBotBinaryVersion, goos, goarch)
+		url, err := getBinaryURL(OpinitBotBinaryVersion, goos, goarch)
+		if err != nil {
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to get binary url: %v", err)}
+		}
 
 		extractedPath := filepath.Join(weaveDataPath, fmt.Sprintf("opinitd@%s", OpinitBotBinaryVersion))
 
@@ -565,22 +608,22 @@ func EnsureOPInitBotsBinary(ctx context.Context) tea.Cmd {
 			if _, err := os.Stat(extractedPath); os.IsNotExist(err) {
 				err := os.MkdirAll(extractedPath, os.ModePerm)
 				if err != nil {
-					panic(fmt.Sprintf("failed to create weave data directory: %v", err))
+					return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to create weave data directory: %v", err)}
 				}
 			}
 
 			if err = io.DownloadAndExtractTarGz(url, tarballPath, extractedPath); err != nil {
-				panic(fmt.Sprintf("failed to download and extract binary: %v", err))
+				return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to download and extract binary: %v", err)}
 			}
 			err = os.Chmod(binaryPath, 0755) // 0755 ensuring read, write, execute permissions for the owner, and read-execute for group/others
 			if err != nil {
-				panic(fmt.Sprintf("failed to set permissions for binary: %v", err))
+				return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to set permissions for binary: %v", err)}
 			}
 		}
 
 		err = cosmosutils.SetSymlink(binaryPath)
 		if err != nil {
-			panic(err)
+			return ui.NonRetryableErrorLoading{Err: err}
 		}
 
 		return ui.EndLoading{
@@ -594,11 +637,14 @@ func WaitSetupOPInitBots(ctx context.Context) tea.Cmd {
 		state := weavecontext.GetCurrentState[OPInitBotsState](ctx)
 		userHome, err := os.UserHomeDir()
 		if err != nil {
-			panic(fmt.Sprintf("failed to get user home directory: %v", err))
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to get user home directory: %v", err)}
 		}
 
 		binaryPath := GetBinaryPath(userHome)
-		opInitHome := weavecontext.GetOPInitHome(ctx)
+		opInitHome, err := weavecontext.GetOPInitHome(ctx)
+		if err != nil {
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to get OPinit home: %v", err)}
+		}
 		for _, info := range state.BotInfos {
 			if info.Mnemonic != "" {
 				res, err := cosmosutils.OPInitRecoverKeyFromMnemonic(binaryPath, info.KeyName, info.Mnemonic, info.DALayer == string(CelestiaLayerOption), opInitHome)
@@ -655,21 +701,21 @@ func (m *TerminalState) View() string {
 			}
 		}
 
-		return state.weave.Render() + "\n" + styles.RenderPrompt("Setup keys successfully.", []string{}, styles.Completed) + "\n\n" +
+		return m.WrapView(state.weave.Render() + "\n" + styles.RenderPrompt("Setup keys successfully.", []string{}, styles.Completed) + "\n\n" +
 			styles.BoldUnderlineText("Important", styles.Yellow) + "\n" +
 			styles.Text("Write down these mnemonic phrases and store them in a safe place. \nIt is the only way to recover your system keys.", styles.Yellow) + "\n\n" +
-			mnemonicText
+			mnemonicText)
 	}
-	return state.weave.Render() + "\n"
+	return m.WrapView(state.weave.Render() + "\n")
 }
 
 type EnsureOPInitBotsBinaryLoadingModel struct {
 	weavecontext.BaseModel
 	loading       ui.Loading
-	nextModelFunc func(ctx context.Context) tea.Model
+	nextModelFunc func(ctx context.Context) (tea.Model, error)
 }
 
-func NewEnsureOPInitBotsBinaryLoadingModel(ctx context.Context, nextModelFunc func(ctx context.Context) tea.Model) tea.Model {
+func NewEnsureOPInitBotsBinaryLoadingModel(ctx context.Context, nextModelFunc func(ctx context.Context) (tea.Model, error)) tea.Model {
 	return &EnsureOPInitBotsBinaryLoadingModel{
 		BaseModel:     weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
 		loading:       ui.NewLoading("Downloading OPinit bot ...", EnsureOPInitBotsBinary(ctx)),
@@ -682,15 +728,26 @@ func (m *EnsureOPInitBotsBinaryLoadingModel) Init() tea.Cmd {
 }
 
 func (m *EnsureOPInitBotsBinaryLoadingModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := weavecontext.HandleCommonCommands[OPInitBotsState](m, msg); handled {
+		return model, cmd
+	}
+
 	loader, cmd := m.loading.Update(msg)
 	m.loading = loader
+	if m.loading.NonRetryableErr != nil {
+		return m, m.HandlePanic(m.loading.NonRetryableErr)
+	}
 	if m.loading.Completing {
-		return m.nextModelFunc(m.Ctx), nil
+		nextModel, err := m.nextModelFunc(m.Ctx)
+		if err != nil {
+			return m, m.HandlePanic(err)
+		}
+		return nextModel, nil
 	}
 	return m, cmd
 }
 
 func (m *EnsureOPInitBotsBinaryLoadingModel) View() string {
 	state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
-	return state.weave.Render() + m.loading.View()
+	return m.WrapView(state.weave.Render() + m.loading.View())
 }

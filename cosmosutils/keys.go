@@ -24,13 +24,13 @@ type KeyInfo struct {
 	Mnemonic string `json:"mnemonic"`
 }
 
-func MustUnmarshalKeyInfo(rawJson string) KeyInfo {
+func UnmarshalKeyInfo(rawJson string) (KeyInfo, error) {
 	var account KeyInfo
 	err := json.Unmarshal([]byte(rawJson), &account)
 	if err != nil {
-		panic(fmt.Sprintf("failed to unmarshal JSON: %v", err))
+		return KeyInfo{}, fmt.Errorf("failed to unmarshal JSON: %v", err)
 	}
-	return account
+	return account, nil
 }
 
 // AddOrReplace adds or replaces a key using `initiad keys add <keyname> --keyring-backend test` with 'y' confirmation
@@ -50,23 +50,9 @@ func AddOrReplace(appName, keyname string) (string, error) {
 	return string(outputBytes), nil
 }
 
-func MustAddOrReplaceKey(appName, keyname string) string {
-	rawKey, err := AddOrReplace(appName, keyname)
-	if err != nil {
-		panic(err)
-	}
-	return rawKey
-}
-
 func DeleteKey(appName, keyname string) error {
 	cmd := exec.Command(appName, "keys", "delete", keyname, "--keyring-backend", "test", "-y")
 	return cmd.Run()
-}
-
-func MustDeleteKey(appName, keyname string) {
-	if err := DeleteKey(appName, keyname); err != nil {
-		panic(err)
-	}
 }
 
 // KeyExists checks if a key with the given keyName exists using `initiad keys show`
@@ -108,26 +94,31 @@ func RecoverKeyFromMnemonic(appName, keyname, mnemonic string) (string, error) {
 	return string(outputBytes), nil
 }
 
-func MustRecoverKeyFromMnemonic(appName, keyname, mnemonic string) string {
+func GenerateNewKeyInfo(appName, keyname string) (KeyInfo, error) {
+	rawKey, err := AddOrReplace(appName, keyname)
+	if err != nil {
+		return KeyInfo{}, err
+	}
+	if err = DeleteKey(appName, keyname); err != nil {
+		return KeyInfo{}, err
+	}
+	return UnmarshalKeyInfo(rawKey)
+}
+
+func GetAddressFromMnemonic(appName, mnemonic string) (string, error) {
+	keyname := "weave.DummyKey"
 	rawKey, err := RecoverKeyFromMnemonic(appName, keyname, mnemonic)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
-	return rawKey
-}
-
-func MustGenerateNewKeyInfo(appName, keyname string) KeyInfo {
-	rawKey := MustAddOrReplaceKey(appName, keyname)
-	MustDeleteKey(appName, keyname)
-	return MustUnmarshalKeyInfo(rawKey)
-}
-
-func MustGetAddressFromMnemonic(appName, mnemonic string) string {
-	keyname := "weave.DummyKey"
-	rawKey := MustRecoverKeyFromMnemonic(appName, keyname, mnemonic)
-	MustDeleteKey(appName, keyname)
-	key := MustUnmarshalKeyInfo(rawKey)
-	return key.Address
+	if err := DeleteKey(appName, keyname); err != nil {
+		return "", err
+	}
+	key, err := UnmarshalKeyInfo(rawKey)
+	if err != nil {
+		return "", err
+	}
+	return key.Address, nil
 }
 
 // OPInitRecoverKeyFromMnemonic recovers or replaces a key using a mnemonic phrase

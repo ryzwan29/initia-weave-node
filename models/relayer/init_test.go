@@ -67,7 +67,7 @@ func TestRollupSelectUpdateWithNavigation(t *testing.T) {
 func TestSelectingL1NetworkUpdateWithNavigation(t *testing.T) {
 	// Create a fresh context and model for the test case
 	ctx := weavecontext.NewAppContext(NewRelayerState())
-	model := NewSelectingL1Network(ctx)
+	model, _ := NewSelectingL1Network(ctx)
 
 	// Simulate selecting the Testnet option
 	newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
@@ -88,7 +88,7 @@ func TestSelectingL1NetworkUpdateWithNavigation(t *testing.T) {
 func TestSelectingL1NetworkRegistryUpdate(t *testing.T) {
 	// Create a fresh context and model for the test case
 	ctx := weavecontext.NewAppContext(NewRelayerState())
-	model := NewSelectingL1NetworkRegistry(ctx)
+	model, _ := NewSelectingL1NetworkRegistry(ctx)
 
 	// Define test cases
 	testCases := []struct {
@@ -136,7 +136,7 @@ func TestSelectingL1NetworkRegistryUpdate(t *testing.T) {
 func TestSelectSettingUpIBCChannelsMethodUpdate(t *testing.T) {
 	// Create a fresh context and model for the test case
 	ctx := weavecontext.NewAppContext(NewRelayerState())
-	model := NewSelectSettingUpIBCChannelsMethod(ctx)
+	model, _ := NewSelectSettingUpIBCChannelsMethod(ctx)
 
 	// Define test cases
 	testCases := []struct {
@@ -164,7 +164,7 @@ func TestSelectSettingUpIBCChannelsMethodUpdate(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Reset the model for each test case
-			model = NewSelectSettingUpIBCChannelsMethod(ctx)
+			model, _ = NewSelectSettingUpIBCChannelsMethod(ctx)
 
 			// Simulate navigation and selection
 			var cmd tea.Cmd
@@ -201,91 +201,45 @@ func TestStateAccessors(t *testing.T) {
 	ctx := weavecontext.NewAppContext(state)
 
 	t.Run("GetL1ChainId", func(t *testing.T) {
-		chainId, ok := GetL1ChainId(ctx)
-		assert.True(t, ok)
+		chainId, err := GetL1ChainId(ctx)
+		assert.Nil(t, err)
 		assert.Equal(t, "testnet-chain-id", chainId)
 	})
 
-	t.Run("MustGetL1ChainId", func(t *testing.T) {
-		assert.Equal(t, "testnet-chain-id", MustGetL1ChainId(ctx))
-	})
-
 	t.Run("GetL2ChainId", func(t *testing.T) {
-		chainId, ok := GetL2ChainId(ctx)
-		assert.True(t, ok)
+		chainId, err := GetL2ChainId(ctx)
+		assert.Nil(t, err)
 		assert.Equal(t, "l2-test-chain-id", chainId)
 	})
 
-	t.Run("MustGetL2ChainId", func(t *testing.T) {
-		assert.Equal(t, "l2-test-chain-id", MustGetL2ChainId(ctx))
-	})
-
 	t.Run("GetL1ActiveLcd", func(t *testing.T) {
-		lcd, ok := GetL1ActiveLcd(ctx)
-		assert.True(t, ok)
+		lcd, err := GetL1ActiveLcd(ctx)
+		assert.Nil(t, err)
 		assert.Equal(t, "https://testnet.lcd", lcd)
 	})
 
-	t.Run("MustGetL1ActiveLcd", func(t *testing.T) {
-		assert.Equal(t, "https://testnet.lcd", MustGetL1ActiveLcd(ctx))
-	})
-
 	t.Run("GetL1ActiveRpc", func(t *testing.T) {
-		rpc, ok := GetL1ActiveRpc(ctx)
-		assert.True(t, ok)
+		rpc, err := GetL1ActiveRpc(ctx)
+		assert.Nil(t, err)
 		assert.Equal(t, "https://testnet.rpc", rpc)
 	})
 
-	t.Run("MustGetL1ActiveRpc", func(t *testing.T) {
-		assert.Equal(t, "https://testnet.rpc", MustGetL1ActiveRpc(ctx))
-	})
-
 	t.Run("GetL2ActiveRpc", func(t *testing.T) {
-		rpc, ok := GetL2ActiveRpc(ctx)
-		assert.True(t, ok)
+		rpc, err := GetL2ActiveRpc(ctx)
+		assert.Nil(t, err)
 		assert.Equal(t, "https://l2.rpc", rpc)
 	})
 
-	t.Run("MustGetL2ActiveRpc", func(t *testing.T) {
-		assert.Equal(t, "https://l2.rpc", MustGetL2ActiveRpc(ctx))
-	})
-
 	t.Run("GetL1GasDenom", func(t *testing.T) {
-		denom, ok := GetL1GasDenom(ctx)
-		assert.True(t, ok)
+		denom, err := GetL1GasDenom(ctx)
+		assert.Nil(t, err)
 		assert.Equal(t, "uinit", denom)
 	})
 
-	t.Run("MustGetL1GasDenom", func(t *testing.T) {
-		assert.Equal(t, "uinit", MustGetL1GasDenom(ctx))
-	})
-
 	t.Run("GetL2GasDenom", func(t *testing.T) {
-		denom, ok := GetL2GasDenom(ctx)
-		assert.True(t, ok)
+		denom, err := GetL2GasDenom(ctx)
+		assert.Nil(t, err)
 		assert.Equal(t, "umin", denom)
-	})
-
-	t.Run("MustGetL2GasDenom", func(t *testing.T) {
-		assert.Equal(t, "umin", MustGetL2GasDenom(ctx))
-	})
-
-	t.Run("MustGetL1GasPrices", func(t *testing.T) {
-		assert.Equal(t, "0.025uinit", MustGetL1GasPrices(ctx))
-	})
-
-	t.Run("MustGetL2GasPrices", func(t *testing.T) {
-		assert.Equal(t, "0.05umin", MustGetL2GasPrices(ctx))
-	})
-
-	t.Run("Panic on missing data", func(t *testing.T) {
-		// Create a context without any configuration
-		emptyCtx := weavecontext.NewAppContext(NewRelayerState())
-
-		require.Panics(t, func() { MustGetL1ChainId(emptyCtx) }, "Expected panic for missing L1 chain ID")
-		require.Panics(t, func() { MustGetL1ActiveLcd(emptyCtx) }, "Expected panic for missing L1 LCD")
-		require.Panics(t, func() { MustGetL1ActiveRpc(emptyCtx) }, "Expected panic for missing L1 RPC")
-		require.Panics(t, func() { MustGetL1GasPrices(emptyCtx) }, "Expected panic for missing L1 gas prices")
 	})
 }
 

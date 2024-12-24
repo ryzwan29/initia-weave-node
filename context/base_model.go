@@ -2,6 +2,10 @@ package context
 
 import (
 	"context"
+	"fmt"
+	"runtime/debug"
+
+	"github.com/muesli/reflow/wordwrap"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -12,12 +16,15 @@ type BaseModelInterface interface {
 	SetContext(ctx context.Context)
 	GetContext() context.Context
 	CanGoPreviousPage() bool
+	WrapView(content string) string
+	HandlePanic(err error) tea.Cmd
 }
 
 // BaseModel provides common functionality for all context-aware models
 type BaseModel struct {
 	Ctx        context.Context
 	CannotBack bool
+	PanicText  string
 }
 
 // SetContext set the context from BaseModel
@@ -34,7 +41,22 @@ func (b *BaseModel) CanGoPreviousPage() bool {
 	return !b.CannotBack
 }
 
+func (b *BaseModel) WrapView(content string) string {
+	windowWidth := GetWindowWidth(b.Ctx) - DefaultPadding
+	if b.PanicText != "" {
+		return wordwrap.String(fmt.Sprintf("%s\n\n%s", content, b.PanicText), windowWidth)
+	}
+	return wordwrap.String(content, windowWidth)
+}
+
+func (b *BaseModel) HandlePanic(panic error) tea.Cmd {
+	b.PanicText = fmt.Sprintf("Caught panic:\n\n%v\n\n%s", panic, debug.Stack())
+	return tea.Quit
+}
+
 func HandleCommonCommands[S CloneableState[S]](model BaseModelInterface, msg tea.Msg) (tea.Model, tea.Cmd, bool) {
+	model = AdjustWindowSize(model, msg)
+
 	ctx := model.GetContext()
 	if newCtx, handled := ToggleTooltip(ctx, msg); handled {
 		model.SetContext(newCtx)

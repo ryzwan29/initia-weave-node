@@ -17,13 +17,13 @@ func TestGetNextModelByExistingApp(t *testing.T) {
 	ctx := weavecontext.NewAppContext(NewRunL1NodeState())
 
 	// Test case when existingApp is true
-	model := GetNextModelByExistingApp(ctx, true)
+	model, _ := GetNextModelByExistingApp(ctx, true)
 	if _, ok := model.(*ExistingAppReplaceSelect); !ok {
 		t.Errorf("Expected model to be of type *ExistingAppReplaceSelect when existingApp is true, but got %T", model)
 	}
 
 	// Test case when existingApp is false
-	model = GetNextModelByExistingApp(ctx, false)
+	model, _ = GetNextModelByExistingApp(ctx, false)
 	if _, ok := model.(*RunL1NodeMonikerInput); !ok {
 		t.Errorf("Expected model to be of type *RunL1NodeMonikerInput when existingApp is false, but got %T", model)
 	}
@@ -31,7 +31,7 @@ func TestGetNextModelByExistingApp(t *testing.T) {
 
 func TestRunL1NodeNetworkSelectInitialization(t *testing.T) {
 	ctx := weavecontext.NewAppContext(NewRunL1NodeState())
-	model := NewRunL1NodeNetworkSelect(ctx)
+	model, _ := NewRunL1NodeNetworkSelect(ctx)
 
 	assert.Equal(t, "Which network will your node participate in?", model.GetQuestion())
 	assert.Contains(t, model.Selector.Options, Testnet)
@@ -100,7 +100,7 @@ func TestRunL1NodeVersionSelectUpdate(t *testing.T) {
 
 func TestExistingAppReplaceSelectUseCurrentAppLocal(t *testing.T) {
 	ctx := weavecontext.NewAppContext(NewRunL1NodeState())
-	model := NewExistingAppReplaceSelect(ctx)
+	model, _ := NewExistingAppReplaceSelect(ctx)
 
 	// Set network to Local
 	state := weavecontext.GetCurrentState[RunL1NodeState](model.Ctx)
@@ -122,7 +122,7 @@ func TestExistingAppReplaceSelectUseCurrentAppLocal(t *testing.T) {
 
 func TestExistingAppReplaceSelectUseCurrentAppMainnet(t *testing.T) {
 	ctx := weavecontext.NewAppContext(NewRunL1NodeState())
-	model := NewExistingAppReplaceSelect(ctx)
+	model, _ := NewExistingAppReplaceSelect(ctx)
 
 	// Set network to Mainnet
 	state := weavecontext.GetCurrentState[RunL1NodeState](model.Ctx)
@@ -144,7 +144,7 @@ func TestExistingAppReplaceSelectUseCurrentAppMainnet(t *testing.T) {
 
 func TestExistingAppReplaceSelectReplaceApp(t *testing.T) {
 	ctx := weavecontext.NewAppContext(NewRunL1NodeState())
-	model := NewExistingAppReplaceSelect(ctx)
+	model, _ := NewExistingAppReplaceSelect(ctx)
 
 	// Set network to Mainnet for consistency
 	state := weavecontext.GetCurrentState[RunL1NodeState](model.Ctx)
@@ -197,7 +197,7 @@ func TestRunL1NodeMonikerInputUpdateTestnetNetwork(t *testing.T) {
 	// Set the network to Testnet
 	state := weavecontext.GetCurrentState[RunL1NodeState](model.Ctx)
 	state.network = string(Testnet)
-	state.chainRegistry = registry.MustGetChainRegistry(registry.InitiaL1Testnet)
+	state.chainRegistry, _ = registry.GetChainRegistry(registry.InitiaL1Testnet)
 	model.Ctx = weavecontext.SetCurrentState(model.Ctx, state)
 
 	// Simulate entering the moniker "NodeTest"
@@ -225,7 +225,7 @@ func TestRunL1NodeMonikerInputUpdateMainnetNetwork(t *testing.T) {
 	state.network = string(Mainnet)
 
 	// TODO: change to mainnet after launch
-	state.chainRegistry = registry.MustGetChainRegistry(registry.InitiaL1Testnet)
+	state.chainRegistry, _ = registry.GetChainRegistry(registry.InitiaL1Testnet)
 	model.Ctx = weavecontext.SetCurrentState(model.Ctx, state)
 
 	// Simulate entering the moniker "NodeMain"
@@ -354,7 +354,7 @@ func TestEnableFeaturesCheckboxUpdate(t *testing.T) {
 			state := weavecontext.GetCurrentState[RunL1NodeState](ctx)
 			state.network = string(Mainnet)
 
-			state.chainRegistry = registry.MustGetChainRegistry(registry.InitiaL1Testnet)
+			state.chainRegistry, _ = registry.GetChainRegistry(registry.InitiaL1Testnet)
 			ctx = weavecontext.SetCurrentState(ctx, state)
 			model := NewEnableFeaturesCheckbox(ctx)
 
@@ -382,7 +382,7 @@ func TestSeedsInputUpdate(t *testing.T) {
 	ctx := weavecontext.NewAppContext(NewRunL1NodeState())
 	state := weavecontext.GetCurrentState[RunL1NodeState](ctx)
 
-	state.chainRegistry = registry.MustGetChainRegistry(registry.InitiaL1Testnet)
+	state.chainRegistry, _ = registry.GetChainRegistry(registry.InitiaL1Testnet)
 	ctx = weavecontext.SetCurrentState(ctx, state)
 
 	// Define test cases
@@ -479,7 +479,7 @@ func TestPersistentPeersInputUpdate_ValidInput_MainnetNetwork(t *testing.T) {
 	ctx := weavecontext.NewAppContext(NewRunL1NodeState())
 	state := weavecontext.GetCurrentState[RunL1NodeState](ctx)
 	state.network = string(Mainnet)
-	state.chainRegistry = registry.MustGetChainRegistry(registry.InitiaL1Testnet)
+	state.chainRegistry, _ = registry.GetChainRegistry(registry.InitiaL1Testnet)
 	ctx = weavecontext.SetCurrentState(ctx, state)
 
 	model := NewPersistentPeersInput(ctx)
@@ -506,7 +506,7 @@ func TestPersistentPeersInputUpdate_InvalidInput(t *testing.T) {
 	ctx := weavecontext.NewAppContext(NewRunL1NodeState())
 	state := weavecontext.GetCurrentState[RunL1NodeState](ctx)
 	state.network = string(Testnet)
-	state.chainRegistry = registry.MustGetChainRegistry(registry.InitiaL1Testnet)
+	state.chainRegistry, _ = registry.GetChainRegistry(registry.InitiaL1Testnet)
 	ctx = weavecontext.SetCurrentState(ctx, state)
 
 	model := NewPersistentPeersInput(ctx)
@@ -531,7 +531,7 @@ func TestPersistentPeersInputUpdate_EmptyInput_LocalNetwork(t *testing.T) {
 	ctx := weavecontext.NewAppContext(NewRunL1NodeState())
 	state := weavecontext.GetCurrentState[RunL1NodeState](ctx)
 	state.network = string(Local)
-	state.chainRegistry = registry.MustGetChainRegistry(registry.InitiaL1Testnet)
+	state.chainRegistry, _ = registry.GetChainRegistry(registry.InitiaL1Testnet)
 	ctx = weavecontext.SetCurrentState(ctx, state)
 
 	model := NewPersistentPeersInput(ctx)
@@ -558,7 +558,7 @@ func TestExistingGenesisCheckerUpdate_NoExistingGenesis_LocalNetwork(t *testing.
 	state := weavecontext.GetCurrentState[RunL1NodeState](ctx)
 	state.existingGenesis = false
 	state.network = string(Local)
-	state.chainRegistry = registry.MustGetChainRegistry(registry.InitiaL1Testnet)
+	state.chainRegistry, _ = registry.GetChainRegistry(registry.InitiaL1Testnet)
 
 	ctx = weavecontext.SetCurrentState(ctx, state)
 
@@ -620,7 +620,7 @@ func TestExistingGenesisReplaceSelect_Update_UseCurrentGenesis_LocalNetwork(t *t
 	state.network = string(Local)
 	ctx = weavecontext.SetCurrentState(ctx, state)
 
-	model := NewExistingGenesisReplaceSelect(ctx)
+	model, _ := NewExistingGenesisReplaceSelect(ctx)
 
 	// Simulate selecting "UseCurrentGenesis" option
 	model.Update(tea.KeyMsg{Type: tea.KeyDown})                  // Navigate to UseCurrentGenesis
@@ -639,7 +639,7 @@ func TestExistingGenesisReplaceSelect_Update_ReplaceGenesis_LocalNetwork(t *test
 	state.network = string(Local)
 	ctx = weavecontext.SetCurrentState(ctx, state)
 
-	model := NewExistingGenesisReplaceSelect(ctx)
+	model, _ := NewExistingGenesisReplaceSelect(ctx)
 
 	// Simulate selecting "ReplaceGenesis" option
 	model.Update(tea.KeyMsg{Type: tea.KeyDown})                  // Navigate to ReplaceGenesis
@@ -661,7 +661,7 @@ func TestExistingGenesisReplaceSelect_Update_ReplaceGenesis_MainnetNetwork(t *te
 	state.network = string(Mainnet)
 	ctx = weavecontext.SetCurrentState(ctx, state)
 
-	model := NewExistingGenesisReplaceSelect(ctx)
+	model, _ := NewExistingGenesisReplaceSelect(ctx)
 
 	// Simulate selecting "ReplaceGenesis" option
 	model.Update(tea.KeyMsg{Type: tea.KeyDown})                  // Navigate to ReplaceGenesis
@@ -732,8 +732,9 @@ func TestInitializingAppLoading_Update_LocalNetwork(t *testing.T) {
 	nextModel, _ := model.Update(tea.KeyMsg{})
 
 	// Expect the model to quit for Local network
-	assert.Equal(t, model, nextModel)
-
+	if _, ok := nextModel.(*TerminalState); !ok {
+		t.Errorf("Expected model to be of type *TerminalState, but got %T", nextModel)
+	}
 	// Verify a final state message
 	state = weavecontext.GetCurrentState[RunL1NodeState](model.Ctx)
 	assert.Contains(t, state.weave.Render(), "Initialization successful.\n")

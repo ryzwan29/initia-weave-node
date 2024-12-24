@@ -82,19 +82,20 @@ func ExtractTarGz(src string, dest string) error {
 	return nil
 }
 
-func SetLibraryPaths(binaryDir string) {
+func SetLibraryPaths(binaryDir string) error {
 	switch runtime.GOOS {
 	case "darwin":
 		if err := os.Setenv("DYLD_LIBRARY_PATH", binaryDir); err != nil {
-			panic(fmt.Sprint("failed to set DYLD_LIBRARY_PATH", err))
+			return fmt.Errorf("failed to set DYLD_LIBRARY_PATH: %v", err)
 		}
 	case "linux":
 		if err := os.Setenv("LD_LIBRARY_PATH", binaryDir); err != nil {
-			panic(fmt.Sprint("failed to set LD_LIBRARY_PATH", err))
+			return fmt.Errorf("failed to set LD_LIBRARY_PATH: %v", err)
 		}
 	default:
-		panic(fmt.Sprint("unsupported OS for setting library paths", fmt.Errorf(runtime.GOOS)))
+		return fmt.Errorf("unsupported OS for setting library paths: %v", runtime.GOOS)
 	}
+	return nil
 }
 
 func WriteFile(path, content string) error {

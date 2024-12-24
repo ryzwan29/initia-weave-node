@@ -46,23 +46,26 @@ func relayerInitCommand() *cobra.Command {
 
 			if config.IsFirstTimeSetup() {
 				checkerCtx := weavecontext.NewAppContext(models.NewExistingCheckerState())
-				finalModel, err := tea.NewProgram(models.NewGasStationMethodSelect(checkerCtx)).Run()
-				if err != nil {
+				if finalModel, err := tea.NewProgram(models.NewGasStationMethodSelect(checkerCtx), tea.WithAltScreen()).Run(); err != nil {
 					return err
-				}
-
-				// Check if the final model is of type WeaveAppSuccessfullyInitialized
-				if _, ok := finalModel.(*models.WeaveAppSuccessfullyInitialized); !ok {
-					// If the model is not of the expected type, return or handle as needed
-					return nil
+				} else {
+					fmt.Println(finalModel.View())
+					if _, ok := finalModel.(*models.WeaveAppSuccessfullyInitialized); !ok {
+						return nil
+					}
 				}
 			}
 
-			_, err := tea.NewProgram(relayer.NewRollupSelect(ctx)).Run()
+			model, err := relayer.NewRollupSelect(ctx)
 			if err != nil {
 				return err
 			}
-			return nil
+			if finalModel, err := tea.NewProgram(model, tea.WithAltScreen()).Run(); err != nil {
+				return err
+			} else {
+				fmt.Println(finalModel.View())
+				return nil
+			}
 		},
 	}
 

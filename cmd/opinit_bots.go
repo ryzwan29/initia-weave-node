@@ -71,27 +71,27 @@ type HomeConfig struct {
 	UserHome    string
 }
 
-func RunOPInit(nextModelFunc func(ctx context.Context) tea.Model, homeConfig HomeConfig) (tea.Model, error) {
+func RunOPInit(nextModelFunc func(ctx context.Context) (tea.Model, error), homeConfig HomeConfig) (tea.Model, error) {
 	// Initialize the context with OPInitBotsState
 	ctx := weavecontext.NewAppContext(opinit_bots.NewOPInitBotsState())
 	ctx = weavecontext.SetMinitiaHome(ctx, homeConfig.MinitiaHome)
 	ctx = weavecontext.SetOPInitHome(ctx, homeConfig.OPInitHome)
 
 	// Start the program
-	finalModel, err := tea.NewProgram(
+	if finalModel, err := tea.NewProgram(
 		opinit_bots.NewEnsureOPInitBotsBinaryLoadingModel(
 			ctx,
-			func(nextCtx context.Context) tea.Model {
+			func(nextCtx context.Context) (tea.Model, error) {
 				return opinit_bots.ProcessMinitiaConfig(nextCtx, nextModelFunc)
 			},
-		),
-	).Run()
-
-	if err != nil {
+		), tea.WithAltScreen(),
+	).Run(); err != nil {
 		fmt.Println("Error running program:", err)
+		return finalModel, err
+	} else {
+		fmt.Println(finalModel.View())
+		return finalModel, nil
 	}
-
-	return finalModel, err
 }
 
 func OPInitBotsKeysSetupCommand() *cobra.Command {
@@ -144,7 +144,7 @@ Example: weave opinit init executor`,
 				return fmt.Errorf("error getting user home directory: %v", err)
 			}
 
-			var rootProgram func(ctx context.Context) tea.Model
+			var rootProgram func(ctx context.Context) (tea.Model, error)
 			// Check if a bot name was provided as an argument
 			if len(args) == 1 {
 				botName := args[0]

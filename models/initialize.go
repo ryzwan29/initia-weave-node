@@ -114,9 +114,9 @@ func (m *GasStationMethodSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *GasStationMethodSelect) View() string {
 	state := weavecontext.GetCurrentState[ExistingCheckerState](m.Ctx)
 	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return InitHeader(state.isFirstTime) + state.weave.Render() +
+	return m.WrapView(InitHeader(state.isFirstTime) + state.weave.Render() +
 		styles.RenderPrompt("How would you like to setup your Gas station account?", []string{"Gas Station account"}, styles.Question) +
-		m.Selector.View()
+		m.Selector.View())
 }
 
 type GenerateGasStationLoading struct {
@@ -141,7 +141,7 @@ func generateGasStationAccount(ctx context.Context) tea.Cmd {
 
 		mnemonic, err := crypto.GenerateMnemonic()
 		if err != nil {
-			panic(fmt.Errorf("failed to generate gas station mnemonic: %w", err))
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to generate gas station mnemonic: %w", err)}
 		}
 		state.generatedMnemonic = mnemonic
 
@@ -160,6 +160,9 @@ func (m *GenerateGasStationLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	loader, cmd := m.loading.Update(msg)
 	m.loading = loader
+	if m.loading.NonRetryableErr != nil {
+		return m, m.HandlePanic(m.loading.NonRetryableErr)
+	}
 	if m.loading.Completing {
 		m.Ctx = m.loading.EndContext
 		state := weavecontext.PushPageAndGetState[ExistingCheckerState](m)
@@ -171,7 +174,7 @@ func (m *GenerateGasStationLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *GenerateGasStationLoading) View() string {
 	state := weavecontext.GetCurrentState[ExistingCheckerState](m.Ctx)
-	return InitHeader(state.isFirstTime) + "\n" + state.weave.Render() + "\n" + m.loading.View()
+	return m.WrapView(InitHeader(state.isFirstTime) + "\n" + state.weave.Render() + "\n" + m.loading.View())
 }
 
 type GasStationMnemonicDisplayInput struct {
@@ -218,16 +221,16 @@ func (m *GasStationMnemonicDisplayInput) View() string {
 	state := weavecontext.GetCurrentState[ExistingCheckerState](m.Ctx)
 	gasStationAddress, err := crypto.MnemonicToBech32Address("init", state.generatedMnemonic)
 	if err != nil {
-		panic(fmt.Errorf("failed to convert mnemonic to bech32 address: %w", err))
+		m.HandlePanic(fmt.Errorf("failed to convert mnemonic to bech32 address: %w", err))
 	}
 
 	var mnemonicText string
 	mnemonicText += styles.RenderMnemonic("Gas Station", gasStationAddress, state.generatedMnemonic)
 
-	return InitHeader(state.isFirstTime) + "\n" + state.weave.Render() + "\n" +
+	return m.WrapView(InitHeader(state.isFirstTime) + "\n" + state.weave.Render() + "\n" +
 		styles.BoldUnderlineText("Important", styles.Yellow) + "\n" +
 		styles.Text("Write down these mnemonic phrases and store them in a safe place. \nIt is the only way to recover your system keys.", styles.Yellow) + "\n\n" +
-		mnemonicText + styles.RenderPrompt(m.GetQuestion(), []string{"`continue`"}, styles.Question) + m.TextInput.View()
+		mnemonicText + styles.RenderPrompt(m.GetQuestion(), []string{"`continue`"}, styles.Question) + m.TextInput.View())
 }
 
 type GasStationMnemonicInput struct {
@@ -276,7 +279,7 @@ func (m *GasStationMnemonicInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *GasStationMnemonicInput) View() string {
 	state := weavecontext.GetCurrentState[ExistingCheckerState](m.Ctx)
 	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
-	return InitHeader(state.isFirstTime) + "\n" + state.weave.Render() + styles.RenderPrompt("Please set up a Gas Station account", []string{"Gas Station account"}, styles.Question) + m.TextInput.View()
+	return m.WrapView(InitHeader(state.isFirstTime) + "\n" + state.weave.Render() + styles.RenderPrompt("Please set up a Gas Station account", []string{"Gas Station account"}, styles.Question) + m.TextInput.View())
 }
 
 type WeaveAppInitialization struct {
@@ -323,7 +326,7 @@ func (hi *WeaveAppInitialization) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (hi *WeaveAppInitialization) View() string {
 	state := weavecontext.GetCurrentState[ExistingCheckerState](hi.Ctx)
-	return state.weave.Render() + "\n" + hi.loading.View()
+	return hi.WrapView(state.weave.Render() + "\n" + hi.loading.View())
 }
 
 type WeaveAppSettingUpGasStation struct {
@@ -357,7 +360,7 @@ func (hi *WeaveAppSettingUpGasStation) Update(msg tea.Msg) (tea.Model, tea.Cmd) 
 
 func (hi *WeaveAppSettingUpGasStation) View() string {
 	state := weavecontext.GetCurrentState[ExistingCheckerState](hi.Ctx)
-	return state.weave.Render() + "\n" + hi.loading.View() + "\n"
+	return hi.WrapView(state.weave.Render() + "\n" + hi.loading.View() + "\n")
 }
 
 type WeaveAppSuccessfullyInitialized struct {
@@ -389,5 +392,5 @@ func (hi *WeaveAppSuccessfullyInitialized) View() string {
 		return ""
 	}
 	state := weavecontext.GetCurrentState[ExistingCheckerState](hi.Ctx)
-	return state.weave.Render() + "\n" + styles.FadeText("Initia is a network for interwoven rollups ") + "🪢\n"
+	return hi.WrapView(state.weave.Render() + "\n" + styles.FadeText("Initia is a network for interwoven rollups ") + "🪢\n")
 }

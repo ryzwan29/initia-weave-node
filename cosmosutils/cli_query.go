@@ -16,15 +16,24 @@ type InitiadQuerier struct {
 	binaryPath string
 }
 
-func NewInitiadQuerier(rest string) *InitiadQuerier {
+func NewInitiadQuerier(rest string) (*InitiadQuerier, error) {
 	httpClient := client.NewHTTPClient()
-	nodeVersion, url := MustGetInitiaBinaryUrlFromLcd(httpClient, rest)
-	binaryPath := GetInitiaBinaryPath(nodeVersion)
-	MustInstallInitiaBinary(nodeVersion, url, binaryPath)
+	nodeVersion, url, err := GetInitiaBinaryUrlFromLcd(httpClient, rest)
+	if err != nil {
+		return nil, err
+	}
+	binaryPath, err := GetInitiaBinaryPath(nodeVersion)
+	if err != nil {
+		return nil, err
+	}
+	err = InstallInitiaBinary(nodeVersion, url, binaryPath)
+	if err != nil {
+		return nil, err
+	}
 
 	return &InitiadQuerier{
 		binaryPath: binaryPath,
-	}
+	}, nil
 }
 
 func (iq *InitiadQuerier) QueryBankBalances(address, rpc string) (*Coins, error) {
@@ -38,7 +47,7 @@ func (iq *InitiadQuerier) QueryBankBalances(address, rpc string) (*Coins, error)
 	var queryResponse InitiadBankBalancesQueryResponse
 	err = json.Unmarshal(outputBytes, &queryResponse)
 	if err != nil {
-		panic(fmt.Sprintf("failed to unmarshal JSON: %v", err))
+		return nil, fmt.Errorf("failed to unmarshal JSON: %v", err)
 	}
 
 	return &queryResponse.Balances, nil

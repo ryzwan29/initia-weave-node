@@ -44,9 +44,14 @@ func (lsk *L1SystemKeys) FundAccountsWithGasStation(state *LaunchState) (*FundAc
 	if err != nil {
 		return nil, fmt.Errorf("failed to recover gas station key: %v", err)
 	}
-	defer cosmosutils.MustDeleteKey(state.binaryPath, common.WeaveGasStationKeyName)
+	defer func() {
+		_ = cosmosutils.DeleteKey(state.binaryPath, common.WeaveGasStationKeyName)
+	}()
 
-	gasStationKey := cosmosutils.MustUnmarshalKeyInfo(rawKey)
+	gasStationKey, err := cosmosutils.UnmarshalKeyInfo(rawKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal gas station key: %v", err)
+	}
 	var rawTxContent string
 	if state.batchSubmissionIsCelestia {
 		rawTxContent = fmt.Sprintf(
@@ -59,8 +64,13 @@ func (lsk *L1SystemKeys) FundAccountsWithGasStation(state *LaunchState) (*FundAc
 			lsk.Challenger.Address,
 			lsk.Challenger.Coins,
 		)
-		_ = cosmosutils.MustRecoverKeyFromMnemonic(state.celestiaBinaryPath, common.WeaveGasStationKeyName, gasStationMnemonic)
-		defer cosmosutils.MustDeleteKey(state.celestiaBinaryPath, common.WeaveGasStationKeyName)
+		_, err = cosmosutils.RecoverKeyFromMnemonic(state.celestiaBinaryPath, common.WeaveGasStationKeyName, gasStationMnemonic)
+		if err != nil {
+			return nil, fmt.Errorf("failed to recover celestia gas station key: %v", err)
+		}
+		defer func() {
+			_ = cosmosutils.DeleteKey(state.celestiaBinaryPath, common.WeaveGasStationKeyName)
+		}()
 
 		// TODO: Choose DA layer based on the chosen L1 network
 		celestiaRegistry, err := registry.GetChainRegistry(registry.CelestiaTestnet)
@@ -73,10 +83,15 @@ func (lsk *L1SystemKeys) FundAccountsWithGasStation(state *LaunchState) (*FundAc
 			return nil, fmt.Errorf("failed to get active rpc for celestia: %v", err)
 		}
 
+		celestiaMinGasPrice, err := celestiaRegistry.GetMinGasPriceByDenom(DefaultCelestiaGasDenom)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get celestia minimum gas price: %v", err)
+		}
+
 		celestiaChainId := celestiaRegistry.GetChainId()
 		sendCmd := exec.Command(state.celestiaBinaryPath, "tx", "bank", "send", common.WeaveGasStationKeyName,
 			lsk.BatchSubmitter.Address, fmt.Sprintf("%sutia", lsk.BatchSubmitter.Coins), "--node", celestiaRpc,
-			"--chain-id", celestiaChainId, "--gas", "200000", "--gas-prices", celestiaRegistry.MustGetMinGasPriceByDenom(DefaultCelestiaGasDenom), "--output", "json", "-y",
+			"--chain-id", celestiaChainId, "--gas", "200000", "--gas-prices", celestiaMinGasPrice, "--output", "json", "-y",
 		)
 		broadcastRes, err := sendCmd.CombinedOutput()
 		if err != nil {

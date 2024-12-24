@@ -40,15 +40,16 @@ var Dot = Spinner{
 }
 
 type Loading struct {
-	Spinner    Spinner
-	Style      lipgloss.Style
-	Text       string
-	Completing bool
-	quitting   bool
-	frame      int
-	executeFn  tea.Cmd
-	Err        error
-	EndContext context.Context
+	Spinner         Spinner
+	Style           lipgloss.Style
+	Text            string
+	Completing      bool
+	quitting        bool
+	frame           int
+	executeFn       tea.Cmd
+	Err             error
+	EndContext      context.Context
+	NonRetryableErr error
 }
 
 func NewLoading(text string, executeFn tea.Cmd) Loading {
@@ -104,9 +105,12 @@ func (m Loading) Update(msg tea.Msg) (Loading, tea.Cmd) {
 	case EndLoading:
 		m.Completing = true
 		m.EndContext = msg.Ctx
-		return m, nil
+		return m, tea.WindowSize()
 	case ErrorLoading:
 		m.Err = msg.Err
+		return m, nil
+	case NonRetryableErrorLoading:
+		m.NonRetryableErr = msg.Err
 		return m, nil
 	default:
 		return m, nil
@@ -134,6 +138,10 @@ func (m Loading) tick() tea.Cmd {
 
 type EndLoading struct {
 	Ctx context.Context
+}
+
+type NonRetryableErrorLoading struct {
+	Err error
 }
 
 func DefaultWait() tea.Cmd {

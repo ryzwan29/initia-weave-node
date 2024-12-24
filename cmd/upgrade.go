@@ -68,7 +68,10 @@ If the specified version does not exist, an error will be shown with a link to t
 }
 
 func handleUpgrade(requestedVersion string) error {
-	availableVersions := cosmosutils.ListWeaveReleases(WeaveReleaseAPI)
+	availableVersions, err := cosmosutils.ListWeaveReleases(WeaveReleaseAPI)
+	if err != nil {
+		return err
+	}
 	if len(availableVersions) == 0 {
 		return fmt.Errorf("failed to fetch available Weave versions")
 	}
@@ -122,10 +125,7 @@ func downloadAndReplaceBinary(downloadURL string) error {
 		return fmt.Errorf("failed to download and extract binary: %v", err)
 	}
 	defer func() {
-		err = io.DeleteFile(binaryPath)
-		if err != nil {
-			panic(fmt.Errorf("failed to delete temp weave binary: %v", err))
-		}
+		_ = io.DeleteFile(binaryPath)
 	}()
 
 	if err = doReplace(binaryPath); err != nil {

@@ -87,12 +87,20 @@ func (m *WeaveInit) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch *selected {
 		case RunL1NodeOption:
 			ctx := weavecontext.NewAppContext(initia.RunL1NodeState{})
-			return initia.NewRunL1NodeNetworkSelect(ctx), nil
+			model, err := initia.NewRunL1NodeNetworkSelect(ctx)
+			if err != nil {
+				return m, m.HandlePanic(err)
+			}
+			return model, nil
 		case LaunchNewRollupOption:
 			minitiaChecker := minitia.NewExistingMinitiaChecker(weavecontext.NewAppContext(*minitia.NewLaunchState()))
 			return minitiaChecker, minitiaChecker.Init()
 		case RunOPBotsOption:
-			return opinit_bots.NewOPInitBotInitSelector(weavecontext.NewAppContext(opinit_bots.NewOPInitBotsState())), nil
+			model, err := opinit_bots.NewOPInitBotInitSelector(weavecontext.NewAppContext(opinit_bots.NewOPInitBotsState()))
+			if err != nil {
+				return m, m.HandlePanic(err)
+			}
+			return model, nil
 		}
 	}
 

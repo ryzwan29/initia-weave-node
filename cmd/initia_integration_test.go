@@ -31,7 +31,7 @@ func TestInitiaInitTestnetNoSync(t *testing.T) {
 	initiaHome := TestInitiaHome + ".nosync"
 	ctx = context.SetInitiaHome(ctx, initiaHome)
 
-	firstModel := initia.NewRunL1NodeNetworkSelect(ctx)
+	firstModel, _ := initia.NewRunL1NodeNetworkSelect(ctx)
 
 	// Ensure that there is no previous Initia home
 	_, err := os.Stat(initiaHome)
@@ -100,7 +100,7 @@ func TestInitiaInitTestnetStatesync(t *testing.T) {
 	initiaHome := TestInitiaHome + ".state.sync"
 	ctx = context.SetInitiaHome(ctx, initiaHome)
 
-	firstModel := initia.NewRunL1NodeNetworkSelect(ctx)
+	firstModel, _ := initia.NewRunL1NodeNetworkSelect(ctx)
 
 	// Ensure that there is no previous Initia home
 	_, err := os.Stat(initiaHome)
