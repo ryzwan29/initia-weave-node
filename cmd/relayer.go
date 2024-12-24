@@ -84,7 +84,7 @@ func relayerStartCommand() *cobra.Command {
 		Use:   "start",
 		Short: "Start the Hermes relayer application.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			daemon, err := cmd.Flags().GetBool(FlagDaemon)
+			detach, err := cmd.Flags().GetBool(FlagDetach)
 			if err != nil {
 				return err
 			}
@@ -110,7 +110,7 @@ func relayerStartCommand() *cobra.Command {
 				return err
 			}
 
-			if daemon {
+			if detach {
 				err = s.Start()
 				if err != nil {
 					return err
@@ -119,11 +119,11 @@ func relayerStartCommand() *cobra.Command {
 				return nil
 			}
 
-			return service.NonDaemonStart(s)
+			return service.NonDetachStart(s)
 		},
 	}
 	startCmd.Flags().String(FlagUpdateClient, "true", "Update light clients with new header information before starting the relayer (can be 'true' or 'false')")
-	startCmd.Flags().BoolP(FlagDaemon, "d", false, "Run the Hermes relayer application as a daemon")
+	startCmd.Flags().BoolP(FlagDetach, "d", false, "Run the Hermes relayer application in detached mode")
 
 	return startCmd
 }

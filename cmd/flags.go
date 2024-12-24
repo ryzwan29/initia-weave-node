@@ -5,7 +5,7 @@ const (
 	FlagN          = "n"
 	FlagVm         = "vm"
 	FlagWithConfig = "with-config"
-	FlagDaemon     = "daemon"
+	FlagDetach     = "detach"
 
 	FlagInitiaHome  = "initia-dir"
 	FlagMinitiaHome = "minitia-dir"

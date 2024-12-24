@@ -465,9 +465,9 @@ func TestPersistentPeersInputUpdate_ValidInput_LocalNetwork(t *testing.T) {
 	// Simulate pressing Enter to submit the valid input
 	nextModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
 
-	// Expect transition to ExistingGenesisChecker for Local network
-	if m, ok := nextModel.(*ExistingGenesisChecker); !ok {
-		t.Errorf("Expected model to be of type *ExistingGenesisChecker, but got %T", nextModel)
+	// Expect transition to SelectingPruningStrategy for Local network
+	if m, ok := nextModel.(*SelectingPruningStrategy); !ok {
+		t.Errorf("Expected model to be of type *SelectingPruningStrategy, but got %T", nextModel)
 	} else {
 		state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
 		assert.Equal(t, validPeer, state.persistentPeers)   // Verify persistent peers in state
@@ -492,9 +492,9 @@ func TestPersistentPeersInputUpdate_ValidInput_MainnetNetwork(t *testing.T) {
 	// Simulate pressing Enter to submit the valid input
 	nextModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
 
-	// Expect transition to CosmovisorAutoUpgradeSelector for Mainnet network
-	if m, ok := nextModel.(*CosmovisorAutoUpgradeSelector); !ok {
-		t.Errorf("Expected model to be of type *CosmovisorAutoUpgradeSelector, but got %T", nextModel)
+	// Expect transition to SelectingPruningStrategy for Mainnet network
+	if m, ok := nextModel.(*SelectingPruningStrategy); !ok {
+		t.Errorf("Expected model to be of type *SelectingPruningStrategy, but got %T", nextModel)
 	} else {
 		state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
 		assert.Equal(t, validPeer, state.persistentPeers)   // Verify persistent peers in state
@@ -543,9 +543,9 @@ func TestPersistentPeersInputUpdate_EmptyInput_LocalNetwork(t *testing.T) {
 	// Simulate pressing Enter to submit the empty input
 	nextModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
 
-	// Expect transition to ExistingGenesisChecker for Local network
-	if m, ok := nextModel.(*ExistingGenesisChecker); !ok {
-		t.Errorf("Expected model to be of type *ExistingGenesisChecker, but got %T", nextModel)
+	// Expect transition to SelectingPruningStrategy for Local network
+	if m, ok := nextModel.(*SelectingPruningStrategy); !ok {
+		t.Errorf("Expected model to be of type *SelectingPruningStrategy, but got %T", nextModel)
 	} else {
 		state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
 		assert.Equal(t, "", state.persistentPeers)       // Verify persistent_peers in state as empty

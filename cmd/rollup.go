@@ -177,7 +177,7 @@ func minitiaStartCommand() *cobra.Command {
 		Use:   "start",
 		Short: "Start the rollup full node application.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			daemon, err := cmd.Flags().GetBool(FlagDaemon)
+			detach, err := cmd.Flags().GetBool(FlagDetach)
 			if err != nil {
 				return err
 			}
@@ -187,7 +187,7 @@ func minitiaStartCommand() *cobra.Command {
 				return err
 			}
 
-			if daemon {
+			if detach {
 				err = s.Start()
 				if err != nil {
 					return err
@@ -196,11 +196,11 @@ func minitiaStartCommand() *cobra.Command {
 				return nil
 			}
 
-			return service.NonDaemonStart(s)
+			return service.NonDetachStart(s)
 		},
 	}
 
-	launchCmd.Flags().BoolP(FlagDaemon, "d", false, "Run the rollup full node application as a daemon")
+	launchCmd.Flags().BoolP(FlagDetach, "d", false, "Run the rollup full node application in detached mode")
 
 	return launchCmd
 }

@@ -73,7 +73,7 @@ func initiaStartCommand() *cobra.Command {
 		Use:   "start",
 		Short: "Start the initiad full node application.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			daemon, err := cmd.Flags().GetBool(FlagDaemon)
+			detach, err := cmd.Flags().GetBool(FlagDetach)
 			if err != nil {
 				return err
 			}
@@ -83,7 +83,7 @@ func initiaStartCommand() *cobra.Command {
 				return err
 			}
 
-			if daemon {
+			if detach {
 				err = s.Start()
 				if err != nil {
 					return err
@@ -92,11 +92,11 @@ func initiaStartCommand() *cobra.Command {
 				return nil
 			}
 
-			return service.NonDaemonStart(s)
+			return service.NonDetachStart(s)
 		},
 	}
 
-	startCmd.Flags().BoolP(FlagDaemon, "d", false, "Run the initiad full node application as a daemon")
+	startCmd.Flags().BoolP(FlagDetach, "d", false, "Run the initiad full node application in detached mode")
 
 	return startCmd
 }

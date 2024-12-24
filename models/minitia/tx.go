@@ -83,10 +83,15 @@ func (lsk *L1SystemKeys) FundAccountsWithGasStation(state *LaunchState) (*FundAc
 			return nil, fmt.Errorf("failed to get active rpc for celestia: %v", err)
 		}
 
+		celestiaMinGasPrice, err := celestiaRegistry.GetMinGasPriceByDenom(DefaultCelestiaGasDenom)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get celestia minimum gas price: %v", err)
+		}
+
 		celestiaChainId := celestiaRegistry.GetChainId()
 		sendCmd := exec.Command(state.celestiaBinaryPath, "tx", "bank", "send", common.WeaveGasStationKeyName,
 			lsk.BatchSubmitter.Address, fmt.Sprintf("%sutia", lsk.BatchSubmitter.Coins), "--node", celestiaRpc,
-			"--chain-id", celestiaChainId, "--gas", "100000", "--gas-prices", "0.1utia", "--output", "json", "-y",
+			"--chain-id", celestiaChainId, "--gas", "200000", "--gas-prices", celestiaMinGasPrice, "--output", "json", "-y",
 		)
 		broadcastRes, err := sendCmd.CombinedOutput()
 		if err != nil {

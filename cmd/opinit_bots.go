@@ -191,7 +191,7 @@ Valid options are [executor, challenger] eg. weave opinit start executor
  `,
 		Args: ValidateOPinitBotNameArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			daemon, err := cmd.Flags().GetBool(FlagDaemon)
+			detach, err := cmd.Flags().GetBool(FlagDetach)
 			if err != nil {
 				return err
 			}
@@ -203,7 +203,7 @@ Valid options are [executor, challenger] eg. weave opinit start executor
 				return err
 			}
 
-			if daemon {
+			if detach {
 				err = s.Start()
 				if err != nil {
 					return err
@@ -212,11 +212,11 @@ Valid options are [executor, challenger] eg. weave opinit start executor
 				return nil
 			}
 
-			return service.NonDaemonStart(s)
+			return service.NonDetachStart(s)
 		},
 	}
 
-	startCmd.Flags().BoolP(FlagDaemon, "d", false, "Run the OPinit bot as a daemon")
+	startCmd.Flags().BoolP(FlagDetach, "d", false, "Run the OPinit bot in detached mode")
 
 	return startCmd
 }
