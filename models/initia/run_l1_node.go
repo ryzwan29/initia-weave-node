@@ -188,7 +188,7 @@ func (m *RunL1NodeVersionSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		state := weavecontext.PushPageAndGetState[RunL1NodeState](m)
 		state.initiadVersion = *selected
 		state.initiadEndpoint = m.versions[*selected]
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"initiad version"}, state.initiadVersion))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), m.highlights, state.initiadVersion))
 
 		return NewRunL1NodeChainIdInput(weavecontext.SetCurrentState(m.Ctx, state)), cmd
 	}
