@@ -73,7 +73,3 @@ func (m *FieldInputModel) View() string {
 	m.subModels[m.currentIndex].ViewTooltip(m.Ctx)
 	return state.weave.Render() + m.subModels[m.currentIndex].View()
 }
-
-func (m *FieldInputModel) SetTooltipWidth(ctx context.Context) {
-	m.subModels[m.currentIndex].TooltipWidth = weavecontext.GetWindowWidth(ctx)
-}
