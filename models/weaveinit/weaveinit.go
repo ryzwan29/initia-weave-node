@@ -108,6 +108,6 @@ func (m *WeaveInit) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *WeaveInit) View() string {
-	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	m.Selector.ViewTooltip(m.Ctx)
 	return styles.RenderPrompt("What do you want to do?", []string{}, styles.Question) + m.Selector.View()
 }

@@ -196,7 +196,7 @@ func (m *RollupSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *RollupSelect) View() string {
 	state := weavecontext.GetCurrentState[State](m.Ctx)
-	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	m.Selector.ViewTooltip(m.Ctx)
 	return m.WrapView(state.weave.Render() + styles.RenderPrompt(
 		m.GetQuestion(),
 		[]string{"Interwoven rollup"},
@@ -282,7 +282,7 @@ func (m *L1KeySelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *L1KeySelect) View() string {
 	state := weavecontext.GetCurrentState[State](m.Ctx)
-	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	m.Selector.ViewTooltip(m.Ctx)
 	return m.WrapView(state.weave.Render() + "\n" + styles.InformationMark + styles.BoldText(
 		"Relayer account keys with funds",
 		styles.White,
@@ -407,7 +407,7 @@ func (m *L2KeySelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *L2KeySelect) View() string {
 	state := weavecontext.GetCurrentState[State](m.Ctx)
-	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	m.Selector.ViewTooltip(m.Ctx)
 	return m.WrapView(state.weave.Render() + styles.RenderPrompt(
 		m.GetQuestion(),
 		[]string{"relayer account key", fmt.Sprintf("rollup (%s)", m.chainId)},
@@ -416,7 +416,7 @@ func (m *L2KeySelect) View() string {
 }
 
 type GenerateL1RelayerKeyLoading struct {
-	loading ui.Loading
+	ui.Loading
 	weavecontext.BaseModel
 }
 
@@ -428,13 +428,13 @@ func NewGenerateL1RelayerKeyLoading(ctx context.Context) *GenerateL1RelayerKeyLo
 	}
 
 	return &GenerateL1RelayerKeyLoading{
-		loading:   ui.NewLoading(fmt.Sprintf("Generating new relayer account key for %s ...", layerText), waitGenerateL1RelayerKeyLoading(ctx)),
+		Loading:   ui.NewLoading(fmt.Sprintf("Generating new relayer account key for %s ...", layerText), waitGenerateL1RelayerKeyLoading(ctx)),
 		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
 	}
 }
 
 func (m *GenerateL1RelayerKeyLoading) Init() tea.Cmd {
-	return m.loading.Init()
+	return m.Loading.Init()
 }
 
 func waitGenerateL1RelayerKeyLoading(ctx context.Context) tea.Cmd {
@@ -465,13 +465,13 @@ func (m *GenerateL1RelayerKeyLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return model, cmd
 	}
 
-	loader, cmd := m.loading.Update(msg)
-	m.loading = loader
-	if m.loading.NonRetryableErr != nil {
-		return m, m.HandlePanic(m.loading.NonRetryableErr)
+	loader, cmd := m.Loading.Update(msg)
+	m.Loading = loader
+	if m.Loading.NonRetryableErr != nil {
+		return m, m.HandlePanic(m.Loading.NonRetryableErr)
 	}
-	if m.loading.Completing {
-		m.Ctx = m.loading.EndContext
+	if m.Loading.Completing {
+		m.Ctx = m.Loading.EndContext
 		state := weavecontext.PushPageAndGetState[State](m)
 
 		switch L2KeySelectOption(state.l2KeyMethod) {
@@ -499,23 +499,23 @@ func (m *GenerateL1RelayerKeyLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *GenerateL1RelayerKeyLoading) View() string {
 	state := weavecontext.GetCurrentState[State](m.Ctx)
-	return m.WrapView(state.weave.Render() + "\n" + m.loading.View())
+	return m.WrapView(state.weave.Render() + "\n" + m.Loading.View())
 }
 
 type GenerateL2RelayerKeyLoading struct {
-	loading ui.Loading
+	ui.Loading
 	weavecontext.BaseModel
 }
 
 func NewGenerateL2RelayerKeyLoading(ctx context.Context) *GenerateL2RelayerKeyLoading {
 	return &GenerateL2RelayerKeyLoading{
-		loading:   ui.NewLoading("Generating new relayer account key for rollup...", waitGenerateL2RelayerKeyLoading(ctx)),
+		Loading:   ui.NewLoading("Generating new relayer account key for rollup...", waitGenerateL2RelayerKeyLoading(ctx)),
 		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
 	}
 }
 
 func (m *GenerateL2RelayerKeyLoading) Init() tea.Cmd {
-	return m.loading.Init()
+	return m.Loading.Init()
 }
 
 func waitGenerateL2RelayerKeyLoading(ctx context.Context) tea.Cmd {
@@ -546,13 +546,13 @@ func (m *GenerateL2RelayerKeyLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return model, cmd
 	}
 
-	loader, cmd := m.loading.Update(msg)
-	m.loading = loader
-	if m.loading.NonRetryableErr != nil {
-		return m, m.HandlePanic(m.loading.NonRetryableErr)
+	loader, cmd := m.Loading.Update(msg)
+	m.Loading = loader
+	if m.Loading.NonRetryableErr != nil {
+		return m, m.HandlePanic(m.Loading.NonRetryableErr)
 	}
-	if m.loading.Completing {
-		m.Ctx = m.loading.EndContext
+	if m.Loading.Completing {
+		m.Ctx = m.Loading.EndContext
 		state := weavecontext.PushPageAndGetState[State](m)
 
 		return NewKeysMnemonicDisplayInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
@@ -562,7 +562,7 @@ func (m *GenerateL2RelayerKeyLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *GenerateL2RelayerKeyLoading) View() string {
 	state := weavecontext.GetCurrentState[State](m.Ctx)
-	return m.WrapView(state.weave.Render() + "\n" + m.loading.View())
+	return m.WrapView(state.weave.Render() + "\n" + m.Loading.View())
 }
 
 type KeysMnemonicDisplayInput struct {
@@ -786,19 +786,19 @@ func (m *ImportL2RelayerKeyInput) View() string {
 }
 
 type FetchingBalancesLoading struct {
-	loading ui.Loading
+	ui.Loading
 	weavecontext.BaseModel
 }
 
 func NewFetchingBalancesLoading(ctx context.Context) *FetchingBalancesLoading {
 	return &FetchingBalancesLoading{
-		loading:   ui.NewLoading("Fetching relayer account balances ...", waitFetchingBalancesLoading(ctx)),
+		Loading:   ui.NewLoading("Fetching relayer account balances ...", waitFetchingBalancesLoading(ctx)),
 		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
 	}
 }
 
 func (m *FetchingBalancesLoading) Init() tea.Cmd {
-	return m.loading.Init()
+	return m.Loading.Init()
 }
 
 func waitFetchingBalancesLoading(ctx context.Context) tea.Cmd {
@@ -840,13 +840,13 @@ func (m *FetchingBalancesLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return model, cmd
 	}
 
-	loader, cmd := m.loading.Update(msg)
-	m.loading = loader
-	if m.loading.NonRetryableErr != nil {
-		return m, m.HandlePanic(m.loading.NonRetryableErr)
+	loader, cmd := m.Loading.Update(msg)
+	m.Loading = loader
+	if m.Loading.NonRetryableErr != nil {
+		return m, m.HandlePanic(m.Loading.NonRetryableErr)
 	}
-	if m.loading.Completing {
-		m.Ctx = m.loading.EndContext
+	if m.Loading.Completing {
+		m.Ctx = m.Loading.EndContext
 		state := weavecontext.PushPageAndGetState[State](m)
 
 		if !state.l1NeedsFunding && !state.l2NeedsFunding {
@@ -865,7 +865,7 @@ func (m *FetchingBalancesLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *FetchingBalancesLoading) View() string {
 	state := weavecontext.GetCurrentState[State](m.Ctx)
-	return m.WrapView(state.weave.Render() + "\n" + m.loading.View())
+	return m.WrapView(state.weave.Render() + "\n" + m.Loading.View())
 }
 
 type FundingAmountSelect struct {
@@ -990,7 +990,7 @@ func (m *FundingAmountSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *FundingAmountSelect) View() string {
 	state := weavecontext.GetCurrentState[State](m.Ctx)
-	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	m.Selector.ViewTooltip(m.Ctx)
 
 	var informationLayer, warningLayer string
 	if state.l1NeedsFunding && state.l2NeedsFunding {
@@ -1106,19 +1106,19 @@ func (m *FundDefaultPresetConfirmationInput) View() string {
 }
 
 type FundDefaultPresetBroadcastLoading struct {
-	loading ui.Loading
+	ui.Loading
 	weavecontext.BaseModel
 }
 
 func NewFundDefaultPresetBroadcastLoading(ctx context.Context) *FundDefaultPresetBroadcastLoading {
 	return &FundDefaultPresetBroadcastLoading{
-		loading:   ui.NewLoading("Broadcasting transactions...", broadcastDefaultPresetFromGasStation(ctx)),
+		Loading:   ui.NewLoading("Broadcasting transactions...", broadcastDefaultPresetFromGasStation(ctx)),
 		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
 	}
 }
 
 func (m *FundDefaultPresetBroadcastLoading) Init() tea.Cmd {
-	return m.loading.Init()
+	return m.Loading.Init()
 }
 
 func broadcastDefaultPresetFromGasStation(ctx context.Context) tea.Cmd {
@@ -1207,13 +1207,13 @@ func (m *FundDefaultPresetBroadcastLoading) Update(msg tea.Msg) (tea.Model, tea.
 		return model, cmd
 	}
 
-	loader, cmd := m.loading.Update(msg)
-	m.loading = loader
-	if m.loading.NonRetryableErr != nil {
-		return m, m.HandlePanic(m.loading.NonRetryableErr)
+	loader, cmd := m.Loading.Update(msg)
+	m.Loading = loader
+	if m.Loading.NonRetryableErr != nil {
+		return m, m.HandlePanic(m.Loading.NonRetryableErr)
 	}
-	if m.loading.Completing {
-		m.Ctx = m.loading.EndContext
+	if m.Loading.Completing {
+		m.Ctx = m.Loading.EndContext
 		state := weavecontext.PushPageAndGetState[State](m)
 		if state.l1FundingTxHash != "" {
 			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, "The relayer account has been funded on L1, with Tx Hash", []string{}, state.l1FundingTxHash))
@@ -1230,7 +1230,7 @@ func (m *FundDefaultPresetBroadcastLoading) Update(msg tea.Msg) (tea.Model, tea.
 
 func (m *FundDefaultPresetBroadcastLoading) View() string {
 	state := weavecontext.GetCurrentState[State](m.Ctx)
-	return m.WrapView(state.weave.Render() + "\n" + m.loading.View())
+	return m.WrapView(state.weave.Render() + "\n" + m.Loading.View())
 }
 
 type FundManuallyL1BalanceInput struct {
@@ -1445,7 +1445,7 @@ func (m *SelectingL1Network) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *SelectingL1Network) View() string {
 	state := weavecontext.GetCurrentState[State](m.Ctx)
-	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	m.Selector.ViewTooltip(m.Ctx)
 	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"Initia L1 network"}, styles.Question) + m.Selector.View())
 }
 
@@ -1554,7 +1554,7 @@ func (m *SelectingL2Network) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *SelectingL2Network) View() string {
 	state := weavecontext.GetCurrentState[State](m.Ctx)
-	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	m.Selector.ViewTooltip(m.Ctx)
 	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"rollup network"}, styles.Question) + m.Selector.View())
 }
 
@@ -1692,7 +1692,7 @@ func (m *SelectingL1NetworkRegistry) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *SelectingL1NetworkRegistry) View() string {
 	state := weavecontext.GetCurrentState[State](m.Ctx)
-	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	m.Selector.ViewTooltip(m.Ctx)
 	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"Initia L1 network"}, styles.Question) + m.Selector.View())
 }
 
@@ -1818,7 +1818,7 @@ func (m *SelectSettingUpIBCChannelsMethod) Update(msg tea.Msg) (tea.Model, tea.C
 
 func (m *SelectSettingUpIBCChannelsMethod) View() string {
 	state := weavecontext.GetCurrentState[State](m.Ctx)
-	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	m.Selector.ViewTooltip(m.Ctx)
 	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{}, styles.Question) + m.Selector.View())
 }
 
@@ -1961,7 +1961,7 @@ func (m *FillPortOnL1) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *FillPortOnL1) View() string {
 	state := weavecontext.GetCurrentState[State](m.Ctx)
-	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	m.TextInput.ViewTooltip(m.Ctx)
 	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"L1", m.extra}, styles.Question) + m.TextInput.View())
 }
 
@@ -2019,7 +2019,7 @@ func (m *FillChannelL1) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *FillChannelL1) View() string {
 	state := weavecontext.GetCurrentState[State](m.Ctx)
-	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	m.TextInput.ViewTooltip(m.Ctx)
 	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"L1", m.port, m.extra}, styles.Question) + m.TextInput.View())
 }
 
@@ -2082,7 +2082,7 @@ func (m *FillPortOnL2) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *FillPortOnL2) View() string {
 	state := weavecontext.GetCurrentState[State](m.Ctx)
-	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	m.TextInput.ViewTooltip(m.Ctx)
 	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"L2", m.extra}, styles.Question) + m.TextInput.View())
 }
 
@@ -2140,7 +2140,7 @@ func (m *FillChannelL2) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *FillChannelL2) View() string {
 	state := weavecontext.GetCurrentState[State](m.Ctx)
-	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	m.TextInput.ViewTooltip(m.Ctx)
 	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"L2", m.port, m.extra}, styles.Question) + m.TextInput.View())
 }
 
@@ -2272,7 +2272,7 @@ func (m *IBCChannelsCheckbox) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *IBCChannelsCheckbox) View() string {
 	state := weavecontext.GetCurrentState[State](m.Ctx)
-	m.CheckBox.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	m.CheckBox.ViewTooltip(m.Ctx)
 	if m.alert {
 		return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{}, styles.Question) + "\n" + m.CheckBox.View() + "\n" + styles.Text("Select at least one IBC channel to proceed to the next step.", styles.Yellow) + "\n")
 	}
@@ -2348,7 +2348,7 @@ func (m *FillL2LCD) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *FillL2LCD) View() string {
 	state := weavecontext.GetCurrentState[State](m.Ctx)
-	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	m.TextInput.ViewTooltip(m.Ctx)
 	if m.err != nil {
 		return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"L2", "LCD_address", m.extra}, styles.Question) + m.TextInput.ViewErr(m.err))
 	}
@@ -2357,13 +2357,13 @@ func (m *FillL2LCD) View() string {
 }
 
 type SettingUpRelayer struct {
-	loading ui.Loading
+	ui.Loading
 	weavecontext.BaseModel
 }
 
 func NewSettingUpRelayer(ctx context.Context) *SettingUpRelayer {
 	return &SettingUpRelayer{
-		loading:   ui.NewLoading("Setting up relayer...", WaitSettingUpRelayer(ctx)),
+		Loading:   ui.NewLoading("Setting up relayer...", WaitSettingUpRelayer(ctx)),
 		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
 	}
 }
@@ -2461,7 +2461,7 @@ func WaitSettingUpRelayer(ctx context.Context) tea.Cmd {
 }
 
 func (m *SettingUpRelayer) Init() tea.Cmd {
-	return m.loading.Init()
+	return m.Loading.Init()
 }
 
 func (m *SettingUpRelayer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -2469,13 +2469,13 @@ func (m *SettingUpRelayer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return model, cmd
 	}
 
-	loader, cmd := m.loading.Update(msg)
-	m.loading = loader
-	if m.loading.NonRetryableErr != nil {
-		return m, m.HandlePanic(m.loading.NonRetryableErr)
+	loader, cmd := m.Loading.Update(msg)
+	m.Loading = loader
+	if m.Loading.NonRetryableErr != nil {
+		return m, m.HandlePanic(m.Loading.NonRetryableErr)
 	}
-	if m.loading.Completing {
-		m.Ctx = m.loading.EndContext
+	if m.Loading.Completing {
+		m.Ctx = m.Loading.EndContext
 		state := weavecontext.PushPageAndGetState[State](m)
 		model, err := NewL1KeySelect(weavecontext.SetCurrentState(m.Ctx, state))
 		if err != nil {
@@ -2488,7 +2488,7 @@ func (m *SettingUpRelayer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *SettingUpRelayer) View() string {
 	state := weavecontext.GetCurrentState[State](m.Ctx)
-	return m.WrapView(state.weave.Render() + "\n" + m.loading.View())
+	return m.WrapView(state.weave.Render() + "\n" + m.Loading.View())
 }
 
 func removeQuarantineAttribute(filePath string) error {

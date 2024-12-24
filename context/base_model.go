@@ -42,15 +42,15 @@ func (b *BaseModel) CanGoPreviousPage() bool {
 }
 
 func (b *BaseModel) WrapView(content string) string {
-	windowWidth := GetWindowWidth(b.Ctx) - DefaultPadding
+	windowWidth := GetWindowWidth(b.Ctx)
 	if b.PanicText != "" {
 		return wordwrap.String(fmt.Sprintf("%s\n\n%s", content, b.PanicText), windowWidth)
 	}
 	return wordwrap.String(content, windowWidth)
 }
 
-func (b *BaseModel) HandlePanic(panic error) tea.Cmd {
-	b.PanicText = fmt.Sprintf("Caught panic:\n\n%v\n\n%s", panic, debug.Stack())
+func (b *BaseModel) HandlePanic(err error) tea.Cmd {
+	b.PanicText = fmt.Sprintf("Caught panic:\n\n%v\n\n%s", err, debug.Stack())
 	return tea.Quit
 }
 
