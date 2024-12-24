@@ -107,30 +107,30 @@ func (m *RunL1NodeNetworkSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case Mainnet, Testnet:
 			chainType, err := selected.ToChainType()
 			if err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			chainRegistry, err := registry.GetChainRegistry(chainType)
 			if err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			state.chainRegistry = chainRegistry
 			state.chainId = state.chainRegistry.GetChainId()
 			state.genesisEndpoint = state.chainRegistry.GetGenesisUrl()
 			initiaConfigDir, err := weavecontext.GetInitiaConfigDirectory(m.Ctx)
 			if err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			state.existingApp = IsExistApp(initiaConfigDir)
 
 			nextModel, err := GetNextModelByExistingApp(weavecontext.SetCurrentState(m.Ctx, state), state.existingApp)
 			if err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			return nextModel, nil
 		case Local:
 			model, err := NewRunL1NodeVersionSelect(weavecontext.SetCurrentState(m.Ctx, state))
 			if err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			return model, nil
 		}
@@ -242,13 +242,13 @@ func (m *RunL1NodeChainIdInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), m.highlights, input.Text))
 		initiaConfigDir, err := weavecontext.GetInitiaConfigDirectory(m.Ctx)
 		if err != nil {
-			return m, m.Panic(err)
+			return m, m.HandlePanic(err)
 		}
 		state.existingApp = IsExistApp(initiaConfigDir)
 
 		nextModel, err := GetNextModelByExistingApp(weavecontext.SetCurrentState(m.Ctx, state), state.existingApp)
 		if err != nil {
-			return m, m.Panic(err)
+			return m, m.HandlePanic(err)
 		}
 		return nextModel, nil
 	}
@@ -393,7 +393,7 @@ func (m *RunL1NodeMonikerInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case string(Testnet), string(Mainnet):
 			minGasPrice, err := state.chainRegistry.GetMinGasPriceByDenom(DefaultGasPriceDenom)
 			if err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			state.minGasPrice = minGasPrice
 			return NewEnableFeaturesCheckbox(weavecontext.SetCurrentState(m.Ctx, state)), cmd
@@ -461,7 +461,7 @@ func (m *MinGasPriceInput) View() string {
 	if !state.existingApp {
 		initiaConfigDir, err := weavecontext.GetInitiaConfigDirectory(m.Ctx)
 		if err != nil {
-			m.Panic(err)
+			m.HandlePanic(err)
 		}
 		initiaAppToml := filepath.Join(initiaConfigDir, "app.toml")
 		initiaConfigToml := filepath.Join(initiaConfigDir, "config.toml")
@@ -693,7 +693,7 @@ func WaitExistingGenesisChecker(ctx context.Context) tea.Cmd {
 		state := weavecontext.GetCurrentState[RunL1NodeState](ctx)
 		initiaConfigPath, err := weavecontext.GetInitiaConfigDirectory(ctx)
 		if err != nil {
-			return ui.PanicLoading{Err: err}
+			return ui.NonRetryableErrorLoading{Err: err}
 		}
 		genesisFilePath := filepath.Join(initiaConfigPath, "genesis.json")
 
@@ -728,7 +728,7 @@ func (m *ExistingGenesisChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.Ctx = weavecontext.SetCurrentState(m.Ctx, state)
 			model, err := NewExistingGenesisReplaceSelect(m.Ctx)
 			if err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			return model, nil
 		}
@@ -869,7 +869,7 @@ func (m *GenesisEndpointInput) View() string {
 	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
 	initiaConfigDir, err := weavecontext.GetInitiaConfigDirectory(m.Ctx)
 	if err != nil {
-		m.Panic(err)
+		m.HandlePanic(err)
 	}
 	preText := "\n"
 	if !state.existingApp {
@@ -903,8 +903,8 @@ func (m *InitializingAppLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	loader, cmd := m.Loading.Update(msg)
 	m.Loading = loader
-	if m.Loading.PanicErr != nil {
-		return m, m.Panic(m.Loading.PanicErr)
+	if m.Loading.NonRetryableErr != nil {
+		return m, m.HandlePanic(m.Loading.NonRetryableErr)
 	}
 	if m.Loading.Completing {
 		m.Ctx = m.Loading.EndContext
@@ -935,7 +935,7 @@ func initializeApp(ctx context.Context) tea.Cmd {
 		state := weavecontext.GetCurrentState[RunL1NodeState](ctx)
 		userHome, err := os.UserHomeDir()
 		if err != nil {
-			return ui.PanicLoading{Err: fmt.Errorf("failed to get user home directory: %v", err)}
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to get user home directory: %v", err)}
 		}
 
 		httpClient := client.NewHTTPClient()
@@ -948,38 +948,38 @@ func initializeApp(ctx context.Context) tea.Cmd {
 		case string(Mainnet), string(Testnet):
 			baseUrl, err := state.chainRegistry.GetActiveLcd()
 			if err != nil {
-				return ui.PanicLoading{Err: fmt.Errorf("failed to get active lcd: %v", err)}
+				return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to get active lcd: %v", err)}
 			}
 			nodeVersion, url, err = cosmosutils.GetInitiaBinaryUrlFromLcd(httpClient, baseUrl)
 			if err != nil {
-				return ui.PanicLoading{Err: fmt.Errorf("failed to get initia binary url: %v", err)}
+				return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to get initia binary url: %v", err)}
 			}
 			state.initiadVersion = nodeVersion
 		default:
-			return ui.PanicLoading{Err: fmt.Errorf("unknown network type: %s", state.network)}
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("unknown network type: %s", state.network)}
 		}
 
 		weaveDataPath := filepath.Join(userHome, common.WeaveDataDirectory)
 		binaryPath, err := cosmosutils.GetInitiaBinaryPath(nodeVersion)
 		if err != nil {
-			return ui.PanicLoading{Err: fmt.Errorf("failed to get initia binary path: %v", err)}
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to get initia binary path: %v", err)}
 		}
 		err = cosmosutils.InstallInitiaBinary(nodeVersion, url, binaryPath)
 		if err != nil {
-			return ui.PanicLoading{Err: fmt.Errorf("failed to install initia binary: %v", err)}
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to install initia binary: %v", err)}
 		}
 		cosmovisorPath, err := cosmosutils.InstallCosmovisor(CosmovisorVersion)
 		if err != nil {
-			return ui.PanicLoading{Err: fmt.Errorf("failed to install cosmovisor: %v", err)}
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to install cosmovisor: %v", err)}
 		}
 		initiaHome, err := weavecontext.GetInitiaHome(ctx)
 		if err != nil {
-			return ui.PanicLoading{Err: fmt.Errorf("failed to get initia home: %v", err)}
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to get initia home: %v", err)}
 		}
 		if _, err := os.Stat(initiaHome); os.IsNotExist(err) {
 			runCmd := exec.Command(binaryPath, "init", state.moniker, "--chain-id", state.chainId, "--home", initiaHome)
 			if err := runCmd.Run(); err != nil {
-				return ui.PanicLoading{Err: fmt.Errorf("failed to run initiad init: %v", err)}
+				return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to run initiad init: %v", err)}
 			}
 
 		}
@@ -988,53 +988,53 @@ func initializeApp(ctx context.Context) tea.Cmd {
 			runCmd := exec.Command(cosmovisorPath, "init", binaryPath)
 			runCmd.Env = append(runCmd.Env, "DAEMON_NAME=initiad", "DAEMON_HOME="+initiaHome)
 			if err := runCmd.Run(); err != nil {
-				return ui.PanicLoading{Err: fmt.Errorf("failed to run cosmovisor init: %v", err)}
+				return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to run cosmovisor init: %v", err)}
 			}
 		}
 
 		err = io.CopyDirectory(filepath.Dir(binaryPath), filepath.Join(initiaHome, "cosmovisor", "dyld_lib"))
 		if err != nil {
-			return ui.PanicLoading{Err: fmt.Errorf("failed to copy initia binary: %v", err)}
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to copy initia binary: %v", err)}
 		}
 
 		initiaConfigPath, err := weavecontext.GetInitiaConfigDirectory(ctx)
 		if err != nil {
-			return ui.PanicLoading{Err: fmt.Errorf("failed to get initia config dir: %v", err)}
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to get initia config dir: %v", err)}
 		}
 
 		if state.replaceExistingApp || !state.existingApp {
 			if err := config.UpdateTomlValue(filepath.Join(initiaConfigPath, "config.toml"), "moniker", state.moniker); err != nil {
-				return ui.PanicLoading{Err: fmt.Errorf("failed to update moniker: %v", err)}
+				return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to update moniker: %v", err)}
 			}
 
 			if err := config.UpdateTomlValue(filepath.Join(initiaConfigPath, "config.toml"), "p2p.seeds", state.seeds); err != nil {
-				return ui.PanicLoading{Err: fmt.Errorf("failed to update p2p seeds: %v", err)}
+				return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to update p2p seeds: %v", err)}
 			}
 
 			if err := config.UpdateTomlValue(filepath.Join(initiaConfigPath, "config.toml"), "p2p.persistent_peers", state.persistentPeers); err != nil {
-				return ui.PanicLoading{Err: fmt.Errorf("failed to update p2p peers: %v", err)}
+				return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to update p2p peers: %v", err)}
 			}
 
 			if err := config.UpdateTomlValue(filepath.Join(initiaConfigPath, "app.toml"), "minimum-gas-prices", state.minGasPrice); err != nil {
-				return ui.PanicLoading{Err: fmt.Errorf("failed to update minimum gas price: %v", err)}
+				return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to update minimum gas price: %v", err)}
 			}
 
 			if err := config.UpdateTomlValue(filepath.Join(initiaConfigPath, "app.toml"), "api.enable", strconv.FormatBool(state.enableLCD)); err != nil {
-				return ui.PanicLoading{Err: fmt.Errorf("failed to update api enable: %v", err)}
+				return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to update api enable: %v", err)}
 			}
 
 			if err := config.UpdateTomlValue(filepath.Join(initiaConfigPath, "app.toml"), "api.swagger", strconv.FormatBool(state.enableLCD)); err != nil {
-				return ui.PanicLoading{Err: fmt.Errorf("failed to update api swagger: %v", err)}
+				return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to update api swagger: %v", err)}
 			}
 		}
 
 		if state.genesisEndpoint != "" {
 			if err := httpClient.DownloadFile(state.genesisEndpoint, filepath.Join(weaveDataPath, "genesis.json"), nil, nil); err != nil {
-				return ui.PanicLoading{Err: fmt.Errorf("failed to download genesis file: %v", err)}
+				return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to download genesis file: %v", err)}
 			}
 
 			if err := os.Rename(filepath.Join(weaveDataPath, "genesis.json"), filepath.Join(initiaConfigPath, "genesis.json")); err != nil {
-				return ui.PanicLoading{Err: fmt.Errorf("failed to move genesis file: %v", err)}
+				return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to move genesis file: %v", err)}
 			}
 		}
 		var serviceCommand service.CommandName
@@ -1048,36 +1048,36 @@ func initializeApp(ctx context.Context) tea.Cmd {
 
 		srv, err := service.NewService(serviceCommand)
 		if err != nil {
-			return ui.PanicLoading{Err: fmt.Errorf("failed to initialize service: %v", err)}
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to initialize service: %v", err)}
 		}
 
 		if err = srv.Create(fmt.Sprintf("cosmovisor@%s", CosmovisorVersion), initiaHome); err != nil {
-			return ui.PanicLoading{Err: fmt.Errorf("failed to create service: %v", err)}
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to create service: %v", err)}
 		}
 
 		if state.replaceExistingGenesisWithDefault {
 			// Create a temporary home directory for the Initia node
 			tmpInitiaHome := filepath.Join(weaveDataPath, "tmp_initia")
 			if err := os.MkdirAll(tmpInitiaHome, os.ModePerm); err != nil {
-				return ui.PanicLoading{Err: fmt.Errorf("failed to create temporary Initia home directory: %v", err)}
+				return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to create temporary Initia home directory: %v", err)}
 			}
 
 			// Initialize the node in the temporary directory
 			initCmd := exec.Command(binaryPath, "init", state.moniker, "--chain-id", state.chainId, "--home", tmpInitiaHome)
 			if err := initCmd.Run(); err != nil {
-				return ui.PanicLoading{Err: fmt.Errorf("failed to run temporary initiad init: %v", err)}
+				return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to run temporary initiad init: %v", err)}
 			}
 
 			// Move the temporary genesis.json file to the user Initia config path
 			tmpGenesisPath := filepath.Join(tmpInitiaHome, "config/genesis.json")
 			userGenesisPath := filepath.Join(initiaConfigPath, "genesis.json")
 			if err = os.Rename(tmpGenesisPath, userGenesisPath); err != nil {
-				return ui.PanicLoading{Err: fmt.Errorf("failed to move genesis file: %v", err)}
+				return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to move genesis file: %v", err)}
 			}
 
 			// Clean up the temporary Initia directory
 			if err = os.RemoveAll(tmpInitiaHome); err != nil {
-				return ui.PanicLoading{Err: fmt.Errorf("failed to remove temporary initia home directory: %v", err)}
+				return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to remove temporary initia home directory: %v", err)}
 			}
 		}
 
@@ -1250,7 +1250,7 @@ func WaitExistingDataChecker(ctx context.Context) tea.Cmd {
 		state := weavecontext.GetCurrentState[RunL1NodeState](ctx)
 		initiaDataPath, err := weavecontext.GetInitiaDataDirectory(ctx)
 		if err != nil {
-			return ui.PanicLoading{Err: err}
+			return ui.NonRetryableErrorLoading{Err: err}
 		}
 		time.Sleep(1500 * time.Millisecond)
 
@@ -1280,14 +1280,14 @@ func (m *ExistingDataChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.Ctx = weavecontext.SetCurrentState(m.Ctx, state)
 				model, err := NewSnapshotEndpointInput(m.Ctx)
 				if err != nil {
-					return m, m.Panic(err)
+					return m, m.HandlePanic(err)
 				}
 				return model, nil
 			case string(StateSync):
 				m.Ctx = weavecontext.SetCurrentState(m.Ctx, state)
 				model, err := NewStateSyncEndpointInput(m.Ctx)
 				if err != nil {
-					return m, m.Panic(err)
+					return m, m.HandlePanic(err)
 				}
 				return model, nil
 			}
@@ -1297,7 +1297,7 @@ func (m *ExistingDataChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.Ctx = weavecontext.SetCurrentState(m.Ctx, state)
 			model, err := NewExistingDataReplaceSelect(m.Ctx)
 			if err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			return model, nil
 		}
@@ -1375,13 +1375,13 @@ func (m *ExistingDataReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case string(Snapshot):
 				model, err := NewSnapshotEndpointInput(m.Ctx)
 				if err != nil {
-					return m, m.Panic(err)
+					return m, m.HandlePanic(err)
 				}
 				return model, nil
 			case string(StateSync):
 				model, err := NewStateSyncEndpointInput(m.Ctx)
 				if err != nil {
-					return m, m.Panic(err)
+					return m, m.HandlePanic(err)
 				}
 				return model, nil
 			}
@@ -1445,7 +1445,7 @@ func (m *SnapshotEndpointInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.Ctx = weavecontext.SetCurrentState(m.Ctx, state)
 		snapshotDownload, err := NewSnapshotDownloadLoading(m.Ctx)
 		if err != nil {
-			return m, m.Panic(err)
+			return m, m.HandlePanic(err)
 		}
 		return snapshotDownload, snapshotDownload.Init()
 	}
@@ -1509,9 +1509,9 @@ func (m *StateSyncEndpointInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		state.stateSyncEndpoint = input.Text
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), m.highlights, input.Text))
-		model, err := NewStateSyncEndpointInput(weavecontext.SetCurrentState(m.Ctx, state))
+		model, err := NewAdditionalStateSyncPeersInput(weavecontext.SetCurrentState(m.Ctx, state))
 		if err != nil {
-			return m, m.Panic(err)
+			return m, m.HandlePanic(err)
 		}
 		return model, nil
 	}
@@ -1627,7 +1627,7 @@ func (m *SnapshotDownloadLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if err := m.GetError(); err != nil {
 		model, err := NewSnapshotEndpointInput(m.Ctx)
 		if err != nil {
-			return m, m.Panic(err)
+			return m, m.HandlePanic(err)
 		}
 		model.err = err
 		return model, model.Init()
@@ -1683,20 +1683,20 @@ func (m *SnapshotExtractLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.Ctx = weavecontext.SetCurrentState(m.Ctx, state)
 		model, err := NewSnapshotEndpointInput(m.Ctx)
 		if err != nil {
-			return m, m.Panic(err)
+			return m, m.HandlePanic(err)
 		}
 		model.err = msg.Err
 		return model, cmd
 	}
 
-	if m.Loading.PanicErr != nil {
-		return m, m.Panic(m.Loading.PanicErr)
+	if m.Loading.NonRetryableErr != nil {
+		return m, m.HandlePanic(m.Loading.NonRetryableErr)
 	}
 	if m.Loading.Completing {
 		state := weavecontext.PushPageAndGetState[RunL1NodeState](m)
 		initiaDataDir, err := weavecontext.GetInitiaDataDirectory(m.Ctx)
 		if err != nil {
-			return m, m.Panic(err)
+			return m, m.HandlePanic(err)
 		}
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, fmt.Sprintf("Snapshot extracted to %s successfully.", initiaDataDir), []string{}, ""))
 		m.Ctx = weavecontext.SetCurrentState(m.Ctx, state)
@@ -1723,12 +1723,12 @@ func snapshotExtractor(ctx context.Context) tea.Cmd {
 
 		initiaHome, err := weavecontext.GetInitiaHome(ctx)
 		if err != nil {
-			return ui.PanicLoading{Err: fmt.Errorf("[error] Failed to get initia home: %v", err)}
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("[error] Failed to get initia home: %v", err)}
 		}
 		binaryPath := filepath.Join(userHome, common.WeaveDataDirectory, fmt.Sprintf("initia@%s", state.initiadVersion), "initiad")
 		runCmd := exec.Command(binaryPath, "comet", "unsafe-reset-all", "--keep-addr-book", "--home", initiaHome)
 		if err := runCmd.Run(); err != nil {
-			return ui.PanicLoading{Err: fmt.Errorf("failed to run initiad comet unsafe-reset-all: %v", err)}
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to run initiad comet unsafe-reset-all: %v", err)}
 		}
 
 		cmd := exec.Command("bash", "-c", fmt.Sprintf("lz4 -c -d %s | tar -x -C %s", filepath.Join(userHome, common.WeaveDataDirectory, common.SnapshotFilename), initiaHome))
@@ -1773,14 +1773,14 @@ func (m *StateSyncSetupLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.Ctx = weavecontext.SetCurrentState(m.Ctx, state)
 		model, err := NewStateSyncEndpointInput(m.Ctx)
 		if err != nil {
-			return m, m.Panic(err)
+			return m, m.HandlePanic(err)
 		}
 		model.err = msg.Err
 		return model, cmd
 	}
 
-	if m.Loading.PanicErr != nil {
-		return m, m.Panic(m.Loading.PanicErr)
+	if m.Loading.NonRetryableErr != nil {
+		return m, m.HandlePanic(m.Loading.NonRetryableErr)
 	}
 
 	if m.Loading.Completing {
@@ -1811,7 +1811,7 @@ func setupStateSync(ctx context.Context) tea.Cmd {
 
 		initiaConfigPath, err := weavecontext.GetInitiaConfigDirectory(ctx)
 		if err != nil {
-			return ui.PanicLoading{Err: fmt.Errorf("[error] Failed to get initia config path: %v", err)}
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("[error] Failed to get initia config path: %v", err)}
 		}
 
 		var persistentPeers string
@@ -1839,11 +1839,11 @@ func setupStateSync(ctx context.Context) tea.Cmd {
 
 		initiaHome, err := weavecontext.GetInitiaHome(ctx)
 		if err != nil {
-			return ui.PanicLoading{Err: fmt.Errorf("[error] Failed to get initia home: %v", err)}
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("[error] Failed to get initia home: %v", err)}
 		}
 		binaryPath, err := cosmosutils.GetInitiaBinaryPath(state.initiadVersion)
 		if err != nil {
-			return ui.PanicLoading{Err: fmt.Errorf("[error] Failed to get initia binary path: %v", err)}
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("[error] Failed to get initia binary path: %v", err)}
 		}
 		runCmd := exec.Command(binaryPath, "comet", "unsafe-reset-all", "--keep-addr-book", "--home", initiaHome)
 		if err := runCmd.Run(); err != nil {
@@ -1876,7 +1876,7 @@ func (m *TerminalState) View() string {
 	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
 	initiaConfigDir, err := weavecontext.GetInitiaConfigDirectory(m.Ctx)
 	if err != nil {
-		m.Panic(err)
+		m.HandlePanic(err)
 	}
 	return m.WrapView(state.weave.Render() + styles.RenderPrompt(fmt.Sprintf("Initia node setup successfully. Config files are saved at %[1]s/config.toml and %[1]s/app.toml. Feel free to modify them as needed.", initiaConfigDir), []string{}, styles.Completed) + "\n" + styles.RenderPrompt("You can start the node by running `weave initia start`", []string{}, styles.Completed) + "\n")
 }

@@ -17,7 +17,7 @@ type BaseModelInterface interface {
 	GetContext() context.Context
 	CanGoPreviousPage() bool
 	WrapView(content string) string
-	Panic(panic error) tea.Cmd
+	HandlePanic(err error) tea.Cmd
 }
 
 // BaseModel provides common functionality for all context-aware models
@@ -49,7 +49,7 @@ func (b *BaseModel) WrapView(content string) string {
 	return wordwrap.String(content, windowWidth-DefaultPadding)
 }
 
-func (b *BaseModel) Panic(panic error) tea.Cmd {
+func (b *BaseModel) HandlePanic(panic error) tea.Cmd {
 	b.PanicText = fmt.Sprintf("Caught panic:\n\n%v\n\n%s", panic, debug.Stack())
 	return tea.Quit
 }

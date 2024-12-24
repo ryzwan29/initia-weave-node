@@ -278,7 +278,7 @@ func TestStateAccessors(t *testing.T) {
 		assert.Equal(t, "0.05umin", MustGetL2GasPrices(ctx))
 	})
 
-	t.Run("Panic on missing data", func(t *testing.T) {
+	t.Run("HandlePanic on missing data", func(t *testing.T) {
 		// Create a context without any configuration
 		emptyCtx := weavecontext.NewAppContext(NewRelayerState())
 

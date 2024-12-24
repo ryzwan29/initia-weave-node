@@ -89,7 +89,7 @@ func (m *WeaveInit) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			ctx := weavecontext.NewAppContext(initia.RunL1NodeState{})
 			model, err := initia.NewRunL1NodeNetworkSelect(ctx)
 			if err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			return model, nil
 		case LaunchNewRollupOption:
@@ -98,7 +98,7 @@ func (m *WeaveInit) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case RunOPBotsOption:
 			model, err := opinit_bots.NewOPInitBotInitSelector(weavecontext.NewAppContext(opinit_bots.NewOPInitBotsState()))
 			if err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			return model, nil
 		}

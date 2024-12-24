@@ -135,7 +135,7 @@ func (m *ProcessingMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if selected != nil {
 		artifactsDir, err := weavecontext.GetMinitiaArtifactsConfigJson(m.Ctx)
 		if err != nil {
-			return m, m.Panic(err)
+			return m, m.HandlePanic(err)
 		}
 
 		state := weavecontext.PushPageAndGetState[OPInitBotsState](m)
@@ -154,14 +154,14 @@ func (m *ProcessingMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			state.AddMinitiaConfig = true
 			nextModel, err := m.nextModelFunc(weavecontext.SetCurrentState(m.Ctx, state))
 			if err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			return nextModel, nil
 
 		case NoAddMinitiaKeyOption:
 			nextModel, err := m.nextModelFunc(weavecontext.SetCurrentState(m.Ctx, state))
 			if err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			return nextModel, nil
 		}
@@ -175,7 +175,7 @@ func (m *ProcessingMinitiaConfig) View() string {
 	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
 	artifactsDir, err := weavecontext.GetMinitiaArtifactsConfigJson(m.Ctx)
 	if err != nil {
-		m.Panic(err)
+		m.HandlePanic(err)
 	}
 	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{artifactsDir}, styles.Question) + m.Selector.View())
 }
@@ -248,7 +248,7 @@ func (m *SetupBotCheckbox) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if done {
 		artifactsDir, err := weavecontext.GetMinitiaArtifactsConfigJson(m.Ctx)
 		if err != nil {
-			return m, m.Panic(err)
+			return m, m.HandlePanic(err)
 		}
 
 		state := weavecontext.PushPageAndGetState[OPInitBotsState](m)
@@ -285,7 +285,7 @@ func (m *SetupBotCheckbox) View() string {
 	m.CheckBox.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
 	artifactsDir, err := weavecontext.GetMinitiaArtifactsConfigJson(m.Ctx)
 	if err != nil {
-		m.Panic(err)
+		m.HandlePanic(err)
 	}
 	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"bots", "set", "override", artifactsDir}, styles.Question) + "\n\n" + m.CheckBox.ViewWithBottom("For bots with an existing key, selecting them will override the key."))
 }
@@ -444,8 +444,8 @@ func (m *SetupOPInitBots) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	loader, cmd := m.loading.Update(msg)
 	m.loading = loader
-	if m.loading.PanicErr != nil {
-		return m, m.Panic(m.loading.PanicErr)
+	if m.loading.NonRetryableErr != nil {
+		return m, m.HandlePanic(m.loading.NonRetryableErr)
 	}
 	if m.loading.Completing {
 		return NewTerminalState(m.loading.EndContext), tea.Quit
@@ -580,7 +580,7 @@ func EnsureOPInitBotsBinary(ctx context.Context) tea.Cmd {
 	return func() tea.Msg {
 		userHome, err := os.UserHomeDir()
 		if err != nil {
-			return ui.PanicLoading{Err: fmt.Errorf("failed to get user home directory: %v", err)}
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to get user home directory: %v", err)}
 		}
 
 		binaryPath := GetBinaryPath(userHome)
@@ -598,7 +598,7 @@ func EnsureOPInitBotsBinary(ctx context.Context) tea.Cmd {
 		goarch := runtime.GOARCH
 		url, err := getBinaryURL(OpinitBotBinaryVersion, goos, goarch)
 		if err != nil {
-			return ui.PanicLoading{Err: fmt.Errorf("failed to get binary url: %v", err)}
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to get binary url: %v", err)}
 		}
 
 		extractedPath := filepath.Join(weaveDataPath, fmt.Sprintf("opinitd@%s", OpinitBotBinaryVersion))
@@ -608,22 +608,22 @@ func EnsureOPInitBotsBinary(ctx context.Context) tea.Cmd {
 			if _, err := os.Stat(extractedPath); os.IsNotExist(err) {
 				err := os.MkdirAll(extractedPath, os.ModePerm)
 				if err != nil {
-					return ui.PanicLoading{Err: fmt.Errorf("failed to create weave data directory: %v", err)}
+					return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to create weave data directory: %v", err)}
 				}
 			}
 
 			if err = io.DownloadAndExtractTarGz(url, tarballPath, extractedPath); err != nil {
-				return ui.PanicLoading{Err: fmt.Errorf("failed to download and extract binary: %v", err)}
+				return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to download and extract binary: %v", err)}
 			}
 			err = os.Chmod(binaryPath, 0755) // 0755 ensuring read, write, execute permissions for the owner, and read-execute for group/others
 			if err != nil {
-				return ui.PanicLoading{Err: fmt.Errorf("failed to set permissions for binary: %v", err)}
+				return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to set permissions for binary: %v", err)}
 			}
 		}
 
 		err = cosmosutils.SetSymlink(binaryPath)
 		if err != nil {
-			return ui.PanicLoading{Err: err}
+			return ui.NonRetryableErrorLoading{Err: err}
 		}
 
 		return ui.EndLoading{
@@ -637,13 +637,13 @@ func WaitSetupOPInitBots(ctx context.Context) tea.Cmd {
 		state := weavecontext.GetCurrentState[OPInitBotsState](ctx)
 		userHome, err := os.UserHomeDir()
 		if err != nil {
-			return ui.PanicLoading{Err: fmt.Errorf("failed to get user home directory: %v", err)}
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to get user home directory: %v", err)}
 		}
 
 		binaryPath := GetBinaryPath(userHome)
 		opInitHome, err := weavecontext.GetOPInitHome(ctx)
 		if err != nil {
-			return ui.PanicLoading{Err: fmt.Errorf("failed to get OPinit home: %v", err)}
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to get OPinit home: %v", err)}
 		}
 		for _, info := range state.BotInfos {
 			if info.Mnemonic != "" {
@@ -734,13 +734,13 @@ func (m *EnsureOPInitBotsBinaryLoadingModel) Update(msg tea.Msg) (tea.Model, tea
 
 	loader, cmd := m.loading.Update(msg)
 	m.loading = loader
-	if m.loading.PanicErr != nil {
-		return m, m.Panic(m.loading.PanicErr)
+	if m.loading.NonRetryableErr != nil {
+		return m, m.HandlePanic(m.loading.NonRetryableErr)
 	}
 	if m.loading.Completing {
 		nextModel, err := m.nextModelFunc(m.Ctx)
 		if err != nil {
-			return m, m.Panic(err)
+			return m, m.HandlePanic(err)
 		}
 		return nextModel, nil
 	}

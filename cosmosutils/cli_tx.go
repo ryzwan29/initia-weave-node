@@ -58,7 +58,9 @@ func (te *InitiadTxExecutor) BroadcastMsgSend(senderMnemonic, recipientAddress, 
 	if err != nil {
 		return nil, fmt.Errorf("failed to recover gas station key: %v", err)
 	}
-	defer DeleteKey(te.binaryPath, TmpKeyName)
+	defer func() {
+		_ = DeleteKey(te.binaryPath, TmpKeyName)
+	}()
 
 	cmd := exec.Command(te.binaryPath, "tx", "bank", "send", TmpKeyName, recipientAddress, amount, "--from",
 		TmpKeyName, "--chain-id", chainId, "--gas", "auto", "--gas-adjustment", DefaultGasAdjustment,

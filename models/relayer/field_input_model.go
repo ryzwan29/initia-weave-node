@@ -58,7 +58,7 @@ func (m *FieldInputModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		model, err := m.newTerminalModel(m.Ctx)
 		if err != nil {
-			return m, m.Panic(err)
+			return m, m.HandlePanic(err)
 		}
 		return model, model.Init()
 	}

@@ -53,7 +53,7 @@ func waitExistingMinitiaChecker(ctx context.Context) tea.Cmd {
 
 		minitiaPath, err := weavecontext.GetMinitiaHome(ctx)
 		if err != nil {
-			return ui.PanicLoading{Err: err}
+			return ui.NonRetryableErrorLoading{Err: err}
 		}
 		time.Sleep(1500 * time.Millisecond)
 
@@ -74,8 +74,8 @@ func (m *ExistingMinitiaChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	loader, cmd := m.loading.Update(msg)
 	m.loading = loader
-	if m.loading.PanicErr != nil {
-		return m, m.Panic(m.loading.PanicErr)
+	if m.loading.NonRetryableErr != nil {
+		return m, m.HandlePanic(m.loading.NonRetryableErr)
 	}
 	if m.loading.Completing {
 		m.Ctx = m.loading.EndContext
@@ -89,7 +89,7 @@ func (m *ExistingMinitiaChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			model, err := NewNetworkSelect(weavecontext.SetCurrentState(m.Ctx, state))
 			if err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			return model, cmd
 		} else {
@@ -140,10 +140,10 @@ func (m *DeleteExistingMinitiaInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		minitiaHome, err := weavecontext.GetMinitiaHome(m.Ctx)
 		if err != nil {
-			return m, m.Panic(err)
+			return m, m.HandlePanic(err)
 		}
 		if err := io.DeleteDirectory(minitiaHome); err != nil {
-			return m, m.Panic(fmt.Errorf("failed to delete .minitia: %v", err))
+			return m, m.HandlePanic(fmt.Errorf("failed to delete .minitia: %v", err))
 		}
 
 		if state.launchFromExistingConfig {
@@ -153,7 +153,7 @@ func (m *DeleteExistingMinitiaInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		model, err := NewNetworkSelect(weavecontext.SetCurrentState(m.Ctx, state))
 		if err != nil {
-			return m, m.Panic(err)
+			return m, m.HandlePanic(err)
 		}
 		return model, nil
 	}
@@ -164,7 +164,7 @@ func (m *DeleteExistingMinitiaInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *DeleteExistingMinitiaInput) View() string {
 	minitiaHome, err := weavecontext.GetMinitiaHome(m.Ctx)
 	if err != nil {
-		m.Panic(err)
+		m.HandlePanic(err)
 	}
 	return m.WrapView(styles.RenderPrompt(fmt.Sprintf("🚨 Existing %s folder detected.\n", minitiaHome), []string{minitiaHome}, styles.Empty) +
 		styles.RenderPrompt("To proceed with weave rollup launch, you must confirm the deletion of the .minitia folder.\nIf you do not confirm the deletion, the command will not run, and you will be returned to the homepage.\n\n", []string{".minitia", "weave rollup launch"}, styles.Empty) +
@@ -239,16 +239,16 @@ func (m *NetworkSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), m.highlights, string(*selected)))
 		chainType, err := selected.ToChainType()
 		if err != nil {
-			return m, m.Panic(err)
+			return m, m.HandlePanic(err)
 		}
 		chainRegistry, err := registry.GetChainRegistry(chainType)
 		if err != nil {
-			return m, m.Panic(err)
+			return m, m.HandlePanic(err)
 		}
 		state.l1ChainId = chainRegistry.GetChainId()
 		activeRpc, err := chainRegistry.GetActiveRpc()
 		if err != nil {
-			return m, m.Panic(err)
+			return m, m.HandlePanic(err)
 		}
 		state.l1RPC = activeRpc
 
@@ -384,7 +384,7 @@ func waitLatestVersionLoading(ctx context.Context, vmType string) tea.Cmd {
 
 		version, downloadURL, err := cosmosutils.GetLatestMinitiaVersion(vmType)
 		if err != nil {
-			return ui.PanicLoading{Err: err}
+			return ui.NonRetryableErrorLoading{Err: err}
 		}
 		state.minitiadVersion = version
 		state.minitiadEndpoint = downloadURL
@@ -400,8 +400,8 @@ func (m *LatestVersionLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	loader, cmd := m.loading.Update(msg)
 	m.loading = loader
-	if m.loading.PanicErr != nil {
-		return m, m.Panic(m.loading.PanicErr)
+	if m.loading.NonRetryableErr != nil {
+		return m, m.HandlePanic(m.loading.NonRetryableErr)
 	}
 	if m.loading.Completing {
 		m.Ctx = m.loading.EndContext
@@ -1263,7 +1263,7 @@ func (m *ExistingGasStationChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		} else {
 			model, err := NewAccountsFundingPresetSelect(weavecontext.SetCurrentState(m.Ctx, state))
 			if err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			return model, nil
 		}
@@ -1316,12 +1316,12 @@ func (m *GasStationMnemonicInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		err := config.SetConfig("common.gas_station_mnemonic", input.Text)
 		if err != nil {
-			return m, m.Panic(err)
+			return m, m.HandlePanic(err)
 		}
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), m.highlights, styles.HiddenMnemonicText))
 		model, err := NewAccountsFundingPresetSelect(weavecontext.SetCurrentState(m.Ctx, state))
 		if err != nil {
-			return m, m.Panic(err)
+			return m, m.HandlePanic(err)
 		}
 		return model, nil
 	}
@@ -1851,7 +1851,7 @@ func (m *AddGasStationToGenesisSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) 
 		case Add:
 			model, err := NewGenesisGasStationBalanceInput(weavecontext.SetCurrentState(m.Ctx, state))
 			if err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			return model, nil
 		case DontAdd:
@@ -2167,7 +2167,7 @@ func downloadMinitiaApp(ctx context.Context) tea.Cmd {
 
 		userHome, err := os.UserHomeDir()
 		if err != nil {
-			return ui.PanicLoading{Err: fmt.Errorf("failed to get user home directory: %v", err)}
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to get user home directory: %v", err)}
 		}
 		weaveDataPath := filepath.Join(userHome, common.WeaveDataDirectory)
 		tarballPath := filepath.Join(weaveDataPath, "minitia.tar.gz")
@@ -2180,7 +2180,7 @@ func downloadMinitiaApp(ctx context.Context) tea.Cmd {
 		case "darwin":
 			binaryPath = filepath.Join(extractedPath, AppName)
 		default:
-			return ui.PanicLoading{Err: fmt.Errorf("unsupported OS: %v", runtime.GOOS)}
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("unsupported OS: %v", runtime.GOOS)}
 		}
 		state.binaryPath = binaryPath
 
@@ -2188,17 +2188,17 @@ func downloadMinitiaApp(ctx context.Context) tea.Cmd {
 			if _, err := os.Stat(extractedPath); os.IsNotExist(err) {
 				err := os.MkdirAll(extractedPath, os.ModePerm)
 				if err != nil {
-					return ui.PanicLoading{Err: fmt.Errorf("failed to create weave data directory: %v", err)}
+					return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to create weave data directory: %v", err)}
 				}
 			}
 
 			if err = io.DownloadAndExtractTarGz(state.minitiadEndpoint, tarballPath, extractedPath); err != nil {
-				return ui.PanicLoading{Err: fmt.Errorf("failed to download and extract binary: %v", err)}
+				return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to download and extract binary: %v", err)}
 			}
 
 			err = os.Chmod(binaryPath, 0755)
 			if err != nil {
-				return ui.PanicLoading{Err: fmt.Errorf("failed to set permissions for binary: %v", err)}
+				return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to set permissions for binary: %v", err)}
 			}
 
 			state.downloadedNewBinary = true
@@ -2207,7 +2207,7 @@ func downloadMinitiaApp(ctx context.Context) tea.Cmd {
 		if state.vmType == string(Move) || state.vmType == string(Wasm) {
 			err = io.SetLibraryPaths(filepath.Dir(binaryPath))
 			if err != nil {
-				return ui.PanicLoading{Err: fmt.Errorf("failed to set library path: %v", err)}
+				return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to set library path: %v", err)}
 			}
 		}
 
@@ -2224,8 +2224,8 @@ func (m *DownloadMinitiaBinaryLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) 
 
 	loader, cmd := m.loading.Update(msg)
 	m.loading = loader
-	if m.loading.PanicErr != nil {
-		return m, m.Panic(m.loading.PanicErr)
+	if m.loading.NonRetryableErr != nil {
+		return m, m.HandlePanic(m.loading.NonRetryableErr)
 	}
 	if m.loading.Completing {
 		m.Ctx = m.loading.EndContext
@@ -2243,7 +2243,7 @@ func (m *DownloadMinitiaBinaryLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) 
 		if state.batchSubmissionIsCelestia {
 			model, err := NewDownloadCelestiaBinaryLoading(weavecontext.SetCurrentState(m.Ctx, state))
 			if err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			return model, model.Init()
 		}
@@ -2332,7 +2332,7 @@ func downloadCelestiaApp(ctx context.Context, version, binaryUrl string) tea.Cmd
 		state := weavecontext.GetCurrentState[LaunchState](ctx)
 		userHome, err := os.UserHomeDir()
 		if err != nil {
-			return ui.PanicLoading{Err: fmt.Errorf("failed to get user home directory: %v", err)}
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to get user home directory: %v", err)}
 		}
 		weaveDataPath := filepath.Join(userHome, common.WeaveDataDirectory)
 		tarballPath := filepath.Join(weaveDataPath, "celestia.tar.gz")
@@ -2344,17 +2344,17 @@ func downloadCelestiaApp(ctx context.Context, version, binaryUrl string) tea.Cmd
 			if _, err := os.Stat(extractedPath); os.IsNotExist(err) {
 				err := os.MkdirAll(extractedPath, os.ModePerm)
 				if err != nil {
-					return ui.PanicLoading{Err: fmt.Errorf("failed to create weave data directory: %v", err)}
+					return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to create weave data directory: %v", err)}
 				}
 			}
 
 			if err = io.DownloadAndExtractTarGz(binaryUrl, tarballPath, extractedPath); err != nil {
-				return ui.PanicLoading{Err: fmt.Errorf("failed to download and extract binary: %v", err)}
+				return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to download and extract binary: %v", err)}
 			}
 
 			err = os.Chmod(binaryPath, 0755)
 			if err != nil {
-				return ui.PanicLoading{Err: fmt.Errorf("failed to set permissions for binary: %v", err)}
+				return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to set permissions for binary: %v", err)}
 			}
 
 			state.downloadedNewCelestiaBinary = true
@@ -2373,8 +2373,8 @@ func (m *DownloadCelestiaBinaryLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd)
 
 	loader, cmd := m.loading.Update(msg)
 	m.loading = loader
-	if m.loading.PanicErr != nil {
-		return m, m.Panic(m.loading.PanicErr)
+	if m.loading.NonRetryableErr != nil {
+		return m, m.HandlePanic(m.loading.NonRetryableErr)
 	}
 	if m.loading.Completing {
 		m.Ctx = m.loading.EndContext
@@ -2423,21 +2423,21 @@ func generateOrRecoverSystemKeys(ctx context.Context) tea.Cmd {
 		if state.generateKeys {
 			operatorKey, err := cosmosutils.GenerateNewKeyInfo(state.binaryPath, OperatorKeyName)
 			if err != nil {
-				return ui.PanicLoading{Err: fmt.Errorf("failed to generate operator key: %v", err)}
+				return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to generate operator key: %v", err)}
 			}
 			state.systemKeyOperatorMnemonic = operatorKey.Mnemonic
 			state.systemKeyOperatorAddress = operatorKey.Address
 
 			bridgeExecutorKey, err := cosmosutils.GenerateNewKeyInfo(state.binaryPath, BridgeExecutorKeyName)
 			if err != nil {
-				return ui.PanicLoading{Err: fmt.Errorf("failed to generate bridge executor key: %v", err)}
+				return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to generate bridge executor key: %v", err)}
 			}
 			state.systemKeyBridgeExecutorMnemonic = bridgeExecutorKey.Mnemonic
 			state.systemKeyBridgeExecutorAddress = bridgeExecutorKey.Address
 
 			outputSubmitterKey, err := cosmosutils.GenerateNewKeyInfo(state.binaryPath, OutputSubmitterKeyName)
 			if err != nil {
-				return ui.PanicLoading{Err: fmt.Errorf("failed to generate output submitter key: %v", err)}
+				return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to generate output submitter key: %v", err)}
 			}
 			state.systemKeyOutputSubmitterMnemonic = outputSubmitterKey.Mnemonic
 			state.systemKeyOutputSubmitterAddress = outputSubmitterKey.Address
@@ -2445,14 +2445,14 @@ func generateOrRecoverSystemKeys(ctx context.Context) tea.Cmd {
 			if state.batchSubmissionIsCelestia {
 				batchSubmitterKey, err := cosmosutils.GenerateNewKeyInfo(state.celestiaBinaryPath, BatchSubmitterKeyName)
 				if err != nil {
-					return ui.PanicLoading{Err: fmt.Errorf("failed to generate celestia batch submitter key: %v", err)}
+					return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to generate celestia batch submitter key: %v", err)}
 				}
 				state.systemKeyBatchSubmitterMnemonic = batchSubmitterKey.Mnemonic
 				state.systemKeyBatchSubmitterAddress = batchSubmitterKey.Address
 			} else {
 				batchSubmitterKey, err := cosmosutils.GenerateNewKeyInfo(state.binaryPath, BatchSubmitterKeyName)
 				if err != nil {
-					return ui.PanicLoading{Err: fmt.Errorf("failed to generate initia batch submitter key: %v", err)}
+					return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to generate initia batch submitter key: %v", err)}
 				}
 				state.systemKeyBatchSubmitterMnemonic = batchSubmitterKey.Mnemonic
 				state.systemKeyBatchSubmitterAddress = batchSubmitterKey.Address
@@ -2460,7 +2460,7 @@ func generateOrRecoverSystemKeys(ctx context.Context) tea.Cmd {
 
 			challengerKey, err := cosmosutils.GenerateNewKeyInfo(state.binaryPath, ChallengerKeyName)
 			if err != nil {
-
+				return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to generate challenger key: %v", err)}
 			}
 			state.systemKeyChallengerMnemonic = challengerKey.Mnemonic
 			state.systemKeyChallengerAddress = challengerKey.Address
@@ -2468,30 +2468,30 @@ func generateOrRecoverSystemKeys(ctx context.Context) tea.Cmd {
 			var err error
 			state.systemKeyOperatorAddress, err = cosmosutils.GetAddressFromMnemonic(state.binaryPath, state.systemKeyOperatorMnemonic)
 			if err != nil {
-				return ui.PanicLoading{Err: fmt.Errorf("failed to recover key operator address: %v", err)}
+				return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to recover key operator address: %v", err)}
 			}
 			state.systemKeyBridgeExecutorAddress, err = cosmosutils.GetAddressFromMnemonic(state.binaryPath, state.systemKeyBridgeExecutorMnemonic)
 			if err != nil {
-				return ui.PanicLoading{Err: fmt.Errorf("failed to recover key bridge executor address: %v", err)}
+				return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to recover key bridge executor address: %v", err)}
 			}
 			state.systemKeyOutputSubmitterAddress, err = cosmosutils.GetAddressFromMnemonic(state.binaryPath, state.systemKeyOutputSubmitterMnemonic)
 			if err != nil {
-				return ui.PanicLoading{Err: fmt.Errorf("failed to recover key output submitter address: %v", err)}
+				return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to recover key output submitter address: %v", err)}
 			}
 			if state.batchSubmissionIsCelestia {
 				state.systemKeyBatchSubmitterAddress, err = cosmosutils.GetAddressFromMnemonic(state.celestiaBinaryPath, state.systemKeyBatchSubmitterMnemonic)
 				if err != nil {
-					return ui.PanicLoading{Err: fmt.Errorf("failed to recover celestia batch submitter address: %v", err)}
+					return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to recover celestia batch submitter address: %v", err)}
 				}
 			} else {
 				state.systemKeyBatchSubmitterAddress, err = cosmosutils.GetAddressFromMnemonic(state.binaryPath, state.systemKeyBatchSubmitterMnemonic)
 				if err != nil {
-					return ui.PanicLoading{Err: fmt.Errorf("failed to recover initia batch submitter address: %v", err)}
+					return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to recover initia batch submitter address: %v", err)}
 				}
 			}
 			state.systemKeyChallengerAddress, err = cosmosutils.GetAddressFromMnemonic(state.binaryPath, state.systemKeyChallengerMnemonic)
 			if err != nil {
-				return ui.PanicLoading{Err: fmt.Errorf("failed to recover challenger address: %v", err)}
+				return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to recover challenger address: %v", err)}
 			}
 		}
 
@@ -2511,8 +2511,8 @@ func (m *GenerateOrRecoverSystemKeysLoading) Update(msg tea.Msg) (tea.Model, tea
 
 	loader, cmd := m.loading.Update(msg)
 	m.loading = loader
-	if m.loading.PanicErr != nil {
-		return m, m.Panic(m.loading.PanicErr)
+	if m.loading.NonRetryableErr != nil {
+		return m, m.HandlePanic(m.loading.NonRetryableErr)
 	}
 	if m.loading.Completing {
 		m.Ctx = m.loading.EndContext
@@ -2525,7 +2525,7 @@ func (m *GenerateOrRecoverSystemKeysLoading) Update(msg tea.Msg) (tea.Model, tea
 			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "System keys have been successfully recovered.", []string{}, ""))
 			model, err := NewFundGasStationConfirmationInput(weavecontext.SetCurrentState(m.Ctx, state))
 			if err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			return model, nil
 		}
@@ -2573,7 +2573,7 @@ func (m *SystemKeysMnemonicDisplayInput) Update(msg tea.Msg) (tea.Model, tea.Cmd
 		_ = weavecontext.PushPageAndGetState[LaunchState](m)
 		model, err := NewFundGasStationConfirmationInput(m.Ctx)
 		if err != nil {
-			return m, m.Panic(err)
+			return m, m.HandlePanic(err)
 		}
 		return model, nil
 	}
@@ -2729,7 +2729,7 @@ func broadcastFundingFromGasStation(ctx context.Context) tea.Cmd {
 			},
 		).FundAccountsWithGasStation(&state)
 		if err != nil {
-			return ui.PanicLoading{Err: err}
+			return ui.NonRetryableErrorLoading{Err: err}
 		}
 
 		if txResult.CelestiaTx != nil {
@@ -2751,8 +2751,8 @@ func (m *FundGasStationBroadcastLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd
 
 	loader, cmd := m.loading.Update(msg)
 	m.loading = loader
-	if m.loading.PanicErr != nil {
-		return m, m.Panic(m.loading.PanicErr)
+	if m.loading.NonRetryableErr != nil {
+		return m, m.HandlePanic(m.loading.NonRetryableErr)
 	}
 	if m.loading.Completing {
 		m.Ctx = m.loading.EndContext
@@ -2834,7 +2834,7 @@ func launchingMinitia(ctx context.Context, streamingLogs *[]string) tea.Cmd {
 		} else {
 			userHome, err := os.UserHomeDir()
 			if err != nil {
-				return ui.PanicLoading{Err: fmt.Errorf("failed to get user home directory: %v", err)}
+				return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to get user home directory: %v", err)}
 			}
 
 			minitiaConfig := &types.MinitiaConfig{
@@ -2882,32 +2882,32 @@ func launchingMinitia(ctx context.Context, streamingLogs *[]string) tea.Cmd {
 
 			configBz, err := json.MarshalIndent(minitiaConfig, "", " ")
 			if err != nil {
-				return ui.PanicLoading{Err: fmt.Errorf("failed to marshal config: %v", err)}
+				return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to marshal config: %v", err)}
 			}
 
 			configFilePath = filepath.Join(userHome, common.WeaveDataDirectory, LaunchConfigFilename)
 			if err = os.WriteFile(configFilePath, configBz, 0600); err != nil {
-				return ui.PanicLoading{Err: fmt.Errorf("failed to write config file: %v", err)}
+				return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to write config file: %v", err)}
 			}
 		}
 
 		minitiaHome, err := weavecontext.GetMinitiaHome(ctx)
 		if err != nil {
-			return ui.PanicLoading{Err: fmt.Errorf("failed to get minitia home directory: %v", err)}
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to get minitia home directory: %v", err)}
 		}
 		launchCmd := exec.Command(state.binaryPath, "launch", "--with-config", configFilePath, "--home", minitiaHome)
 
 		stdout, err := launchCmd.StdoutPipe()
 		if err != nil {
-			return ui.PanicLoading{Err: fmt.Errorf("failed to capture stdout: %v", err)}
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to capture stdout: %v", err)}
 		}
 		stderr, err := launchCmd.StderrPipe()
 		if err != nil {
-			return ui.PanicLoading{Err: fmt.Errorf("failed to capture stderr: %v", err)}
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to capture stderr: %v", err)}
 		}
 
 		if err = launchCmd.Start(); err != nil {
-			return ui.PanicLoading{Err: fmt.Errorf("failed to start command: %v", err)}
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to start command: %v", err)}
 		}
 
 		go func() {
@@ -2939,17 +2939,17 @@ func launchingMinitia(ctx context.Context, streamingLogs *[]string) tea.Cmd {
 		if err = launchCmd.Wait(); err != nil {
 			if err != nil {
 				*streamingLogs = append(*streamingLogs, fmt.Sprintf("Launch command finished with error: %v", err))
-				return ui.PanicLoading{Err: fmt.Errorf("command execution failed: %v", err)}
+				return ui.NonRetryableErrorLoading{Err: fmt.Errorf("command execution failed: %v", err)}
 			}
 		}
 
 		srv, err := service.NewService(service.Minitia)
 		if err != nil {
-			return ui.PanicLoading{Err: fmt.Errorf("failed to initialize service: %v", err)}
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to initialize service: %v", err)}
 		}
 
 		if err = srv.Create(fmt.Sprintf("mini%s@%s", strings.ToLower(state.vmType), state.minitiadVersion), minitiaHome); err != nil {
-			return ui.PanicLoading{Err: fmt.Errorf("failed to create service: %v", err)}
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to create service: %v", err)}
 		}
 
 		return ui.EndLoading{
@@ -2965,8 +2965,8 @@ func (m *LaunchingNewMinitiaLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	loader, cmd := m.loading.Update(msg)
 	m.loading = loader
-	if m.loading.PanicErr != nil {
-		return m, m.Panic(m.loading.PanicErr)
+	if m.loading.NonRetryableErr != nil {
+		return m, m.HandlePanic(m.loading.NonRetryableErr)
 	}
 	if m.loading.Completing {
 		m.Ctx = m.loading.EndContext
@@ -2974,7 +2974,7 @@ func (m *LaunchingNewMinitiaLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		artifactsDir, err := weavecontext.GetMinitiaArtifactsConfigJson(m.Ctx)
 		if err != nil {
-			return m, m.Panic(err)
+			return m, m.HandlePanic(err)
 		}
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, fmt.Sprintf("New Minitia has been launched. (More details about your Minitia in %[1]s/artifacts.json & %[1]s/config.json)", filepath.Dir(artifactsDir)), []string{}, ""))
 
@@ -2995,7 +2995,7 @@ func (m *LaunchingNewMinitiaLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		encodedPayload, err := payload.EncodeToBase64()
 		if err != nil {
-			return m, m.Panic(fmt.Errorf("failed to encode payload: %v", err))
+			return m, m.HandlePanic(fmt.Errorf("failed to encode payload: %v", err))
 		}
 
 		link := fmt.Sprintf("%s/custom-network/add/link?config=%s", InitiaScanURL, encodedPayload)

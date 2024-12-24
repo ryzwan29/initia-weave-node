@@ -282,7 +282,7 @@ func (m *OPInitBotInitSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			var err error
 			state.BotInfos, err = CheckIfKeysExist(state.BotInfos)
 			if err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			for idx, botInfo := range state.BotInfos {
 				if botInfo.KeyName == OracleBridgeExecutorKeyName && botInfo.IsNotExist {
@@ -302,7 +302,7 @@ func (m *OPInitBotInitSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			var err error
 			state.BotInfos, err = CheckIfKeysExist(state.BotInfos)
 			if err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			for idx, botInfo := range state.BotInfos {
 				if keyNames[botInfo.KeyName] && botInfo.IsNotExist && !state.AddMinitiaConfig {
@@ -376,20 +376,20 @@ func (m *DeleteDBSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		opInitHome, err := weavecontext.GetOPInitHome(m.Ctx)
 		if err != nil {
-			return m, m.Panic(err)
+			return m, m.HandlePanic(err)
 		}
 		executorJsonPath := filepath.Join(opInitHome, fmt.Sprintf("%s.json", m.bot))
 		if io.FileOrFolderExists(executorJsonPath) {
 			file, err := os.ReadFile(executorJsonPath)
 			if err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 
 			var botConfigChainId BotConfigChainId
 
 			err = json.Unmarshal(file, &botConfigChainId)
 			if err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			state.botConfig["l1_node.chain_id"] = botConfigChainId.L1Node.ChainID
 			state.botConfig["l2_node.chain_id"] = botConfigChainId.L2Node.ChainID
@@ -397,7 +397,7 @@ func (m *DeleteDBSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			state.daIsCelestia = botConfigChainId.DANode.Bech32Prefix == "celestia"
 			model, err := NewUseCurrentConfigSelector(weavecontext.SetCurrentState(m.Ctx, state), m.bot)
 			if err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			return model, cmd
 		}
@@ -406,13 +406,13 @@ func (m *DeleteDBSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if state.MinitiaConfig != nil {
 			model, err := NewPrefillMinitiaConfig(weavecontext.SetCurrentState(m.Ctx, state))
 			if err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			return model, cmd
 		}
 		model, err := NewL1PrefillSelector(weavecontext.SetCurrentState(m.Ctx, state))
 		if err != nil {
-			return m, m.Panic(err)
+			return m, m.HandlePanic(err)
 		}
 		return model, cmd
 	}
@@ -473,7 +473,7 @@ func (m *UseCurrentConfigSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.Ctx = weavecontext.SetCurrentState(m.Ctx, state)
 			model, err := NewStartingInitBot(m.Ctx)
 			if err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			return model, model.Init()
 		case "replace":
@@ -482,14 +482,14 @@ func (m *UseCurrentConfigSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if state.MinitiaConfig != nil {
 				model, err := NewPrefillMinitiaConfig(m.Ctx)
 				if err != nil {
-					return m, m.Panic(err)
+					return m, m.HandlePanic(err)
 				}
 				return model, cmd
 			}
 			if state.InitExecutorBot || state.InitChallengerBot {
 				model, err := NewL1PrefillSelector(m.Ctx)
 				if err != nil {
-					return m, m.Panic(err)
+					return m, m.HandlePanic(err)
 				}
 				return model, cmd
 			}
@@ -551,7 +551,7 @@ func (m *PrefillMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if selected != nil {
 		artifactsDir, err := weavecontext.GetMinitiaArtifactsConfigJson(m.Ctx)
 		if err != nil {
-			return m, m.Panic(err)
+			return m, m.HandlePanic(err)
 		}
 
 		state := weavecontext.PushPageAndGetState[OPInitBotsState](m)
@@ -564,30 +564,30 @@ func (m *PrefillMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			state.botConfig["l1_node.rpc_address"] = minitiaConfig.L1Config.RpcUrl
 			state.botConfig["l1_node.gas_price"] = minitiaConfig.L1Config.GasPrices
 			if err = setFieldPrefillValue(defaultExecutorFields, "l1_node.rpc_address", minitiaConfig.L1Config.RpcUrl); err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			if err = setFieldPrefillValue(defaultExecutorFields, "l2_node.chain_id", minitiaConfig.L2Config.ChainID); err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			if err = setFieldPrefillValue(defaultExecutorFields, "l2_node.gas_price", "0.15"+minitiaConfig.L2Config.Denom); err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			if err = setFieldPlaceholder(defaultExecutorFields, "l2_node.gas_price", "Press tab to use "+"\"0.15"+minitiaConfig.L2Config.Denom+"\""); err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 
 			if err = setFieldPrefillValue(defaultChallengerFields, "l1_node.rpc_address", minitiaConfig.L1Config.RpcUrl); err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			if err = setFieldPrefillValue(defaultChallengerFields, "l2_node.chain_id", minitiaConfig.L2Config.ChainID); err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 
 			if minitiaConfig.OpBridge.BatchSubmissionTarget == "CELESTIA" {
 				var network registry.ChainType
 				l1ChainRegistry, err := registry.GetChainRegistry(registry.InitiaL1Testnet)
 				if err != nil {
-					return m, m.Panic(err)
+					return m, m.HandlePanic(err)
 				}
 				if l1ChainRegistry.GetChainId() == minitiaConfig.L1Config.ChainID {
 					network = registry.CelestiaTestnet
@@ -597,13 +597,13 @@ func (m *PrefillMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 				chainRegistry, err := registry.GetChainRegistry(network)
 				if err != nil {
-					return m, m.Panic(err)
+					return m, m.HandlePanic(err)
 				}
 
 				state.botConfig["da_node.chain_id"] = chainRegistry.GetChainId()
 				activeRpc, err := chainRegistry.GetActiveRpc()
 				if err != nil {
-					return m, m.Panic(err)
+					return m, m.HandlePanic(err)
 				}
 				state.botConfig["da_node.rpc_address"] = activeRpc
 				state.botConfig["da_node.bech32_prefix"] = chainRegistry.GetBech32Prefix()
@@ -625,7 +625,7 @@ func (m *PrefillMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case PrefillMinitiaConfigNo:
 			model, err := NewL1PrefillSelector(weavecontext.SetCurrentState(m.Ctx, state))
 			if err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			return model, cmd
 		}
@@ -639,7 +639,7 @@ func (m *PrefillMinitiaConfig) View() string {
 	state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
 	artifactsDir, err := weavecontext.GetMinitiaArtifactsConfigJson(m.Ctx)
 	if err != nil {
-		m.Panic(err)
+		m.HandlePanic(err)
 	}
 	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{artifactsDir}, styles.Question) + m.Selector.View())
 }
@@ -697,16 +697,16 @@ func (m *L1PrefillSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case L1PrefillOptionTestnet:
 			chainRegistry, err := registry.GetChainRegistry(registry.InitiaL1Testnet)
 			if err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			chainId = chainRegistry.GetChainId()
 			rpc, err = chainRegistry.GetActiveRpc()
 			if err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			minGasPrice, err = chainRegistry.GetMinGasPriceByDenom(DefaultInitiaGasDenom)
 			if err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 		}
 
@@ -714,10 +714,10 @@ func (m *L1PrefillSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		state.botConfig["l1_node.gas_price"] = minGasPrice
 
 		if err := setFieldPrefillValue(defaultExecutorFields, "l1_node.rpc_address", rpc); err != nil {
-			return m, m.Panic(err)
+			return m, m.HandlePanic(err)
 		}
 		if err := setFieldPrefillValue(defaultChallengerFields, "l1_node.rpc_address", rpc); err != nil {
-			return m, m.Panic(err)
+			return m, m.HandlePanic(err)
 		}
 
 		m.Ctx = weavecontext.SetCurrentState(m.Ctx, state)
@@ -817,7 +817,7 @@ func (m *SetDALayer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			state.botConfig["da_node.chain_id"] = m.chainRegistry.GetChainId()
 			activeRpc, err := m.chainRegistry.GetActiveRpc()
 			if err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			state.botConfig["da_node.rpc_address"] = activeRpc
 			state.botConfig["da_node.bech32_prefix"] = m.chainRegistry.GetBech32Prefix()
@@ -826,7 +826,7 @@ func (m *SetDALayer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		model, err := NewStartingInitBot(weavecontext.SetCurrentState(m.Ctx, state))
 		if err != nil {
-			return m, m.Panic(err)
+			return m, m.HandlePanic(err)
 		}
 		return model, model.Init()
 
@@ -871,13 +871,13 @@ func WaitStartingInitBot(ctx context.Context) tea.Cmd {
 		if state.isDeleteDB {
 			err := io.DeleteDirectory(state.dbPath)
 			if err != nil {
-				return ui.PanicLoading{Err: fmt.Errorf("failed to delete db: %w", err)}
+				return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to delete db: %w", err)}
 			}
 		}
 
 		opInitHome, err := weavecontext.GetOPInitHome(ctx)
 		if err != nil {
-			return ui.PanicLoading{Err: fmt.Errorf("failed to load opinit home: %w", err)}
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to load opinit home: %w", err)}
 		}
 		weaveDummyKeyPath := filepath.Join(opInitHome, "weave-dummy")
 		l1KeyPath := filepath.Join(opInitHome, configMap["l1_node.chain_id"])
@@ -885,18 +885,18 @@ func WaitStartingInitBot(ctx context.Context) tea.Cmd {
 
 		err = io.CopyDirectory(weaveDummyKeyPath, l1KeyPath)
 		if err != nil {
-			return ui.PanicLoading{Err: fmt.Errorf("failed to copy dummy key for l1: %w", err)}
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to copy dummy key for l1: %w", err)}
 		}
 		err = io.CopyDirectory(weaveDummyKeyPath, l2KeyPath)
 		if err != nil {
-			return ui.PanicLoading{Err: fmt.Errorf("failed to copy dummy key for l2: %w", err)}
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to copy dummy key for l2: %w", err)}
 		}
 
 		if state.daIsCelestia {
 			daKeyPath := filepath.Join(opInitHome, configMap["da_node.chain_id"])
 			err = io.CopyDirectory(weaveDummyKeyPath, daKeyPath)
 			if err != nil {
-				return ui.PanicLoading{Err: fmt.Errorf("failed to copy dummy key for celestia: %w", err)}
+				return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to copy dummy key for celestia: %w", err)}
 			}
 		}
 
@@ -911,11 +911,11 @@ func WaitStartingInitBot(ctx context.Context) tea.Cmd {
 		if state.InitExecutorBot {
 			srv, err := service.NewService(service.OPinitExecutor)
 			if err != nil {
-				return ui.PanicLoading{Err: fmt.Errorf("failed to initialize service: %v", err)}
+				return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to initialize service: %v", err)}
 			}
 
 			if err = srv.Create("", opInitHome); err != nil {
-				return ui.PanicLoading{Err: fmt.Errorf("failed to create service: %v", err)}
+				return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to create service: %v", err)}
 			}
 
 			if !state.ReplaceBotConfig {
@@ -924,7 +924,7 @@ func WaitStartingInitBot(ctx context.Context) tea.Cmd {
 
 			version, err := registry.GetOPInitBotsSpecVersion(state.botConfig["l1_node.chain_id"])
 			if err != nil {
-				return ui.PanicLoading{Err: fmt.Errorf("failed to load l1_node.chain_id version: %v", err)}
+				return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to load l1_node.chain_id version: %v", err)}
 			}
 
 			config := ExecutorConfig{
@@ -974,17 +974,17 @@ func WaitStartingInitBot(ctx context.Context) tea.Cmd {
 			}
 			configBz, err := json.MarshalIndent(config, "", " ")
 			if err != nil {
-				return ui.PanicLoading{Err: fmt.Errorf("failed to marshal config: %v", err)}
+				return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to marshal config: %v", err)}
 			}
 
 			configFilePath := filepath.Join(opInitHome, "executor.json")
 			if err = os.WriteFile(configFilePath, configBz, 0600); err != nil {
-				return ui.PanicLoading{Err: fmt.Errorf("failed to write config file: %v", err)}
+				return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to write config file: %v", err)}
 			}
 
 			userHome, err := os.UserHomeDir()
 			if err != nil {
-				return ui.PanicLoading{Err: fmt.Errorf("failed to get user home dir: %v", err)}
+				return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to get user home dir: %v", err)}
 			}
 			binaryPath := filepath.Join(userHome, common.WeaveDataDirectory, fmt.Sprintf("opinitd@%s", OpinitBotBinaryVersion), AppName)
 			if address, err := cosmosutils.OPInitGetAddressForKey(binaryPath, OracleBridgeExecutorKeyName, opInitHome); err == nil {
@@ -995,11 +995,11 @@ func WaitStartingInitBot(ctx context.Context) tea.Cmd {
 		} else if state.InitChallengerBot {
 			srv, err := service.NewService(service.OPinitChallenger)
 			if err != nil {
-				return ui.PanicLoading{Err: fmt.Errorf("failed to initialize service: %v", err)}
+				return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to initialize service: %v", err)}
 			}
 
 			if err = srv.Create("", opInitHome); err != nil {
-				return ui.PanicLoading{Err: fmt.Errorf("failed to create service: %v", err)}
+				return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to create service: %v", err)}
 			}
 
 			if !state.ReplaceBotConfig {
@@ -1008,7 +1008,7 @@ func WaitStartingInitBot(ctx context.Context) tea.Cmd {
 
 			version, err := registry.GetOPInitBotsSpecVersion(state.botConfig["l1_node.chain_id"])
 			if err != nil {
-				return ui.PanicLoading{Err: fmt.Errorf("failed to load l1_node.chain_id version: %v", err)}
+				return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to load l1_node.chain_id version: %v", err)}
 			}
 			config := ChallengerConfig{
 				Version: version,
@@ -1033,12 +1033,12 @@ func WaitStartingInitBot(ctx context.Context) tea.Cmd {
 			}
 			configBz, err := json.MarshalIndent(config, "", " ")
 			if err != nil {
-				return ui.PanicLoading{Err: fmt.Errorf("failed to marshal config: %v", err)}
+				return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to marshal config: %v", err)}
 			}
 
 			configFilePath := filepath.Join(opInitHome, "challenger.json")
 			if err = os.WriteFile(configFilePath, configBz, 0600); err != nil {
-				return ui.PanicLoading{Err: fmt.Errorf("failed to write config file: %v", err)}
+				return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to write config file: %v", err)}
 			}
 		}
 		return ui.EndLoading{}
@@ -1055,8 +1055,8 @@ func (m *StartingInitBot) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	loader, cmd := m.loading.Update(msg)
 	m.loading = loader
-	if m.loading.PanicErr != nil {
-		return m, m.Panic(m.loading.PanicErr)
+	if m.loading.NonRetryableErr != nil {
+		return m, m.HandlePanic(m.loading.NonRetryableErr)
 	}
 	if m.loading.Completing {
 		return NewOPinitBotSuccessful(m.Ctx), nil
@@ -1097,7 +1097,7 @@ func (m *OPinitBotSuccessful) View() string {
 
 	opInitHome, err := weavecontext.GetOPInitHome(m.Ctx)
 	if err != nil {
-		m.Panic(err)
+		m.HandlePanic(err)
 	}
 
 	return m.WrapView(state.weave.Render() + styles.RenderPrompt(fmt.Sprintf("OPInit bot setup successfully. Config file is saved at %s. Feel free to modify it as needed.", filepath.Join(opInitHome, fmt.Sprintf("%s.json", botConfigFileName))), []string{}, styles.Completed) + "\n" + styles.RenderPrompt("You can start the bot by running `weave opinit start "+botConfigFileName+"`", []string{}, styles.Completed) + "\n")
@@ -1134,8 +1134,8 @@ func (m *SetupOPInitBotsMissingKey) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	loader, cmd := m.loading.Update(msg)
 	m.loading = loader
-	if m.loading.PanicErr != nil {
-		return m, m.Panic(m.loading.PanicErr)
+	if m.loading.NonRetryableErr != nil {
+		return m, m.HandlePanic(m.loading.NonRetryableErr)
 	}
 	if m.loading.Completing {
 		state := weavecontext.GetCurrentState[OPInitBotsState](m.loading.EndContext)
@@ -1143,7 +1143,7 @@ func (m *SetupOPInitBotsMissingKey) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if (state.AddMinitiaConfig && !oracleBotInfo.IsNewKey()) || (!state.AddMinitiaConfig && len(state.SetupOpinitResponses) == 0) {
 			model, err := handleBotInitSelection(m.loading.EndContext, state)
 			if err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			return model, nil
 		}
@@ -1152,7 +1152,7 @@ func (m *SetupOPInitBotsMissingKey) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if msg.String() == "enter" {
 				model, err := handleBotInitSelection(m.loading.EndContext, state)
 				if err != nil {
-					return m, m.Panic(err)
+					return m, m.HandlePanic(err)
 				}
 				return model, nil
 			}
@@ -1189,20 +1189,20 @@ func WaitSetupOPInitBotsMissingKey(ctx context.Context) tea.Cmd {
 		state := weavecontext.GetCurrentState[OPInitBotsState](ctx)
 		userHome, err := os.UserHomeDir()
 		if err != nil {
-			return ui.PanicLoading{Err: fmt.Errorf("failed to get user home directory: %v", err)}
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to get user home directory: %v", err)}
 		}
 
 		binaryPath := filepath.Join(userHome, common.WeaveDataDirectory, fmt.Sprintf("opinitd@%s", OpinitBotBinaryVersion), AppName)
 
 		opInitHome, err := weavecontext.GetOPInitHome(ctx)
 		if err != nil {
-			return ui.PanicLoading{Err: fmt.Errorf("failed to get opinit home directory: %v", err)}
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to get opinit home directory: %v", err)}
 		}
 		for _, info := range state.BotInfos {
 			if info.Mnemonic != "" {
 				res, err := cosmosutils.OPInitRecoverKeyFromMnemonic(binaryPath, info.KeyName, info.Mnemonic, info.DALayer == string(CelestiaLayerOption), opInitHome)
 				if err != nil {
-					return ui.PanicLoading{Err: fmt.Errorf("failed to recover key from mnemonic: %v", err)}
+					return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to recover key from mnemonic: %v", err)}
 				}
 				state.SetupOpinitResponses[info.BotName] = res
 				continue
@@ -1210,7 +1210,7 @@ func WaitSetupOPInitBotsMissingKey(ctx context.Context) tea.Cmd {
 			if info.IsGenerateKey {
 				res, err := cosmosutils.OPInitAddOrReplace(binaryPath, info.KeyName, info.DALayer == string(CelestiaLayerOption), opInitHome)
 				if err != nil {
-					return ui.PanicLoading{Err: fmt.Errorf("failed to add or replace key: %v", err)}
+					return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to add or replace key: %v", err)}
 
 				}
 				state.SetupOpinitResponses[info.BotName] = res

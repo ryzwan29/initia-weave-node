@@ -129,45 +129,45 @@ func (m *RollupSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case Whitelisted:
 			model, err := NewSelectingL1NetworkRegistry(weavecontext.SetCurrentState(m.Ctx, state))
 			if err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			return model, nil
 		case Local:
 			minitiaConfigPath, err := weavecontext.GetMinitiaArtifactsConfigJson(m.Ctx)
 			if err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			configData, err := os.ReadFile(minitiaConfigPath)
 			if err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 
 			var minitiaConfig types.MinitiaConfig
 			err = json.Unmarshal(configData, &minitiaConfig)
 			if err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 
 			if minitiaConfig.L1Config.ChainID == InitiaTestnetChainId {
 				testnetRegistry, err := registry.GetChainRegistry(registry.InitiaL1Testnet)
 				if err != nil {
-					return m, m.Panic(err)
+					return m, m.HandlePanic(err)
 				}
 				state.Config["l1.chain_id"] = testnetRegistry.GetChainId()
 				if state.Config["l1.rpc_address"], err = testnetRegistry.GetActiveRpc(); err != nil {
-					return m, m.Panic(err)
+					return m, m.HandlePanic(err)
 				}
 				if state.Config["l1.grpc_address"], err = testnetRegistry.GetActiveGrpc(); err != nil {
-					return m, m.Panic(err)
+					return m, m.HandlePanic(err)
 				}
 				if state.Config["l1.lcd_address"], err = testnetRegistry.GetActiveLcd(); err != nil {
-					return m, m.Panic(err)
+					return m, m.HandlePanic(err)
 				}
 				if state.Config["l1.websocket"], err = testnetRegistry.GetActiveWebSocket(); err != nil {
-					return m, m.Panic(err)
+					return m, m.HandlePanic(err)
 				}
 				if state.Config["l1.gas_price.price"], err = testnetRegistry.GetFixedMinGasPriceByDenom(DefaultGasPriceDenom); err != nil {
-					return m, m.Panic(err)
+					return m, m.HandlePanic(err)
 				}
 				state.Config["l1.gas_price.denom"] = DefaultGasPriceDenom
 
@@ -177,14 +177,14 @@ func (m *RollupSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, "L1 network is auto-detected", []string{}, minitiaConfig.L1Config.ChainID))
 
 			} else {
-				return m, m.Panic(fmt.Errorf("not support L1"))
+				return m, m.HandlePanic(fmt.Errorf("not support L1"))
 			}
 
 			return NewFieldInputModel(weavecontext.SetCurrentState(m.Ctx, state), defaultL2ConfigLocal, NewSelectSettingUpIBCChannelsMethod), nil
 		case Manual:
 			model, err := NewSelectingL1Network(weavecontext.SetCurrentState(m.Ctx, state))
 			if err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			return model, nil
 		}
@@ -272,7 +272,7 @@ func (m *L1KeySelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		state.l1KeyMethod = string(*selected)
 		model, err := NewL2KeySelect(weavecontext.SetCurrentState(m.Ctx, state))
 		if err != nil {
-			return m, m.Panic(err)
+			return m, m.HandlePanic(err)
 		}
 		return model, nil
 	}
@@ -371,20 +371,20 @@ func (m *L2KeySelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				state.l2RelayerAddress = state.l1RelayerAddress
 				userHome, err := os.UserHomeDir()
 				if err != nil {
-					return m, m.Panic(fmt.Errorf("could not get user home directory: %s", err))
+					return m, m.HandlePanic(fmt.Errorf("could not get user home directory: %s", err))
 				}
 				l1ChainId, err := GetL1ChainId(m.Ctx)
 				if err != nil {
-					return m, m.Panic(err)
+					return m, m.HandlePanic(err)
 				}
 				l1ExistingKeyPath := filepath.Join(userHome, HermesKeysDirectory, l1ChainId)
 				l2ChainId, err := GetL2ChainId(m.Ctx)
 				if err != nil {
-					return m, m.Panic(err)
+					return m, m.HandlePanic(err)
 				}
 				l2KeyPath := filepath.Join(userHome, HermesKeysDirectory, l2ChainId)
 				if err = weaveio.CopyDirectory(l1ExistingKeyPath, l2KeyPath); err != nil {
-					return m, m.Panic(fmt.Errorf("could not copy L1 existing key: %s", err))
+					return m, m.HandlePanic(fmt.Errorf("could not copy L1 existing key: %s", err))
 				}
 				model := NewFetchingBalancesLoading(weavecontext.SetCurrentState(m.Ctx, state))
 				return model, model.Init()
@@ -444,12 +444,12 @@ func waitGenerateL1RelayerKeyLoading(ctx context.Context) tea.Cmd {
 		state := weavecontext.GetCurrentState[State](ctx)
 		l1ChainId, err := GetL1ChainId(ctx)
 		if err != nil {
-			return ui.PanicLoading{Err: fmt.Errorf("get l1 chain id: %w", err)}
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("get l1 chain id: %w", err)}
 		}
 
 		relayerKey, err := cosmosutils.GenerateAndReplaceHermesKey(state.hermesBinaryPath, l1ChainId)
 		if err != nil {
-			return ui.PanicLoading{Err: fmt.Errorf("could not generate hermes key: %s", err)}
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("could not generate hermes key: %s", err)}
 		}
 		state.l1RelayerAddress = relayerKey.Address
 		state.l1RelayerMnemonic = relayerKey.Mnemonic
@@ -467,8 +467,8 @@ func (m *GenerateL1RelayerKeyLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	loader, cmd := m.loading.Update(msg)
 	m.loading = loader
-	if m.loading.PanicErr != nil {
-		return m, m.Panic(m.loading.PanicErr)
+	if m.loading.NonRetryableErr != nil {
+		return m, m.HandlePanic(m.loading.NonRetryableErr)
 	}
 	if m.loading.Completing {
 		m.Ctx = m.loading.EndContext
@@ -482,11 +482,11 @@ func (m *GenerateL1RelayerKeyLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			state.l2RelayerMnemonic = state.l1RelayerMnemonic
 			l2ChainId, err := GetL2ChainId(m.Ctx)
 			if err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			_, err = cosmosutils.RecoverAndReplaceHermesKey(state.hermesBinaryPath, l2ChainId, state.l2RelayerMnemonic)
 			if err != nil {
-				return m, m.Panic(fmt.Errorf("failed to recover Hermes key for rollup: %w", err))
+				return m, m.HandlePanic(fmt.Errorf("failed to recover Hermes key for rollup: %w", err))
 			}
 			return NewKeysMnemonicDisplayInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
 		case L2GenerateKey:
@@ -525,12 +525,12 @@ func waitGenerateL2RelayerKeyLoading(ctx context.Context) tea.Cmd {
 		state := weavecontext.GetCurrentState[State](ctx)
 		l2ChainId, err := GetL2ChainId(ctx)
 		if err != nil {
-			return ui.PanicLoading{Err: fmt.Errorf("get l2 chain id: %w", err)}
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("get l2 chain id: %w", err)}
 		}
 
 		relayerKey, err := cosmosutils.GenerateAndReplaceHermesKey(state.hermesBinaryPath, l2ChainId)
 		if err != nil {
-			return ui.PanicLoading{Err: fmt.Errorf("could not generate hermes key: %s", err)}
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("could not generate hermes key: %s", err)}
 		}
 		state.l2RelayerAddress = relayerKey.Address
 		state.l2RelayerMnemonic = relayerKey.Mnemonic
@@ -548,8 +548,8 @@ func (m *GenerateL2RelayerKeyLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	loader, cmd := m.loading.Update(msg)
 	m.loading = loader
-	if m.loading.PanicErr != nil {
-		return m, m.Panic(m.loading.PanicErr)
+	if m.loading.NonRetryableErr != nil {
+		return m, m.HandlePanic(m.loading.NonRetryableErr)
 	}
 	if m.loading.Completing {
 		m.Ctx = m.loading.EndContext
@@ -690,11 +690,11 @@ func (m *ImportL1RelayerKeyInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		l1ChainId, err := GetL1ChainId(m.Ctx)
 		if err != nil {
-			return m, m.Panic(err)
+			return m, m.HandlePanic(err)
 		}
 		relayerKey, err := cosmosutils.RecoverAndReplaceHermesKey(state.hermesBinaryPath, l1ChainId, input.Text)
 		if err != nil {
-			return m, m.Panic(err)
+			return m, m.HandlePanic(err)
 		}
 
 		state.l1RelayerMnemonic = relayerKey.Mnemonic
@@ -762,11 +762,11 @@ func (m *ImportL2RelayerKeyInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		l2ChainId, err := GetL2ChainId(m.Ctx)
 		if err != nil {
-			return m, m.Panic(err)
+			return m, m.HandlePanic(err)
 		}
 		relayerKey, err := cosmosutils.RecoverAndReplaceHermesKey(state.hermesBinaryPath, l2ChainId, input.Text)
 		if err != nil {
-			return m, m.Panic(err)
+			return m, m.HandlePanic(err)
 		}
 
 		state.l2RelayerMnemonic = relayerKey.Mnemonic
@@ -807,25 +807,25 @@ func waitFetchingBalancesLoading(ctx context.Context) tea.Cmd {
 
 		l1Rest, err := GetL1ActiveLcd(ctx)
 		if err != nil {
-			return ui.PanicLoading{Err: fmt.Errorf("cannot load l1 active lcd: %w", err)}
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("cannot load l1 active lcd: %w", err)}
 		}
 		l1Balances, err := cosmosutils.QueryBankBalances(l1Rest, state.l1RelayerAddress)
 		if err != nil {
-			return ui.PanicLoading{Err: fmt.Errorf("cannot fetch balance for l1: %v", err)}
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("cannot fetch balance for l1: %v", err)}
 		}
 		state.l1NeedsFunding = l1Balances.IsZero()
 
 		querier, err := cosmosutils.NewInitiadQuerier(l1Rest)
 		if err != nil {
-			return ui.PanicLoading{Err: fmt.Errorf("cannot initialize initiad querier: %v", err)}
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("cannot initialize initiad querier: %v", err)}
 		}
 		l2ActiveRpc, err := GetL2ActiveRpc(ctx)
 		if err != nil {
-			return ui.PanicLoading{Err: fmt.Errorf("cannot get l2 active rpc: %v", err)}
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("cannot get l2 active rpc: %v", err)}
 		}
 		l2Balances, err := querier.QueryBankBalances(state.l2RelayerAddress, l2ActiveRpc)
 		if err != nil {
-			return ui.PanicLoading{Err: fmt.Errorf("cannot fetch balance for l2: %v", err)}
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("cannot fetch balance for l2: %v", err)}
 		}
 		state.l2NeedsFunding = l2Balances.IsZero()
 
@@ -842,8 +842,8 @@ func (m *FetchingBalancesLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	loader, cmd := m.loading.Update(msg)
 	m.loading = loader
-	if m.loading.PanicErr != nil {
-		return m, m.Panic(m.loading.PanicErr)
+	if m.loading.NonRetryableErr != nil {
+		return m, m.HandlePanic(m.loading.NonRetryableErr)
 	}
 	if m.loading.Completing {
 		m.Ctx = m.loading.EndContext
@@ -856,7 +856,7 @@ func (m *FetchingBalancesLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		model, err := NewFundingAmountSelect(weavecontext.SetCurrentState(m.Ctx, state))
 		if err != nil {
-			return m, m.Panic(err)
+			return m, m.HandlePanic(err)
 		}
 		return model, nil
 	}
@@ -955,14 +955,14 @@ func (m *FundingAmountSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			state.l2FundingAmount = DefaultL2RelayerBalance
 			model, err := NewFundDefaultPresetConfirmationInput(weavecontext.SetCurrentState(m.Ctx, state))
 			if err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			return model, nil
 		case FundingFillManually:
 			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, "Fill in an amount manually to fund from Gas Station Account"))
 			model, err := NewFundManuallyL1BalanceInput(weavecontext.SetCurrentState(m.Ctx, state))
 			if err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			return model, nil
 		case FundingUserTransfer:
@@ -1071,11 +1071,11 @@ func (m *FundDefaultPresetConfirmationInput) View() string {
 	state := weavecontext.GetCurrentState[State](m.Ctx)
 	l1GasDenom, err := GetL1GasDenom(m.Ctx)
 	if err != nil {
-		m.Panic(err)
+		m.HandlePanic(err)
 	}
 	l2GasDenom, err := GetL2GasDenom(m.Ctx)
 	if err != nil {
-		m.Panic(err)
+		m.HandlePanic(err)
 	}
 	formatSendMsg := func(coins, denom, keyName, address string) string {
 		return fmt.Sprintf(
@@ -1127,28 +1127,28 @@ func broadcastDefaultPresetFromGasStation(ctx context.Context) tea.Cmd {
 		gasStationMnemonic := config.GetGasStationMnemonic()
 		l1ActiveLcd, err := GetL1ActiveLcd(ctx)
 		if err != nil {
-			return ui.PanicLoading{Err: err}
+			return ui.NonRetryableErrorLoading{Err: err}
 		}
 		cliTx, err := cosmosutils.NewInitiadTxExecutor(l1ActiveLcd)
 		if err != nil {
-			return ui.PanicLoading{Err: err}
+			return ui.NonRetryableErrorLoading{Err: err}
 		}
 
 		l1GasDenom, err := GetL1GasDenom(ctx)
 		if err != nil {
-			return ui.PanicLoading{Err: err}
+			return ui.NonRetryableErrorLoading{Err: err}
 		}
 		l1GasPrices, err := GetL1GasPrices(ctx)
 		if err != nil {
-			return ui.PanicLoading{Err: err}
+			return ui.NonRetryableErrorLoading{Err: err}
 		}
 		l1ActiveRpc, err := GetL1ActiveRpc(ctx)
 		if err != nil {
-			return ui.PanicLoading{Err: err}
+			return ui.NonRetryableErrorLoading{Err: err}
 		}
 		l1ChainId, err := GetL1ChainId(ctx)
 		if err != nil {
-			return ui.PanicLoading{Err: err}
+			return ui.NonRetryableErrorLoading{Err: err}
 		}
 		if state.l1FundingAmount != "0" {
 			res, err := cliTx.BroadcastMsgSend(
@@ -1160,26 +1160,26 @@ func broadcastDefaultPresetFromGasStation(ctx context.Context) tea.Cmd {
 				l1ChainId,
 			)
 			if err != nil {
-				return ui.PanicLoading{Err: err}
+				return ui.NonRetryableErrorLoading{Err: err}
 			}
 			state.l1FundingTxHash = res.TxHash
 		}
 
 		l2GasDenom, err := GetL2GasDenom(ctx)
 		if err != nil {
-			return ui.PanicLoading{Err: err}
+			return ui.NonRetryableErrorLoading{Err: err}
 		}
 		l2GasPrices, err := GetL2GasPrices(ctx)
 		if err != nil {
-			return ui.PanicLoading{Err: err}
+			return ui.NonRetryableErrorLoading{Err: err}
 		}
 		l2ActiveRpc, err := GetL2ActiveRpc(ctx)
 		if err != nil {
-			return ui.PanicLoading{Err: err}
+			return ui.NonRetryableErrorLoading{Err: err}
 		}
 		l2ChainId, err := GetL2ChainId(ctx)
 		if err != nil {
-			return ui.PanicLoading{Err: err}
+			return ui.NonRetryableErrorLoading{Err: err}
 		}
 		if state.l2FundingAmount != "0" {
 			res, err := cliTx.BroadcastMsgSend(
@@ -1191,7 +1191,7 @@ func broadcastDefaultPresetFromGasStation(ctx context.Context) tea.Cmd {
 				l2ChainId,
 			)
 			if err != nil {
-				return ui.PanicLoading{Err: err}
+				return ui.NonRetryableErrorLoading{Err: err}
 			}
 			state.l2FundingTxHash = res.TxHash
 		}
@@ -1209,8 +1209,8 @@ func (m *FundDefaultPresetBroadcastLoading) Update(msg tea.Msg) (tea.Model, tea.
 
 	loader, cmd := m.loading.Update(msg)
 	m.loading = loader
-	if m.loading.PanicErr != nil {
-		return m, m.Panic(m.loading.PanicErr)
+	if m.loading.NonRetryableErr != nil {
+		return m, m.HandlePanic(m.loading.NonRetryableErr)
 	}
 	if m.loading.Completing {
 		m.Ctx = m.loading.EndContext
@@ -1275,7 +1275,7 @@ func (m *FundManuallyL1BalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		model, err := NewFundManuallyL2BalanceInput(weavecontext.SetCurrentState(m.Ctx, state))
 		if err != nil {
-			return m, m.Panic(err)
+			return m, m.HandlePanic(err)
 		}
 		return model, nil
 	}
@@ -1335,7 +1335,7 @@ func (m *FundManuallyL2BalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		model, err := NewFundDefaultPresetConfirmationInput(weavecontext.SetCurrentState(m.Ctx, state))
 		if err != nil {
-			return m, m.Panic(err)
+			return m, m.HandlePanic(err)
 		}
 		return model, nil
 	}
@@ -1416,23 +1416,23 @@ func (m *SelectingL1Network) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case Testnet:
 			testnetRegistry, err := registry.GetChainRegistry(registry.InitiaL1Testnet)
 			if err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			state.Config["l1.chain_id"] = testnetRegistry.GetChainId()
 			if state.Config["l1.rpc_address"], err = testnetRegistry.GetActiveRpc(); err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			if state.Config["l1.grpc_address"], err = testnetRegistry.GetActiveGrpc(); err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			if state.Config["l1.websocket"], err = testnetRegistry.GetActiveWebSocket(); err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			if state.Config["l1.lcd_address"], err = testnetRegistry.GetActiveLcd(); err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			if state.Config["l1.gas_price.price"], err = testnetRegistry.GetFixedMinGasPriceByDenom(DefaultGasPriceDenom); err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			state.Config["l1.gas_price.denom"] = DefaultGasPriceDenom
 
@@ -1503,17 +1503,17 @@ func (m *SelectingL2Network) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		chainId := re.FindStringSubmatch(m.Options[m.Cursor])[1]
 		l2Registry, err := registry.GetL2Registry(registry.InitiaL1Testnet, chainId)
 		if err != nil {
-			return m, m.Panic(err)
+			return m, m.HandlePanic(err)
 		}
 		lcdAddress, err := l2Registry.GetActiveLcd()
 		if err != nil {
-			return m, m.Panic(err)
+			return m, m.HandlePanic(err)
 		}
 		httpClient := client.NewHTTPClient()
 		var res types.ChannelsResponse
 		_, err = httpClient.Get(lcdAddress, "/ibc/core/channel/v1/channels", nil, &res)
 		if err != nil {
-			return m, m.Panic(err)
+			return m, m.HandlePanic(err)
 		}
 
 		pairs := make([]types.IBCChannelPair, 0)
@@ -1529,21 +1529,21 @@ func (m *SelectingL2Network) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		l2DefaultFeeToken, err := l2Registry.GetDefaultFeeToken()
 		if err != nil {
-			return m, m.Panic(err)
+			return m, m.HandlePanic(err)
 		}
 		l2Rpc, err := l2Registry.GetActiveRpc()
 		if err != nil {
-			return m, m.Panic(err)
+			return m, m.HandlePanic(err)
 		}
 		state.Config["l2.chain_id"] = chainId
 		state.Config["l2.gas_price.denom"] = l2DefaultFeeToken.Denom
 		state.Config["l2.gas_price.price"] = strconv.FormatFloat(l2DefaultFeeToken.FixedMinGasPrice, 'f', -1, 64)
 		state.Config["l2.rpc_address"] = l2Rpc
 		if state.Config["l2.grpc_address"], err = l2Registry.GetActiveGrpc(); err != nil {
-			return m, m.Panic(err)
+			return m, m.HandlePanic(err)
 		}
 		if state.Config["l2.websocket"], err = l2Registry.GetActiveWebSocket(); err != nil {
-			return m, m.Panic(err)
+			return m, m.HandlePanic(err)
 		}
 
 		return NewIBCChannelsCheckbox(weavecontext.SetCurrentState(m.Ctx, state), pairs), nil
@@ -1631,57 +1631,57 @@ func (m *SelectingL1NetworkRegistry) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case Testnet:
 			testnetRegistry, err := registry.GetChainRegistry(registry.InitiaL1Testnet)
 			if err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			state.Config["l1.chain_id"] = testnetRegistry.GetChainId()
 			if state.Config["l1.rpc_address"], err = testnetRegistry.GetActiveRpc(); err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			if state.Config["l1.grpc_address"], err = testnetRegistry.GetActiveGrpc(); err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			if state.Config["l1.lcd_address"], err = testnetRegistry.GetActiveLcd(); err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			if state.Config["l1.websocket"], err = testnetRegistry.GetActiveWebSocket(); err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			if state.Config["l1.gas_price.price"], err = testnetRegistry.GetFixedMinGasPriceByDenom(DefaultGasPriceDenom); err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			state.Config["l1.gas_price.denom"] = DefaultGasPriceDenom
 
 			model, err := NewSelectingL2Network(weavecontext.SetCurrentState(m.Ctx, state), registry.InitiaL1Testnet)
 			if err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			return model, nil
 		case Mainnet:
 			mainnetRegistry, err := registry.GetChainRegistry(registry.InitiaL1Mainnet)
 			if err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			state.Config["l1.chain_id"] = mainnetRegistry.GetChainId()
 			if state.Config["l1.rpc_address"], err = mainnetRegistry.GetActiveRpc(); err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			if state.Config["l1.grpc_address"], err = mainnetRegistry.GetActiveGrpc(); err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			if state.Config["l1.lcd_address"], err = mainnetRegistry.GetActiveLcd(); err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			if state.Config["l1.websocket"], err = mainnetRegistry.GetActiveWebSocket(); err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			if state.Config["l1.gas_price.price"], err = mainnetRegistry.GetMinGasPriceByDenom(DefaultGasPriceDenom); err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			state.Config["l1.gas_price.denom"] = DefaultGasPriceDenom
 
 			model, err := NewSelectingL2Network(weavecontext.SetCurrentState(m.Ctx, state), registry.InitiaL1Testnet)
 			if err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			return model, nil
 		}
@@ -1760,45 +1760,45 @@ func (m *SelectSettingUpIBCChannelsMethod) Update(msg tea.Msg) (tea.Model, tea.C
 		case Basic:
 			artifactsJson, err := weavecontext.GetMinitiaArtifactsJson(m.Ctx)
 			if err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			// Read the file content
 			data, err := os.ReadFile(artifactsJson)
 			if err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			// Decode the JSON into a struct
 			var artifacts types.Artifacts
 			if err := json.Unmarshal(data, &artifacts); err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			var metadata types.Metadata
 			var networkRegistry *registry.ChainRegistry
 			l1Registry, err := registry.GetChainRegistry(registry.InitiaL1Testnet)
 			if err != nil {
-				return m, m.Panic(err)
+				return m, m.HandlePanic(err)
 			}
 			if state.Config["l1.chain_id"] == l1Registry.GetChainId() {
 				networkRegistry, err = registry.GetChainRegistry(registry.InitiaL1Testnet)
 				if err != nil {
-					return m, m.Panic(err)
+					return m, m.HandlePanic(err)
 				}
 				info, err := networkRegistry.GetOpinitBridgeInfo(artifacts.BridgeID)
 				if err != nil {
-					return m, m.Panic(err)
+					return m, m.HandlePanic(err)
 				}
 				metadata, err = types.DecodeBridgeMetadata(info.BridgeConfig.Metadata)
 				if err != nil {
-					return m, m.Panic(err)
+					return m, m.HandlePanic(err)
 				}
 			} else {
-				return m, m.Panic(fmt.Errorf("not support for l1 %s", state.Config["l1.chain_id"]))
+				return m, m.HandlePanic(fmt.Errorf("not support for l1 %s", state.Config["l1.chain_id"]))
 			}
 			channelPairs := make([]types.IBCChannelPair, 0)
 			for _, channel := range metadata.PermChannels {
 				counterparty, err := networkRegistry.GetCounterPartyIBCChannel(channel.PortID, channel.ChannelID)
 				if err != nil {
-					return m, m.Panic(err)
+					return m, m.HandlePanic(err)
 				}
 				channelPairs = append(channelPairs, types.IBCChannelPair{
 					L1: channel,
@@ -2404,13 +2404,13 @@ func WaitSettingUpRelayer(ctx context.Context) tea.Cmd {
 		// Get Hermes binary URL based on OS and architecture
 		hermesURL, err := getHermesBinaryURL(HermesVersion)
 		if err != nil {
-			return ui.PanicLoading{Err: fmt.Errorf("unable to get hermes binary URL: %s", err)}
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("unable to get hermes binary URL: %s", err)}
 		}
 
 		// Get the user's home directory
 		userHome, err := os.UserHomeDir()
 		if err != nil {
-			return ui.PanicLoading{Err: fmt.Errorf("failed to get user home directory: %v", err)}
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to get user home directory: %v", err)}
 		}
 
 		// Define paths
@@ -2420,36 +2420,39 @@ func WaitSettingUpRelayer(ctx context.Context) tea.Cmd {
 
 		// Ensure the data directory exists
 		if err = os.MkdirAll(weaveDataPath, 0755); err != nil {
-			return ui.PanicLoading{Err: fmt.Errorf("failed to create data directory: %v", err)}
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to create data directory: %v", err)}
 		}
 
 		// Download and extract Hermes tarball
 		if err = weaveio.DownloadAndExtractTarGz(hermesURL, tarballPath, weaveDataPath); err != nil {
-			return ui.PanicLoading{Err: fmt.Errorf("failed to download and extract Hermes: %v", err)}
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to download and extract Hermes: %v", err)}
 		}
 
 		// Make the Hermes binary executable
 		if err = os.Chmod(state.hermesBinaryPath, 0755); err != nil {
-			return ui.PanicLoading{Err: fmt.Errorf("failed to set executable permissions for Hermes: %v", err)}
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to set executable permissions for Hermes: %v", err)}
 		}
 
 		// Remove quarantine attribute on macOS
 		if runtime.GOOS == "darwin" {
 			if err = removeQuarantineAttribute(state.hermesBinaryPath); err != nil {
-				return ui.PanicLoading{Err: fmt.Errorf("failed to remove quarantine attribute on macOS: %v", err)}
+				return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to remove quarantine attribute on macOS: %v", err)}
 			}
 		}
 
 		// Create Hermes configuration
 		err = createHermesConfig(state)
+		if err != nil {
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to create hermes config: %v", err)}
+		}
 
 		srv, err := service.NewService(service.Relayer)
 		if err != nil {
-			return ui.PanicLoading{Err: fmt.Errorf("failed to initialize service: %v", err)}
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to initialize service: %v", err)}
 		}
 
 		if err = srv.Create("", filepath.Join(userHome, HermesHome)); err != nil {
-			return ui.PanicLoading{Err: fmt.Errorf("failed to create service: %v", err)}
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to create service: %v", err)}
 		}
 
 		// Return updated state
@@ -2468,15 +2471,15 @@ func (m *SettingUpRelayer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	loader, cmd := m.loading.Update(msg)
 	m.loading = loader
-	if m.loading.PanicErr != nil {
-		return m, m.Panic(m.loading.PanicErr)
+	if m.loading.NonRetryableErr != nil {
+		return m, m.HandlePanic(m.loading.NonRetryableErr)
 	}
 	if m.loading.Completing {
 		m.Ctx = m.loading.EndContext
 		state := weavecontext.PushPageAndGetState[State](m)
 		model, err := NewL1KeySelect(weavecontext.SetCurrentState(m.Ctx, state))
 		if err != nil {
-			return m, m.Panic(err)
+			return m, m.HandlePanic(err)
 		}
 		return model, nil
 	}

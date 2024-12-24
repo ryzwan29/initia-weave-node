@@ -44,7 +44,9 @@ func (lsk *L1SystemKeys) FundAccountsWithGasStation(state *LaunchState) (*FundAc
 	if err != nil {
 		return nil, fmt.Errorf("failed to recover gas station key: %v", err)
 	}
-	defer cosmosutils.DeleteKey(state.binaryPath, common.WeaveGasStationKeyName)
+	defer func() {
+		_ = cosmosutils.DeleteKey(state.binaryPath, common.WeaveGasStationKeyName)
+	}()
 
 	gasStationKey, err := cosmosutils.UnmarshalKeyInfo(rawKey)
 	if err != nil {
@@ -66,7 +68,9 @@ func (lsk *L1SystemKeys) FundAccountsWithGasStation(state *LaunchState) (*FundAc
 		if err != nil {
 			return nil, fmt.Errorf("failed to recover celestia gas station key: %v", err)
 		}
-		defer cosmosutils.DeleteKey(state.celestiaBinaryPath, common.WeaveGasStationKeyName)
+		defer func() {
+			_ = cosmosutils.DeleteKey(state.celestiaBinaryPath, common.WeaveGasStationKeyName)
+		}()
 
 		// TODO: Choose DA layer based on the chosen L1 network
 		celestiaRegistry, err := registry.GetChainRegistry(registry.CelestiaTestnet)
