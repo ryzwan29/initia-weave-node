@@ -196,7 +196,7 @@ func (lsk *L1SystemKeys) waitForTransactionInclusion(binaryPath, rpcURL, txHash 
 			var txResponse cosmosutils.MinimalTxResponse
 			err = json.Unmarshal(statusRes, &txResponse)
 			if err != nil {
-				return fmt.Errorf("failed to unmarshal JSON hahaha: %v", err)
+				return fmt.Errorf("failed to unmarshal transaction JSON response: %v", err)
 			}
 			if txResponse.Code == 0 { // Successful transaction
 				// Transaction successfully included in block
