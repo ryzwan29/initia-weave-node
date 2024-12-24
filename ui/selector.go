@@ -1,7 +1,9 @@
 package ui
 
 import (
+	"context"
 	"fmt"
+	weavecontext "github.com/initia-labs/weave/context"
 
 	tea "github.com/charmbracelet/bubbletea"
 
@@ -15,6 +17,7 @@ type Selector[T any] struct {
 	CannotBack    bool
 	ToggleTooltip bool
 	Tooltips      *[]Tooltip
+	TooltipWidth  int
 }
 
 func (s *Selector[T]) Select(msg tea.Msg) (*T, tea.Cmd) {
@@ -48,7 +51,7 @@ func (s *Selector[T]) GetFooter() string {
 	if s.Tooltips != nil {
 		if s.ToggleTooltip {
 			tooltip := *s.Tooltips
-			footer += styles.RenderFooter("Ctrl+t to hide information.") + "\n" + tooltip[s.Cursor].View()
+			footer += styles.RenderFooter("Ctrl+t to hide information.") + "\n" + tooltip[s.Cursor].View(s.TooltipWidth)
 		} else {
 			footer += styles.RenderFooter("Ctrl+t to see more info for each option.") + "\n"
 		}
@@ -69,6 +72,11 @@ func (s *Selector[T]) View() string {
 	}
 
 	return view + s.GetFooter()
+}
+
+func (s *Selector[T]) ViewTooltip(ctx context.Context) {
+	s.ToggleTooltip = weavecontext.GetTooltip(ctx)
+	s.TooltipWidth = weavecontext.GetWindowWidth(ctx)
 }
 
 type VersionSelector struct {

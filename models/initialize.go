@@ -113,26 +113,26 @@ func (m *GasStationMethodSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *GasStationMethodSelect) View() string {
 	state := weavecontext.GetCurrentState[ExistingCheckerState](m.Ctx)
-	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	m.Selector.ViewTooltip(m.Ctx)
 	return m.WrapView(InitHeader(state.isFirstTime) + state.weave.Render() +
 		styles.RenderPrompt("How would you like to setup your Gas station account?", []string{"Gas Station account"}, styles.Question) +
 		m.Selector.View())
 }
 
 type GenerateGasStationLoading struct {
-	loading ui.Loading
+	ui.Loading
 	weavecontext.BaseModel
 }
 
 func NewGenerateGasStationLoading(ctx context.Context) *GenerateGasStationLoading {
 	return &GenerateGasStationLoading{
-		loading:   ui.NewLoading("Generating new Gas Station account...", generateGasStationAccount(ctx)),
+		Loading:   ui.NewLoading("Generating new Gas Station account...", generateGasStationAccount(ctx)),
 		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
 	}
 }
 
 func (m *GenerateGasStationLoading) Init() tea.Cmd {
-	return m.loading.Init()
+	return m.Loading.Init()
 }
 
 func generateGasStationAccount(ctx context.Context) tea.Cmd {
@@ -158,13 +158,13 @@ func (m *GenerateGasStationLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return model, cmd
 	}
 
-	loader, cmd := m.loading.Update(msg)
-	m.loading = loader
-	if m.loading.NonRetryableErr != nil {
-		return m, m.HandlePanic(m.loading.NonRetryableErr)
+	loader, cmd := m.Loading.Update(msg)
+	m.Loading = loader
+	if m.Loading.NonRetryableErr != nil {
+		return m, m.HandlePanic(m.Loading.NonRetryableErr)
 	}
-	if m.loading.Completing {
-		m.Ctx = m.loading.EndContext
+	if m.Loading.Completing {
+		m.Ctx = m.Loading.EndContext
 		state := weavecontext.PushPageAndGetState[ExistingCheckerState](m)
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "Gas Station account has been successfully generated.", []string{}, ""))
 		return NewSystemKeysMnemonicDisplayInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
@@ -174,7 +174,7 @@ func (m *GenerateGasStationLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *GenerateGasStationLoading) View() string {
 	state := weavecontext.GetCurrentState[ExistingCheckerState](m.Ctx)
-	return m.WrapView(InitHeader(state.isFirstTime) + "\n" + state.weave.Render() + "\n" + m.loading.View())
+	return m.WrapView(InitHeader(state.isFirstTime) + "\n" + state.weave.Render() + "\n" + m.Loading.View())
 }
 
 type GasStationMnemonicDisplayInput struct {
@@ -278,19 +278,19 @@ func (m *GasStationMnemonicInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *GasStationMnemonicInput) View() string {
 	state := weavecontext.GetCurrentState[ExistingCheckerState](m.Ctx)
-	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	m.TextInput.ViewTooltip(m.Ctx)
 	return m.WrapView(InitHeader(state.isFirstTime) + "\n" + state.weave.Render() + styles.RenderPrompt("Please set up a Gas Station account", []string{"Gas Station account"}, styles.Question) + m.TextInput.View())
 }
 
 type WeaveAppInitialization struct {
 	weavecontext.BaseModel
-	loading  ui.Loading
+	ui.Loading
 	mnemonic string
 }
 
 func NewWeaveAppInitialization(ctx context.Context, mnemonic string) tea.Model {
 	return &WeaveAppInitialization{
-		loading:  ui.NewLoading("Initializing Weave...", WaitSetGasStation(mnemonic)),
+		Loading:  ui.NewLoading("Initializing Weave...", WaitSetGasStation(mnemonic)),
 		mnemonic: mnemonic,
 		BaseModel: weavecontext.BaseModel{
 			Ctx:        ctx,
@@ -300,7 +300,7 @@ func NewWeaveAppInitialization(ctx context.Context, mnemonic string) tea.Model {
 }
 
 func (hi *WeaveAppInitialization) Init() tea.Cmd {
-	return hi.loading.Init()
+	return hi.Loading.Init()
 }
 
 func WaitSetGasStation(mnemonic string) tea.Cmd {
@@ -315,9 +315,9 @@ func WaitSetGasStation(mnemonic string) tea.Cmd {
 }
 
 func (hi *WeaveAppInitialization) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	loader, cmd := hi.loading.Update(msg)
-	hi.loading = loader
-	if hi.loading.Completing {
+	loader, cmd := hi.Loading.Update(msg)
+	hi.Loading = loader
+	if hi.Loading.Completing {
 		model := NewWeaveAppSettingUpGasStation(hi.Ctx)
 		return model, model.Init()
 	}
@@ -326,12 +326,12 @@ func (hi *WeaveAppInitialization) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (hi *WeaveAppInitialization) View() string {
 	state := weavecontext.GetCurrentState[ExistingCheckerState](hi.Ctx)
-	return hi.WrapView(state.weave.Render() + "\n" + hi.loading.View())
+	return hi.WrapView(state.weave.Render() + "\n" + hi.Loading.View())
 }
 
 type WeaveAppSettingUpGasStation struct {
 	weavecontext.BaseModel
-	loading ui.Loading
+	ui.Loading
 }
 
 func NewWeaveAppSettingUpGasStation(ctx context.Context) tea.Model {
@@ -340,18 +340,18 @@ func NewWeaveAppSettingUpGasStation(ctx context.Context) tea.Model {
 			Ctx:        ctx,
 			CannotBack: true,
 		},
-		loading: ui.NewLoading("Setting up Gas Station account...", ui.DefaultWait()),
+		Loading: ui.NewLoading("Setting up Gas Station account...", ui.DefaultWait()),
 	}
 }
 
 func (hi *WeaveAppSettingUpGasStation) Init() tea.Cmd {
-	return hi.loading.Init()
+	return hi.Loading.Init()
 }
 
 func (hi *WeaveAppSettingUpGasStation) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	loader, cmd := hi.loading.Update(msg)
-	hi.loading = loader
-	if hi.loading.Completing {
+	loader, cmd := hi.Loading.Update(msg)
+	hi.Loading = loader
+	if hi.Loading.Completing {
 		model := NewWeaveAppSuccessfullyInitialized(hi.Ctx)
 		return model, model.Init()
 	}
@@ -360,7 +360,7 @@ func (hi *WeaveAppSettingUpGasStation) Update(msg tea.Msg) (tea.Model, tea.Cmd) 
 
 func (hi *WeaveAppSettingUpGasStation) View() string {
 	state := weavecontext.GetCurrentState[ExistingCheckerState](hi.Ctx)
-	return hi.WrapView(state.weave.Render() + "\n" + hi.loading.View() + "\n")
+	return hi.WrapView(state.weave.Render() + "\n" + hi.Loading.View() + "\n")
 }
 
 type WeaveAppSuccessfullyInitialized struct {

@@ -172,7 +172,7 @@ func (m *ProcessingMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *ProcessingMinitiaConfig) View() string {
 	state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
-	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	m.Selector.ViewTooltip(m.Ctx)
 	artifactsDir, err := weavecontext.GetMinitiaArtifactsConfigJson(m.Ctx)
 	if err != nil {
 		m.HandlePanic(err)
@@ -282,7 +282,7 @@ func (m *SetupBotCheckbox) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 // View renders the current prompt and selection options
 func (m *SetupBotCheckbox) View() string {
 	state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
-	m.CheckBox.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	m.CheckBox.ViewTooltip(m.Ctx)
 	artifactsDir, err := weavecontext.GetMinitiaArtifactsConfigJson(m.Ctx)
 	if err != nil {
 		m.HandlePanic(err)
@@ -422,19 +422,19 @@ func (m *RecoverFromMnemonic) View() string {
 // SetupOPInitBots handles the loading and setup of OPInit bots
 type SetupOPInitBots struct {
 	weavecontext.BaseModel
-	loading ui.Loading
+	ui.Loading
 }
 
 // NewSetupOPInitBots initializes a new SetupOPInitBots with context
 func NewSetupOPInitBots(ctx context.Context) *SetupOPInitBots {
 	return &SetupOPInitBots{
 		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
-		loading:   ui.NewLoading("Downloading binary and adding keys...", WaitSetupOPInitBots(ctx)),
+		Loading:   ui.NewLoading("Downloading binary and adding keys...", WaitSetupOPInitBots(ctx)),
 	}
 }
 
 func (m *SetupOPInitBots) Init() tea.Cmd {
-	return m.loading.Init()
+	return m.Loading.Init()
 }
 
 func (m *SetupOPInitBots) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -442,13 +442,13 @@ func (m *SetupOPInitBots) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return model, cmd
 	}
 
-	loader, cmd := m.loading.Update(msg)
-	m.loading = loader
-	if m.loading.NonRetryableErr != nil {
-		return m, m.HandlePanic(m.loading.NonRetryableErr)
+	loader, cmd := m.Loading.Update(msg)
+	m.Loading = loader
+	if m.Loading.NonRetryableErr != nil {
+		return m, m.HandlePanic(m.Loading.NonRetryableErr)
 	}
-	if m.loading.Completing {
-		return NewTerminalState(m.loading.EndContext), tea.Quit
+	if m.Loading.Completing {
+		return NewTerminalState(m.Loading.EndContext), tea.Quit
 	}
 	return m, cmd
 }
@@ -456,7 +456,7 @@ func (m *SetupOPInitBots) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *SetupOPInitBots) View() string {
 	state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
 
-	if m.loading.Completing {
+	if m.Loading.Completing {
 		// Handle WaitSetupOPInitBots error
 		if len(state.SetupOpinitResponses) > 0 {
 			mnemonicText := ""
@@ -475,7 +475,7 @@ func (m *SetupOPInitBots) View() string {
 		}
 	}
 
-	return m.WrapView(state.weave.Render() + m.loading.View())
+	return m.WrapView(state.weave.Render() + m.Loading.View())
 }
 
 func renderMnemonic(keyName, address, mnemonic string) string {
@@ -711,20 +711,20 @@ func (m *TerminalState) View() string {
 
 type EnsureOPInitBotsBinaryLoadingModel struct {
 	weavecontext.BaseModel
-	loading       ui.Loading
+	ui.Loading
 	nextModelFunc func(ctx context.Context) (tea.Model, error)
 }
 
 func NewEnsureOPInitBotsBinaryLoadingModel(ctx context.Context, nextModelFunc func(ctx context.Context) (tea.Model, error)) tea.Model {
 	return &EnsureOPInitBotsBinaryLoadingModel{
 		BaseModel:     weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
-		loading:       ui.NewLoading("Downloading OPinit bot ...", EnsureOPInitBotsBinary(ctx)),
+		Loading:       ui.NewLoading("Downloading OPinit bot ...", EnsureOPInitBotsBinary(ctx)),
 		nextModelFunc: nextModelFunc,
 	}
 }
 
 func (m *EnsureOPInitBotsBinaryLoadingModel) Init() tea.Cmd {
-	return m.loading.Init()
+	return m.Loading.Init()
 }
 
 func (m *EnsureOPInitBotsBinaryLoadingModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -732,12 +732,12 @@ func (m *EnsureOPInitBotsBinaryLoadingModel) Update(msg tea.Msg) (tea.Model, tea
 		return model, cmd
 	}
 
-	loader, cmd := m.loading.Update(msg)
-	m.loading = loader
-	if m.loading.NonRetryableErr != nil {
-		return m, m.HandlePanic(m.loading.NonRetryableErr)
+	loader, cmd := m.Loading.Update(msg)
+	m.Loading = loader
+	if m.Loading.NonRetryableErr != nil {
+		return m, m.HandlePanic(m.Loading.NonRetryableErr)
 	}
-	if m.loading.Completing {
+	if m.Loading.Completing {
 		nextModel, err := m.nextModelFunc(m.Ctx)
 		if err != nil {
 			return m, m.HandlePanic(err)
@@ -749,5 +749,5 @@ func (m *EnsureOPInitBotsBinaryLoadingModel) Update(msg tea.Msg) (tea.Model, tea
 
 func (m *EnsureOPInitBotsBinaryLoadingModel) View() string {
 	state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
-	return m.WrapView(state.weave.Render() + m.loading.View())
+	return m.WrapView(state.weave.Render() + m.Loading.View())
 }

@@ -70,6 +70,6 @@ func (m *FieldInputModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 // View delegates the view logic to the current active submodel
 func (m *FieldInputModel) View() string {
 	state := weavecontext.GetCurrentState[State](m.Ctx)
-	m.subModels[m.currentIndex].TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	m.subModels[m.currentIndex].ViewTooltip(m.Ctx)
 	return state.weave.Render() + m.subModels[m.currentIndex].View()
 }

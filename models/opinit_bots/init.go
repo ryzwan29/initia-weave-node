@@ -319,7 +319,7 @@ func (m *OPInitBotInitSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *OPInitBotInitSelector) View() string {
 	state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
-	m.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	m.ViewTooltip(m.Ctx)
 	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"bot"}, styles.Question) + m.Selector.View())
 }
 
@@ -837,13 +837,13 @@ func (m *SetDALayer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *SetDALayer) View() string {
 	state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
-	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	m.Selector.ViewTooltip(m.Ctx)
 	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"DA Layer"}, styles.Question) + m.Selector.View())
 }
 
 type StartingInitBot struct {
 	weavecontext.BaseModel
-	loading ui.Loading
+	ui.Loading
 }
 
 func NewStartingInitBot(ctx context.Context) (tea.Model, error) {
@@ -857,7 +857,7 @@ func NewStartingInitBot(ctx context.Context) (tea.Model, error) {
 
 	return &StartingInitBot{
 		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
-		loading:   ui.NewLoading(fmt.Sprintf("Setting up OPinit bot %s...", bot), WaitStartingInitBot(ctx)),
+		Loading:   ui.NewLoading(fmt.Sprintf("Setting up OPinit bot %s...", bot), WaitStartingInitBot(ctx)),
 	}, nil
 }
 
@@ -1038,19 +1038,19 @@ func WaitStartingInitBot(ctx context.Context) tea.Cmd {
 }
 
 func (m *StartingInitBot) Init() tea.Cmd {
-	return m.loading.Init()
+	return m.Loading.Init()
 }
 
 func (m *StartingInitBot) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if model, cmd, handled := weavecontext.HandleCommonCommands[OPInitBotsState](m, msg); handled {
 		return model, cmd
 	}
-	loader, cmd := m.loading.Update(msg)
-	m.loading = loader
-	if m.loading.NonRetryableErr != nil {
-		return m, m.HandlePanic(m.loading.NonRetryableErr)
+	loader, cmd := m.Loading.Update(msg)
+	m.Loading = loader
+	if m.Loading.NonRetryableErr != nil {
+		return m, m.HandlePanic(m.Loading.NonRetryableErr)
 	}
-	if m.loading.Completing {
+	if m.Loading.Completing {
 		return NewOPinitBotSuccessful(m.Ctx), nil
 	}
 	return m, cmd
@@ -1058,7 +1058,7 @@ func (m *StartingInitBot) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *StartingInitBot) View() string {
 	state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
-	return m.WrapView(state.weave.Render() + m.loading.View())
+	return m.WrapView(state.weave.Render() + m.Loading.View())
 }
 
 type OPinitBotSuccessful struct {
@@ -1098,19 +1098,19 @@ func (m *OPinitBotSuccessful) View() string {
 // SetupOPInitBotsMissingKey handles the loading and setup of OPInit bots
 type SetupOPInitBotsMissingKey struct {
 	weavecontext.BaseModel
-	loading ui.Loading
+	ui.Loading
 }
 
 // NewSetupOPInitBotsMissingKey initializes a new SetupOPInitBots with context
 func NewSetupOPInitBotsMissingKey(ctx context.Context) *SetupOPInitBotsMissingKey {
 	return &SetupOPInitBotsMissingKey{
 		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
-		loading:   ui.NewLoading("Downloading binary and adding keys...", WaitSetupOPInitBotsMissingKey(ctx)),
+		Loading:   ui.NewLoading("Downloading binary and adding keys...", WaitSetupOPInitBotsMissingKey(ctx)),
 	}
 }
 
 func (m *SetupOPInitBotsMissingKey) Init() tea.Cmd {
-	return m.loading.Init()
+	return m.Loading.Init()
 }
 
 func handleBotInitSelection(ctx context.Context, state OPInitBotsState) (tea.Model, error) {
@@ -1124,16 +1124,16 @@ func (m *SetupOPInitBotsMissingKey) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if model, cmd, handled := weavecontext.HandleCommonCommands[OPInitBotsState](m, msg); handled {
 		return model, cmd
 	}
-	loader, cmd := m.loading.Update(msg)
-	m.loading = loader
-	if m.loading.NonRetryableErr != nil {
-		return m, m.HandlePanic(m.loading.NonRetryableErr)
+	loader, cmd := m.Loading.Update(msg)
+	m.Loading = loader
+	if m.Loading.NonRetryableErr != nil {
+		return m, m.HandlePanic(m.Loading.NonRetryableErr)
 	}
-	if m.loading.Completing {
-		state := weavecontext.GetCurrentState[OPInitBotsState](m.loading.EndContext)
+	if m.Loading.Completing {
+		state := weavecontext.GetCurrentState[OPInitBotsState](m.Loading.EndContext)
 		oracleBotInfo := GetBotInfo(BotInfos, OracleBridgeExecutor)
 		if (state.AddMinitiaConfig && !oracleBotInfo.IsNewKey()) || (!state.AddMinitiaConfig && len(state.SetupOpinitResponses) == 0) {
-			model, err := handleBotInitSelection(m.loading.EndContext, state)
+			model, err := handleBotInitSelection(m.Loading.EndContext, state)
 			if err != nil {
 				return m, m.HandlePanic(err)
 			}
@@ -1142,7 +1142,7 @@ func (m *SetupOPInitBotsMissingKey) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg := msg.(type) {
 		case tea.KeyMsg:
 			if msg.String() == "enter" {
-				model, err := handleBotInitSelection(m.loading.EndContext, state)
+				model, err := handleBotInitSelection(m.Loading.EndContext, state)
 				if err != nil {
 					return m, m.HandlePanic(err)
 				}

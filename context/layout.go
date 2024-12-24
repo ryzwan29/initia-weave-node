@@ -12,7 +12,7 @@ const (
 func AdjustWindowSize(model BaseModelInterface, msg tea.Msg) BaseModelInterface {
 	if windowMsg, ok := msg.(tea.WindowSizeMsg); ok {
 		ctx := model.GetContext()
-		ctx = SetWindowWidth(ctx, windowMsg.Width)
+		ctx = SetWindowWidth(ctx, windowMsg.Width-DefaultPadding)
 		model.SetContext(ctx)
 		return model
 	}
