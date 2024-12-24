@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os/exec"
+	"time"
 
 	"github.com/initia-labs/weave/client"
 )
@@ -86,7 +87,50 @@ func (te *InitiadTxExecutor) BroadcastMsgSend(senderMnemonic, recipientAddress, 
 		return nil, fmt.Errorf("tx failed with error: %v", txResponse.RawLog)
 	}
 
+	err = te.waitForTransactionInclusion(rpc, txResponse.TxHash)
+	if err != nil {
+		return nil, err
+	}
+
 	return &txResponse, nil
+}
+
+func (te *InitiadTxExecutor) waitForTransactionInclusion(rpcURL, txHash string) error {
+	// Poll for transaction status until it's included in a block
+	timeout := time.After(5 * time.Second) // Example timeout for polling
+	ticker := time.NewTicker(time.Second)  // Poll every second
+	defer ticker.Stop()                    // Ensure cleanup of ticker resource
+
+	for {
+		select {
+		case <-timeout:
+			return fmt.Errorf("transaction not included in block within timeout")
+		case <-ticker.C:
+			// Query transaction status
+			statusCmd := exec.Command(te.binaryPath, "query", "tx", txHash, "--node", rpcURL, "--output", "json")
+			statusRes, err := statusCmd.CombinedOutput()
+			// If the transaction is not included in a block yet, just continue polling
+			if err != nil {
+				// You can add more detailed error handling here if needed,
+				// but for now, we continue polling if it returns an error (i.e., "not found" or similar).
+				continue
+			}
+
+			var txResponse MinimalTxResponse
+			err = json.Unmarshal(statusRes, &txResponse)
+			if err != nil {
+				return fmt.Errorf("failed to unmarshal transaction JSON response: %v", err)
+			}
+			if txResponse.Code == 0 { // Successful transaction
+				// Transaction successfully included in block
+				return nil
+			} else {
+				return fmt.Errorf("tx failed with error: %v", txResponse.RawLog)
+			}
+
+			// If the transaction is not in a block yet, continue polling
+		}
+	}
 }
 
 type HermesTxExecutor struct {

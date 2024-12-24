@@ -177,6 +177,7 @@ func (lsk *L1SystemKeys) waitForTransactionInclusion(binaryPath, rpcURL, txHash 
 	// Poll for transaction status until it's included in a block
 	timeout := time.After(5 * time.Second) // Example timeout for polling
 	ticker := time.NewTicker(time.Second)  // Poll every second
+	defer ticker.Stop()                    // Ensure cleanup of ticker resource
 
 	for {
 		select {
