@@ -106,7 +106,7 @@ func (m *RunL1NodeNetworkSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch *selected {
 		case Mainnet, Testnet:
 			chainType, err := selected.ToChainType()
-			if err == nil {
+			if err != nil {
 				return m, m.Panic(err)
 			}
 			chainRegistry, err := registry.GetChainRegistry(chainType)
