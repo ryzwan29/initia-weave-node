@@ -29,6 +29,11 @@ type InitiadTxResponse struct {
 	Events    *[]interface{} `json:"events"`
 }
 
+type MinimalTxResponse struct {
+	Code   int    `json:"code"`
+	RawLog string `json:"raw_log"`
+}
+
 type InitiadTxExecutor struct {
 	binaryPath string
 }
