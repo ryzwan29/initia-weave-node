@@ -42,8 +42,8 @@ func TestExistingMinitiaChecker_Update(t *testing.T) {
 	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	model := NewExistingMinitiaChecker(ctx)
-	model.loading.EndContext = model.Ctx
-	model.loading.Completing = true
+	model.Loading.EndContext = model.Ctx
+	model.Loading.Completing = true
 
 	nextModel, _ := model.Update(&tea.KeyMsg{})
 
@@ -55,8 +55,8 @@ func TestExistingMinitiaChecker_Update(t *testing.T) {
 	state := weavecontext.GetCurrentState[LaunchState](model.Ctx)
 	state.existingMinitiaApp = true
 	ctx = weavecontext.SetCurrentState(ctx, state)
-	model.loading.EndContext = ctx
-	model.loading.Completing = true
+	model.Loading.EndContext = ctx
+	model.Loading.Completing = true
 
 	nextModel, _ = model.Update(&tea.KeyMsg{})
 	if _, ok := nextModel.(*DeleteExistingMinitiaInput); !ok {
@@ -100,8 +100,8 @@ func TestExistingMinitiaChecker(t *testing.T) {
 
 			model := NewExistingMinitiaChecker(ctx)
 
-			model.loading.EndContext = ctx
-			model.loading.Completing = true
+			model.Loading.EndContext = ctx
+			model.Loading.Completing = true
 			m, _ := model.Update(&tea.KeyMsg{})
 
 			assert.IsType(t, tc.expectedModel, m)
@@ -1096,7 +1096,7 @@ func TestNewExistingGasStationChecker(t *testing.T) {
 	checker := NewExistingGasStationChecker(ctx)
 
 	assert.NotNil(t, checker, "Expected non-nil ExistingGasStationChecker")
-	assert.Contains(t, checker.loading.Text, "Checking for gas station account...", "Expected loading message to be set")
+	assert.Contains(t, checker.Loading.Text, "Checking for gas station account...", "Expected loading message to be set")
 }
 
 func TestExistingGasStationChecker_Init(t *testing.T) {
@@ -1161,8 +1161,8 @@ func TestExistingGasStationChecker_Update_LoadingComplete_NoGasStation(t *testin
 	ctx := weavecontext.NewAppContext(*state)
 
 	checker := NewExistingGasStationChecker(ctx)
-	checker.loading.EndContext = ctx
-	checker.loading.Completing = true
+	checker.Loading.EndContext = ctx
+	checker.Loading.Completing = true
 
 	updatedModel, cmd := checker.Update(&tea.KeyMsg{})
 
@@ -1857,7 +1857,7 @@ func TestNewDownloadMinitiaBinaryLoading(t *testing.T) {
 	nextState := weavecontext.GetCurrentState[LaunchState](loadingModel.Ctx)
 	assert.NotNil(t, loadingModel)
 	assert.Equal(t, state, nextState)
-	assert.Contains(t, loadingModel.loading.Text, "Downloading Minitestvm binary <v1.0.0>")
+	assert.Contains(t, loadingModel.Loading.Text, "Downloading Minitestvm binary <v1.0.0>")
 }
 
 func TestDownloadMinitiaBinaryLoading_Init(t *testing.T) {
@@ -1883,8 +1883,8 @@ func TestDownloadMinitiaBinaryLoading_Update_Complete(t *testing.T) {
 	ctx := weavecontext.NewAppContext(state)
 
 	loadingModel := NewDownloadMinitiaBinaryLoading(ctx)
-	loadingModel.loading.Completing = true
-	loadingModel.loading.EndContext = ctx
+	loadingModel.Loading.Completing = true
+	loadingModel.Loading.EndContext = ctx
 
 	finalModel, cmd := loadingModel.Update(&tea.KeyMsg{})
 
@@ -1908,8 +1908,8 @@ func TestDownloadMinitiaBinaryLoading_Update_DownloadSuccess(t *testing.T) {
 	assert.IsType(t, &DownloadMinitiaBinaryLoading{}, nextModel)
 
 	model := nextModel.(*DownloadMinitiaBinaryLoading)
-	model.loading.Completing = true
-	model.loading.EndContext = model.Ctx
+	model.Loading.Completing = true
+	model.Loading.EndContext = model.Ctx
 	finalModel, _ := nextModel.Update(&tea.KeyMsg{})
 
 	assert.IsType(t, &GenerateOrRecoverSystemKeysLoading{}, finalModel)
@@ -1926,11 +1926,11 @@ func TestDownloadMinitiaBinaryLoading_View(t *testing.T) {
 	loadingModel := NewDownloadMinitiaBinaryLoading(ctx)
 	view := loadingModel.View()
 
-	loadingModel.loading.Completing = true
-	loadingModel.loading.EndContext = ctx
+	loadingModel.Loading.Completing = true
+	loadingModel.Loading.EndContext = ctx
 
 	assert.Contains(t, view, state.weave.Render())
-	assert.Contains(t, view, loadingModel.loading.View())
+	assert.Contains(t, view, loadingModel.Loading.View())
 }
 
 func TestGetCelestiaBinaryURL(t *testing.T) {
@@ -1960,7 +1960,7 @@ func TestNewGenerateOrRecoverSystemKeysLoading_Generate(t *testing.T) {
 	loadingModel := NewGenerateOrRecoverSystemKeysLoading(ctx)
 
 	assert.NotNil(t, loadingModel)
-	assert.Contains(t, loadingModel.loading.Text, "Generating new system keys...")
+	assert.Contains(t, loadingModel.Loading.Text, "Generating new system keys...")
 }
 
 func TestNewGenerateOrRecoverSystemKeysLoading_Recover(t *testing.T) {
@@ -1972,7 +1972,7 @@ func TestNewGenerateOrRecoverSystemKeysLoading_Recover(t *testing.T) {
 	loadingModel := NewGenerateOrRecoverSystemKeysLoading(ctx)
 
 	assert.NotNil(t, loadingModel)
-	assert.Contains(t, loadingModel.loading.Text, "Recovering system keys...")
+	assert.Contains(t, loadingModel.Loading.Text, "Recovering system keys...")
 }
 
 func TestGenerateOrRecoverSystemKeysLoading_Init(t *testing.T) {
@@ -1995,8 +1995,8 @@ func TestGenerateOrRecoverSystemKeysLoading_Update_Generate(t *testing.T) {
 	ctx := weavecontext.NewAppContext(state)
 
 	loadingModel := NewGenerateOrRecoverSystemKeysLoading(ctx)
-	loadingModel.loading.Completing = true
-	loadingModel.loading.EndContext = ctx
+	loadingModel.Loading.Completing = true
+	loadingModel.Loading.EndContext = ctx
 	finalModel, cmd := loadingModel.Update(&tea.KeyMsg{})
 
 	model := finalModel.(*SystemKeysMnemonicDisplayInput)
@@ -2016,7 +2016,7 @@ func TestGenerateOrRecoverSystemKeysLoading_View(t *testing.T) {
 	view := loadingModel.View()
 
 	assert.Contains(t, view, state.weave.Render())
-	assert.Contains(t, view, loadingModel.loading.View())
+	assert.Contains(t, view, loadingModel.Loading.View())
 }
 
 func TestNewSystemKeysMnemonicDisplayInput(t *testing.T) {
@@ -2127,7 +2127,7 @@ func TestNewFundGasStationBroadcastLoading(t *testing.T) {
 	checkState := weavecontext.GetCurrentState[LaunchState](loadingModel.Ctx)
 	assert.NotNil(t, loadingModel)
 	assert.Equal(t, state, checkState)
-	assert.Equal(t, "Broadcasting transactions...", loadingModel.loading.Text)
+	assert.Equal(t, "Broadcasting transactions...", loadingModel.Loading.Text)
 }
 
 func TestFundGasStationBroadcastLoading_Init(t *testing.T) {
@@ -2165,8 +2165,8 @@ func TestFundGasStationBroadcastLoading_Update_Complete(t *testing.T) {
 	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
 	loadingModel := NewFundGasStationBroadcastLoading(ctx)
-	loadingModel.loading.Completing = true
-	loadingModel.loading.EndContext = ctx
+	loadingModel.Loading.Completing = true
+	loadingModel.Loading.EndContext = ctx
 	finalModel, cmd := loadingModel.Update(&tea.KeyMsg{})
 
 	assert.IsType(t, &LaunchingNewMinitiaLoading{}, finalModel)

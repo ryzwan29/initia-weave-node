@@ -33,18 +33,18 @@ import (
 
 type ExistingMinitiaChecker struct {
 	weavecontext.BaseModel
-	loading ui.Loading
+	ui.Loading
 }
 
 func NewExistingMinitiaChecker(ctx context.Context) *ExistingMinitiaChecker {
 	return &ExistingMinitiaChecker{
 		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
-		loading:   ui.NewLoading("Checking for an existing rollup app...", waitExistingMinitiaChecker(ctx)),
+		Loading:   ui.NewLoading("Checking for an existing rollup app...", waitExistingMinitiaChecker(ctx)),
 	}
 }
 
 func (m *ExistingMinitiaChecker) Init() tea.Cmd {
-	return m.loading.Init()
+	return m.Loading.Init()
 }
 
 func waitExistingMinitiaChecker(ctx context.Context) tea.Cmd {
@@ -72,13 +72,13 @@ func (m *ExistingMinitiaChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return model, cmd
 	}
 
-	loader, cmd := m.loading.Update(msg)
-	m.loading = loader
-	if m.loading.NonRetryableErr != nil {
-		return m, m.HandlePanic(m.loading.NonRetryableErr)
+	loader, cmd := m.Loading.Update(msg)
+	m.Loading = loader
+	if m.Loading.NonRetryableErr != nil {
+		return m, m.HandlePanic(m.Loading.NonRetryableErr)
 	}
-	if m.loading.Completing {
-		m.Ctx = m.loading.EndContext
+	if m.Loading.Completing {
+		m.Ctx = m.Loading.EndContext
 		state := weavecontext.PushPageAndGetState[LaunchState](m)
 
 		if !state.existingMinitiaApp {
@@ -101,7 +101,7 @@ func (m *ExistingMinitiaChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *ExistingMinitiaChecker) View() string {
 	return m.WrapView(styles.Text("🪢 When launching a rollup, after all configurations are set,\nthe rollup process will run for a few blocks to establish the necessary components.\nThis process may take some time.\n\n", styles.Ivory) +
-		m.loading.View())
+		m.Loading.View())
 }
 
 type DeleteExistingMinitiaInput struct {
@@ -348,7 +348,7 @@ func (m *VMTypeSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *VMTypeSelect) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
-	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	m.Selector.ViewTooltip(m.Ctx)
 	return m.WrapView(state.weave.Render() + styles.RenderPrompt(
 		m.GetQuestion(),
 		m.highlights,
@@ -358,8 +358,8 @@ func (m *VMTypeSelect) View() string {
 
 type LatestVersionLoading struct {
 	weavecontext.BaseModel
-	loading ui.Loading
-	vmType  string
+	ui.Loading
+	vmType string
 }
 
 func NewLatestVersionLoading(ctx context.Context) *LatestVersionLoading {
@@ -367,13 +367,13 @@ func NewLatestVersionLoading(ctx context.Context) *LatestVersionLoading {
 	vmType := strings.ToLower(state.vmType)
 	return &LatestVersionLoading{
 		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
-		loading:   ui.NewLoading(fmt.Sprintf("Fetching the latest release for Mini%s...", vmType), waitLatestVersionLoading(ctx, vmType)),
+		Loading:   ui.NewLoading(fmt.Sprintf("Fetching the latest release for Mini%s...", vmType), waitLatestVersionLoading(ctx, vmType)),
 		vmType:    vmType,
 	}
 }
 
 func (m *LatestVersionLoading) Init() tea.Cmd {
-	return m.loading.Init()
+	return m.Loading.Init()
 }
 
 func waitLatestVersionLoading(ctx context.Context, vmType string) tea.Cmd {
@@ -398,13 +398,13 @@ func (m *LatestVersionLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return model, cmd
 	}
 
-	loader, cmd := m.loading.Update(msg)
-	m.loading = loader
-	if m.loading.NonRetryableErr != nil {
-		return m, m.HandlePanic(m.loading.NonRetryableErr)
+	loader, cmd := m.Loading.Update(msg)
+	m.Loading = loader
+	if m.Loading.NonRetryableErr != nil {
+		return m, m.HandlePanic(m.Loading.NonRetryableErr)
 	}
-	if m.loading.Completing {
-		m.Ctx = m.loading.EndContext
+	if m.Loading.Completing {
+		m.Ctx = m.Loading.EndContext
 		state := weavecontext.PushPageAndGetState[LaunchState](m)
 
 		vmText := fmt.Sprintf("Mini%s version", m.vmType)
@@ -416,7 +416,7 @@ func (m *LatestVersionLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *LatestVersionLoading) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
-	return m.WrapView(state.weave.Render() + "\n" + m.loading.View())
+	return m.WrapView(state.weave.Render() + "\n" + m.Loading.View())
 }
 
 type VersionSelect struct {
@@ -523,7 +523,7 @@ func (m *ChainIdInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *ChainIdInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
-	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	m.TextInput.ViewTooltip(m.Ctx)
 	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View())
 }
 
@@ -576,7 +576,7 @@ func (m *GasDenomInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *GasDenomInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
-	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	m.TextInput.ViewTooltip(m.Ctx)
 	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View())
 }
 
@@ -629,7 +629,7 @@ func (m *MonikerInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *MonikerInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
-	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	m.TextInput.ViewTooltip(m.Ctx)
 	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View())
 }
 
@@ -682,7 +682,7 @@ func (m *OpBridgeSubmissionIntervalInput) Update(msg tea.Msg) (tea.Model, tea.Cm
 
 func (m *OpBridgeSubmissionIntervalInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
-	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	m.TextInput.ViewTooltip(m.Ctx)
 	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View())
 }
 
@@ -735,7 +735,7 @@ func (m *OpBridgeOutputFinalizationPeriodInput) Update(msg tea.Msg) (tea.Model, 
 
 func (m *OpBridgeOutputFinalizationPeriodInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
-	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	m.TextInput.ViewTooltip(m.Ctx)
 	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View())
 }
 
@@ -799,7 +799,7 @@ func (m *OpBridgeBatchSubmissionTargetSelect) Update(msg tea.Msg) (tea.Model, te
 
 func (m *OpBridgeBatchSubmissionTargetSelect) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
-	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	m.Selector.ViewTooltip(m.Ctx)
 	return m.WrapView(state.weave.Render() + styles.RenderPrompt(
 		m.GetQuestion(),
 		m.highlights,
@@ -868,7 +868,7 @@ func (m *OracleEnableSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *OracleEnableSelect) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
-	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	m.Selector.ViewTooltip(m.Ctx)
 	return m.WrapView(state.weave.Render() + styles.RenderPrompt(
 		m.GetQuestion(),
 		m.highlights,
@@ -999,7 +999,7 @@ func (m *SystemKeyOperatorMnemonicInput) Update(msg tea.Msg) (tea.Model, tea.Cmd
 
 func (m *SystemKeyOperatorMnemonicInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
-	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	m.TextInput.ViewTooltip(m.Ctx)
 	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View())
 }
 
@@ -1051,7 +1051,7 @@ func (m *SystemKeyBridgeExecutorMnemonicInput) Update(msg tea.Msg) (tea.Model, t
 
 func (m *SystemKeyBridgeExecutorMnemonicInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
-	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	m.TextInput.ViewTooltip(m.Ctx)
 	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View())
 }
 
@@ -1103,7 +1103,7 @@ func (m *SystemKeyOutputSubmitterMnemonicInput) Update(msg tea.Msg) (tea.Model, 
 
 func (m *SystemKeyOutputSubmitterMnemonicInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
-	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	m.TextInput.ViewTooltip(m.Ctx)
 	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View())
 }
 
@@ -1155,7 +1155,7 @@ func (m *SystemKeyBatchSubmitterMnemonicInput) Update(msg tea.Msg) (tea.Model, t
 
 func (m *SystemKeyBatchSubmitterMnemonicInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
-	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	m.TextInput.ViewTooltip(m.Ctx)
 	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View())
 }
 
@@ -1208,24 +1208,24 @@ func (m *SystemKeyChallengerMnemonicInput) Update(msg tea.Msg) (tea.Model, tea.C
 
 func (m *SystemKeyChallengerMnemonicInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
-	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	m.TextInput.ViewTooltip(m.Ctx)
 	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View())
 }
 
 type ExistingGasStationChecker struct {
-	loading ui.Loading
+	ui.Loading
 	weavecontext.BaseModel
 }
 
 func NewExistingGasStationChecker(ctx context.Context) *ExistingGasStationChecker {
 	return &ExistingGasStationChecker{
-		loading:   ui.NewLoading("Checking for gas station account...", waitExistingGasStationChecker(ctx)),
+		Loading:   ui.NewLoading("Checking for gas station account...", waitExistingGasStationChecker(ctx)),
 		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
 	}
 }
 
 func (m *ExistingGasStationChecker) Init() tea.Cmd {
-	return m.loading.Init()
+	return m.Loading.Init()
 }
 
 func waitExistingGasStationChecker(ctx context.Context) tea.Cmd {
@@ -1252,10 +1252,10 @@ func (m *ExistingGasStationChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return model, cmd
 	}
 
-	loader, cmd := m.loading.Update(msg)
-	m.loading = loader
-	if m.loading.Completing {
-		m.Ctx = m.loading.EndContext
+	loader, cmd := m.Loading.Update(msg)
+	m.Loading = loader
+	if m.Loading.Completing {
+		m.Ctx = m.Loading.EndContext
 		state := weavecontext.PushPageAndGetState[LaunchState](m)
 
 		if !state.gasStationExist {
@@ -1273,7 +1273,7 @@ func (m *ExistingGasStationChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *ExistingGasStationChecker) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
-	return m.WrapView(state.weave.Render() + "\n" + m.loading.View())
+	return m.WrapView(state.weave.Render() + "\n" + m.Loading.View())
 }
 
 type GasStationMnemonicInput struct {
@@ -1331,7 +1331,7 @@ func (m *GasStationMnemonicInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *GasStationMnemonicInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
-	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	m.TextInput.ViewTooltip(m.Ctx)
 	return m.WrapView(state.weave.Render() + "\n" +
 		styles.RenderPrompt(fmt.Sprintf("%s %s", styles.BoldUnderlineText("Please note that", styles.Yellow), styles.Text("you will need to set up a Gas Station account to fund the following accounts in order to run the weave rollup launch command:\n  • Bridge Executor\n  • Output Submitter\n  • Batch Submitter\n  • Challenger", styles.Yellow)), []string{}, styles.Information) + "\n" +
 		styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View())
@@ -1456,7 +1456,7 @@ func (m *AccountsFundingPresetSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *AccountsFundingPresetSelect) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
-	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	m.Selector.ViewTooltip(m.Ctx)
 	return m.WrapView(state.weave.Render() + "\n" +
 		styles.RenderPrompt(
 			"You will need to fund the following accounts on ...\n  L1:\n  • Bridge Executor\n  • Output Submitter\n  • Batch Submitter\n  • Challenger\n  Rollup:\n  • Operator\n  • Bridge Executor",
@@ -1864,7 +1864,7 @@ func (m *AddGasStationToGenesisSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) 
 
 func (m *AddGasStationToGenesisSelect) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
-	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	m.Selector.ViewTooltip(m.Ctx)
 	return m.WrapView(state.weave.Render() + "\n" +
 		styles.RenderPrompt("Adding a gas station account to the rollup genesis ensures that when running relayer init you would have funds to distribute to the relayer account.", []string{"gas station", "relayer init"}, styles.Information) + "\n" +
 		styles.RenderPrompt(
@@ -1934,7 +1934,7 @@ func (m *GenesisGasStationBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd)
 
 func (m *GenesisGasStationBalanceInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
-	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	m.TextInput.ViewTooltip(m.Ctx)
 	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{m.address}, styles.Question) + m.TextInput.View())
 }
 
@@ -2028,7 +2028,7 @@ func (m *AddGenesisAccountsSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *AddGenesisAccountsSelect) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
-	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	m.Selector.ViewTooltip(m.Ctx)
 	preText := ""
 	if !m.recurring {
 		preText += "\n" + styles.RenderPrompt("You can add extra genesis accounts by first entering the addresses, then assigning the initial balance one by one.", []string{"genesis accounts"}, styles.Information) + "\n"
@@ -2139,12 +2139,12 @@ func (m *GenesisAccountsBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *GenesisAccountsBalanceInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
-	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	m.TextInput.ViewTooltip(m.Ctx)
 	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{m.address}, styles.Question) + m.TextInput.View())
 }
 
 type DownloadMinitiaBinaryLoading struct {
-	loading ui.Loading
+	ui.Loading
 	weavecontext.BaseModel
 }
 
@@ -2152,13 +2152,13 @@ func NewDownloadMinitiaBinaryLoading(ctx context.Context) *DownloadMinitiaBinary
 	state := weavecontext.GetCurrentState[LaunchState](ctx)
 	latest := map[bool]string{true: "latest ", false: ""}
 	return &DownloadMinitiaBinaryLoading{
-		loading:   ui.NewLoading(fmt.Sprintf("Downloading %sMini%s binary <%s>", latest[state.launchFromExistingConfig], strings.ToLower(state.vmType), state.minitiadVersion), downloadMinitiaApp(ctx)),
+		Loading:   ui.NewLoading(fmt.Sprintf("Downloading %sMini%s binary <%s>", latest[state.launchFromExistingConfig], strings.ToLower(state.vmType), state.minitiadVersion), downloadMinitiaApp(ctx)),
 		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
 	}
 }
 
 func (m *DownloadMinitiaBinaryLoading) Init() tea.Cmd {
-	return m.loading.Init()
+	return m.Loading.Init()
 }
 
 func downloadMinitiaApp(ctx context.Context) tea.Cmd {
@@ -2222,13 +2222,13 @@ func (m *DownloadMinitiaBinaryLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) 
 		return model, cmd
 	}
 
-	loader, cmd := m.loading.Update(msg)
-	m.loading = loader
-	if m.loading.NonRetryableErr != nil {
-		return m, m.HandlePanic(m.loading.NonRetryableErr)
+	loader, cmd := m.Loading.Update(msg)
+	m.Loading = loader
+	if m.Loading.NonRetryableErr != nil {
+		return m, m.HandlePanic(m.Loading.NonRetryableErr)
 	}
-	if m.loading.Completing {
-		m.Ctx = m.loading.EndContext
+	if m.Loading.Completing {
+		m.Ctx = m.Loading.EndContext
 		state := weavecontext.PushPageAndGetState[LaunchState](m)
 
 		if state.downloadedNewBinary {
@@ -2256,11 +2256,11 @@ func (m *DownloadMinitiaBinaryLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) 
 
 func (m *DownloadMinitiaBinaryLoading) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
-	return m.WrapView(state.weave.Render() + "\n" + m.loading.View())
+	return m.WrapView(state.weave.Render() + "\n" + m.Loading.View())
 }
 
 type DownloadCelestiaBinaryLoading struct {
-	loading ui.Loading
+	ui.Loading
 	weavecontext.BaseModel
 }
 
@@ -2298,7 +2298,7 @@ func NewDownloadCelestiaBinaryLoading(ctx context.Context) (*DownloadCelestiaBin
 		return nil, fmt.Errorf("failed to get celestia binary url: %v", err)
 	}
 	return &DownloadCelestiaBinaryLoading{
-		loading:   ui.NewLoading(fmt.Sprintf("Downloading Celestia binary <%s>", version), downloadCelestiaApp(ctx, version, binaryUrl)),
+		Loading:   ui.NewLoading(fmt.Sprintf("Downloading Celestia binary <%s>", version), downloadCelestiaApp(ctx, version, binaryUrl)),
 		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
 	}, nil
 }
@@ -2324,7 +2324,7 @@ func getCelestiaBinaryURL(version, os, arch string) (string, error) {
 }
 
 func (m *DownloadCelestiaBinaryLoading) Init() tea.Cmd {
-	return m.loading.Init()
+	return m.Loading.Init()
 }
 
 func downloadCelestiaApp(ctx context.Context, version, binaryUrl string) tea.Cmd {
@@ -2371,13 +2371,13 @@ func (m *DownloadCelestiaBinaryLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd)
 		return model, cmd
 	}
 
-	loader, cmd := m.loading.Update(msg)
-	m.loading = loader
-	if m.loading.NonRetryableErr != nil {
-		return m, m.HandlePanic(m.loading.NonRetryableErr)
+	loader, cmd := m.Loading.Update(msg)
+	m.Loading = loader
+	if m.Loading.NonRetryableErr != nil {
+		return m, m.HandlePanic(m.Loading.NonRetryableErr)
 	}
-	if m.loading.Completing {
-		m.Ctx = m.loading.EndContext
+	if m.Loading.Completing {
+		m.Ctx = m.Loading.EndContext
 		state := weavecontext.PushPageAndGetState[LaunchState](m)
 
 		if state.downloadedNewCelestiaBinary {
@@ -2391,11 +2391,11 @@ func (m *DownloadCelestiaBinaryLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd)
 
 func (m *DownloadCelestiaBinaryLoading) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
-	return m.WrapView(state.weave.Render() + "\n" + m.loading.View())
+	return m.WrapView(state.weave.Render() + "\n" + m.Loading.View())
 }
 
 type GenerateOrRecoverSystemKeysLoading struct {
-	loading ui.Loading
+	ui.Loading
 	weavecontext.BaseModel
 }
 
@@ -2408,13 +2408,13 @@ func NewGenerateOrRecoverSystemKeysLoading(ctx context.Context) *GenerateOrRecov
 		loadingText = "Recovering system keys..."
 	}
 	return &GenerateOrRecoverSystemKeysLoading{
-		loading:   ui.NewLoading(loadingText, generateOrRecoverSystemKeys(ctx)),
+		Loading:   ui.NewLoading(loadingText, generateOrRecoverSystemKeys(ctx)),
 		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
 	}
 }
 
 func (m *GenerateOrRecoverSystemKeysLoading) Init() tea.Cmd {
-	return m.loading.Init()
+	return m.Loading.Init()
 }
 
 func generateOrRecoverSystemKeys(ctx context.Context) tea.Cmd {
@@ -2509,13 +2509,13 @@ func (m *GenerateOrRecoverSystemKeysLoading) Update(msg tea.Msg) (tea.Model, tea
 		return model, cmd
 	}
 
-	loader, cmd := m.loading.Update(msg)
-	m.loading = loader
-	if m.loading.NonRetryableErr != nil {
-		return m, m.HandlePanic(m.loading.NonRetryableErr)
+	loader, cmd := m.Loading.Update(msg)
+	m.Loading = loader
+	if m.Loading.NonRetryableErr != nil {
+		return m, m.HandlePanic(m.Loading.NonRetryableErr)
 	}
-	if m.loading.Completing {
-		m.Ctx = m.loading.EndContext
+	if m.Loading.Completing {
+		m.Ctx = m.Loading.EndContext
 		state := weavecontext.PushPageAndGetState[LaunchState](m)
 
 		if state.generateKeys {
@@ -2535,7 +2535,7 @@ func (m *GenerateOrRecoverSystemKeysLoading) Update(msg tea.Msg) (tea.Model, tea
 
 func (m *GenerateOrRecoverSystemKeysLoading) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
-	return m.WrapView(state.weave.Render() + "\n" + m.loading.View())
+	return m.WrapView(state.weave.Render() + "\n" + m.Loading.View())
 }
 
 type SystemKeysMnemonicDisplayInput struct {
@@ -2692,19 +2692,19 @@ func (m *FundGasStationConfirmationInput) View() string {
 }
 
 type FundGasStationBroadcastLoading struct {
-	loading ui.Loading
+	ui.Loading
 	weavecontext.BaseModel
 }
 
 func NewFundGasStationBroadcastLoading(ctx context.Context) *FundGasStationBroadcastLoading {
 	return &FundGasStationBroadcastLoading{
-		loading:   ui.NewLoading("Broadcasting transactions...", broadcastFundingFromGasStation(ctx)),
+		Loading:   ui.NewLoading("Broadcasting transactions...", broadcastFundingFromGasStation(ctx)),
 		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
 	}
 }
 
 func (m *FundGasStationBroadcastLoading) Init() tea.Cmd {
-	return m.loading.Init()
+	return m.Loading.Init()
 }
 
 func broadcastFundingFromGasStation(ctx context.Context) tea.Cmd {
@@ -2749,13 +2749,13 @@ func (m *FundGasStationBroadcastLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd
 		return model, cmd
 	}
 
-	loader, cmd := m.loading.Update(msg)
-	m.loading = loader
-	if m.loading.NonRetryableErr != nil {
-		return m, m.HandlePanic(m.loading.NonRetryableErr)
+	loader, cmd := m.Loading.Update(msg)
+	m.Loading = loader
+	if m.Loading.NonRetryableErr != nil {
+		return m, m.HandlePanic(m.Loading.NonRetryableErr)
 	}
-	if m.loading.Completing {
-		m.Ctx = m.loading.EndContext
+	if m.Loading.Completing {
+		m.Ctx = m.Loading.EndContext
 		state := weavecontext.PushPageAndGetState[LaunchState](m)
 
 		if state.systemKeyCelestiaFundingTxHash != "" {
@@ -2770,7 +2770,7 @@ func (m *FundGasStationBroadcastLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd
 
 func (m *FundGasStationBroadcastLoading) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
-	return m.WrapView(state.weave.Render() + "\n" + m.loading.View())
+	return m.WrapView(state.weave.Render() + "\n" + m.Loading.View())
 }
 
 type ScanPayload struct {
@@ -2794,7 +2794,7 @@ func (sp *ScanPayload) EncodeToBase64() (string, error) {
 }
 
 type LaunchingNewMinitiaLoading struct {
-	loading ui.Loading
+	ui.Loading
 	weavecontext.BaseModel
 	streamingLogs *[]string
 }
@@ -2802,7 +2802,7 @@ type LaunchingNewMinitiaLoading struct {
 func NewLaunchingNewMinitiaLoading(ctx context.Context) *LaunchingNewMinitiaLoading {
 	newLogs := make([]string, 0)
 	return &LaunchingNewMinitiaLoading{
-		loading: ui.NewLoading(
+		Loading: ui.NewLoading(
 			styles.RenderPrompt(
 				"Running `minitiad launch` with the specified config...",
 				[]string{"`minitiad launch`"},
@@ -2814,7 +2814,7 @@ func NewLaunchingNewMinitiaLoading(ctx context.Context) *LaunchingNewMinitiaLoad
 }
 
 func (m *LaunchingNewMinitiaLoading) Init() tea.Cmd {
-	return m.loading.Init()
+	return m.Loading.Init()
 }
 
 var timestampRegex = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z`)
@@ -2963,13 +2963,13 @@ func (m *LaunchingNewMinitiaLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return model, cmd
 	}
 
-	loader, cmd := m.loading.Update(msg)
-	m.loading = loader
-	if m.loading.NonRetryableErr != nil {
-		return m, m.HandlePanic(m.loading.NonRetryableErr)
+	loader, cmd := m.Loading.Update(msg)
+	m.Loading = loader
+	if m.Loading.NonRetryableErr != nil {
+		return m, m.HandlePanic(m.Loading.NonRetryableErr)
 	}
-	if m.loading.Completing {
-		m.Ctx = m.loading.EndContext
+	if m.Loading.Completing {
+		m.Ctx = m.Loading.EndContext
 		state := weavecontext.PushPageAndGetState[LaunchState](m)
 
 		artifactsConfigJsonDir, err := weavecontext.GetMinitiaArtifactsConfigJson(m.Ctx)
@@ -3032,7 +3032,7 @@ func (m *LaunchingNewMinitiaLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *LaunchingNewMinitiaLoading) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
-	return m.WrapView(state.weave.Render() + "\n" + m.loading.View() + "\n" + strings.Join(*m.streamingLogs, "\n"))
+	return m.WrapView(state.weave.Render() + "\n" + m.Loading.View() + "\n" + strings.Join(*m.streamingLogs, "\n"))
 }
 
 type TerminalState struct {

@@ -5,11 +5,14 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/muesli/reflow/wordwrap"
+
 	"github.com/initia-labs/weave/styles"
 )
 
 const (
-	MaxTooltipWidth = 108
+	DefaultTooltipPadding = 5
+	MaxTooltipWidth       = 108
 )
 
 type Tooltip struct {
@@ -47,18 +50,31 @@ func visibleLength(text string) int {
 	return len(ansi.ReplaceAllString(text, ""))
 }
 
-func (t *Tooltip) createFrame() string {
+func (t *Tooltip) createFrame(width int) string {
+	if width > MaxTooltipWidth {
+		width = MaxTooltipWidth
+	} else {
+		width -= DefaultTooltipPadding
+		if width < 0 {
+			width = DefaultTooltipPadding
+		}
+	}
+
 	var text string
 	if t.warning != "" {
-		text = wrapText(t.body, MaxTooltipWidth) + "\n" + styles.TextWithoutOverridingStyledText(wrapText(t.warning, MaxTooltipWidth), styles.Yellow)
+		text = wordwrap.String(t.body, width) + "\n" + styles.TextWithoutOverridingStyledText(wordwrap.String(t.warning, width), styles.Yellow)
 	} else {
-		text = wrapText(t.body, MaxTooltipWidth)
+		text = wordwrap.String(t.body, width)
 	}
 	lines := strings.Split(text, "\n")
 
 	titleLength := visibleLength(t.title)
-	top := "┌ " + styles.BoldText(t.title, styles.White) + " " + strings.Repeat("─", MaxTooltipWidth-titleLength) + "┐"
-	bottom := "└" + strings.Repeat("─", MaxTooltipWidth+2) + "┘"
+	titleWidth := width - titleLength
+	if titleWidth < 0 {
+		titleWidth = 0
+	}
+	top := "┌ " + styles.BoldText(t.title, styles.White) + " " + strings.Repeat("─", titleWidth) + "┐"
+	bottom := "└" + strings.Repeat("─", width+2) + "┘"
 
 	var framedContent strings.Builder
 	for _, line := range lines {
@@ -67,47 +83,16 @@ func (t *Tooltip) createFrame() string {
 				line = strings.ReplaceAll(line, boldText, styles.BoldText(boldText, styles.Ivory))
 			}
 		}
-		linePadding := MaxTooltipWidth - visibleLength(line)
+		linePadding := width - visibleLength(line)
+		if linePadding < 0 {
+			linePadding = 0
+		}
 		framedContent.WriteString(fmt.Sprintf("│ %s%s │\n", line, strings.Repeat(" ", linePadding)))
 	}
 
 	return fmt.Sprintf("%s\n%s%s", top, framedContent.String(), bottom)
 }
 
-func wrapText(text string, maxLength int) string {
-	var result strings.Builder
-
-	paragraphs := strings.Split(text, "\n")
-	for i, paragraph := range paragraphs {
-		var line strings.Builder
-		words := strings.Fields(paragraph)
-
-		for _, word := range words {
-			if line.Len()+len(word)+1 > maxLength {
-				result.WriteString(line.String() + "\n")
-				line.Reset()
-			}
-			if line.Len() > 0 {
-				line.WriteString(" ")
-			}
-			line.WriteString(word)
-		}
-
-		if line.Len() > 0 {
-			result.WriteString(line.String())
-		}
-
-		if i < len(paragraphs)-1 {
-			result.WriteString("\n")
-		}
-	}
-
-	return result.String()
-}
-
-func (t *Tooltip) View() string {
-	if t.warning == "" {
-		return "\n" + t.createFrame() + "\n"
-	}
-	return "\n" + t.createFrame() + "\n"
+func (t *Tooltip) View(width int) string {
+	return "\n" + t.createFrame(width) + "\n"
 }

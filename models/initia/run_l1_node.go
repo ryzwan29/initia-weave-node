@@ -141,7 +141,7 @@ func (m *RunL1NodeNetworkSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *RunL1NodeNetworkSelect) View() string {
-	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	m.Selector.ViewTooltip(m.Ctx)
 	return m.WrapView(styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.Selector.View())
 }
 
@@ -198,7 +198,7 @@ func (m *RunL1NodeVersionSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *RunL1NodeVersionSelect) View() string {
 	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
-	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	m.Selector.ViewTooltip(m.Ctx)
 	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.Selector.View())
 }
 
@@ -258,7 +258,8 @@ func (m *RunL1NodeChainIdInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *RunL1NodeChainIdInput) View() string {
 	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
-	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	m.TextInput.ViewTooltip(m.Ctx)
+	m.TextInput.TooltipWidth = weavecontext.GetWindowWidth(m.Ctx)
 	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View())
 }
 
@@ -343,7 +344,7 @@ func (m *ExistingAppReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *ExistingAppReplaceSelect) View() string {
 	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
-	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	m.Selector.ViewTooltip(m.Ctx)
 	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.Selector.View())
 }
 
@@ -405,7 +406,7 @@ func (m *RunL1NodeMonikerInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *RunL1NodeMonikerInput) View() string {
 	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
-	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	m.TextInput.ViewTooltip(m.Ctx)
 	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View())
 }
 
@@ -456,7 +457,7 @@ func (m *MinGasPriceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *MinGasPriceInput) View() string {
 	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
-	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	m.TextInput.ViewTooltip(m.Ctx)
 	preText := ""
 	if !state.existingApp {
 		initiaConfigDir, err := weavecontext.GetInitiaConfigDirectory(m.Ctx)
@@ -533,7 +534,7 @@ func (m *EnableFeaturesCheckbox) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *EnableFeaturesCheckbox) View() string {
 	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
-	m.CheckBox.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	m.CheckBox.ViewTooltip(m.Ctx)
 	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{}, styles.Question) + "\n" + m.CheckBox.View())
 }
 
@@ -597,7 +598,7 @@ func (m *SeedsInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *SeedsInput) View() string {
 	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
-	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	m.TextInput.ViewTooltip(m.Ctx)
 	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View())
 }
 
@@ -661,7 +662,7 @@ func (m *PersistentPeersInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *PersistentPeersInput) View() string {
 	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
-	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	m.TextInput.ViewTooltip(m.Ctx)
 	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View())
 }
 
@@ -743,7 +744,7 @@ func (m *SelectingPruningStrategy) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *SelectingPruningStrategy) View() string {
 	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
-	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	m.Selector.ViewTooltip(m.Ctx)
 	return m.WrapView(state.weave.Render() + styles.RenderPrompt(
 		m.GetQuestion(),
 		m.highlights,
@@ -753,18 +754,18 @@ func (m *SelectingPruningStrategy) View() string {
 
 type ExistingGenesisChecker struct {
 	weavecontext.BaseModel
-	loading ui.Loading
+	ui.Loading
 }
 
 func NewExistingGenesisChecker(ctx context.Context) *ExistingGenesisChecker {
 	return &ExistingGenesisChecker{
 		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
-		loading:   ui.NewLoading("Checking for an existing Initia genesis file...", WaitExistingGenesisChecker(ctx)),
+		Loading:   ui.NewLoading("Checking for an existing Initia genesis file...", WaitExistingGenesisChecker(ctx)),
 	}
 }
 
 func (m *ExistingGenesisChecker) Init() tea.Cmd {
-	return m.loading.Init()
+	return m.Loading.Init()
 }
 
 func WaitExistingGenesisChecker(ctx context.Context) tea.Cmd {
@@ -791,10 +792,10 @@ func (m *ExistingGenesisChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if model, cmd, handled := weavecontext.HandleCommonCommands[RunL1NodeState](m, msg); handled {
 		return model, cmd
 	}
-	loader, cmd := m.loading.Update(msg)
-	m.loading = loader
-	if m.loading.Completing {
-		m.Ctx = m.loading.EndContext
+	loader, cmd := m.Loading.Update(msg)
+	m.Loading = loader
+	if m.Loading.Completing {
+		m.Ctx = m.Loading.EndContext
 		state := weavecontext.PushPageAndGetState[RunL1NodeState](m)
 
 		if !state.existingGenesis {
@@ -817,7 +818,7 @@ func (m *ExistingGenesisChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *ExistingGenesisChecker) View() string {
 	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
-	return m.WrapView(state.weave.Render() + "\n" + m.loading.View())
+	return m.WrapView(state.weave.Render() + "\n" + m.Loading.View())
 }
 
 type ExistingGenesisReplaceSelect struct {
@@ -945,7 +946,7 @@ func (m *GenesisEndpointInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *GenesisEndpointInput) View() string {
 	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
-	m.TextInput.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	m.TextInput.ViewTooltip(m.Ctx)
 	initiaConfigDir, err := weavecontext.GetInitiaConfigDirectory(m.Ctx)
 	if err != nil {
 		m.HandlePanic(err)
@@ -1235,7 +1236,7 @@ func (m *SyncMethodSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *SyncMethodSelect) View() string {
 	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
-	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	m.Selector.ViewTooltip(m.Ctx)
 	return m.WrapView(state.weave.Render() + styles.RenderPrompt(
 		m.GetQuestion(),
 		[]string{},
@@ -1268,6 +1269,7 @@ func NewCosmovisorAutoUpgradeSelector(ctx context.Context) *CosmovisorAutoUpgrad
 				tooltip.L1CosmovisorAutoUpgradeEnableTooltip,
 				tooltip.L1CosmovisorAutoUpgradeDisableTooltip,
 			},
+			CannotBack: true,
 		},
 		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
 		question:  "Would you like to enable automatic upgrades via Cosmovisor?",
@@ -1304,7 +1306,7 @@ func (m *CosmovisorAutoUpgradeSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd)
 
 func (m *CosmovisorAutoUpgradeSelector) View() string {
 	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
-	m.Selector.ToggleTooltip = weavecontext.GetTooltip(m.Ctx)
+	m.Selector.ViewTooltip(m.Ctx)
 	return m.WrapView(state.weave.Render() + styles.RenderPrompt(
 		m.GetQuestion(),
 		m.highlights,
@@ -1313,19 +1315,19 @@ func (m *CosmovisorAutoUpgradeSelector) View() string {
 }
 
 type ExistingDataChecker struct {
-	loading ui.Loading
 	weavecontext.BaseModel
+	ui.Loading
 }
 
 func NewExistingDataChecker(ctx context.Context) *ExistingDataChecker {
 	return &ExistingDataChecker{
 		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
-		loading:   ui.NewLoading("Checking for an existing Initia data...", WaitExistingDataChecker(ctx)),
+		Loading:   ui.NewLoading("Checking for an existing Initia data...", WaitExistingDataChecker(ctx)),
 	}
 }
 
 func (m *ExistingDataChecker) Init() tea.Cmd {
-	return m.loading.Init()
+	return m.Loading.Init()
 }
 
 func WaitExistingDataChecker(ctx context.Context) tea.Cmd {
@@ -1357,10 +1359,10 @@ func (m *ExistingDataChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if model, cmd, handled := weavecontext.HandleCommonCommands[RunL1NodeState](m, msg); handled {
 		return model, cmd
 	}
-	loader, cmd := m.loading.Update(msg)
-	m.loading = loader
-	if m.loading.Completing {
-		m.Ctx = m.loading.EndContext
+	loader, cmd := m.Loading.Update(msg)
+	m.Loading = loader
+	if m.Loading.Completing {
+		m.Ctx = m.Loading.EndContext
 		state := weavecontext.PushPageAndGetState[RunL1NodeState](m)
 
 		if !state.existingData {
@@ -1395,7 +1397,7 @@ func (m *ExistingDataChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *ExistingDataChecker) View() string {
 	state := weavecontext.GetCurrentState[RunL1NodeState](m.Ctx)
-	return m.WrapView(state.weave.Render() + "\n" + m.loading.View())
+	return m.WrapView(state.weave.Render() + "\n" + m.Loading.View())
 }
 
 type ExistingDataReplaceSelect struct {

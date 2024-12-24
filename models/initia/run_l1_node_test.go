@@ -565,8 +565,8 @@ func TestExistingGenesisCheckerUpdate_NoExistingGenesis_LocalNetwork(t *testing.
 	model := NewExistingGenesisChecker(ctx)
 
 	// Simulate the loading completion
-	model.loading.EndContext = ctx
-	model.loading.Completing = true
+	model.Loading.EndContext = ctx
+	model.Loading.Completing = true
 	nextModel, _ := model.Update(tea.KeyMsg{})
 
 	// Expect transition to InitializingAppLoading for Local network
@@ -585,8 +585,8 @@ func TestExistingGenesisCheckerUpdate_NoExistingGenesis_MainnetNetwork(t *testin
 	model := NewExistingGenesisChecker(ctx)
 
 	// Simulate the loading completion
-	model.loading.EndContext = ctx
-	model.loading.Completing = true
+	model.Loading.EndContext = ctx
+	model.Loading.Completing = true
 	nextModel, _ := model.Update(tea.KeyMsg{})
 
 	// Expect transition to GenesisEndpointInput for Mainnet network
@@ -604,8 +604,8 @@ func TestExistingGenesisCheckerUpdate_ExistingGenesis(t *testing.T) {
 	model := NewExistingGenesisChecker(ctx)
 
 	// Simulate the loading completion
-	model.loading.EndContext = ctx
-	model.loading.Completing = true
+	model.Loading.EndContext = ctx
+	model.Loading.Completing = true
 	nextModel, _ := model.Update(tea.KeyMsg{})
 
 	// Expect transition to ExistingGenesisReplaceSelect when existingGenesis is true

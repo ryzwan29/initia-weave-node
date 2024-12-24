@@ -1,11 +1,13 @@
 package ui
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 
+	weavecontext "github.com/initia-labs/weave/context"
 	"github.com/initia-labs/weave/styles"
 )
 
@@ -15,6 +17,7 @@ type CheckBox[T any] struct {
 	Selected        map[int]bool // Tracks selected indices
 	ToggleTooltip   bool
 	Tooltips        *[]Tooltip
+	TooltipWidth    int
 	enableSelectAll bool
 }
 
@@ -98,7 +101,7 @@ func (s *CheckBox[T]) View() string {
 	if s.Tooltips != nil {
 		if s.ToggleTooltip {
 			tooltip := *s.Tooltips
-			b.WriteString(styles.RenderFooter("Ctrl+t to hide information.") + "\n" + tooltip[s.Cursor].View())
+			b.WriteString(styles.RenderFooter("Ctrl+t to hide information.") + "\n" + tooltip[s.Cursor].View(s.TooltipWidth))
 		} else {
 			b.WriteString(styles.RenderFooter("Ctrl+t to see more info for each option." + "\n"))
 		}
@@ -127,7 +130,7 @@ func (s *CheckBox[T]) ViewWithBottom(text string) string {
 	if s.Tooltips != nil {
 		if s.ToggleTooltip {
 			tooltip := *s.Tooltips
-			b.WriteString(styles.RenderFooter("Ctrl+t to hide information.") + "\n" + tooltip[s.Cursor].View())
+			b.WriteString(styles.RenderFooter("Ctrl+t to hide information.") + "\n" + tooltip[s.Cursor].View(s.TooltipWidth))
 		} else {
 			b.WriteString(styles.RenderFooter("Ctrl+t to see more info for each option." + "\n"))
 		}
@@ -157,4 +160,9 @@ func (s *CheckBox[T]) GetSelectedString() string {
 		return "None"
 	}
 	return strings.Join(selected[:], ", ")
+}
+
+func (s *CheckBox[T]) ViewTooltip(ctx context.Context) {
+	s.ToggleTooltip = weavecontext.GetTooltip(ctx)
+	s.TooltipWidth = weavecontext.GetWindowWidth(ctx)
 }

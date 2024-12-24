@@ -1,7 +1,9 @@
 package ui
 
 import (
+	"context"
 	"fmt"
+	weavecontext "github.com/initia-labs/weave/context"
 	"unicode"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -20,6 +22,7 @@ type TextInput struct {
 	CannotBack    bool
 	ToggleTooltip bool
 	Tooltip       *Tooltip
+	TooltipWidth  int
 }
 
 func NewTextInput(cannotBack bool) TextInput {
@@ -167,7 +170,7 @@ func (ti TextInput) View() string {
 
 	if ti.Tooltip != nil {
 		if ti.ToggleTooltip {
-			footerText += "\n" + styles.RenderFooter("Ctrl+t to hide information.") + "\n" + ti.Tooltip.View()
+			footerText += "\n" + styles.RenderFooter("Ctrl+t to hide information.") + "\n" + ti.Tooltip.View(ti.TooltipWidth)
 		} else {
 			footerText += "\n" + styles.RenderFooter("Ctrl+t to see more information.") + "\n"
 		}
@@ -222,4 +225,9 @@ func (ti TextInput) ViewErr(err error) string {
 
 	// Compose the full view string
 	return fmt.Sprintf("\n%s %s%s%s\n\n%s%s%s", styles.Text(">", styles.Cyan), beforeCursor, cursorChar, afterCursor, feedback, styles.RenderError(err), footerText)
+}
+
+func (ti *TextInput) ViewTooltip(ctx context.Context) {
+	ti.ToggleTooltip = weavecontext.GetTooltip(ctx)
+	ti.TooltipWidth = weavecontext.GetWindowWidth(ctx)
 }
