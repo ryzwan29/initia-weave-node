@@ -1,9 +1,14 @@
 package weaveinit
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
+
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/initia-labs/weave/analytics"
+	"github.com/initia-labs/weave/common"
 	weavecontext "github.com/initia-labs/weave/context"
 	"github.com/initia-labs/weave/models/initia"
 	"github.com/initia-labs/weave/models/minitia"
@@ -84,11 +89,17 @@ func (m *WeaveInit) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return model, cmd
 	}
 
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return m, m.HandlePanic(fmt.Errorf("cannot get user home directory: %v", err))
+	}
+
 	selected, cmd := m.Select(msg)
 	if selected != nil {
 		switch *selected {
 		case RunL1NodeOption:
-			ctx := weavecontext.NewAppContext(initia.RunL1NodeState{})
+			ctx := weavecontext.NewAppContext(initia.NewRunL1NodeState())
+			ctx = weavecontext.SetInitiaHome(ctx, filepath.Join(homeDir, common.InitiaDirectory))
 			analytics.TrackEvent("run_l1_node_selected", map[string]interface{}{"component": "node"})
 			model, err := initia.NewRunL1NodeNetworkSelect(ctx)
 			if err != nil {
@@ -96,12 +107,17 @@ func (m *WeaveInit) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return model, nil
 		case LaunchNewRollupOption:
+			ctx := weavecontext.NewAppContext(*minitia.NewLaunchState())
+			ctx = weavecontext.SetMinitiaHome(ctx, filepath.Join(homeDir, common.MinitiaDirectory))
 			analytics.TrackEvent("launch_new_rollup_selected", map[string]interface{}{"component": "rollup"})
-			minitiaChecker := minitia.NewExistingMinitiaChecker(weavecontext.NewAppContext(*minitia.NewLaunchState()))
+			minitiaChecker := minitia.NewExistingMinitiaChecker(ctx)
 			return minitiaChecker, minitiaChecker.Init()
 		case RunOPBotsOption:
+			ctx := weavecontext.NewAppContext(opinit_bots.NewOPInitBotsState())
+			ctx = weavecontext.SetMinitiaHome(ctx, filepath.Join(homeDir, common.MinitiaDirectory))
+			ctx = weavecontext.SetOPInitHome(ctx, filepath.Join(homeDir, common.OPinitDirectory))
 			analytics.TrackEvent("run_op_bots_selected", map[string]interface{}{"component": "opinit"})
-			model, err := opinit_bots.NewOPInitBotInitSelector(weavecontext.NewAppContext(opinit_bots.NewOPInitBotsState()))
+			model, err := opinit_bots.NewOPInitBotInitSelector(ctx)
 			if err != nil {
 				return m, m.HandlePanic(err)
 			}
@@ -121,5 +137,5 @@ func (m *WeaveInit) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *WeaveInit) View() string {
 	m.Selector.ViewTooltip(m.Ctx)
-	return styles.RenderPrompt("What do you want to do?", []string{}, styles.Question) + m.Selector.View()
+	return m.WrapView(styles.RenderPrompt("What do you want to do?", []string{}, styles.Question) + m.Selector.View())
 }

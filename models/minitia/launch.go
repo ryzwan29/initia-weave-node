@@ -2710,7 +2710,7 @@ func (m *FundGasStationBroadcastLoading) Init() tea.Cmd {
 func broadcastFundingFromGasStation(ctx context.Context) tea.Cmd {
 	return func() tea.Msg {
 		state := weavecontext.GetCurrentState[LaunchState](ctx)
-		txResult, err := NewL1SystemKeys(
+		systemKeys := NewL1SystemKeys(
 			&types.GenesisAccount{
 				Address: state.systemKeyBridgeExecutorAddress,
 				Coins:   state.systemKeyL1BridgeExecutorBalance,
@@ -2727,7 +2727,8 @@ func broadcastFundingFromGasStation(ctx context.Context) tea.Cmd {
 				Address: state.systemKeyChallengerAddress,
 				Coins:   state.systemKeyL1ChallengerBalance,
 			},
-		).FundAccountsWithGasStation(&state)
+		)
+		txResult, err := systemKeys.FundAccountsWithGasStation(&state)
 		if err != nil {
 			return ui.NonRetryableErrorLoading{Err: err}
 		}
