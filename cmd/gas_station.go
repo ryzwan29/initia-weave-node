@@ -6,6 +6,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 
+	"github.com/initia-labs/weave/analytics"
 	"github.com/initia-labs/weave/config"
 	weavecontext "github.com/initia-labs/weave/context"
 	"github.com/initia-labs/weave/cosmosutils"
@@ -30,11 +31,20 @@ func GasStationCommand() *cobra.Command {
 	return cmd
 }
 
+func GasStationPersistentPreRun(cmd *cobra.Command) {
+	analytics.SetGlobalEventProperties(map[string]interface{}{
+		"component": "gas-station",
+		"command":   cmd.CommandPath(),
+	})
+	analytics.TrackEvent("run", nil)
+}
+
 func gasStationSetupCommand() *cobra.Command {
 	setupCmd := &cobra.Command{
 		Use:   "setup",
 		Short: "Setup Gas Station account on Initia and Celestia for funding the OPinit-bots or relayer to send transactions.",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			GasStationPersistentPreRun(cmd)
 			ctx := weavecontext.NewAppContext(models.NewExistingCheckerState())
 			if finalModel, err := tea.NewProgram(models.NewGasStationMethodSelect(ctx), tea.WithAltScreen()).Run(); err != nil {
 				return err

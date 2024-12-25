@@ -6,17 +6,27 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 
+	"github.com/initia-labs/weave/analytics"
 	"github.com/initia-labs/weave/config"
 	weavecontext "github.com/initia-labs/weave/context"
 	"github.com/initia-labs/weave/models"
 	"github.com/initia-labs/weave/models/weaveinit"
 )
 
+func InitPersistentPreRun(cmd *cobra.Command) {
+	analytics.SetGlobalEventProperties(map[string]interface{}{
+		"component": "init",
+		"command":   cmd.CommandPath(),
+	})
+	analytics.TrackEvent("run", nil)
+}
+
 func InitCommand() *cobra.Command {
 	initCmd := &cobra.Command{
 		Use:   "init",
 		Short: "Initialize Weave CLI, funding gas station and setting up config.",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			InitPersistentPreRun(cmd)
 			if config.IsFirstTimeSetup() {
 				ctx := weavecontext.NewAppContext(models.NewExistingCheckerState())
 

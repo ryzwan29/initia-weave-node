@@ -11,6 +11,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 
+	"github.com/initia-labs/weave/analytics"
 	"github.com/initia-labs/weave/common"
 	"github.com/initia-labs/weave/config"
 	weavecontext "github.com/initia-labs/weave/context"
@@ -45,6 +46,14 @@ func MinitiaCommand() *cobra.Command {
 	)
 
 	return cmd
+}
+
+func MinitiaPersistentPreRun(cmd *cobra.Command) {
+	analytics.SetGlobalEventProperties(map[string]interface{}{
+		"component": "rollup",
+		"command":   cmd.CommandPath(),
+	})
+	analytics.TrackEvent("run", nil)
 }
 
 func validateVMFlag(vmValue string) error {
@@ -103,6 +112,7 @@ func minitiaLaunchCommand() *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			MinitiaPersistentPreRun(cmd)
 			minitiaHome, err := cmd.Flags().GetString(FlagMinitiaHome)
 			if err != nil {
 				return err

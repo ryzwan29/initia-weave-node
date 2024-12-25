@@ -8,6 +8,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 
+	"github.com/initia-labs/weave/analytics"
 	"github.com/initia-labs/weave/common"
 	weavecontext "github.com/initia-labs/weave/context"
 	"github.com/initia-labs/weave/models/initia"
@@ -33,11 +34,20 @@ func InitiaCommand() *cobra.Command {
 	return cmd
 }
 
+func InitiaPersistentPreRun(cmd *cobra.Command) {
+	analytics.SetGlobalEventProperties(map[string]interface{}{
+		"component": "initia",
+		"command":   cmd.CommandPath(),
+	})
+	analytics.TrackEvent("run", nil)
+}
+
 func initiaInitCommand() *cobra.Command {
 	initCmd := &cobra.Command{
 		Use:   "init",
 		Short: "Bootstrap your Initia full node",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			InitiaPersistentPreRun(cmd)
 			initiaHome, err := cmd.Flags().GetString(FlagInitiaHome)
 			if err != nil {
 				return err
@@ -49,6 +59,7 @@ func initiaInitCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
+
 			if finalModel, err := tea.NewProgram(model, tea.WithAltScreen()).Run(); err != nil {
 				return err
 			} else {

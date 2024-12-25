@@ -3,10 +3,12 @@ package weaveinit
 import (
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/initia-labs/weave/analytics"
 	weavecontext "github.com/initia-labs/weave/context"
 	"github.com/initia-labs/weave/models/initia"
 	"github.com/initia-labs/weave/models/minitia"
 	"github.com/initia-labs/weave/models/opinit_bots"
+	"github.com/initia-labs/weave/models/relayer"
 	"github.com/initia-labs/weave/styles"
 	"github.com/initia-labs/weave/types"
 	"github.com/initia-labs/weave/ui"
@@ -87,16 +89,26 @@ func (m *WeaveInit) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch *selected {
 		case RunL1NodeOption:
 			ctx := weavecontext.NewAppContext(initia.RunL1NodeState{})
+			analytics.TrackEvent("run_l1_node_selected", map[string]interface{}{"component": "node"})
 			model, err := initia.NewRunL1NodeNetworkSelect(ctx)
 			if err != nil {
 				return m, m.HandlePanic(err)
 			}
 			return model, nil
 		case LaunchNewRollupOption:
+			analytics.TrackEvent("launch_new_rollup_selected", map[string]interface{}{"component": "rollup"})
 			minitiaChecker := minitia.NewExistingMinitiaChecker(weavecontext.NewAppContext(*minitia.NewLaunchState()))
 			return minitiaChecker, minitiaChecker.Init()
 		case RunOPBotsOption:
+			analytics.TrackEvent("run_op_bots_selected", map[string]interface{}{"component": "opinit"})
 			model, err := opinit_bots.NewOPInitBotInitSelector(weavecontext.NewAppContext(opinit_bots.NewOPInitBotsState()))
+			if err != nil {
+				return m, m.HandlePanic(err)
+			}
+			return model, nil
+		case RunRelayerOption:
+			analytics.TrackEvent("run_relayer_selected", map[string]interface{}{"component": "relayer"})
+			model, err := relayer.NewRollupSelect(weavecontext.NewAppContext(relayer.NewRelayerState()))
 			if err != nil {
 				return m, m.HandlePanic(err)
 			}

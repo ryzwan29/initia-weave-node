@@ -9,6 +9,7 @@ import (
 	"github.com/fynelabs/selfupdate"
 	"github.com/spf13/cobra"
 
+	"github.com/initia-labs/weave/analytics"
 	"github.com/initia-labs/weave/common"
 	"github.com/initia-labs/weave/cosmosutils"
 	"github.com/initia-labs/weave/io"
@@ -32,6 +33,14 @@ func VersionCommand() *cobra.Command {
 	return versionCmd
 }
 
+func UpgradePersistentPreRun(cmd *cobra.Command) {
+	analytics.SetGlobalEventProperties(map[string]interface{}{
+		"component": "upgrade",
+		"command":   cmd.CommandPath(),
+	})
+	analytics.TrackEvent("run", nil)
+}
+
 func UpgradeCommand() *cobra.Command {
 	upgradeCmd := &cobra.Command{
 		Use:   "upgrade [version]",
@@ -47,6 +56,7 @@ Examples:
 If the specified version does not exist, an error will be shown with a link to the available releases.`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			UpgradePersistentPreRun(cmd)
 			requestedVersion := ""
 			if len(args) > 0 {
 				requestedVersion = args[0]

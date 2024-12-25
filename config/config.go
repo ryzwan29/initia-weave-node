@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/google/uuid"
 	"github.com/spf13/viper"
 
 	"github.com/initia-labs/weave/common"
@@ -87,6 +88,25 @@ func IsFirstTimeSetup() bool {
 
 func GetGasStationMnemonic() string {
 	return GetConfig("common.gas_station_mnemonic").(string)
+}
+
+func AnalyticsOptOut() bool {
+	if GetConfig("common.analytics_opt_out") == nil {
+		_ = SetConfig("common.analytics_opt_out", false)
+		return false
+	}
+
+	return GetConfig("common.analytics_opt_out").(bool)
+}
+
+func GetAnalyticsDeviceID() string {
+	if GetConfig("common.analytics_device_id") == nil {
+		deviceID := uuid.New().String()
+		_ = SetConfig("common.analytics_device_id", deviceID)
+		return deviceID
+	}
+
+	return GetConfig("common.analytics_device_id").(string)
 }
 
 const DefaultConfigTemplate = `{}`
