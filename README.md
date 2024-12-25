@@ -11,7 +11,7 @@ Weave is the only CLI tool you'll need for developing, testing, and running Inte
 
 ## Building from Scratch
 
-This project requires Go `1.22` or higher.
+This project requires Go `1.23` or higher.
 
 To get started with Weave, ensure Go is installed on your system. Then, clone the repository and build and install the project by running:
 

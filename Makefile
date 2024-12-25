@@ -1,7 +1,7 @@
 #!/usr/bin/make -f
 
 # Go version and build settings
-GO_VERSION := 1.22
+GO_VERSION := 1.23
 GO_SYSTEM_VERSION := $(shell go version | cut -c 14- | cut -d' ' -f1 | cut -d'.' -f1-2)
 REQUIRE_GO_VERSION := $(GO_VERSION)
 
