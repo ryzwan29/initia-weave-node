@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"time"
 
 	"github.com/initia-labs/weave/common"
 	"github.com/initia-labs/weave/config"
@@ -106,6 +107,10 @@ func (lsk *L1SystemKeys) FundAccountsWithGasStation(state *LaunchState) (*FundAc
 		if txResponse.Code != 0 {
 			return nil, fmt.Errorf("celestia tx failed with error: %v", txResponse.RawLog)
 		}
+		err = lsk.waitForTransactionInclusion(state.celestiaBinaryPath, celestiaRpc, txResponse.TxHash)
+		if err != nil {
+			return nil, err
+		}
 		resp.CelestiaTx = &txResponse
 	} else {
 		rawTxContent = fmt.Sprintf(
@@ -157,9 +162,53 @@ func (lsk *L1SystemKeys) FundAccountsWithGasStation(state *LaunchState) (*FundAc
 	if txResponse.Code != 0 {
 		return nil, fmt.Errorf("initia l1 tx failed with error: %v", txResponse.RawLog)
 	}
+
+	err = lsk.waitForTransactionInclusion(state.binaryPath, state.l1RPC, txResponse.TxHash)
+	if err != nil {
+		return nil, err
+	}
 	resp.InitiaTx = &txResponse
 
 	return &resp, nil
+}
+
+// waitForTransactionInclusion polls for the transaction inclusion in a block
+func (lsk *L1SystemKeys) waitForTransactionInclusion(binaryPath, rpcURL, txHash string) error {
+	// Poll for transaction status until it's included in a block
+	timeout := time.After(5 * time.Second) // Example timeout for polling
+	ticker := time.NewTicker(time.Second)  // Poll every second
+	defer ticker.Stop()                    // Ensure cleanup of ticker resource
+
+	for {
+		select {
+		case <-timeout:
+			return fmt.Errorf("transaction not included in block within timeout")
+		case <-ticker.C:
+			// Query transaction status
+			statusCmd := exec.Command(binaryPath, "query", "tx", txHash, "--node", rpcURL, "--output", "json")
+			statusRes, err := statusCmd.CombinedOutput()
+			// If the transaction is not included in a block yet, just continue polling
+			if err != nil {
+				// You can add more detailed error handling here if needed,
+				// but for now, we continue polling if it returns an error (i.e., "not found" or similar).
+				continue
+			}
+
+			var txResponse cosmosutils.MinimalTxResponse
+			err = json.Unmarshal(statusRes, &txResponse)
+			if err != nil {
+				return fmt.Errorf("failed to unmarshal transaction JSON response: %v", err)
+			}
+			if txResponse.Code == 0 { // Successful transaction
+				// Transaction successfully included in block
+				return nil
+			} else {
+				return fmt.Errorf("tx failed with error: %v", txResponse.RawLog)
+			}
+
+			// If the transaction is not in a block yet, continue polling
+		}
+	}
 }
 
 const FundMinitiaAccountsDefaultTxInterface = `
