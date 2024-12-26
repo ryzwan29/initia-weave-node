@@ -5,6 +5,7 @@ const (
 	FlagN          = "n"
 	FlagVm         = "vm"
 	FlagWithConfig = "with-config"
+	FlagKeyFile    = "key-file"
 	FlagDetach     = "detach"
 
 	FlagInitiaHome  = "initia-dir"
