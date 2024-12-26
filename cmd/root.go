@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"github.com/initia-labs/weave/analytics"
 	"github.com/initia-labs/weave/config"
 )
 
@@ -21,6 +22,12 @@ func Execute() error {
 			if err := config.InitializeConfig(); err != nil {
 				return err
 			}
+			analytics.Initialize(Version)
+			return nil
+		},
+		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
+			analytics.Client.Flush()
+			analytics.Client.Shutdown()
 			return nil
 		},
 	}
@@ -34,6 +41,7 @@ func Execute() error {
 		MinitiaCommand(),
 		OPInitBotsCommand(),
 		RelayerCommand(),
+		AnalyticsCommand(),
 	)
 
 	return rootCmd.ExecuteContext(context.Background())
