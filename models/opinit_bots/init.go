@@ -1240,9 +1240,12 @@ func WaitSetupOPInitBotsMissingKey(ctx context.Context) tea.Cmd {
 }
 
 func InitializeExecutorWithConfig(config ExecutorConfig, keyFile *KeyFile, opInitHome, userHome string) error {
-	ensureOPInitBotsBinary(userHome)
+	err := ensureOPInitBotsBinary(userHome)
+	if err != nil {
+		return err
+	}
 	binaryPath := filepath.Join(userHome, common.WeaveDataDirectory, fmt.Sprintf("opinitd@%s", OpinitBotBinaryVersion), AppName)
-	_, err := cosmosutils.OPInitRecoverKeyFromMnemonic(binaryPath, BridgeExecutorKeyName, keyFile.BridgeExecutor, false, opInitHome)
+	_, err = cosmosutils.OPInitRecoverKeyFromMnemonic(binaryPath, BridgeExecutorKeyName, keyFile.BridgeExecutor, false, opInitHome)
 	if err != nil {
 		return err
 	}
@@ -1307,9 +1310,12 @@ func InitializeExecutorWithConfig(config ExecutorConfig, keyFile *KeyFile, opIni
 }
 
 func InitializeChallengerWithConfig(config ChallengerConfig, keyFile *KeyFile, opInitHome, userHome string) error {
-	ensureOPInitBotsBinary(userHome)
+	err := ensureOPInitBotsBinary(userHome)
+	if err != nil {
+		return err
+	}
 	binaryPath := filepath.Join(userHome, common.WeaveDataDirectory, fmt.Sprintf("opinitd@%s", OpinitBotBinaryVersion), AppName)
-	_, err := cosmosutils.OPInitRecoverKeyFromMnemonic(binaryPath, ChallengerKeyName, keyFile.Challenger, false, opInitHome)
+	_, err = cosmosutils.OPInitRecoverKeyFromMnemonic(binaryPath, ChallengerKeyName, keyFile.Challenger, false, opInitHome)
 	if err != nil {
 		return err
 	}
