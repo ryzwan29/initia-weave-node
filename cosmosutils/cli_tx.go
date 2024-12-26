@@ -97,9 +97,9 @@ func (te *InitiadTxExecutor) BroadcastMsgSend(senderMnemonic, recipientAddress, 
 
 func (te *InitiadTxExecutor) waitForTransactionInclusion(rpcURL, txHash string) error {
 	// Poll for transaction status until it's included in a block
-	timeout := time.After(5 * time.Second) // Example timeout for polling
-	ticker := time.NewTicker(time.Second)  // Poll every second
-	defer ticker.Stop()                    // Ensure cleanup of ticker resource
+	timeout := time.After(15 * time.Second)   // Example timeout for polling
+	ticker := time.NewTicker(3 * time.Second) // Poll every 3 seconds
+	defer ticker.Stop()                       // Ensure cleanup of ticker resource
 
 	for {
 		select {
