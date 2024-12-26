@@ -41,6 +41,7 @@ func Execute() error {
 		MinitiaCommand(),
 		OPInitBotsCommand(),
 		RelayerCommand(),
+		AnalyticsCommand(),
 	)
 
 	return rootCmd.ExecuteContext(context.Background())

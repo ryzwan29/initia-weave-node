@@ -6,10 +6,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-const (
-	AmplitudeKey = "aba1be3e2335dd5b8b060e977d93410b"
-)
-
 // Key is a custom type to prevent key collisions in the context
 type Key string
 

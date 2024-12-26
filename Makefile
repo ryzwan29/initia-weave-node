@@ -26,6 +26,9 @@ check_version:
 # Build settings
 LDFLAGS := -X github.com/initia-labs/weave/cmd.Version=$(WEAVE_VERSION)
 
+dev: check_version
+	go install -ldflags "$(LDFLAGS) -X github.com/initia-labs/weave/config.DevMode=true" .
+
 # Build targets
 build: check_version $(BUILDDIR)
 	go build -mod=readonly -ldflags "$(LDFLAGS)" -o $(BUILDDIR)/weave .

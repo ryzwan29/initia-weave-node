@@ -11,6 +11,8 @@ import (
 	"github.com/initia-labs/weave/common"
 )
 
+var DevMode string
+
 func InitializeConfig() error {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
@@ -91,6 +93,11 @@ func GetGasStationMnemonic() string {
 }
 
 func AnalyticsOptOut() bool {
+	// In dev mode, always opt out
+	if DevMode == "true" {
+		return true
+	}
+
 	if GetConfig("common.analytics_opt_out") == nil {
 		_ = SetConfig("common.analytics_opt_out", false)
 		return false
@@ -107,6 +114,10 @@ func GetAnalyticsDeviceID() string {
 	}
 
 	return GetConfig("common.analytics_device_id").(string)
+}
+
+func SetAnalyticsOptOut(optOut bool) error {
+	return SetConfig("common.analytics_opt_out", optOut)
 }
 
 const DefaultConfigTemplate = `{}`
