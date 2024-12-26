@@ -169,7 +169,11 @@ func (m *GenerateGasStationLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.Ctx = m.Loading.EndContext
 		state := weavecontext.PushPageAndGetState[ExistingCheckerState](m)
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "Gas Station account has been successfully generated.", []string{}, ""))
-		err := io.CopyToClipboard(state.generatedMnemonic)
+		gasStationAddress, err := crypto.MnemonicToBech32Address("init", state.generatedMnemonic)
+		if err != nil {
+			return m, m.HandlePanic(fmt.Errorf("failed to convert mnemonic to bech32 address: %w", err))
+		}
+		err = io.CopyToClipboard(styles.MnemonicText("Gas Station", gasStationAddress, state.generatedMnemonic))
 		if err != nil {
 			return m, m.HandlePanic(err)
 		}
@@ -236,7 +240,8 @@ func (m *GasStationMnemonicDisplayInput) View() string {
 	return m.WrapView(InitHeader(state.isFirstTime) + "\n" + state.weave.Render() + "\n" +
 		styles.BoldUnderlineText("Important", styles.Yellow) + "\n" +
 		styles.Text("Write down these mnemonic phrases and store them in a safe place. \nIt is the only way to recover your system keys.", styles.Yellow) + "\n\n" +
-		mnemonicText + styles.RenderPrompt(m.GetQuestion(), []string{"`continue`"}, styles.Question) + m.TextInput.View())
+		mnemonicText + styles.Text("The generated mnemonic has been copied to your clipboard", styles.Yellow) + "\n" +
+		styles.RenderPrompt(m.GetQuestion(), []string{"`continue`"}, styles.Question) + m.TextInput.View())
 }
 
 type GasStationMnemonicInput struct {

@@ -2605,7 +2605,8 @@ func (m *SystemKeysMnemonicDisplayInput) View() string {
 	return m.WrapView(state.weave.Render() + "\n" +
 		styles.BoldUnderlineText("Important", styles.Yellow) + "\n" +
 		styles.Text("Write down these mnemonic phrases and store them in a safe place. \nIt is the only way to recover your system keys.", styles.Yellow) + "\n\n" +
-		mnemonicText + styles.RenderPrompt(m.GetQuestion(), []string{"`continue`"}, styles.Question) + m.TextInput.View())
+		mnemonicText + styles.Text("The generated mnemonic has been copied to your clipboard", styles.Yellow) + "\n" +
+		styles.RenderPrompt(m.GetQuestion(), []string{"`continue`"}, styles.Question) + m.TextInput.View())
 }
 
 type FundGasStationConfirmationInput struct {

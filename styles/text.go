@@ -221,7 +221,7 @@ func RenderMnemonic(keyName, address, mnemonic string) string {
 }
 
 func MnemonicText(keyName, address, mnemonic string) string {
-	return fmt.Sprintf("Key Name: %s\nAddress: %s\nMnemonic:%s\n", keyName, address, mnemonic)
+	return fmt.Sprintf("Key Name: %s\nAddress: %s\nMnemonic: %s\n", keyName, address, mnemonic)
 }
 
 func CreateFrame(text string, maxWidth int) string {
