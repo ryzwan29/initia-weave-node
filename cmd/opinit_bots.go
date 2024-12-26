@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -148,7 +147,7 @@ func handleWithConfig(userHome, opInitHome, configPath, keyFilePath string, args
 		return err
 	}
 	// Read and unmarshal config file data
-	fileData, err := ioutil.ReadFile(configPath)
+	fileData, err := os.ReadFile(configPath)
 	if err != nil {
 		return err
 	}
@@ -171,7 +170,7 @@ func handleWithConfig(userHome, opInitHome, configPath, keyFilePath string, args
 
 // Read and unmarshal the key file into the KeyFile struct
 func readAndUnmarshalKeyFile(keyFilePath string) (opinit_bots.KeyFile, error) {
-	fileData, err := ioutil.ReadFile(keyFilePath)
+	fileData, err := os.ReadFile(keyFilePath)
 	if err != nil {
 		return opinit_bots.KeyFile{}, err
 	}
