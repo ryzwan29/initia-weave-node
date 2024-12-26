@@ -13,20 +13,12 @@ import (
 	"github.com/initia-labs/weave/models/weaveinit"
 )
 
-func InitPersistentPreRun(cmd *cobra.Command) {
-	analytics.SetGlobalEventProperties(map[string]interface{}{
-		"component": "init",
-		"command":   cmd.CommandPath(),
-	})
-	analytics.TrackEvent("run", nil)
-}
-
 func InitCommand() *cobra.Command {
 	initCmd := &cobra.Command{
 		Use:   "init",
 		Short: "Initialize Weave CLI, funding gas station and setting up config.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			InitPersistentPreRun(cmd)
+			analytics.TrackRunEvent(cmd, analytics.InitComponent)
 			if config.IsFirstTimeSetup() {
 				ctx := weavecontext.NewAppContext(models.NewExistingCheckerState())
 

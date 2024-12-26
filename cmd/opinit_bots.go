@@ -66,14 +66,6 @@ func OPInitBotsCommand() *cobra.Command {
 	return cmd
 }
 
-func OPInitBotsPersistentPreRun(cmd *cobra.Command) {
-	analytics.SetGlobalEventProperties(map[string]interface{}{
-		"component": "opinit",
-		"command":   cmd.CommandPath(),
-	})
-	analytics.TrackEvent("run", nil)
-}
-
 type HomeConfig struct {
 	MinitiaHome string
 	OPInitHome  string
@@ -108,7 +100,7 @@ func OPInitBotsKeysSetupCommand() *cobra.Command {
 		Use:   "setup-keys",
 		Short: "Setup keys for OPInit bots",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			OPInitBotsPersistentPreRun(cmd)
+			analytics.TrackRunEvent(cmd, analytics.OPinitComponent)
 			minitiaHome, _ := cmd.Flags().GetString(FlagMinitiaHome)
 			opInitHome, _ := cmd.Flags().GetString(FlagOPInitHome)
 
@@ -146,7 +138,7 @@ Alternatively, you can specify a bot name as an argument to skip the selection. 
 Example: weave opinit init executor`,
 		Args: ValidateOPinitOptionalBotNameArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			OPInitBotsPersistentPreRun(cmd)
+			analytics.TrackRunEvent(cmd, analytics.OPinitComponent)
 			minitiaHome, _ := cmd.Flags().GetString(FlagMinitiaHome)
 			opInitHome, _ := cmd.Flags().GetString(FlagOPInitHome)
 
@@ -320,7 +312,7 @@ func OPInitBotsResetCommand() *cobra.Command {
 Valid options are [executor, challenger] eg. weave opinit reset challenger`,
 		Args: ValidateOPinitBotNameArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			OPInitBotsPersistentPreRun(cmd)
+			analytics.TrackRunEvent(cmd, analytics.OPinitComponent)
 			userHome, err := os.UserHomeDir()
 			if err != nil {
 				return fmt.Errorf("error getting user home directory: %v", err)

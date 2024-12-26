@@ -31,20 +31,12 @@ func GasStationCommand() *cobra.Command {
 	return cmd
 }
 
-func GasStationPersistentPreRun(cmd *cobra.Command) {
-	analytics.SetGlobalEventProperties(map[string]interface{}{
-		"component": "gas-station",
-		"command":   cmd.CommandPath(),
-	})
-	analytics.TrackEvent("run", nil)
-}
-
 func gasStationSetupCommand() *cobra.Command {
 	setupCmd := &cobra.Command{
 		Use:   "setup",
 		Short: "Setup Gas Station account on Initia and Celestia for funding the OPinit-bots or relayer to send transactions.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			GasStationPersistentPreRun(cmd)
+			analytics.TrackRunEvent(cmd, analytics.GasStationComponent)
 			ctx := weavecontext.NewAppContext(models.NewExistingCheckerState())
 			if finalModel, err := tea.NewProgram(models.NewGasStationMethodSelect(ctx), tea.WithAltScreen()).Run(); err != nil {
 				return err

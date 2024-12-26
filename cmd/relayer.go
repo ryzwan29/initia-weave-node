@@ -36,20 +36,12 @@ func RelayerCommand() *cobra.Command {
 	return cmd
 }
 
-func RelayerPersistentPreRun(cmd *cobra.Command) {
-	analytics.SetGlobalEventProperties(map[string]interface{}{
-		"component": "relayer",
-		"command":   cmd.CommandPath(),
-	})
-	analytics.TrackEvent("run", nil)
-}
-
 func relayerInitCommand() *cobra.Command {
 	initCmd := &cobra.Command{
 		Use:   "init",
 		Short: "Initialize and configure your Hermes relayer for IBC",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			RelayerPersistentPreRun(cmd)
+			analytics.TrackRunEvent(cmd, analytics.RelayerComponent)
 			ctx := weavecontext.NewAppContext(relayer.NewRelayerState())
 			minitiaHome, _ := cmd.Flags().GetString(FlagMinitiaHome)
 			ctx = weavecontext.SetMinitiaHome(ctx, minitiaHome)

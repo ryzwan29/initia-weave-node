@@ -34,20 +34,12 @@ func InitiaCommand() *cobra.Command {
 	return cmd
 }
 
-func InitiaPersistentPreRun(cmd *cobra.Command) {
-	analytics.SetGlobalEventProperties(map[string]interface{}{
-		"component": "initia",
-		"command":   cmd.CommandPath(),
-	})
-	analytics.TrackEvent("run", nil)
-}
-
 func initiaInitCommand() *cobra.Command {
 	initCmd := &cobra.Command{
 		Use:   "init",
 		Short: "Bootstrap your Initia full node",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			InitiaPersistentPreRun(cmd)
+			analytics.TrackRunEvent(cmd, analytics.InitComponent)
 			initiaHome, err := cmd.Flags().GetString(FlagInitiaHome)
 			if err != nil {
 				return err

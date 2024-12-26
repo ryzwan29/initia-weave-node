@@ -48,14 +48,6 @@ func MinitiaCommand() *cobra.Command {
 	return cmd
 }
 
-func MinitiaPersistentPreRun(cmd *cobra.Command) {
-	analytics.SetGlobalEventProperties(map[string]interface{}{
-		"component": "rollup",
-		"command":   cmd.CommandPath(),
-	})
-	analytics.TrackEvent("run", nil)
-}
-
 func validateVMFlag(vmValue string) error {
 	for _, option := range validVMOptions {
 		if vmValue == option {
@@ -112,7 +104,7 @@ func minitiaLaunchCommand() *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			MinitiaPersistentPreRun(cmd)
+			analytics.TrackRunEvent(cmd, analytics.RollupComponent)
 			minitiaHome, err := cmd.Flags().GetString(FlagMinitiaHome)
 			if err != nil {
 				return err

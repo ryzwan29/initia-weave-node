@@ -24,14 +24,6 @@ func AnalyticsCommand() *cobra.Command {
 	return cmd
 }
 
-func AnalyticsPersistentPreRun(cmd *cobra.Command) {
-	analytics.SetGlobalEventProperties(map[string]interface{}{
-		"component": "analytics",
-		"command":   cmd.CommandPath(),
-	})
-	analytics.TrackEvent("run", nil)
-}
-
 func AnalyticsEnableCommand() *cobra.Command {
 	enableCmd := &cobra.Command{
 		Use:   "enable",
@@ -46,7 +38,7 @@ func AnalyticsEnableCommand() *cobra.Command {
 			analytics.Initialize(Version)
 
 			// Run after setting the config so the event is tracked
-			AnalyticsPersistentPreRun(cmd)
+			analytics.TrackRunEvent(cmd, analytics.AnalyticsComponent)
 			fmt.Println("Analytics enabled")
 			return nil
 		},
@@ -60,7 +52,7 @@ func AnalyticsDisableCommand() *cobra.Command {
 		Use:   "disable",
 		Short: "Do not allow Weave to collect analytics data",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			AnalyticsPersistentPreRun(cmd)
+			analytics.TrackRunEvent(cmd, analytics.AnalyticsComponent)
 
 			err := config.SetAnalyticsOptOut(true)
 			if err != nil {

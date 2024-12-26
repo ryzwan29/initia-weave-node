@@ -6,10 +6,7 @@ import (
 
 	"github.com/amplitude/analytics-go/amplitude"
 	"github.com/initia-labs/weave/config"
-)
-
-const (
-	AmplitudeKey = "aba1be3e2335dd5b8b060e977d93410b"
+	"github.com/spf13/cobra"
 )
 
 var (
@@ -46,11 +43,17 @@ func Initialize(weaveVersion string) {
 	SessionID = time.Now().Unix()
 }
 
-func SetGlobalEventProperties(properties map[string]interface{}) {
-	GlobalEventProperties = properties
+func AppendGlobalEventProperties(properties map[string]interface{}) {
+	if GlobalEventProperties == nil {
+		GlobalEventProperties = make(map[string]interface{})
+	}
+
+	for k, v := range properties {
+		GlobalEventProperties[k] = v
+	}
 }
 
-func TrackEvent(eventName string, overrideProperties map[string]interface{}) {
+func TrackEvent(eventType Event, overrideProperties map[string]interface{}) {
 	eventProperties := make(map[string]interface{})
 	for k, v := range GlobalEventProperties {
 		eventProperties[k] = v
@@ -61,11 +64,19 @@ func TrackEvent(eventName string, overrideProperties map[string]interface{}) {
 	}
 
 	Client.Track(amplitude.Event{
-		EventType: eventName,
+		EventType: string(eventType),
 		EventOptions: amplitude.EventOptions{
 			DeviceID:  config.GetAnalyticsDeviceID(),
 			SessionID: int(SessionID),
 		},
 		EventProperties: eventProperties,
 	})
+}
+
+func TrackRunEvent(cmd *cobra.Command, component Component) {
+	AppendGlobalEventProperties(map[string]interface{}{
+		ComponentEventKey: component,
+		CommandEventKey:   cmd.CommandPath(),
+	})
+	TrackEvent(RunEvent, nil)
 }
