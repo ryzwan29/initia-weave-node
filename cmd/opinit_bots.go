@@ -2,7 +2,9 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -14,6 +16,7 @@ import (
 	"github.com/initia-labs/weave/common"
 	weavecontext "github.com/initia-labs/weave/context"
 	"github.com/initia-labs/weave/cosmosutils"
+	"github.com/initia-labs/weave/io"
 	"github.com/initia-labs/weave/models/opinit_bots"
 	"github.com/initia-labs/weave/service"
 )
@@ -131,6 +134,97 @@ func OPInitBotsKeysSetupCommand() *cobra.Command {
 	return setupCmd
 }
 
+func handleWithConfig(userHome, opInitHome, configPath, keyFilePath string, args []string, force bool) error {
+	if !io.FileOrFolderExists(keyFilePath) {
+		return fmt.Errorf("key file is missing at path: %s", keyFilePath)
+	}
+
+	// Read and unmarshal key file data
+	keyFile, err := readAndUnmarshalKeyFile(keyFilePath)
+	if err != nil {
+		return err
+	}
+
+	// Handle existing opInitHome directory
+	if err := handleExistingOpInitHome(opInitHome, force); err != nil {
+		return err
+	}
+	// Read and unmarshal config file data
+	fileData, err := ioutil.ReadFile(configPath)
+	if err != nil {
+		return err
+	}
+
+	// Process bot config based on arguments
+	if len(args) != 1 {
+		return fmt.Errorf("please specify bot name")
+	}
+
+	botName := args[0]
+	switch botName {
+	case "executor":
+		return initializeBotWithConfig(fileData, keyFile, opInitHome, userHome, "executor")
+	case "challenger":
+		return initializeBotWithConfig(fileData, keyFile, opInitHome, userHome, "challenger")
+	default:
+		return fmt.Errorf("invalid bot name provided: %s", botName)
+	}
+}
+
+// Read and unmarshal the key file into the KeyFile struct
+func readAndUnmarshalKeyFile(keyFilePath string) (opinit_bots.KeyFile, error) {
+	fileData, err := ioutil.ReadFile(keyFilePath)
+	if err != nil {
+		return opinit_bots.KeyFile{}, err
+	}
+
+	var keyFile opinit_bots.KeyFile
+	err = json.Unmarshal(fileData, &keyFile)
+	return keyFile, err
+}
+
+// Handle the case where the opInitHome directory exists
+func handleExistingOpInitHome(opInitHome string, force bool) error {
+	if io.FileOrFolderExists(opInitHome) {
+		if force {
+			if err := io.DeleteDirectory(opInitHome); err != nil {
+				return fmt.Errorf("failed to delete %s: %v", opInitHome, err)
+			}
+		} else {
+			return fmt.Errorf("existing %s folder detected. Use --force or -f to override", opInitHome)
+		}
+	}
+	return nil
+}
+
+// Initialize a bot based on the provided config
+func initializeBotWithConfig(fileData []byte, keyFile opinit_bots.KeyFile, opInitHome, userHome, botName string) error {
+	var err error
+
+	switch botName {
+	case "executor":
+		var config opinit_bots.ExecutorConfig
+		err = json.Unmarshal(fileData, &config)
+		if err != nil {
+			return err
+		}
+		err = opinit_bots.InitializeExecutorWithConfig(config, &keyFile, opInitHome, userHome)
+	case "challenger":
+		var config opinit_bots.ChallengerConfig
+		err = json.Unmarshal(fileData, &config)
+		if err != nil {
+			return err
+		}
+		err = opinit_bots.InitializeChallengerWithConfig(config, &keyFile, opInitHome, userHome)
+	}
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("OPInit bot setup successfully. Config file is saved at %s. Feel free to modify it as needed.\n", filepath.Join(opInitHome, fmt.Sprintf("%s.json", botName)))
+	return nil
+}
+
 func OPInitBotsInitCommand() *cobra.Command {
 	initCmd := &cobra.Command{
 		Use:   "init [bot-name]",
@@ -143,10 +237,17 @@ Example: weave opinit init executor`,
 			analytics.TrackRunEvent(cmd, args, analytics.OPinitComponent)
 			minitiaHome, _ := cmd.Flags().GetString(FlagMinitiaHome)
 			opInitHome, _ := cmd.Flags().GetString(FlagOPInitHome)
+			force, _ := cmd.Flags().GetBool(FlagForce)
+			configPath, _ := cmd.Flags().GetString(FlagWithConfig)
+			keyFilePath, _ := cmd.Flags().GetString(FlagKeyFile)
 
 			userHome, err := os.UserHomeDir()
 			if err != nil {
 				return fmt.Errorf("error getting user home directory: %v", err)
+			}
+
+			if io.FileOrFolderExists(configPath) {
+				return handleWithConfig(userHome, opInitHome, configPath, keyFilePath, args, force)
 			}
 
 			var rootProgram func(ctx context.Context) (tea.Model, error)
@@ -184,6 +285,9 @@ Example: weave opinit init executor`,
 
 	initCmd.Flags().String(FlagMinitiaHome, filepath.Join(homeDir, common.MinitiaDirectory), "Rollup application directory to fetch artifacts from if existed")
 	initCmd.Flags().String(FlagOPInitHome, filepath.Join(homeDir, common.OPinitDirectory), "OPInit bots home directory")
+	initCmd.Flags().String(FlagWithConfig, "", "launch using an existing bot config file. The argument should be the path to the config file")
+	initCmd.Flags().String(FlagKeyFile, "", "path to key-file.json")
+	initCmd.Flags().BoolP(FlagForce, "f", false, "force the launch by deleting the existing .opinit directory if it exists.")
 
 	return initCmd
 }

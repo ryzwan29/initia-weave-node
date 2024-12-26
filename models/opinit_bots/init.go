@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -1236,4 +1237,167 @@ func WaitSetupOPInitBotsMissingKey(ctx context.Context) tea.Cmd {
 			Ctx: ctx,
 		}
 	}
+}
+
+func InitializeExecutorWithConfig(config ExecutorConfig, keyFile *KeyFile, opInitHome, userHome string) error {
+	ensureOPInitBotsBinary(userHome)
+	binaryPath := filepath.Join(userHome, common.WeaveDataDirectory, fmt.Sprintf("opinitd@%s", OpinitBotBinaryVersion), AppName)
+	_, err := cosmosutils.OPInitRecoverKeyFromMnemonic(binaryPath, BridgeExecutorKeyName, keyFile.BridgeExecutor, false, opInitHome)
+	if err != nil {
+		return err
+	}
+	_, err = cosmosutils.OPInitRecoverKeyFromMnemonic(binaryPath, OutputSubmitterKeyName, keyFile.OutputSubmitter, false, opInitHome)
+	if err != nil {
+		return err
+	}
+	_, err = cosmosutils.OPInitRecoverKeyFromMnemonic(binaryPath, BatchSubmitterKeyName, keyFile.BatchSubmitter, config.DANode.Bech32Prefix != "init", opInitHome)
+	if err != nil {
+		return err
+	}
+	_, err = cosmosutils.OPInitRecoverKeyFromMnemonic(binaryPath, OracleBridgeExecutorKeyName, keyFile.OracleBridgeExecutor, false, opInitHome)
+	if err != nil {
+		return err
+	}
+
+	// File paths and other initialization steps
+	weaveDummyKeyPath := filepath.Join(opInitHome, "weave-dummy")
+	l1KeyPath := filepath.Join(opInitHome, config.L1Node.ChainID)
+	l2KeyPath := filepath.Join(opInitHome, config.L2Node.ChainID)
+
+	err = io.CopyDirectory(weaveDummyKeyPath, l1KeyPath)
+	if err != nil {
+		return fmt.Errorf("failed to copy dummy key for l1: %w", err)
+	}
+
+	err = io.CopyDirectory(weaveDummyKeyPath, l2KeyPath)
+	if err != nil {
+		return fmt.Errorf("failed to copy dummy key for l2: %w", err)
+	}
+
+	// If DA is Celestia, copy keys for DA node
+	if config.DANode.Bech32Prefix != "init" {
+		err = io.CopyDirectory(weaveDummyKeyPath, config.DANode.ChainID)
+		if err != nil {
+			return fmt.Errorf("failed to copy dummy key for celestia: %w", err)
+		}
+	}
+
+	// Additional initialization steps for executor
+	srv, err := service.NewService(service.OPinitExecutor)
+	if err != nil {
+		return fmt.Errorf("failed to initialize service: %v", err)
+	}
+
+	if err = srv.Create("", opInitHome); err != nil {
+		return fmt.Errorf("failed to create service: %v", err)
+	}
+
+	// Write config to file
+	configFilePath := filepath.Join(opInitHome, "executor.json")
+	configBz, err := json.MarshalIndent(config, "", " ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal config: %v", err)
+	}
+
+	if err = os.WriteFile(configFilePath, configBz, 0600); err != nil {
+		return fmt.Errorf("failed to write config file: %v", err)
+	}
+
+	return nil
+}
+
+func InitializeChallengerWithConfig(config ChallengerConfig, keyFile *KeyFile, opInitHome, userHome string) error {
+	ensureOPInitBotsBinary(userHome)
+	binaryPath := filepath.Join(userHome, common.WeaveDataDirectory, fmt.Sprintf("opinitd@%s", OpinitBotBinaryVersion), AppName)
+	_, err := cosmosutils.OPInitRecoverKeyFromMnemonic(binaryPath, ChallengerKeyName, keyFile.Challenger, false, opInitHome)
+	if err != nil {
+		return err
+	}
+
+	// File paths and other initialization steps
+	weaveDummyKeyPath := filepath.Join(opInitHome, "weave-dummy")
+	l1KeyPath := filepath.Join(opInitHome, config.L1Node.ChainID)
+	l2KeyPath := filepath.Join(opInitHome, config.L2Node.ChainID)
+
+	err = io.CopyDirectory(weaveDummyKeyPath, l1KeyPath)
+	if err != nil {
+		return fmt.Errorf("failed to copy dummy key for l1: %w", err)
+	}
+
+	err = io.CopyDirectory(weaveDummyKeyPath, l2KeyPath)
+	if err != nil {
+		return fmt.Errorf("failed to copy dummy key for l2: %w", err)
+	}
+
+	// Additional initialization steps for executor
+	srv, err := service.NewService(service.OPinitChallenger)
+	if err != nil {
+		return fmt.Errorf("failed to initialize service: %v", err)
+	}
+
+	if err = srv.Create("", opInitHome); err != nil {
+		return fmt.Errorf("failed to create service: %v", err)
+	}
+
+	// Write config to file
+	configFilePath := filepath.Join(opInitHome, "challenger.json")
+	configBz, err := json.MarshalIndent(config, "", " ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal config: %v", err)
+	}
+
+	if err = os.WriteFile(configFilePath, configBz, 0600); err != nil {
+		return fmt.Errorf("failed to write config file: %v", err)
+	}
+
+	return nil
+}
+
+func ensureOPInitBotsBinary(userHome string) error {
+	// Define paths
+	binaryPath := GetBinaryPath(userHome)
+	weaveDataPath := filepath.Join(userHome, common.WeaveDataDirectory)
+	tarballPath := filepath.Join(weaveDataPath, "opinitd.tar.gz")
+	goos := runtime.GOOS
+	goarch := runtime.GOARCH
+	extractedPath := filepath.Join(weaveDataPath, fmt.Sprintf("opinitd@%s", OpinitBotBinaryVersion))
+
+	// Check if the binary already exists
+	if _, err := os.Stat(binaryPath); err == nil {
+		// Binary exists, no need to download
+		return nil
+	}
+	fmt.Printf("Downloading opinit bot\n")
+	// If binary doesn't exist, proceed to download and extract
+	// Check if the extracted directory exists, if not, create it
+	if _, err := os.Stat(extractedPath); os.IsNotExist(err) {
+		err := os.MkdirAll(extractedPath, os.ModePerm)
+		if err != nil {
+			return fmt.Errorf("failed to create weave data directory: %v", err)
+		}
+	}
+
+	// Get the binary download URL
+	url, err := getBinaryURL(OpinitBotBinaryVersion, goos, goarch)
+	if err != nil {
+		return fmt.Errorf("failed to get binary URL: %v", err)
+	}
+
+	// Download and extract the binary
+	if err := io.DownloadAndExtractTarGz(url, tarballPath, extractedPath); err != nil {
+		return fmt.Errorf("failed to download and extract binary: %v", err)
+	}
+
+	// Set the correct file permissions for the binary
+	err = os.Chmod(binaryPath, 0755) // 0755 ensuring read, write, execute permissions for the owner, and read-execute for group/others
+	if err != nil {
+		return fmt.Errorf("failed to set permissions for binary: %v", err)
+	}
+
+	// Create a symlink to the binary (if needed)
+	if err := cosmosutils.SetSymlink(binaryPath); err != nil {
+		return err
+	}
+	fmt.Printf("Successfully download opinit bot\n")
+	return nil
 }

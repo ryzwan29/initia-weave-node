@@ -51,3 +51,11 @@ type ExecutorConfig struct {
 	BatchStartHeight              int          `json:"batch_start_height"`
 	DisableDeleteFutureWithdrawal bool         `json:"disable_delete_future_withdrawal"`
 }
+
+type KeyFile struct {
+	BridgeExecutor       string `json:"bridge_executor,omitempty"`
+	OutputSubmitter      string `json:"output_submitter,omitempty"`
+	Challenger           string `json:"challenger,omitempty"`
+	BatchSubmitter       string `json:"batch_submitter,omitempty"`
+	OracleBridgeExecutor string `json:"oracle_bridge_executor,omitempty"`
+}
