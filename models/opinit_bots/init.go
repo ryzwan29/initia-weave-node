@@ -1218,11 +1218,10 @@ func WaitSetupOPInitBotsMissingKey(ctx context.Context) tea.Cmd {
 }
 
 func InitializeExecutorWithConfig(config ExecutorConfig, keyFile *KeyFile, opInitHome, userHome string) error {
-	err := ensureOPInitBotsBinary(userHome)
+	binaryPath, err := ensureOPInitBotsBinary(userHome)
 	if err != nil {
 		return err
 	}
-	binaryPath := filepath.Join(userHome, common.WeaveDataDirectory, fmt.Sprintf("opinitd@%s", OpinitBotBinaryVersion), AppName)
 	_, err = cosmosutils.OPInitRecoverKeyFromMnemonic(binaryPath, BridgeExecutorKeyName, keyFile.BridgeExecutor, false, opInitHome)
 	if err != nil {
 		return err
@@ -1288,11 +1287,10 @@ func InitializeExecutorWithConfig(config ExecutorConfig, keyFile *KeyFile, opIni
 }
 
 func InitializeChallengerWithConfig(config ChallengerConfig, keyFile *KeyFile, opInitHome, userHome string) error {
-	err := ensureOPInitBotsBinary(userHome)
+	binaryPath, err := ensureOPInitBotsBinary(userHome)
 	if err != nil {
 		return err
 	}
-	binaryPath := filepath.Join(userHome, common.WeaveDataDirectory, fmt.Sprintf("opinitd@%s", OpinitBotBinaryVersion), AppName)
 	_, err = cosmosutils.OPInitRecoverKeyFromMnemonic(binaryPath, ChallengerKeyName, keyFile.Challenger, false, opInitHome)
 	if err != nil {
 		return err
@@ -1337,7 +1335,7 @@ func InitializeChallengerWithConfig(config ChallengerConfig, keyFile *KeyFile, o
 	return nil
 }
 
-func ensureOPInitBotsBinary(userHome string) error {
+func ensureOPInitBotsBinary(userHome string) (string, error) {
 	// Define paths
 	binaryPath := GetBinaryPath(userHome)
 	weaveDataPath := filepath.Join(userHome, common.WeaveDataDirectory)
@@ -1349,7 +1347,7 @@ func ensureOPInitBotsBinary(userHome string) error {
 	// Check if the binary already exists
 	if _, err := os.Stat(binaryPath); err == nil {
 		// Binary exists, no need to download
-		return nil
+		return binaryPath, nil
 	}
 	fmt.Printf("Downloading opinit bot\n")
 	// If binary doesn't exist, proceed to download and extract
@@ -1357,31 +1355,31 @@ func ensureOPInitBotsBinary(userHome string) error {
 	if _, err := os.Stat(extractedPath); os.IsNotExist(err) {
 		err := os.MkdirAll(extractedPath, os.ModePerm)
 		if err != nil {
-			return fmt.Errorf("failed to create weave data directory: %v", err)
+			return binaryPath, fmt.Errorf("failed to create weave data directory: %v", err)
 		}
 	}
 
 	// Get the binary download URL
 	url, err := getBinaryURL(OpinitBotBinaryVersion, goos, goarch)
 	if err != nil {
-		return fmt.Errorf("failed to get binary URL: %v", err)
+		return binaryPath, fmt.Errorf("failed to get binary URL: %v", err)
 	}
 
 	// Download and extract the binary
 	if err := io.DownloadAndExtractTarGz(url, tarballPath, extractedPath); err != nil {
-		return fmt.Errorf("failed to download and extract binary: %v", err)
+		return binaryPath, fmt.Errorf("failed to download and extract binary: %v", err)
 	}
 
 	// Set the correct file permissions for the binary
 	err = os.Chmod(binaryPath, 0755) // 0755 ensuring read, write, execute permissions for the owner, and read-execute for group/others
 	if err != nil {
-		return fmt.Errorf("failed to set permissions for binary: %v", err)
+		return binaryPath, fmt.Errorf("failed to set permissions for binary: %v", err)
 	}
 
 	// Create a symlink to the binary (if needed)
 	if err := cosmosutils.SetSymlink(binaryPath); err != nil {
-		return err
+		return binaryPath, err
 	}
 	fmt.Printf("Successfully download opinit bot\n")
-	return nil
+	return binaryPath, nil
 }
