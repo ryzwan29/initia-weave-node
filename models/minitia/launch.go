@@ -2520,6 +2520,17 @@ func (m *GenerateOrRecoverSystemKeysLoading) Update(msg tea.Msg) (tea.Model, tea
 
 		if state.generateKeys {
 			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "System keys have been successfully generated.", []string{}, ""))
+
+			var mnemonicText string
+			mnemonicText += styles.MnemonicText("Operator", state.systemKeyOperatorAddress, state.systemKeyOperatorMnemonic)
+			mnemonicText += styles.MnemonicText("Bridge Executor", state.systemKeyBridgeExecutorAddress, state.systemKeyBridgeExecutorMnemonic)
+			mnemonicText += styles.MnemonicText("Output Submitter", state.systemKeyOutputSubmitterAddress, state.systemKeyOutputSubmitterMnemonic)
+			mnemonicText += styles.MnemonicText("Batch Submitter", state.systemKeyBatchSubmitterAddress, state.systemKeyBatchSubmitterMnemonic)
+			mnemonicText += styles.MnemonicText("Challenger", state.systemKeyChallengerAddress, state.systemKeyChallengerMnemonic)
+			err := io.CopyToClipboard(mnemonicText)
+			if err != nil {
+				return m, m.HandlePanic(err)
+			}
 			return NewSystemKeysMnemonicDisplayInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
 		} else {
 			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "System keys have been successfully recovered.", []string{}, ""))

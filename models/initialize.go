@@ -3,6 +3,7 @@ package models
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -11,6 +12,7 @@ import (
 	"github.com/initia-labs/weave/config"
 	weavecontext "github.com/initia-labs/weave/context"
 	"github.com/initia-labs/weave/crypto"
+	"github.com/initia-labs/weave/io"
 	"github.com/initia-labs/weave/styles"
 	"github.com/initia-labs/weave/types"
 	"github.com/initia-labs/weave/ui"
@@ -167,6 +169,10 @@ func (m *GenerateGasStationLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.Ctx = m.Loading.EndContext
 		state := weavecontext.PushPageAndGetState[ExistingCheckerState](m)
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "Gas Station account has been successfully generated.", []string{}, ""))
+		err := io.CopyToClipboard(state.generatedMnemonic)
+		if err != nil {
+			return m, m.HandlePanic(err)
+		}
 		return NewSystemKeysMnemonicDisplayInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
 	}
 	return m, cmd
@@ -269,7 +275,7 @@ func (m *GasStationMnemonicInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		state.weave.PushPreviousResponse(
 			styles.RenderPreviousResponse(styles.DotsSeparator, "Please set up a Gas Station account", []string{"Gas Station account"}, styles.HiddenMnemonicText),
 		)
-		model := NewWeaveAppInitialization(weavecontext.SetCurrentState(m.Ctx, state), input.Text)
+		model := NewWeaveAppInitialization(weavecontext.SetCurrentState(m.Ctx, state), strings.Trim(input.Text, "\n"))
 		return model, model.Init()
 	}
 	m.TextInput = input

@@ -22,6 +22,7 @@ import (
 	weavecontext "github.com/initia-labs/weave/context"
 	"github.com/initia-labs/weave/cosmosutils"
 	"github.com/initia-labs/weave/crypto"
+	"github.com/initia-labs/weave/io"
 	weaveio "github.com/initia-labs/weave/io"
 	"github.com/initia-labs/weave/registry"
 	"github.com/initia-labs/weave/service"
@@ -579,6 +580,30 @@ func NewKeysMnemonicDisplayInput(ctx context.Context) *KeysMnemonicDisplayInput 
 	}
 	model.WithPlaceholder("Type `continue` to continue, Ctrl+C to quit.")
 	model.WithValidatorFn(common.ValidateExactString("continue"))
+
+	state := weavecontext.GetCurrentState[State](ctx)
+	var mnemonicText string
+	if state.l1KeyMethod == string(L1GenerateKey) {
+		layerText := "L1"
+		if state.l2KeyMethod == string(L2SameKey) {
+			layerText = "L1 and rollup"
+		}
+		mnemonicText += styles.MnemonicText(
+			fmt.Sprintf("Weave Relayer on %s", layerText),
+			state.l1RelayerAddress,
+			state.l1RelayerMnemonic,
+		)
+	}
+
+	if state.l2KeyMethod == string(L2GenerateKey) {
+		mnemonicText += styles.MnemonicText(
+			"Weave Relayer on L2",
+			state.l2RelayerAddress,
+			state.l2RelayerMnemonic,
+		)
+	}
+	_ = io.CopyToClipboard(mnemonicText)
+
 	return model
 }
 

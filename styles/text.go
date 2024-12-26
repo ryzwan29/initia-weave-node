@@ -220,6 +220,10 @@ func RenderMnemonic(keyName, address, mnemonic string) string {
 		BoldText("Mnemonic:", Ivory) + "\n" + mnemonic + "\n\n"
 }
 
+func MnemonicText(keyName, address, mnemonic string) string {
+	return fmt.Sprintf("Key Name: %s\nAddress: %s\nMnemonic:%s\n", keyName, address, mnemonic)
+}
+
 func CreateFrame(text string, maxWidth int) string {
 	lines := strings.Split(text, "\n")
 	top := "┌" + strings.Repeat("─", maxWidth+2) + "┐"
