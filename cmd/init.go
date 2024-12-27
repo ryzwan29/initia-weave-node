@@ -6,6 +6,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 
+	"github.com/initia-labs/weave/analytics"
 	"github.com/initia-labs/weave/config"
 	weavecontext "github.com/initia-labs/weave/context"
 	"github.com/initia-labs/weave/models"
@@ -17,6 +18,7 @@ func InitCommand() *cobra.Command {
 		Use:   "init",
 		Short: "Initialize Weave CLI, funding gas station and setting up config.",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			analytics.TrackRunEvent(cmd, analytics.InitComponent)
 			if config.IsFirstTimeSetup() {
 				ctx := weavecontext.NewAppContext(models.NewExistingCheckerState())
 

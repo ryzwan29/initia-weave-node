@@ -8,6 +8,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 
+	"github.com/initia-labs/weave/analytics"
 	"github.com/initia-labs/weave/common"
 	"github.com/initia-labs/weave/config"
 	weavecontext "github.com/initia-labs/weave/context"
@@ -40,6 +41,7 @@ func relayerInitCommand() *cobra.Command {
 		Use:   "init",
 		Short: "Initialize and configure your Hermes relayer for IBC",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			analytics.TrackRunEvent(cmd, analytics.RelayerComponent)
 			ctx := weavecontext.NewAppContext(relayer.NewRelayerState())
 			minitiaHome, _ := cmd.Flags().GetString(FlagMinitiaHome)
 			ctx = weavecontext.SetMinitiaHome(ctx, minitiaHome)

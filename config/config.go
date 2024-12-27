@@ -5,10 +5,13 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/google/uuid"
 	"github.com/spf13/viper"
 
 	"github.com/initia-labs/weave/common"
 )
+
+var DevMode string
 
 func InitializeConfig() error {
 	homeDir, err := os.UserHomeDir()
@@ -87,6 +90,34 @@ func IsFirstTimeSetup() bool {
 
 func GetGasStationMnemonic() string {
 	return GetConfig("common.gas_station_mnemonic").(string)
+}
+
+func AnalyticsOptOut() bool {
+	// In dev mode, always opt out
+	if DevMode == "true" {
+		return true
+	}
+
+	if GetConfig("common.analytics_opt_out") == nil {
+		_ = SetConfig("common.analytics_opt_out", false)
+		return false
+	}
+
+	return GetConfig("common.analytics_opt_out").(bool)
+}
+
+func GetAnalyticsDeviceID() string {
+	if GetConfig("common.analytics_device_id") == nil {
+		deviceID := uuid.New().String()
+		_ = SetConfig("common.analytics_device_id", deviceID)
+		return deviceID
+	}
+
+	return GetConfig("common.analytics_device_id").(string)
+}
+
+func SetAnalyticsOptOut(optOut bool) error {
+	return SetConfig("common.analytics_opt_out", optOut)
 }
 
 const DefaultConfigTemplate = `{}`
