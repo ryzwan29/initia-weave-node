@@ -2001,7 +2001,7 @@ func TestGenerateOrRecoverSystemKeysLoading_Update_Generate(t *testing.T) {
 
 	model := finalModel.(*SystemKeysMnemonicDisplayInput)
 	state = weavecontext.GetCurrentState[LaunchState](model.Ctx)
-	assert.NotNil(t, cmd)
+	assert.Nil(t, cmd)
 	assert.IsType(t, &SystemKeysMnemonicDisplayInput{}, finalModel)
 	assert.Contains(t, state.weave.PreviousResponse[0], "System keys have been successfully generated.")
 }
@@ -2060,7 +2060,7 @@ func TestSystemKeysMnemonicDisplayInput_Init(t *testing.T) {
 
 	cmd := inputModel.Init()
 
-	assert.NotNil(t, cmd)
+	assert.Nil(t, cmd)
 }
 
 func TestSystemKeysMnemonicDisplayInput_Update_NotDone(t *testing.T) {
