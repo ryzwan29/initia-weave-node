@@ -22,7 +22,6 @@ import (
 	weavecontext "github.com/initia-labs/weave/context"
 	"github.com/initia-labs/weave/cosmosutils"
 	"github.com/initia-labs/weave/crypto"
-	"github.com/initia-labs/weave/io"
 	weaveio "github.com/initia-labs/weave/io"
 	"github.com/initia-labs/weave/registry"
 	"github.com/initia-labs/weave/service"
@@ -477,7 +476,8 @@ func (m *GenerateL1RelayerKeyLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		switch L2KeySelectOption(state.l2KeyMethod) {
 		case L2ExistingKey, L2ImportKey:
-			return NewKeysMnemonicDisplayInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
+			model := NewKeysMnemonicDisplayInput(weavecontext.SetCurrentState(m.Ctx, state))
+			return model, model.Init()
 		case L2SameKey:
 			state.l2RelayerAddress = state.l1RelayerAddress
 			state.l2RelayerMnemonic = state.l1RelayerMnemonic
@@ -489,7 +489,8 @@ func (m *GenerateL1RelayerKeyLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if err != nil {
 				return m, m.HandlePanic(fmt.Errorf("failed to recover Hermes key for rollup: %w", err))
 			}
-			return NewKeysMnemonicDisplayInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
+			model := NewKeysMnemonicDisplayInput(weavecontext.SetCurrentState(m.Ctx, state))
+			return model, model.Init()
 		case L2GenerateKey:
 			model := NewGenerateL2RelayerKeyLoading(weavecontext.SetCurrentState(m.Ctx, state))
 			return model, model.Init()
@@ -555,8 +556,8 @@ func (m *GenerateL2RelayerKeyLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.Loading.Completing {
 		m.Ctx = m.Loading.EndContext
 		state := weavecontext.PushPageAndGetState[State](m)
-
-		return NewKeysMnemonicDisplayInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
+		model := NewKeysMnemonicDisplayInput(weavecontext.SetCurrentState(m.Ctx, state))
+		return model, model.Init()
 	}
 	return m, cmd
 }
@@ -568,6 +569,7 @@ func (m *GenerateL2RelayerKeyLoading) View() string {
 
 type KeysMnemonicDisplayInput struct {
 	ui.TextInput
+	ui.Clickable
 	weavecontext.BaseModel
 	question string
 }
@@ -575,35 +577,15 @@ type KeysMnemonicDisplayInput struct {
 func NewKeysMnemonicDisplayInput(ctx context.Context) *KeysMnemonicDisplayInput {
 	model := &KeysMnemonicDisplayInput{
 		TextInput: ui.NewTextInput(true),
+		Clickable: *ui.NewClickable(map[bool]string{
+			true:  "Copied! Click to copy again",
+			false: "Click here to copy",
+		}),
 		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
 		question:  "Please type `continue` to proceed after you have securely stored the mnemonic.",
 	}
 	model.WithPlaceholder("Type `continue` to continue, Ctrl+C to quit.")
 	model.WithValidatorFn(common.ValidateExactString("continue"))
-
-	state := weavecontext.GetCurrentState[State](ctx)
-	var mnemonicText string
-	if state.l1KeyMethod == string(L1GenerateKey) {
-		layerText := "L1"
-		if state.l2KeyMethod == string(L2SameKey) {
-			layerText = "L1 and rollup"
-		}
-		mnemonicText += styles.MnemonicText(
-			fmt.Sprintf("Weave Relayer on %s", layerText),
-			state.l1RelayerAddress,
-			state.l1RelayerMnemonic,
-		)
-	}
-
-	if state.l2KeyMethod == string(L2GenerateKey) {
-		mnemonicText += styles.MnemonicText(
-			"Weave Relayer on L2",
-			state.l2RelayerAddress,
-			state.l2RelayerMnemonic,
-		)
-	}
-	_ = io.CopyToClipboard(mnemonicText)
-
 	return model
 }
 
@@ -612,12 +594,40 @@ func (m *KeysMnemonicDisplayInput) GetQuestion() string {
 }
 
 func (m *KeysMnemonicDisplayInput) Init() tea.Cmd {
-	return nil
+	return m.Clickable.Init()
 }
 
 func (m *KeysMnemonicDisplayInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if model, cmd, handled := weavecontext.HandleCommonCommands[State](m, msg); handled {
 		return model, cmd
+	}
+
+	err := m.Clickable.ClickableUpdate(msg, func() error {
+		state := weavecontext.GetCurrentState[State](m.Ctx)
+		var mnemonicText string
+		if state.l1KeyMethod == string(L1GenerateKey) {
+			layerText := "L1"
+			if state.l2KeyMethod == string(L2SameKey) {
+				layerText = "L1 and rollup"
+			}
+			mnemonicText += styles.MnemonicText(
+				fmt.Sprintf("Weave Relayer on %s", layerText),
+				state.l1RelayerAddress,
+				state.l1RelayerMnemonic,
+			)
+		}
+
+		if state.l2KeyMethod == string(L2GenerateKey) {
+			mnemonicText += styles.MnemonicText(
+				"Weave Relayer on L2",
+				state.l2RelayerAddress,
+				state.l2RelayerMnemonic,
+			)
+		}
+		return weaveio.CopyToClipboard(mnemonicText)
+	})
+	if err != nil {
+		return m, m.HandlePanic(err)
 	}
 
 	input, cmd, done := m.TextInput.Update(msg)
@@ -633,9 +643,9 @@ func (m *KeysMnemonicDisplayInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch L2KeySelectOption(state.l2KeyMethod) {
 		case L2ExistingKey, L2GenerateKey, L2SameKey:
 			model := NewFetchingBalancesLoading(weavecontext.SetCurrentState(m.Ctx, state))
-			return model, model.Init()
+			return model, tea.Batch(model.Init(), m.Clickable.PostUpdate())
 		case L2ImportKey:
-			return NewImportL2RelayerKeyInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
+			return NewImportL2RelayerKeyInput(weavecontext.SetCurrentState(m.Ctx, state)), m.Clickable.PostUpdate()
 		}
 	}
 	m.TextInput = input
@@ -666,11 +676,16 @@ func (m *KeysMnemonicDisplayInput) View() string {
 		)
 	}
 
-	return m.WrapView(state.weave.Render() + "\n" +
+	viewText := m.WrapView(state.weave.Render() + "\n" +
 		styles.BoldUnderlineText("Important", styles.Yellow) + "\n" +
 		styles.Text("Write down these mnemonic phrases and store them in a safe place. \nIt is the only way to recover your system keys.", styles.Yellow) + "\n\n" +
-		mnemonicText + styles.Text("The generated mnemonic has been copied to your clipboard", styles.Yellow) + "\n" +
+		mnemonicText + styles.BoldUnderlineText(m.Clickable.ClickableView(), styles.White) + "\n" +
 		styles.RenderPrompt(m.GetQuestion(), []string{"`continue`"}, styles.Question) + m.TextInput.View())
+	err := m.Clickable.ClickableUpdatePosition(viewText)
+	if err != nil {
+		m.HandlePanic(err)
+	}
+	return viewText
 }
 
 type ImportL1RelayerKeyInput struct {

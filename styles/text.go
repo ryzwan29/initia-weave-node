@@ -2,6 +2,7 @@ package styles
 
 import (
 	"fmt"
+	"regexp"
 	"slices"
 	"strings"
 
@@ -183,6 +184,11 @@ func containsANSI(text string) bool {
 	// Check if the text contains ANSI escape codes
 	// This is a placeholder; you'll need to implement or use a library
 	return strings.Contains(text, "\x1b[")
+}
+
+func StripANSI(text string) string {
+	re := regexp.MustCompile(`\x1b\[[0-9;]*m`)
+	return re.ReplaceAllString(text, "")
 }
 
 var (
