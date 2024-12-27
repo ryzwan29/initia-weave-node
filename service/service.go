@@ -6,6 +6,7 @@ import (
 	"os/signal"
 	"runtime"
 	"syscall"
+	"time"
 )
 
 type Service interface {
@@ -38,6 +39,7 @@ func NonDetachStart(s Service) error {
 			_ = s.Stop()
 			panic(err)
 		}
+		time.Sleep(1 * time.Second)
 		err = s.Log(100)
 		if err != nil {
 			_ = s.Stop()
