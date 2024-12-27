@@ -3,6 +3,7 @@ package models
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -11,6 +12,7 @@ import (
 	"github.com/initia-labs/weave/config"
 	weavecontext "github.com/initia-labs/weave/context"
 	"github.com/initia-labs/weave/crypto"
+	"github.com/initia-labs/weave/io"
 	"github.com/initia-labs/weave/styles"
 	"github.com/initia-labs/weave/types"
 	"github.com/initia-labs/weave/ui"
@@ -167,7 +169,8 @@ func (m *GenerateGasStationLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.Ctx = m.Loading.EndContext
 		state := weavecontext.PushPageAndGetState[ExistingCheckerState](m)
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "Gas Station account has been successfully generated.", []string{}, ""))
-		return NewSystemKeysMnemonicDisplayInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
+		model := NewSystemKeysMnemonicDisplayInput(weavecontext.SetCurrentState(m.Ctx, state))
+		return model, model.Init()
 	}
 	return m, cmd
 }
@@ -179,15 +182,28 @@ func (m *GenerateGasStationLoading) View() string {
 
 type GasStationMnemonicDisplayInput struct {
 	ui.TextInput
+	ui.Clickable
 	weavecontext.BaseModel
-	question string
+	question          string
+	generatedMnemonic string
 }
 
 func NewSystemKeysMnemonicDisplayInput(ctx context.Context) *GasStationMnemonicDisplayInput {
+	state := weavecontext.GetCurrentState[ExistingCheckerState](ctx)
 	model := &GasStationMnemonicDisplayInput{
 		TextInput: ui.NewTextInput(true),
-		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
-		question:  "Please type `continue` to proceed after you have securely stored the mnemonic.",
+		Clickable: *ui.NewClickable(
+			ui.NewClickableItem(
+				map[bool]string{
+					true:  "Copied! Click to copy again",
+					false: "Click here to copy",
+				}, func() error {
+					return io.CopyToClipboard(state.generatedMnemonic)
+				},
+			)),
+		BaseModel:         weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
+		question:          "Please type `continue` to proceed after you have securely stored the mnemonic.",
+		generatedMnemonic: state.generatedMnemonic,
 	}
 	model.WithPlaceholder("Type `continue` to continue, Ctrl+C to quit.")
 	model.WithValidatorFn(common.ValidateExactString("continue"))
@@ -199,7 +215,7 @@ func (m *GasStationMnemonicDisplayInput) GetQuestion() string {
 }
 
 func (m *GasStationMnemonicDisplayInput) Init() tea.Cmd {
-	return nil
+	return m.Clickable.Init()
 }
 
 func (m *GasStationMnemonicDisplayInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -207,11 +223,16 @@ func (m *GasStationMnemonicDisplayInput) Update(msg tea.Msg) (tea.Model, tea.Cmd
 		return model, cmd
 	}
 
+	err := m.Clickable.ClickableUpdate(msg)
+	if err != nil {
+		return m, m.HandlePanic(err)
+	}
+
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
 		state := weavecontext.PushPageAndGetState[ExistingCheckerState](m)
 		model := NewWeaveAppInitialization(m.Ctx, state.generatedMnemonic)
-		return model, model.Init()
+		return model, tea.Batch(model.Init(), m.Clickable.PostUpdate())
 	}
 	m.TextInput = input
 	return m, cmd
@@ -225,12 +246,17 @@ func (m *GasStationMnemonicDisplayInput) View() string {
 	}
 
 	var mnemonicText string
-	mnemonicText += styles.RenderMnemonic("Gas Station", gasStationAddress, state.generatedMnemonic)
+	mnemonicText += styles.RenderMnemonic("Gas Station", gasStationAddress, m.generatedMnemonic, m.Clickable.ClickableView(0))
 
-	return m.WrapView(InitHeader(state.isFirstTime) + "\n" + state.weave.Render() + "\n" +
+	viewText := m.WrapView(InitHeader(state.isFirstTime) + "\n" + state.weave.Render() + "\n" +
 		styles.BoldUnderlineText("Important", styles.Yellow) + "\n" +
 		styles.Text("Write down these mnemonic phrases and store them in a safe place. \nIt is the only way to recover your system keys.", styles.Yellow) + "\n\n" +
-		mnemonicText + styles.RenderPrompt(m.GetQuestion(), []string{"`continue`"}, styles.Question) + m.TextInput.View())
+		mnemonicText + "\n" + styles.RenderPrompt(m.GetQuestion(), []string{"`continue`"}, styles.Question) + m.TextInput.View())
+	err = m.Clickable.ClickableUpdatePositions(viewText)
+	if err != nil {
+		m.HandlePanic(err)
+	}
+	return viewText
 }
 
 type GasStationMnemonicInput struct {
@@ -269,7 +295,7 @@ func (m *GasStationMnemonicInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		state.weave.PushPreviousResponse(
 			styles.RenderPreviousResponse(styles.DotsSeparator, "Please set up a Gas Station account", []string{"Gas Station account"}, styles.HiddenMnemonicText),
 		)
-		model := NewWeaveAppInitialization(weavecontext.SetCurrentState(m.Ctx, state), input.Text)
+		model := NewWeaveAppInitialization(weavecontext.SetCurrentState(m.Ctx, state), strings.Trim(input.Text, "\n"))
 		return model, model.Init()
 	}
 	m.TextInput = input
