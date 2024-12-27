@@ -220,14 +220,11 @@ func RenderFooter(text string) string {
 	return FooterLine + styledText
 }
 
-func RenderMnemonic(keyName, address, mnemonic string) string {
+func RenderMnemonic(keyName, address, mnemonic, clickable string) string {
 	return BoldText("Key Name: ", Ivory) + keyName + "\n" +
 		BoldText("Address: ", Ivory) + address + "\n" +
-		BoldText("Mnemonic:", Ivory) + "\n" + mnemonic + "\n\n"
-}
-
-func MnemonicText(keyName, address, mnemonic string) string {
-	return fmt.Sprintf("Key Name: %s\nAddress: %s\nMnemonic: %s\n", keyName, address, mnemonic)
+		BoldText("Mnemonic:", Ivory) + "\n" + mnemonic + "\n" +
+		BoldUnderlineText(clickable, White) + "\n\n"
 }
 
 func CreateFrame(text string, maxWidth int) string {

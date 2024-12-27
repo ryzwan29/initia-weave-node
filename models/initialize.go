@@ -169,10 +169,7 @@ func (m *GenerateGasStationLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.Ctx = m.Loading.EndContext
 		state := weavecontext.PushPageAndGetState[ExistingCheckerState](m)
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "Gas Station account has been successfully generated.", []string{}, ""))
-		model, err := NewSystemKeysMnemonicDisplayInput(weavecontext.SetCurrentState(m.Ctx, state))
-		if err != nil {
-			return m, m.HandlePanic(err)
-		}
+		model := NewSystemKeysMnemonicDisplayInput(weavecontext.SetCurrentState(m.Ctx, state))
 		return model, model.Init()
 	}
 	return m, cmd
@@ -188,31 +185,29 @@ type GasStationMnemonicDisplayInput struct {
 	ui.Clickable
 	weavecontext.BaseModel
 	question          string
-	gasStationAddress string
 	generatedMnemonic string
 }
 
-func NewSystemKeysMnemonicDisplayInput(ctx context.Context) (*GasStationMnemonicDisplayInput, error) {
+func NewSystemKeysMnemonicDisplayInput(ctx context.Context) *GasStationMnemonicDisplayInput {
 	state := weavecontext.GetCurrentState[ExistingCheckerState](ctx)
-	gasStationAddress, err := crypto.MnemonicToBech32Address("init", state.generatedMnemonic)
-	if err != nil {
-		return nil, err
-	}
 	model := &GasStationMnemonicDisplayInput{
 		TextInput: ui.NewTextInput(true),
 		Clickable: *ui.NewClickable(
-			map[bool]string{
-				true:  "Copied! Click to copy again",
-				false: "Click here to copy",
-			}),
+			ui.NewClickableItem(
+				map[bool]string{
+					true:  "Copied! Click to copy again",
+					false: "Click here to copy",
+				}, func() error {
+					return io.CopyToClipboard(state.generatedMnemonic)
+				},
+			)),
 		BaseModel:         weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
 		question:          "Please type `continue` to proceed after you have securely stored the mnemonic.",
-		gasStationAddress: gasStationAddress,
 		generatedMnemonic: state.generatedMnemonic,
 	}
 	model.WithPlaceholder("Type `continue` to continue, Ctrl+C to quit.")
 	model.WithValidatorFn(common.ValidateExactString("continue"))
-	return model, nil
+	return model
 }
 
 func (m *GasStationMnemonicDisplayInput) GetQuestion() string {
@@ -228,9 +223,7 @@ func (m *GasStationMnemonicDisplayInput) Update(msg tea.Msg) (tea.Model, tea.Cmd
 		return model, cmd
 	}
 
-	err := m.Clickable.ClickableUpdate(msg, func() error {
-		return io.CopyToClipboard(styles.MnemonicText("Gas Station", m.gasStationAddress, m.generatedMnemonic))
-	})
+	err := m.Clickable.ClickableUpdate(msg)
 	if err != nil {
 		return m, m.HandlePanic(err)
 	}
@@ -247,16 +240,19 @@ func (m *GasStationMnemonicDisplayInput) Update(msg tea.Msg) (tea.Model, tea.Cmd
 
 func (m *GasStationMnemonicDisplayInput) View() string {
 	state := weavecontext.GetCurrentState[ExistingCheckerState](m.Ctx)
+	gasStationAddress, err := crypto.MnemonicToBech32Address("init", state.generatedMnemonic)
+	if err != nil {
+		m.HandlePanic(fmt.Errorf("failed to convert mnemonic to bech32 address: %w", err))
+	}
 
 	var mnemonicText string
-	mnemonicText += styles.RenderMnemonic("Gas Station", m.gasStationAddress, m.generatedMnemonic)
+	mnemonicText += styles.RenderMnemonic("Gas Station", gasStationAddress, m.generatedMnemonic, m.Clickable.ClickableView(0))
 
 	viewText := m.WrapView(InitHeader(state.isFirstTime) + "\n" + state.weave.Render() + "\n" +
 		styles.BoldUnderlineText("Important", styles.Yellow) + "\n" +
 		styles.Text("Write down these mnemonic phrases and store them in a safe place. \nIt is the only way to recover your system keys.", styles.Yellow) + "\n\n" +
-		mnemonicText + styles.BoldUnderlineText(m.Clickable.ClickableView(), styles.White) + "\n" +
-		styles.RenderPrompt(m.GetQuestion(), []string{"`continue`"}, styles.Question) + m.TextInput.View())
-	err := m.Clickable.ClickableUpdatePosition(viewText)
+		mnemonicText + "\n" + styles.RenderPrompt(m.GetQuestion(), []string{"`continue`"}, styles.Question) + m.TextInput.View())
+	err = m.Clickable.ClickableUpdatePositions(viewText)
 	if err != nil {
 		m.HandlePanic(err)
 	}

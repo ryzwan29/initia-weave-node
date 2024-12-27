@@ -575,12 +575,31 @@ type KeysMnemonicDisplayInput struct {
 }
 
 func NewKeysMnemonicDisplayInput(ctx context.Context) *KeysMnemonicDisplayInput {
+	clickable := make([]*ui.ClickableItem, 0)
+	state := weavecontext.GetCurrentState[State](ctx)
+	if state.l1KeyMethod == string(L1GenerateKey) {
+		clickable = append(clickable, ui.NewClickableItem(
+			map[bool]string{
+				true:  "Copied! Click to copy again",
+				false: "Click here to copy",
+			},
+			func() error {
+				return weaveio.CopyToClipboard(state.l1RelayerMnemonic)
+			}))
+	}
+	if state.l2KeyMethod == string(L2GenerateKey) {
+		clickable = append(clickable, ui.NewClickableItem(
+			map[bool]string{
+				true:  "Copied! Click to copy again",
+				false: "Click here to copy",
+			},
+			func() error {
+				return weaveio.CopyToClipboard(state.l2RelayerMnemonic)
+			}))
+	}
 	model := &KeysMnemonicDisplayInput{
 		TextInput: ui.NewTextInput(true),
-		Clickable: *ui.NewClickable(map[bool]string{
-			true:  "Copied! Click to copy again",
-			false: "Click here to copy",
-		}),
+		Clickable: *ui.NewClickable(clickable...),
 		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
 		question:  "Please type `continue` to proceed after you have securely stored the mnemonic.",
 	}
@@ -602,30 +621,7 @@ func (m *KeysMnemonicDisplayInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return model, cmd
 	}
 
-	err := m.Clickable.ClickableUpdate(msg, func() error {
-		state := weavecontext.GetCurrentState[State](m.Ctx)
-		var mnemonicText string
-		if state.l1KeyMethod == string(L1GenerateKey) {
-			layerText := "L1"
-			if state.l2KeyMethod == string(L2SameKey) {
-				layerText = "L1 and rollup"
-			}
-			mnemonicText += styles.MnemonicText(
-				fmt.Sprintf("Weave Relayer on %s", layerText),
-				state.l1RelayerAddress,
-				state.l1RelayerMnemonic,
-			)
-		}
-
-		if state.l2KeyMethod == string(L2GenerateKey) {
-			mnemonicText += styles.MnemonicText(
-				"Weave Relayer on L2",
-				state.l2RelayerAddress,
-				state.l2RelayerMnemonic,
-			)
-		}
-		return weaveio.CopyToClipboard(mnemonicText)
-	})
+	err := m.Clickable.ClickableUpdate(msg)
 	if err != nil {
 		return m, m.HandlePanic(err)
 	}
@@ -665,6 +661,7 @@ func (m *KeysMnemonicDisplayInput) View() string {
 			styles.RenderPrompt(fmt.Sprintf("Weave Relayer on %s", layerText), []string{layerText}, styles.Empty),
 			state.l1RelayerAddress,
 			state.l1RelayerMnemonic,
+			m.Clickable.ClickableView(0),
 		)
 	}
 
@@ -673,15 +670,15 @@ func (m *KeysMnemonicDisplayInput) View() string {
 			styles.RenderPrompt("Weave Relayer on L2", []string{"L2"}, styles.Empty),
 			state.l2RelayerAddress,
 			state.l2RelayerMnemonic,
+			m.Clickable.ClickableView(1),
 		)
 	}
 
 	viewText := m.WrapView(state.weave.Render() + "\n" +
 		styles.BoldUnderlineText("Important", styles.Yellow) + "\n" +
 		styles.Text("Write down these mnemonic phrases and store them in a safe place. \nIt is the only way to recover your system keys.", styles.Yellow) + "\n\n" +
-		mnemonicText + styles.BoldUnderlineText(m.Clickable.ClickableView(), styles.White) + "\n" +
-		styles.RenderPrompt(m.GetQuestion(), []string{"`continue`"}, styles.Question) + m.TextInput.View())
-	err := m.Clickable.ClickableUpdatePosition(viewText)
+		mnemonicText + styles.RenderPrompt(m.GetQuestion(), []string{"`continue`"}, styles.Question) + m.TextInput.View())
+	err := m.Clickable.ClickableUpdatePositions(viewText)
 	if err != nil {
 		m.HandlePanic(err)
 	}

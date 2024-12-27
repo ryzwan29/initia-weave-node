@@ -2547,12 +2547,41 @@ type SystemKeysMnemonicDisplayInput struct {
 }
 
 func NewSystemKeysMnemonicDisplayInput(ctx context.Context) *SystemKeysMnemonicDisplayInput {
+	state := weavecontext.GetCurrentState[LaunchState](ctx)
 	model := &SystemKeysMnemonicDisplayInput{
 		TextInput: ui.NewTextInput(true),
-		Clickable: *ui.NewClickable(map[bool]string{
-			true:  "Copied! Click to copy again",
-			false: "Click here to copy",
-		}),
+		Clickable: *ui.NewClickable([]*ui.ClickableItem{
+			ui.NewClickableItem(map[bool]string{
+				true:  "Copied! Click to copy again",
+				false: "Click here to copy",
+			}, func() error {
+				return io.CopyToClipboard(state.systemKeyOperatorMnemonic)
+			}),
+			ui.NewClickableItem(map[bool]string{
+				true:  "Copied! Click to copy again",
+				false: "Click here to copy",
+			}, func() error {
+				return io.CopyToClipboard(state.systemKeyBridgeExecutorMnemonic)
+			}),
+			ui.NewClickableItem(map[bool]string{
+				true:  "Copied! Click to copy again",
+				false: "Click here to copy",
+			}, func() error {
+				return io.CopyToClipboard(state.systemKeyOutputSubmitterMnemonic)
+			}),
+			ui.NewClickableItem(map[bool]string{
+				true:  "Copied! Click to copy again",
+				false: "Click here to copy",
+			}, func() error {
+				return io.CopyToClipboard(state.systemKeyBatchSubmitterMnemonic)
+			}),
+			ui.NewClickableItem(map[bool]string{
+				true:  "Copied! Click to copy again",
+				false: "Click here to copy",
+			}, func() error {
+				return io.CopyToClipboard(state.systemKeyChallengerMnemonic)
+			}),
+		}...),
 		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
 		question:  "Type `continue` to proceed after you have securely stored the mnemonic.",
 	}
@@ -2574,16 +2603,7 @@ func (m *SystemKeysMnemonicDisplayInput) Update(msg tea.Msg) (tea.Model, tea.Cmd
 		return model, cmd
 	}
 
-	err := m.Clickable.ClickableUpdate(msg, func() error {
-		state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
-		var mnemonicText string
-		mnemonicText += styles.MnemonicText("Operator", state.systemKeyOperatorAddress, state.systemKeyOperatorMnemonic)
-		mnemonicText += styles.MnemonicText("Bridge Executor", state.systemKeyBridgeExecutorAddress, state.systemKeyBridgeExecutorMnemonic)
-		mnemonicText += styles.MnemonicText("Output Submitter", state.systemKeyOutputSubmitterAddress, state.systemKeyOutputSubmitterMnemonic)
-		mnemonicText += styles.MnemonicText("Batch Submitter", state.systemKeyBatchSubmitterAddress, state.systemKeyBatchSubmitterMnemonic)
-		mnemonicText += styles.MnemonicText("Challenger", state.systemKeyChallengerAddress, state.systemKeyChallengerMnemonic)
-		return io.CopyToClipboard(mnemonicText)
-	})
+	err := m.Clickable.ClickableUpdate(msg)
 	if err != nil {
 		return m, m.HandlePanic(err)
 	}
@@ -2605,18 +2625,17 @@ func (m *SystemKeysMnemonicDisplayInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
 
 	var mnemonicText string
-	mnemonicText += styles.RenderMnemonic("Operator", state.systemKeyOperatorAddress, state.systemKeyOperatorMnemonic)
-	mnemonicText += styles.RenderMnemonic("Bridge Executor", state.systemKeyBridgeExecutorAddress, state.systemKeyBridgeExecutorMnemonic)
-	mnemonicText += styles.RenderMnemonic("Output Submitter", state.systemKeyOutputSubmitterAddress, state.systemKeyOutputSubmitterMnemonic)
-	mnemonicText += styles.RenderMnemonic("Batch Submitter", state.systemKeyBatchSubmitterAddress, state.systemKeyBatchSubmitterMnemonic)
-	mnemonicText += styles.RenderMnemonic("Challenger", state.systemKeyChallengerAddress, state.systemKeyChallengerMnemonic)
+	mnemonicText += styles.RenderMnemonic("Operator", state.systemKeyOperatorAddress, state.systemKeyOperatorMnemonic, m.Clickable.ClickableView(0))
+	mnemonicText += styles.RenderMnemonic("Bridge Executor", state.systemKeyBridgeExecutorAddress, state.systemKeyBridgeExecutorMnemonic, m.Clickable.ClickableView(1))
+	mnemonicText += styles.RenderMnemonic("Output Submitter", state.systemKeyOutputSubmitterAddress, state.systemKeyOutputSubmitterMnemonic, m.Clickable.ClickableView(2))
+	mnemonicText += styles.RenderMnemonic("Batch Submitter", state.systemKeyBatchSubmitterAddress, state.systemKeyBatchSubmitterMnemonic, m.Clickable.ClickableView(3))
+	mnemonicText += styles.RenderMnemonic("Challenger", state.systemKeyChallengerAddress, state.systemKeyChallengerMnemonic, m.Clickable.ClickableView(4))
 
 	viewText := m.WrapView(state.weave.Render() + "\n" +
 		styles.BoldUnderlineText("Important", styles.Yellow) + "\n" +
 		styles.Text("Write down these mnemonic phrases and store them in a safe place. \nIt is the only way to recover your system keys.", styles.Yellow) + "\n\n" +
-		mnemonicText + styles.BoldUnderlineText(m.Clickable.ClickableView(), styles.White) + "\n" +
-		styles.RenderPrompt(m.GetQuestion(), []string{"`continue`"}, styles.Question) + m.TextInput.View())
-	err := m.Clickable.ClickableUpdatePosition(viewText)
+		mnemonicText + styles.RenderPrompt(m.GetQuestion(), []string{"`continue`"}, styles.Question) + m.TextInput.View())
+	err := m.Clickable.ClickableUpdatePositions(viewText)
 	if err != nil {
 		m.HandlePanic(err)
 	}
