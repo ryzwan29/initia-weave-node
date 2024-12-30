@@ -1,5 +1,7 @@
 package opinit_bots
 
+import "github.com/initia-labs/weave/crypto"
+
 type NodeConfig struct {
 	ChainID      string `json:"chain_id"`
 	Bech32Prefix string `json:"bech32_prefix"`
@@ -58,4 +60,24 @@ type KeyFile struct {
 	Challenger           string `json:"challenger,omitempty"`
 	BatchSubmitter       string `json:"batch_submitter,omitempty"`
 	OracleBridgeExecutor string `json:"oracle_bridge_executor,omitempty"`
+}
+
+func GenerateMnemonicKefile() (KeyFile, error) {
+	mnemonics := make([]string, 0)
+
+	for idx := 0; idx < len(BotNames); idx++ {
+		mnemonic, err := crypto.GenerateMnemonic()
+		if err != nil {
+			return KeyFile{}, err
+		}
+		mnemonics = append(mnemonics, mnemonic)
+	}
+
+	return KeyFile{
+		BridgeExecutor:       mnemonics[0],
+		OutputSubmitter:      mnemonics[1],
+		Challenger:           mnemonics[2],
+		BatchSubmitter:       mnemonics[3],
+		OracleBridgeExecutor: mnemonics[4],
+	}, nil
 }
