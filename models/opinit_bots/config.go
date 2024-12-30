@@ -1,6 +1,10 @@
 package opinit_bots
 
-import "github.com/initia-labs/weave/crypto"
+import (
+	"reflect"
+
+	"github.com/initia-labs/weave/crypto"
+)
 
 type NodeConfig struct {
 	ChainID      string `json:"chain_id"`
@@ -62,10 +66,12 @@ type KeyFile struct {
 	OracleBridgeExecutor string `json:"oracle_bridge_executor,omitempty"`
 }
 
-func GenerateMnemonicKefile() (KeyFile, error) {
+func GenerateMnemonicKeyfile() (KeyFile, error) {
 	mnemonics := make([]string, 0)
+	keyFile := KeyFile{}
+	val := reflect.ValueOf(&keyFile).Elem()
 
-	for idx := 0; idx < len(BotNames); idx++ {
+	for idx := 0; idx < val.NumField(); idx++ {
 		mnemonic, err := crypto.GenerateMnemonic()
 		if err != nil {
 			return KeyFile{}, err
@@ -73,11 +79,14 @@ func GenerateMnemonicKefile() (KeyFile, error) {
 		mnemonics = append(mnemonics, mnemonic)
 	}
 
-	return KeyFile{
-		BridgeExecutor:       mnemonics[0],
-		OutputSubmitter:      mnemonics[1],
-		Challenger:           mnemonics[2],
-		BatchSubmitter:       mnemonics[3],
-		OracleBridgeExecutor: mnemonics[4],
-	}, nil
+	for i := 0; i < val.NumField(); i++ {
+		field := val.Field(i)
+		if field.CanSet() {
+			if i < len(mnemonics) {
+				field.SetString(mnemonics[i])
+			}
+		}
+	}
+
+	return keyFile, nil
 }

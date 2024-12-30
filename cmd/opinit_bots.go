@@ -133,8 +133,8 @@ func OPInitBotsKeysSetupCommand() *cobra.Command {
 	return setupCmd
 }
 
-func generateKeyFile(userHome string) (opinit_bots.KeyFile, error) {
-	keyFile, err := opinit_bots.GenerateMnemonicKefile()
+func generateKeyFile(userHome string, keyPath string) (opinit_bots.KeyFile, error) {
+	keyFile, err := opinit_bots.GenerateMnemonicKeyfile()
 	if err != nil {
 		return keyFile, err
 	}
@@ -145,9 +145,8 @@ func generateKeyFile(userHome string) (opinit_bots.KeyFile, error) {
 		return keyFile, fmt.Errorf("error marshaling KeyFile to JSON: %w", err)
 	}
 
-	path := filepath.Join(userHome, common.WeaveDataDirectory, common.OpinitGeneratedKeyFilename)
 	// Write JSON data to a file
-	err = os.WriteFile(path, data, 0644)
+	err = os.WriteFile(keyPath, data, 0644)
 	if err != nil {
 		return keyFile, fmt.Errorf("error writing to file: %w", err)
 	}
@@ -156,14 +155,20 @@ func generateKeyFile(userHome string) (opinit_bots.KeyFile, error) {
 }
 
 func handleWithConfig(userHome, opInitHome, configPath, keyFilePath string, args []string, force, isGenerateKeyFile bool) error {
-	var keyFile opinit_bots.KeyFile
 	var err error
+	fileData, err := os.ReadFile(configPath)
+	if err != nil {
+		return err
+	}
+
+	var keyFile opinit_bots.KeyFile
 	if isGenerateKeyFile {
-		keyFile, err = generateKeyFile(userHome)
+		keyPath := filepath.Join(userHome, common.WeaveDataDirectory, common.OpinitGeneratedKeyFilename)
+		keyFile, err = generateKeyFile(userHome, keyPath)
 		if err != nil {
 			return err
 		}
-
+		fmt.Printf("Key file successfully generated. You can find it at: %s\n", keyPath)
 	} else {
 		if !io.FileOrFolderExists(keyFilePath) {
 			return fmt.Errorf("key file is missing at path: %s", keyFilePath)
@@ -177,11 +182,6 @@ func handleWithConfig(userHome, opInitHome, configPath, keyFilePath string, args
 	}
 	// Handle existing opInitHome directory
 	if err := handleExistingOpInitHome(opInitHome, force); err != nil {
-		return err
-	}
-	// Read and unmarshal config file data
-	fileData, err := os.ReadFile(configPath)
-	if err != nil {
 		return err
 	}
 
@@ -319,7 +319,7 @@ Example: weave opinit init executor`,
 	initCmd.Flags().String(FlagWithConfig, "", "launch using an existing bot config file. The argument should be the path to the config file")
 	initCmd.Flags().String(FlagKeyFile, "", "path to key-file.json")
 	initCmd.Flags().BoolP(FlagForce, "f", false, "force the launch by deleting the existing .opinit directory if it exists.")
-	initCmd.Flags().BoolP(FlagGenerateKeyFile, "", false, "path to key-file.json")
+	initCmd.Flags().BoolP(FlagGenerateKeyFile, "", false, fmt.Sprintf("Generate and save the key file at: %s", filepath.Join(homeDir, common.WeaveDataDirectory, common.OpinitGeneratedKeyFilename)))
 
 	return initCmd
 }
