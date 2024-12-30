@@ -201,7 +201,7 @@ func handleWithConfig(userHome, opInitHome, configPath, keyFilePath string, args
 	}
 }
 
-// Read and unmarshal the key file into the KeyFile struct
+// readAndUnmarshalKeyFile read and unmarshal the key file into the KeyFile struct
 func readAndUnmarshalKeyFile(keyFilePath string) (opinit_bots.KeyFile, error) {
 	fileData, err := os.ReadFile(keyFilePath)
 	if err != nil {
@@ -213,7 +213,7 @@ func readAndUnmarshalKeyFile(keyFilePath string) (opinit_bots.KeyFile, error) {
 	return keyFile, err
 }
 
-// Handle the case where the opInitHome directory exists
+// handleExistingOpInitHome handle the case where the opInitHome directory exists
 func handleExistingOpInitHome(opInitHome string, force bool) error {
 	if io.FileOrFolderExists(opInitHome) {
 		if force {
@@ -227,7 +227,7 @@ func handleExistingOpInitHome(opInitHome string, force bool) error {
 	return nil
 }
 
-// Initialize a bot based on the provided config
+// initializeBotWithConfig initialize a bot based on the provided config
 func initializeBotWithConfig(fileData []byte, keyFile opinit_bots.KeyFile, opInitHome, userHome, botName string) error {
 	var err error
 
