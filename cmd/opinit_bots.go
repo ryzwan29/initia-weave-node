@@ -287,6 +287,7 @@ Example: weave opinit init executor`,
 	initCmd.Flags().String(FlagWithConfig, "", "launch using an existing bot config file. The argument should be the path to the config file")
 	initCmd.Flags().String(FlagKeyFile, "", "path to key-file.json")
 	initCmd.Flags().BoolP(FlagForce, "f", false, "force the launch by deleting the existing .opinit directory if it exists.")
+	initCmd.Flags().BoolP(FlagGenerateKeyFile, "", "path to key-file.json")
 
 	return initCmd
 }
