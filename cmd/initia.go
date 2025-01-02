@@ -55,6 +55,7 @@ func initiaInitCommand() *cobra.Command {
 			if finalModel, err := tea.NewProgram(model, tea.WithAltScreen()).Run(); err != nil {
 				return err
 			} else {
+				analytics.TrackCompletedEvent(cmd, analytics.InitComponent)
 				fmt.Println(finalModel.View())
 				return nil
 			}
