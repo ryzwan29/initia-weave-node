@@ -201,10 +201,10 @@ func (m *RunL1NodeVersionSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	selected, cmd := m.Select(msg)
 	if selected != nil {
 		events := analytics.NewEmptyEvents()
-		events.Add(analytics.L1NodeVersionKey, *selected)
+		events.Add(analytics.L1NodeVersionKey, string(*selected))
 		defer analytics.TrackEvent(analytics.L1NodeVersionSelected, events)
 		state := weavecontext.PushPageAndGetState[RunL1NodeState](m)
-		state.initiadVersion = *selected
+		state.initiadVersion = string(*selected)
 		state.initiadEndpoint = m.versions[*selected]
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), m.highlights, state.initiadVersion))
 

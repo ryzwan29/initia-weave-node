@@ -13,6 +13,7 @@ var (
 	Client                amplitude.Client
 	SessionID             int64
 	GlobalEventProperties map[string]interface{}
+	EnableAnalytics       bool
 )
 
 type disabledLogger struct{}
@@ -40,6 +41,7 @@ func Initialize(weaveVersion string) {
 		AppVersion: weaveVersion,
 	})
 
+	EnableAnalytics = true
 	SessionID = time.Now().Unix()
 }
 
@@ -58,6 +60,9 @@ func NewEmptyEvents() EventAtrriutes {
 }
 
 func TrackEvent(eventType Event, overrideProperties EventAtrriutes) {
+	if !EnableAnalytics {
+		return
+	}
 	eventProperties := make(EventAtrriutes)
 	for k, v := range GlobalEventProperties {
 		eventProperties[k] = v
