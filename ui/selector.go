@@ -3,6 +3,8 @@ package ui
 import (
 	"context"
 	"fmt"
+
+	"github.com/initia-labs/weave/analytics"
 	weavecontext "github.com/initia-labs/weave/context"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -31,6 +33,7 @@ func (s *Selector[T]) Select(msg tea.Msg) (*T, tea.Cmd) {
 			s.Cursor = (s.Cursor - 1 + len(s.Options)) % len(s.Options)
 			return nil, nil
 		case "q", "ctrl+c":
+			analytics.TrackEvent(analytics.Interrupted, map[string]interface{}{})
 			return nil, tea.Quit
 		case "enter":
 			return &s.Options[s.Cursor], nil

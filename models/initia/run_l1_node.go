@@ -11,6 +11,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/initia-labs/weave/analytics"
 	"github.com/initia-labs/weave/client"
 	"github.com/initia-labs/weave/common"
 	"github.com/initia-labs/weave/config"
@@ -58,6 +59,18 @@ var (
 
 const Local L1NodeNetworkOption = "Local"
 
+func (option L1NodeNetworkOption) GetNetworkType() string {
+	switch option {
+	case Mainnet:
+		return "mainnet"
+	case Testnet:
+		return "testnet"
+	case Local:
+		return "local"
+	}
+	return ""
+}
+
 func NewRunL1NodeNetworkSelect(ctx context.Context) (*RunL1NodeNetworkSelect, error) {
 	testnetRegistry, err := registry.GetChainRegistry(registry.InitiaL1Testnet)
 	if err != nil {
@@ -71,7 +84,7 @@ func NewRunL1NodeNetworkSelect(ctx context.Context) (*RunL1NodeNetworkSelect, er
 	return &RunL1NodeNetworkSelect{
 		Selector: ui.Selector[L1NodeNetworkOption]{
 			Options: []L1NodeNetworkOption{
-				// Mainnet,
+				Mainnet,
 				Testnet,
 				// Local,
 			},
@@ -98,8 +111,10 @@ func (m *RunL1NodeNetworkSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	selected, cmd := m.Select(msg)
 	if selected != nil {
+		events := analytics.NewEmptyEvents()
+		events.Add(analytics.OptionEventKey, selected.GetNetworkType())
+		defer analytics.TrackEvent(analytics.L1NetworkSelected, events)
 		state := weavecontext.PushPageAndGetState[RunL1NodeState](m)
-
 		selectedString := string(*selected)
 		state.network = selectedString
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), m.highlights, selectedString))
@@ -115,13 +130,13 @@ func (m *RunL1NodeNetworkSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			state.chainRegistry = chainRegistry
 			state.chainId = state.chainRegistry.GetChainId()
+			events.Add(analytics.L1ChainIdEventKey, state.chainId)
 			state.genesisEndpoint = state.chainRegistry.GetGenesisUrl()
 			initiaConfigDir, err := weavecontext.GetInitiaConfigDirectory(m.Ctx)
 			if err != nil {
 				return m, m.HandlePanic(err)
 			}
 			state.existingApp = IsExistApp(initiaConfigDir)
-
 			nextModel, err := GetNextModelByExistingApp(weavecontext.SetCurrentState(m.Ctx, state), state.existingApp)
 			if err != nil {
 				return m, m.HandlePanic(err)
@@ -185,9 +200,12 @@ func (m *RunL1NodeVersionSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	selected, cmd := m.Select(msg)
 	if selected != nil {
+		events := analytics.NewEmptyEvents()
+		defer analytics.TrackEvent(analytics.L1NodeVersionSelected, events)
 		state := weavecontext.PushPageAndGetState[RunL1NodeState](m)
 		state.initiadVersion = *selected
 		state.initiadEndpoint = m.versions[*selected]
+		events.Add(analytics.L1NodeVersionKey, state.initiadVersion)
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), m.highlights, state.initiadVersion))
 
 		return NewRunL1NodeChainIdInput(weavecontext.SetCurrentState(m.Ctx, state)), cmd
@@ -237,7 +255,6 @@ func (m *RunL1NodeChainIdInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
 		state := weavecontext.PushPageAndGetState[RunL1NodeState](m)
-
 		state.chainId = input.Text
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), m.highlights, input.Text))
 		initiaConfigDir, err := weavecontext.GetInitiaConfigDirectory(m.Ctx)
@@ -321,11 +338,14 @@ func (m *ExistingAppReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	selected, cmd := m.Select(msg)
 	if selected != nil {
+		events := analytics.NewEmptyEvents()
+		defer analytics.TrackEvent(analytics.ExistingAppReplaceSelected, events)
 		state := weavecontext.PushPageAndGetState[RunL1NodeState](m)
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), m.highlights, string(*selected)))
 		switch *selected {
 		case UseCurrentApp:
 			state.replaceExistingApp = false
+			events.Add(analytics.OptionEventKey, string(*selected))
 			switch state.network {
 			case string(Local):
 				model := NewExistingGenesisChecker(weavecontext.SetCurrentState(m.Ctx, state))
@@ -384,7 +404,6 @@ func (m *RunL1NodeMonikerInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
 		state := weavecontext.PushPageAndGetState[RunL1NodeState](m)
-
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), m.highlights, input.Text))
 		state.moniker = input.Text
 
@@ -514,8 +533,11 @@ func (m *EnableFeaturesCheckbox) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	cb, cmd, done := m.Select(msg)
 	if done {
+		events := analytics.NewEmptyEvents()
+		defer analytics.TrackEvent(analytics.FeaturesEnabled, events)
 		state := weavecontext.PushPageAndGetState[RunL1NodeState](m)
 		for idx, isSelected := range cb.Selected {
+			events.Add(string(m.CheckBox.Options[idx]), isSelected)
 			if isSelected {
 				switch cb.Options[idx] {
 				case REST:
@@ -728,6 +750,9 @@ func (m *SelectingPruningStrategy) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	selected, cmd := m.Select(msg)
 	if selected != nil {
+		events := analytics.NewEmptyEvents()
+		events.Add(analytics.OptionEventKey, selected.toString())
+		defer analytics.TrackEvent(analytics.PruningStrategySelected, events)
 		state := weavecontext.PushPageAndGetState[RunL1NodeState](m)
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), m.highlights, string(*selected)))
 		state.pruning = selected.toString()
@@ -797,7 +822,6 @@ func (m *ExistingGenesisChecker) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.Loading.Completing {
 		m.Ctx = m.Loading.EndContext
 		state := weavecontext.PushPageAndGetState[RunL1NodeState](m)
-
 		if !state.existingGenesis {
 			m.Ctx = weavecontext.SetCurrentState(m.Ctx, state)
 			if state.network == string(Local) {
@@ -864,6 +888,9 @@ func (m *ExistingGenesisReplaceSelect) Init() tea.Cmd {
 func (m *ExistingGenesisReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	selected, cmd := m.Select(msg)
 	if selected != nil {
+		events := analytics.NewEmptyEvents()
+		events.Add(analytics.OptionEventKey, string(*selected))
+		defer analytics.TrackEvent(analytics.ExistingGenesisReplaceSelected, events)
 		state := weavecontext.PushPageAndGetState[RunL1NodeState](m)
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), m.highlights, string(*selected)))
 		if state.network != string(Local) {
@@ -1217,10 +1244,12 @@ func (m *SyncMethodSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	selected, cmd := m.Select(msg)
 	if selected != nil {
+		events := analytics.NewEmptyEvents()
+		defer analytics.TrackEvent(analytics.SyncMethodSelected, events)
 		state := weavecontext.PushPageAndGetState[RunL1NodeState](m)
-
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, string(*selected)))
 		state.syncMethod = string(*selected)
+		events.Add(analytics.OptionEventKey, state.syncMethod)
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, state.syncMethod))
 		switch *selected {
 		case NoSync:
 			// TODO: What if there's existing /data. Should we also prune it here?
@@ -1294,9 +1323,12 @@ func (m *CosmovisorAutoUpgradeSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd)
 	}
 	selected, cmd := m.Select(msg)
 	if selected != nil {
+		events := analytics.NewEmptyEvents()
+		defer analytics.TrackEvent(analytics.CosmovisorAutoUpgradeSelected, events)
 		state := weavecontext.PushPageAndGetState[RunL1NodeState](m)
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), m.highlights, string(*selected)))
 		state.allowAutoUpgrade = EnableAutoUpgrade == (*selected)
+		events.Add(analytics.OptionEventKey, state.allowAutoUpgrade)
 		model := NewInitializingAppLoading(weavecontext.SetCurrentState(m.Ctx, state))
 		return model, model.Init()
 	}
@@ -1450,9 +1482,11 @@ func (m *ExistingDataReplaceSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	selected, cmd := m.Select(msg)
 	if selected != nil {
+		events := analytics.NewEmptyEvents()
+		defer analytics.TrackEvent(analytics.ExistingDataReplaceSelected, events)
 		state := weavecontext.PushPageAndGetState[RunL1NodeState](m)
-
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), m.highlights, string(*selected)))
+		events.Add(analytics.OptionEventKey, string(*selected))
 		switch *selected {
 		case Skip:
 			state.replaceExistingData = false
@@ -1529,7 +1563,6 @@ func (m *SnapshotEndpointInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
 		state := weavecontext.PushPageAndGetState[RunL1NodeState](m)
-
 		state.snapshotEndpoint = input.Text
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), m.highlights, input.Text))
 		m.Ctx = weavecontext.SetCurrentState(m.Ctx, state)
@@ -1596,7 +1629,6 @@ func (m *StateSyncEndpointInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
 		state := weavecontext.PushPageAndGetState[RunL1NodeState](m)
-
 		state.stateSyncEndpoint = input.Text
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), m.highlights, input.Text))
 		model, err := NewAdditionalStateSyncPeersInput(weavecontext.SetCurrentState(m.Ctx, state))
@@ -1661,7 +1693,6 @@ func (m *AdditionalStateSyncPeersInput) Update(msg tea.Msg) (tea.Model, tea.Cmd)
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
 		state := weavecontext.PushPageAndGetState[RunL1NodeState](m)
-
 		state.additionalStateSyncPeers = input.Text
 		var prevAnswer string
 		if input.Text == "" {

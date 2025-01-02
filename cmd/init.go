@@ -27,6 +27,7 @@ func InitCommand() *cobra.Command {
 					return err
 				} else {
 					fmt.Println(finalModel.View())
+					analytics.TrackCompletedEvent(cmd, analytics.InitComponent)
 					if _, ok := finalModel.(*models.WeaveAppSuccessfullyInitialized); !ok {
 						return nil
 					}

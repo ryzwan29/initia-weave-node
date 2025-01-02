@@ -43,9 +43,9 @@ func Initialize(weaveVersion string) {
 	SessionID = time.Now().Unix()
 }
 
-func AppendGlobalEventProperties(properties map[string]interface{}) {
+func AppendGlobalEventProperties(properties EventAtrriutes) {
 	if GlobalEventProperties == nil {
-		GlobalEventProperties = make(map[string]interface{})
+		GlobalEventProperties = make(EventAtrriutes)
 	}
 
 	for k, v := range properties {
@@ -53,8 +53,12 @@ func AppendGlobalEventProperties(properties map[string]interface{}) {
 	}
 }
 
-func TrackEvent(eventType Event, overrideProperties map[string]interface{}) {
-	eventProperties := make(map[string]interface{})
+func NewEmptyEvents() EventAtrriutes {
+	return make(EventAtrriutes)
+}
+
+func TrackEvent(eventType Event, overrideProperties EventAtrriutes) {
+	eventProperties := make(EventAtrriutes)
 	for k, v := range GlobalEventProperties {
 		eventProperties[k] = v
 	}
@@ -74,9 +78,21 @@ func TrackEvent(eventType Event, overrideProperties map[string]interface{}) {
 }
 
 func TrackRunEvent(cmd *cobra.Command, component Component) {
-	AppendGlobalEventProperties(map[string]interface{}{
+	AppendGlobalEventProperties(EventAtrriutes{
 		ComponentEventKey: component,
 		CommandEventKey:   cmd.CommandPath(),
 	})
 	TrackEvent(RunEvent, nil)
+}
+
+func TrackCompletedEvent(cmd *cobra.Command, component Component) {
+	AppendGlobalEventProperties(EventAtrriutes{
+		ComponentEventKey: component,
+		CommandEventKey:   cmd.CommandPath(),
+	})
+	TrackEvent(CompletedEvent, nil)
+}
+
+func (ea EventAtrriutes) Add(key string, value interface{}) {
+	ea[key] = value
 }
