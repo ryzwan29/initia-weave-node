@@ -46,5 +46,3 @@ const (
 type Component string
 
 type Event string
-
-type EventAtrriutes map[string]interface{}
