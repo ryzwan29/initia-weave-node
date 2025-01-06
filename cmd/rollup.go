@@ -156,6 +156,7 @@ func minitiaLaunchCommand() *cobra.Command {
 				return err
 			} else {
 				fmt.Println(finalModel.View())
+				analytics.TrackCompletedEvent(cmd, analytics.RollupComponent)
 				return nil
 			}
 		},

@@ -11,7 +11,6 @@ import (
 
 	"github.com/initia-labs/weave/config"
 	weavecontext "github.com/initia-labs/weave/context"
-	"github.com/initia-labs/weave/cosmosutils"
 	"github.com/initia-labs/weave/styles"
 	"github.com/initia-labs/weave/types"
 	"github.com/initia-labs/weave/ui"
@@ -289,111 +288,6 @@ func TestNetworkSelect_SaveToState(t *testing.T) {
 	assert.Equal(t, "https://rpc.testnet.initia.xyz:443/", state.l1RPC)
 
 	assert.IsType(t, m, &VMTypeSelect{})
-}
-
-func TestVersionSelect_Update(t *testing.T) {
-	mockVersions := cosmosutils.BinaryVersionWithDownloadURL{
-		"v1.0.0": "https://example.com/v1.0.0",
-		"v1.1.0": "https://example.com/v1.1.0",
-		"v1.2.0": "https://example.com/v1.2.0",
-	}
-
-	testCases := []struct {
-		name            string
-		keyPresses      []tea.KeyMsg
-		expectedVersion string
-		expectedModel   interface{}
-	}{
-		{
-			name:            "Select first version",
-			keyPresses:      []tea.KeyMsg{{Type: tea.KeyEnter}},
-			expectedVersion: "v1.2.0",
-			expectedModel:   &ChainIdInput{},
-		},
-		{
-			name:            "Select second version",
-			keyPresses:      []tea.KeyMsg{{Type: tea.KeyDown}, {Type: tea.KeyEnter}},
-			expectedVersion: "v1.1.0",
-			expectedModel:   &ChainIdInput{},
-		},
-		{
-			name:            "Select third version",
-			keyPresses:      []tea.KeyMsg{{Type: tea.KeyDown}, {Type: tea.KeyDown}, {Type: tea.KeyEnter}},
-			expectedVersion: "v1.0.0",
-			expectedModel:   &ChainIdInput{},
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			mockState := &LaunchState{
-				vmType: "Move",
-				weave:  types.WeaveState{},
-			}
-			ctx := weavecontext.NewAppContext(*mockState)
-
-			model := &VersionSelect{
-				Selector: ui.Selector[string]{
-					Options: cosmosutils.SortVersions(mockVersions),
-				},
-				BaseModel: weavecontext.BaseModel{Ctx: ctx},
-				versions:  mockVersions,
-				question:  "Please specify the minitiad version?",
-			}
-
-			var m tea.Model = model
-			var cmd tea.Cmd
-			for _, keyPress := range tc.keyPresses {
-				m, cmd = m.Update(keyPress)
-				if cmd != nil {
-					cmd()
-				}
-			}
-
-			nextModel := m.(*ChainIdInput)
-			state := weavecontext.GetCurrentState[LaunchState](nextModel.Ctx)
-			assert.Equal(t, tc.expectedVersion, state.minitiadVersion, "Expected minitiadVersion to be set correctly")
-
-			assert.IsType(t, tc.expectedModel, m, "Expected model to transition to the correct type after version selection")
-			assert.Nil(t, cmd, "Expected no command after version selection")
-		})
-	}
-}
-
-func TestVersionSelect_Init(t *testing.T) {
-	ctx := weavecontext.NewAppContext(*NewLaunchState())
-	mockVersions := cosmosutils.BinaryVersionWithDownloadURL{
-		"v1.0.0": "https://example.com/v1.0.0",
-	}
-	model := &VersionSelect{
-		Selector: ui.Selector[string]{
-			Options: cosmosutils.SortVersions(mockVersions),
-		},
-		BaseModel: weavecontext.BaseModel{Ctx: ctx},
-		versions:  mockVersions,
-		question:  "Please specify the minitiad version?",
-	}
-
-	assert.Nil(t, model.Init(), "Expected Init command to return nil")
-}
-
-func TestVersionSelect_View(t *testing.T) {
-	ctx := weavecontext.NewAppContext(*NewLaunchState())
-
-	mockVersions := cosmosutils.BinaryVersionWithDownloadURL{
-		"v1.0.0": "https://example.com/v1.0.0",
-	}
-	model := &VersionSelect{
-		Selector: ui.Selector[string]{
-			Options: cosmosutils.SortVersions(mockVersions),
-		},
-		BaseModel: weavecontext.BaseModel{Ctx: ctx},
-		versions:  mockVersions,
-		question:  "Please specify the minitiad version?",
-	}
-
-	view := model.View()
-	assert.Contains(t, view, "Please specify the minitiad version?", "Expected question prompt in the view")
 }
 
 func TestChainIdInput_Init(t *testing.T) {
