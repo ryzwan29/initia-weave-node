@@ -10,10 +10,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/initia-labs/weave/analytics"
 	"github.com/initia-labs/weave/common"
 	"github.com/initia-labs/weave/models"
 	"github.com/initia-labs/weave/testutil"
 )
+
+func TestMain(m *testing.M) {
+	analytics.Client = &analytics.NoOpClient{}
+}
 
 func TestGasStationSetup(t *testing.T) {
 	finalModel := testutil.SetupGasStation(t)
