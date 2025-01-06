@@ -1674,120 +1674,13 @@ func (m *SystemKeyL1ChallengerBalanceInput) Update(msg tea.Msg) (tea.Model, tea.
 		state.systemKeyL1ChallengerBalance = input.Text
 		state.weave.PopPreviousResponseAtIndex(state.preL1BalancesResponsesCount)
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), m.highlights, input.Text))
-		return NewSystemKeyL2OperatorBalanceInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
-	}
-	m.TextInput = input
-	return m, cmd
-}
-
-func (m *SystemKeyL1ChallengerBalanceInput) View() string {
-	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
-	return m.WrapView(state.weave.Render() +
-		styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View())
-}
-
-type SystemKeyL2OperatorBalanceInput struct {
-	ui.TextInput
-	weavecontext.BaseModel
-	question   string
-	highlights []string
-}
-
-func NewSystemKeyL2OperatorBalanceInput(ctx context.Context) *SystemKeyL2OperatorBalanceInput {
-	state := weavecontext.GetCurrentState[LaunchState](ctx)
-	state.preL2BalancesResponsesCount = len(state.weave.PreviousResponse)
-	model := &SystemKeyL2OperatorBalanceInput{
-		TextInput:  ui.NewTextInput(true),
-		BaseModel:  weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
-		question:   fmt.Sprintf("Specify the genesis balance for the operator on rollup (%s)", state.gasDenom),
-		highlights: []string{"operator", "rollup"},
-	}
-	model.WithPlaceholder("Enter a positive amount")
-	model.WithValidatorFn(common.IsValidInteger)
-	model.Ctx = weavecontext.SetCurrentState(model.Ctx, state)
-	return model
-}
-
-func (m *SystemKeyL2OperatorBalanceInput) GetQuestion() string {
-	return m.question
-}
-
-func (m *SystemKeyL2OperatorBalanceInput) Init() tea.Cmd {
-	return nil
-}
-
-func (m *SystemKeyL2OperatorBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	if model, cmd, handled := weavecontext.HandleCommonCommands[LaunchState](m, msg); handled {
-		return model, cmd
-	}
-
-	input, cmd, done := m.TextInput.Update(msg)
-	if done {
-		state := weavecontext.PushPageAndGetState[LaunchState](m)
-
-		state.systemKeyL2OperatorBalance = fmt.Sprintf("%s%s", input.Text, state.gasDenom)
-		state.weave.PushPreviousResponse(fmt.Sprintf("\n%s\n", styles.RenderPrompt("Please fund the following accounts on rollup:\n  • Operator\n  • Bridge Executor\n", []string{"rollup"}, styles.Information)))
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), m.highlights, input.Text))
-		return NewSystemKeyL2BridgeExecutorBalanceInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
-	}
-	m.TextInput = input
-	return m, cmd
-}
-
-func (m *SystemKeyL2OperatorBalanceInput) View() string {
-	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
-	return m.WrapView(state.weave.Render() + "\n" +
-		styles.RenderPrompt("Please fund the following accounts on rollup:\n  • Operator\n  • Bridge Executor", []string{"rollup"}, styles.Information) + "\n" +
-		styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View())
-}
-
-type SystemKeyL2BridgeExecutorBalanceInput struct {
-	ui.TextInput
-	weavecontext.BaseModel
-	question   string
-	highlights []string
-}
-
-func NewSystemKeyL2BridgeExecutorBalanceInput(ctx context.Context) *SystemKeyL2BridgeExecutorBalanceInput {
-	state := weavecontext.GetCurrentState[LaunchState](ctx)
-	model := &SystemKeyL2BridgeExecutorBalanceInput{
-		TextInput:  ui.NewTextInput(false),
-		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
-		question:   fmt.Sprintf("Specify the genesis balance for the bridge executor on rollup (%s)", state.gasDenom),
-		highlights: []string{"bridge executor", "rollup"},
-	}
-	model.WithPlaceholder("Enter a positive amount")
-	model.WithValidatorFn(common.IsValidInteger)
-	return model
-}
-
-func (m *SystemKeyL2BridgeExecutorBalanceInput) GetQuestion() string {
-	return m.question
-}
-
-func (m *SystemKeyL2BridgeExecutorBalanceInput) Init() tea.Cmd {
-	return nil
-}
-
-func (m *SystemKeyL2BridgeExecutorBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	if model, cmd, handled := weavecontext.HandleCommonCommands[LaunchState](m, msg); handled {
-		return model, cmd
-	}
-
-	input, cmd, done := m.TextInput.Update(msg)
-	if done {
-		state := weavecontext.PushPageAndGetState[LaunchState](m)
-
-		state.systemKeyL2BridgeExecutorBalance = fmt.Sprintf("%s%s", input.Text, state.gasDenom)
-		state.weave.PopPreviousResponseAtIndex(state.preL2BalancesResponsesCount)
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), m.highlights, input.Text))
 		return NewAddGasStationToGenesisSelect(weavecontext.SetCurrentState(m.Ctx, state)), nil
 	}
 	m.TextInput = input
 	return m, cmd
 }
 
-func (m *SystemKeyL2BridgeExecutorBalanceInput) View() string {
+func (m *SystemKeyL1ChallengerBalanceInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
 	return m.WrapView(state.weave.Render() +
 		styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View())
