@@ -114,6 +114,8 @@ func OPInitBotsKeysSetupCommand() *cobra.Command {
 				OPInitHome:  opInitHome,
 				UserHome:    userHome,
 			})
+			analytics.TrackCompletedEvent(cmd, analytics.RollupComponent)
+
 			return err
 		},
 	}
@@ -170,6 +172,7 @@ Example: weave opinit init executor`,
 				UserHome:    userHome,
 			})
 
+			analytics.TrackCompletedEvent(cmd, analytics.OPinitComponent)
 			return err
 		},
 	}
