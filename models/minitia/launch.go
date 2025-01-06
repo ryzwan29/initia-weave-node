@@ -16,6 +16,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/initia-labs/weave/analytics"
 	"github.com/initia-labs/weave/client"
 	"github.com/initia-labs/weave/common"
 	"github.com/initia-labs/weave/config"
@@ -234,6 +235,9 @@ func (m *NetworkSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	selected, cmd := m.Select(msg)
 	if selected != nil {
+		events := analytics.NewEmptyEvent()
+		events.Add(analytics.OptionEventKey, string(*selected))
+		analytics.TrackEvent(analytics.L1NetworkSelected, events)
 		state := weavecontext.PushPageAndGetState[LaunchState](m)
 
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), m.highlights, string(*selected)))
@@ -334,6 +338,9 @@ func (m *VMTypeSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	selected, cmd := m.Select(msg)
 	if selected != nil {
+		events := analytics.NewEmptyEvent()
+		events.Add(analytics.OptionEventKey, string(*selected))
+		analytics.TrackEvent(analytics.VmTypeSelected, events)
 		state := weavecontext.PushPageAndGetState[LaunchState](m)
 
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), m.highlights, string(*selected)))
@@ -417,62 +424,6 @@ func (m *LatestVersionLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *LatestVersionLoading) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
 	return m.WrapView(state.weave.Render() + "\n" + m.Loading.View())
-}
-
-type VersionSelect struct {
-	ui.Selector[string]
-	weavecontext.BaseModel
-	versions   cosmosutils.BinaryVersionWithDownloadURL
-	question   string
-	highlights []string
-}
-
-func NewVersionSelect(ctx context.Context) (*VersionSelect, error) {
-	state := weavecontext.GetCurrentState[LaunchState](ctx)
-	versions, err := cosmosutils.ListBinaryReleases(fmt.Sprintf("https://api.github.com/repos/initia-labs/mini%s/releases", strings.ToLower(state.vmType)))
-	if err != nil {
-		return nil, err
-	}
-	return &VersionSelect{
-		Selector: ui.Selector[string]{
-			Options: cosmosutils.SortVersions(versions),
-		},
-		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
-		versions:   versions,
-		question:   "Specify the minitiad version?",
-		highlights: []string{"minitiad version"},
-	}, nil
-}
-
-func (m *VersionSelect) GetQuestion() string {
-	return m.question
-}
-
-func (m *VersionSelect) Init() tea.Cmd {
-	return nil
-}
-
-func (m *VersionSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	if model, cmd, handled := weavecontext.HandleCommonCommands[LaunchState](m, msg); handled {
-		return model, cmd
-	}
-
-	selected, cmd := m.Select(msg)
-	if selected != nil {
-		state := weavecontext.PushPageAndGetState[LaunchState](m)
-
-		state.minitiadVersion = *selected
-		state.minitiadEndpoint = m.versions[*selected]
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), m.highlights, *selected))
-		return NewChainIdInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
-	}
-
-	return m, cmd
-}
-
-func (m *VersionSelect) View() string {
-	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
-	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.Selector.View())
 }
 
 type ChainIdInput struct {
@@ -784,8 +735,8 @@ func (m *OpBridgeBatchSubmissionTargetSelect) Update(msg tea.Msg) (tea.Model, te
 
 	selected, cmd := m.Select(msg)
 	if selected != nil {
+		analytics.TrackEvent(analytics.OpBridgeBatchSubmissionTargetSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, string(*selected)))
 		state := weavecontext.PushPageAndGetState[LaunchState](m)
-
 		state.opBridgeBatchSubmissionTarget = common.TransformFirstWordUpperCase(string(*selected))
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), m.highlights, string(*selected)))
 		if *selected == Celestia {
@@ -852,6 +803,7 @@ func (m *OracleEnableSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	selected, cmd := m.Select(msg)
 	if selected != nil {
+		analytics.TrackEvent(analytics.EnableOracleSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, *selected == Enable))
 		state := weavecontext.PushPageAndGetState[LaunchState](m)
 
 		if *selected == Enable {
@@ -890,6 +842,16 @@ const (
 	Import   SystemKeysOption = "Import existing keys"
 )
 
+func (s *SystemKeysOption) toString() string {
+	switch *s {
+	case Generate:
+		return "generate"
+	case Import:
+		return "import"
+	}
+	return ""
+}
+
 func NewSystemKeysSelect(ctx context.Context) *SystemKeysSelect {
 	return &SystemKeysSelect{
 		Selector: ui.Selector[SystemKeysOption]{
@@ -920,6 +882,7 @@ func (m *SystemKeysSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	selected, cmd := m.Select(msg)
 	if selected != nil {
 		state := weavecontext.PushPageAndGetState[LaunchState](m)
+		analytics.TrackEvent(analytics.SystemKeysSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, selected.toString()))
 
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), m.highlights, string(*selected)))
 		switch *selected {
@@ -1349,6 +1312,16 @@ var DefaultPreset AccountsFundingPresetOption = ""
 
 const ManuallyFill AccountsFundingPresetOption = "○ Fill in an amount for each account manually"
 
+func (p *AccountsFundingPresetOption) toString() string {
+	switch *p {
+	case DefaultPreset:
+		return "default"
+	case ManuallyFill:
+		return "manually"
+	}
+	return ""
+}
+
 func NewAccountsFundingPresetSelect(ctx context.Context) (*AccountsFundingPresetSelect, error) {
 	state := weavecontext.GetCurrentState[LaunchState](ctx)
 	tooltips := ui.NewTooltipSlice(
@@ -1438,6 +1411,7 @@ func (m *AccountsFundingPresetSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	selected, cmd := m.Select(msg)
 	if selected != nil {
+		analytics.TrackEvent(analytics.AccountsFundingPresetSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, selected.toString()))
 		state := weavecontext.PushPageAndGetState[LaunchState](m)
 
 		switch *selected {
@@ -1737,6 +1711,7 @@ func (m *AddGasStationToGenesisSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) 
 
 	selected, cmd := m.Select(msg)
 	if selected != nil {
+		analytics.TrackEvent(analytics.AddGasStationToGenesisSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, string(*selected)))
 		state := weavecontext.PushPageAndGetState[LaunchState](m)
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), m.highlights, string(*selected)))
 
@@ -1890,6 +1865,7 @@ func (m *AddGenesisAccountsSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	selected, cmd := m.Select(msg)
 	if selected != nil {
+		analytics.TrackEvent(analytics.AddGenesisAccountsSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, string(*selected)))
 		state := weavecontext.PushPageAndGetState[LaunchState](m)
 
 		switch *selected {

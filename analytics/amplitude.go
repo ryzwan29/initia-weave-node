@@ -2,6 +2,7 @@ package analytics
 
 import (
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/amplitude/analytics-go/amplitude"
@@ -43,11 +44,16 @@ func Initialize(weaveVersion string) {
 	SessionID = time.Now().Unix()
 }
 
-type EventAtrriutes map[string]interface{}
+type EventAttributes map[string]interface{}
 
-func AppendGlobalEventProperties(properties EventAtrriutes) {
+// Event represents an event with some attributes
+type AmplitudeEvent struct {
+	Attributes EventAttributes
+}
+
+func AppendGlobalEventProperties(properties EventAttributes) {
 	if GlobalEventProperties == nil {
-		GlobalEventProperties = make(EventAtrriutes)
+		GlobalEventProperties = make(EventAttributes)
 	}
 
 	for k, v := range properties {
@@ -55,17 +61,20 @@ func AppendGlobalEventProperties(properties EventAtrriutes) {
 	}
 }
 
-func NewEmptyEvent() EventAtrriutes {
-	return make(EventAtrriutes)
+// NewEmptyEvent creates and returns an empty event
+func NewEmptyEvent() *AmplitudeEvent {
+	return &AmplitudeEvent{
+		Attributes: make(EventAttributes),
+	}
 }
 
-func TrackEvent(eventType Event, overrideProperties EventAtrriutes) {
-	eventProperties := make(EventAtrriutes)
+func TrackEvent(eventType Event, overrideProperties *AmplitudeEvent) {
+	eventProperties := make(EventAttributes)
 	for k, v := range GlobalEventProperties {
 		eventProperties[k] = v
 	}
 
-	for k, v := range overrideProperties {
+	for k, v := range overrideProperties.Attributes {
 		eventProperties[k] = v
 	}
 
@@ -80,21 +89,26 @@ func TrackEvent(eventType Event, overrideProperties EventAtrriutes) {
 }
 
 func TrackRunEvent(cmd *cobra.Command, component Component) {
-	AppendGlobalEventProperties(EventAtrriutes{
+	AppendGlobalEventProperties(EventAttributes{
 		ComponentEventKey: component,
 		CommandEventKey:   cmd.CommandPath(),
 	})
-	TrackEvent(RunEvent, nil)
+	TrackEvent(RunEvent, NewEmptyEvent())
 }
 
 func TrackCompletedEvent(cmd *cobra.Command, component Component) {
-	AppendGlobalEventProperties(EventAtrriutes{
+	AppendGlobalEventProperties(EventAttributes{
 		ComponentEventKey: component,
 		CommandEventKey:   cmd.CommandPath(),
 	})
-	TrackEvent(CompletedEvent, nil)
+	TrackEvent(CompletedEvent, NewEmptyEvent())
 }
 
-func (ea EventAtrriutes) Add(key string, value interface{}) {
-	ea[key] = value
+// Add adds a key-value pair to the event's attributes
+func (e *AmplitudeEvent) Add(key string, value interface{}) *AmplitudeEvent {
+	if str, ok := value.(string); ok {
+		value = strings.ToLower(str) // Convert string value to lowercase
+	}
+	e.Attributes[key] = value
+	return e
 }

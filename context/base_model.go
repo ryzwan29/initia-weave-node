@@ -65,10 +65,10 @@ func extractModelNameFromStackTrace(stackTrace string) string {
 
 func (b *BaseModel) HandlePanic(err error) tea.Cmd {
 	stackTrace := string(debug.Stack())
-	analytics.TrackEvent(analytics.Panicked, map[string]interface{}{
-		analytics.ErrorEventKey: fmt.Sprint(err),
-		analytics.ModelNameKey:  extractModelNameFromStackTrace(stackTrace), // Track the concrete model name
-	})
+	events := analytics.NewEmptyEvent().
+		Add(analytics.ErrorEventKey, fmt.Sprint(err)).
+		Add(analytics.ModelNameKey, extractModelNameFromStackTrace(stackTrace))
+	analytics.TrackEvent(analytics.Panicked, events)
 
 	b.PanicText = fmt.Sprintf("Caught panic:\n\n%v\n\n%s", err, stackTrace)
 	return tea.Quit

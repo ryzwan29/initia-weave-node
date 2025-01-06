@@ -41,6 +41,31 @@ const (
 	CosmovisorAutoUpgradeSelected  Event = "cosmovisor-auto-upgrade-selected"
 	ExistingDataReplaceSelected    Event = "existing-data-replace-selected"
 	FeaturesEnabled                Event = "feature-enabled"
+
+	// Rollup Event
+	VmTypeSelected                        Event = "vm-type-selected"
+	OpBridgeBatchSubmissionTargetSelected Event = "op-bridge-batch-sumission-selected"
+	EnableOracleSelected                  Event = "enable-oracle-selected"
+	SystemKeysSelected                    Event = "system-keys-selected"
+	AccountsFundingPresetSelected         Event = "accounts-funding-preset-selected"
+	AddGasStationToGenesisSelected        Event = "add-gas-station-to-genesis-selected"
+	AddGenesisAccountsSelected            Event = "add-genesis-accounts-selected"
+
+	// Opinit Event
+	OPInitBotInitSelected    Event = "opinit-bot-init-selected"
+	DBDeleted                Event = "db-deleted"
+	UseCurrentConfigSelected Event = "use-current-config-selected"
+	MinitiaConfigPrefilled   Event = "minitia-config-prefilled"
+	L1PrefillSelected        Event = "l1-prefill-selected"
+	DALayerSelected          Event = "da-layer-selected"
+	MinitiaConfigAdded       Event = "minitia-config-added"
+	RecoverKeySelected       Event = "recover-key-selected"
+
+	// Relayer
+	RelayerRollupSelected              Event = "relayer-rollup-selected"
+	RelayerL2Selected                  Event = "relayer-l2-selected"
+	SettingUpIBCChannelsMethodSelected Event = "setting-up-ibc-channels-method-selected"
+	IBCChannelsSelected                Event = "ibc-channel-selected"
 )
 
 type Component string

@@ -16,6 +16,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/initia-labs/weave/analytics"
 	"github.com/initia-labs/weave/client"
 	"github.com/initia-labs/weave/common"
 	"github.com/initia-labs/weave/config"
@@ -127,12 +128,16 @@ func (m *RollupSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, string(*selected)))
 		switch *selected {
 		case Whitelisted:
+			analytics.TrackEvent(analytics.RelayerRollupSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, "whitelise"))
+
 			model, err := NewSelectingL1NetworkRegistry(weavecontext.SetCurrentState(m.Ctx, state))
 			if err != nil {
 				return m, m.HandlePanic(err)
 			}
 			return model, nil
 		case Local:
+			analytics.TrackEvent(analytics.RelayerRollupSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, "local"))
+
 			minitiaConfigPath, err := weavecontext.GetMinitiaArtifactsConfigJson(m.Ctx)
 			if err != nil {
 				return m, m.HandlePanic(err)
@@ -182,6 +187,8 @@ func (m *RollupSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			return NewFieldInputModel(weavecontext.SetCurrentState(m.Ctx, state), defaultL2ConfigLocal, NewSelectSettingUpIBCChannelsMethod), nil
 		case Manual:
+			analytics.TrackEvent(analytics.RelayerRollupSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, "manaul"))
+
 			model, err := NewSelectingL1Network(weavecontext.SetCurrentState(m.Ctx, state))
 			if err != nil {
 				return m, m.HandlePanic(err)
@@ -1581,6 +1588,8 @@ func (m *SelectingL2Network) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if err != nil {
 			return m, m.HandlePanic(err)
 		}
+		analytics.TrackEvent(analytics.RelayerL2Selected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, chainId))
+
 		state.Config["l2.chain_id"] = chainId
 		state.Config["l2.gas_price.denom"] = l2DefaultFeeToken.Denom
 		state.Config["l2.gas_price.price"] = strconv.FormatFloat(l2DefaultFeeToken.FixedMinGasPrice, 'f', -1, 64)
@@ -1804,6 +1813,7 @@ func (m *SelectSettingUpIBCChannelsMethod) Update(msg tea.Msg) (tea.Model, tea.C
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, string(*selected)))
 		switch *selected {
 		case Basic:
+			analytics.TrackEvent(analytics.SettingUpIBCChannelsMethodSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, "basic"))
 			artifactsJson, err := weavecontext.GetMinitiaArtifactsJson(m.Ctx)
 			if err != nil {
 				return m, m.HandlePanic(err)
@@ -1853,8 +1863,10 @@ func (m *SelectSettingUpIBCChannelsMethod) Update(msg tea.Msg) (tea.Model, tea.C
 			}
 			return NewIBCChannelsCheckbox(weavecontext.SetCurrentState(m.Ctx, state), channelPairs), nil
 		case FillFromLCD:
+			analytics.TrackEvent(analytics.SettingUpIBCChannelsMethodSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, "lcd"))
 			return NewFillL2LCD(weavecontext.SetCurrentState(m.Ctx, state)), nil
 		case Manually:
+			analytics.TrackEvent(analytics.SettingUpIBCChannelsMethodSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, "mannaul"))
 			return NewFillPortOnL1(weavecontext.SetCurrentState(m.Ctx, state), 0), nil
 		}
 	}
@@ -2280,6 +2292,8 @@ func (m *IBCChannelsCheckbox) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	cb, cmd, done := m.Select(msg)
 	_ = cb
 	if done {
+		analytics.TrackEvent(analytics.IBCChannelsSelected, analytics.NewEmptyEvent().Add("select-all", m.Selected[0]))
+
 		state := weavecontext.PushPageAndGetState[State](m)
 		ibcChannels := make([]types.IBCChannelPair, 0)
 		for idx := 1; idx < len(m.pairs); idx++ {

@@ -11,6 +11,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/initia-labs/weave/analytics"
 	"github.com/initia-labs/weave/common"
 	weavecontext "github.com/initia-labs/weave/context"
 	"github.com/initia-labs/weave/cosmosutils"
@@ -270,6 +271,8 @@ func (m *OPInitBotInitSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if selected != nil {
 		state := weavecontext.PushPageAndGetState[OPInitBotsState](m)
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"bot"}, string(*selected)))
+		analytics.TrackEvent(analytics.OPInitBotInitSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, string(*selected)))
+
 		switch *selected {
 		case ExecutorOPInitBotInitOption:
 			state.InitExecutorBot = true
@@ -374,6 +377,8 @@ func (m *DeleteDBSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			state.isDeleteDB = true
 		}
 
+		analytics.TrackEvent(analytics.DBDeleted, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, state.isDeleteDB))
+
 		opInitHome, err := weavecontext.GetOPInitHome(m.Ctx)
 		if err != nil {
 			return m, m.HandlePanic(err)
@@ -467,6 +472,8 @@ func (m *UseCurrentConfigSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if selected != nil {
 		state := weavecontext.PushPageAndGetState[OPInitBotsState](m)
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{m.configPath}, *selected))
+		analytics.TrackEvent(analytics.UseCurrentConfigSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, *selected))
+
 		switch *selected {
 		case "use current file":
 			state.ReplaceBotConfig = false
@@ -559,6 +566,7 @@ func (m *PrefillMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		switch *selected {
 		case PrefillMinitiaConfigYes:
+			analytics.TrackEvent(analytics.MinitiaConfigPrefilled, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, true))
 			minitiaConfig := state.MinitiaConfig
 			state.botConfig["l1_node.chain_id"] = minitiaConfig.L1Config.ChainID
 			state.botConfig["l1_node.rpc_address"] = minitiaConfig.L1Config.RpcUrl
@@ -623,6 +631,7 @@ func (m *PrefillMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			}
 		case PrefillMinitiaConfigNo:
+			analytics.TrackEvent(analytics.MinitiaConfigPrefilled, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, false))
 			model, err := NewL1PrefillSelector(weavecontext.SetCurrentState(m.Ctx, state))
 			if err != nil {
 				return m, m.HandlePanic(err)
@@ -697,6 +706,8 @@ func (m *L1PrefillSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		var chainId, rpc, minGasPrice string
 		switch *selected {
 		case L1PrefillOptionTestnet:
+			analytics.TrackEvent(analytics.L1PrefillSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, "testnet"))
+
 			chainRegistry, err := registry.GetChainRegistry(registry.InitiaL1Testnet)
 			if err != nil {
 				return m, m.HandlePanic(err)
@@ -710,6 +721,8 @@ func (m *L1PrefillSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if err != nil {
 				return m, m.HandlePanic(err)
 			}
+		case L1PrefillOptionCustom:
+			analytics.TrackEvent(analytics.L1PrefillSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, "custom"))
 		}
 
 		state.botConfig["l1_node.chain_id"] = chainId
@@ -807,8 +820,11 @@ func (m *SetDALayer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	selected, cmd := m.Select(msg)
 	if selected != nil {
+
 		state := weavecontext.PushPageAndGetState[OPInitBotsState](m)
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"DA Layer"}, string(*selected)))
+		analytics.TrackEvent(analytics.DALayerSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, string(*selected)))
+
 		switch *selected {
 		case Initia:
 			state.botConfig["da_node.chain_id"] = state.botConfig["l1_node.chain_id"]
