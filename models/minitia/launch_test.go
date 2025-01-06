@@ -9,12 +9,17 @@ import (
 	"github.com/spf13/viper"
 	"github.com/test-go/testify/assert"
 
+	"github.com/initia-labs/weave/analytics"
 	"github.com/initia-labs/weave/config"
 	weavecontext "github.com/initia-labs/weave/context"
 	"github.com/initia-labs/weave/styles"
 	"github.com/initia-labs/weave/types"
 	"github.com/initia-labs/weave/ui"
 )
+
+func TestMain(m *testing.M) {
+	analytics.Client = &analytics.NoOpClient{}
+}
 
 func InitializeViperForTest(t *testing.T) {
 	viper.Reset()

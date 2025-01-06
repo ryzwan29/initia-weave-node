@@ -6,11 +6,15 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/initia-labs/weave/analytics"
 	weavecontext "github.com/initia-labs/weave/context"
 	"github.com/initia-labs/weave/registry"
 	"github.com/initia-labs/weave/types"
 )
 
+func TestMain(m *testing.M) {
+	analytics.Client = &analytics.NoOpClient{}
+}
 func TestUseCurrentConfigSelector_Update_UseCurrentFile(t *testing.T) {
 	ctx := weavecontext.NewAppContext(NewOPInitBotsState())
 	model, _ := NewUseCurrentConfigSelector(ctx, "test-bot")
