@@ -11,12 +11,12 @@ const (
 	BatchSubmitterKeyName  string = "weave.BatchSubmitter"
 	ChallengerKeyName      string = "weave.Challenger"
 
-	DefaultL1BridgeExecutorBalance  string = "10000000"
-	DefaultL1OutputSubmitterBalance string = "10000000"
-	DefaultL1BatchSubmitterBalance  string = "10000000"
-	DefaultL1ChallengerBalance      string = "10000000"
-	DefaultL2OperatorBalance        string = "100000000"
-	DefaultL2BridgeExecutorBalance  string = "100000000"
+	DefaultL1BridgeExecutorBalance  string = "2000000"
+	DefaultL1OutputSubmitterBalance string = "2000000"
+	DefaultL1BatchSubmitterBalance  string = "1000000"
+	DefaultL1ChallengerBalance      string = "2000000"
+	DefaultL2OperatorBalance        string = "2000000"
+	DefaultL2BridgeExecutorBalance  string = "2000000"
 
 	TmpTxFilename string = "weave.minitia.tx.json"
 
