@@ -59,6 +59,7 @@ func initiaInitCommand() *cobra.Command {
 				fmt.Println(finalModel.View())
 				return nil
 			}
+
 		},
 	}
 

@@ -66,6 +66,7 @@ func relayerInitCommand() *cobra.Command {
 				return err
 			} else {
 				fmt.Println(finalModel.View())
+				analytics.TrackCompletedEvent(cmd, analytics.RelayerComponent)
 				return nil
 			}
 		},
