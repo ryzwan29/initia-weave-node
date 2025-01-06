@@ -2,6 +2,7 @@ package minitia
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 
@@ -19,6 +20,8 @@ import (
 
 func TestMain(m *testing.M) {
 	analytics.Client = &analytics.NoOpClient{}
+	exitCode := m.Run()
+	os.Exit(exitCode)
 }
 
 func InitializeViperForTest(t *testing.T) {

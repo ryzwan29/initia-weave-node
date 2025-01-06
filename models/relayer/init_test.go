@@ -1,6 +1,7 @@
 package relayer
 
 import (
+	"os"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -15,6 +16,8 @@ import (
 
 func TestMain(m *testing.M) {
 	analytics.Client = &analytics.NoOpClient{}
+	exitCode := m.Run()
+	os.Exit(exitCode)
 }
 
 func TestRollupSelectUpdateWithNavigation(t *testing.T) {
