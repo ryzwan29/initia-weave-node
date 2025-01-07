@@ -296,6 +296,20 @@ func IsValidAddress(s string) error {
 	return nil
 }
 
+func IsValidAddresses(s string) error {
+	cache := make(map[string]bool)
+	for _, address := range strings.Split(s, ",") {
+		if err := IsValidAddress(address); err != nil {
+			return err
+		}
+		if _, ok := cache[address]; ok {
+			return fmt.Errorf("duplicate address: %s", address)
+		}
+		cache[address] = true
+	}
+	return nil
+}
+
 func ValidateNonEmptyAndLengthString(display string, maxLen int) func(s string) error {
 	return func(s string) error {
 		if s == "" {

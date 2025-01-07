@@ -1911,7 +1911,7 @@ func (m *AddGenesisAccountsSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else {
 				state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, question, []string{highlight}, string(No)))
 			}
-			model := NewDownloadMinitiaBinaryLoading(weavecontext.SetCurrentState(m.Ctx, state))
+			model := NewFeeWhitelistAccountsInput(weavecontext.SetCurrentState(m.Ctx, state))
 			return model, model.Init()
 		}
 	}
@@ -1932,6 +1932,56 @@ func (m *AddGenesisAccountsSelect) View() string {
 		[]string{highlight},
 		styles.Question,
 	) + m.Selector.View())
+}
+
+type FeeWhitelistAccountsInput struct {
+	ui.TextInput
+	weavecontext.BaseModel
+	question string
+}
+
+func NewFeeWhitelistAccountsInput(ctx context.Context) *FeeWhitelistAccountsInput {
+	tooltip := tooltip.FeeWhitelistAccoutsInputTooltip
+	model := &FeeWhitelistAccountsInput{
+		TextInput: ui.NewTextInput(true),
+		BaseModel: weavecontext.BaseModel{Ctx: ctx},
+		question:  "Specify fee whitelist addresses",
+	}
+	model.WithTooltip(&tooltip)
+	model.WithPlaceholder("Enter whitelist address, You can add multiple addresses by separating them with a comma (,)")
+	model.WithValidatorFn(common.IsValidAddresses)
+	return model
+}
+
+func (m *FeeWhitelistAccountsInput) GetQuestion() string {
+	return m.question
+}
+
+func (m *FeeWhitelistAccountsInput) Init() tea.Cmd {
+	return nil
+}
+
+func (m *FeeWhitelistAccountsInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := weavecontext.HandleCommonCommands[LaunchState](m, msg); handled {
+		return model, cmd
+	}
+
+	input, cmd, done := m.TextInput.Update(msg)
+	if done {
+		state := weavecontext.PushPageAndGetState[LaunchState](m)
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"fee whitelist"}, input.Text))
+		state.feeWhitelistAccounts = input.Text
+		model := NewDownloadMinitiaBinaryLoading(weavecontext.SetCurrentState(m.Ctx, state))
+		return model, model.Init()
+	}
+	m.TextInput = input
+	return m, cmd
+}
+
+func (m *FeeWhitelistAccountsInput) View() string {
+	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
+	m.TextInput.ViewTooltip(m.Ctx)
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"fee whitelist"}, styles.Question) + m.TextInput.View())
 }
 
 type GenesisAccountsAddressInput struct {

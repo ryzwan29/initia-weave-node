@@ -61,6 +61,8 @@ type LaunchState struct {
 
 	launchFromExistingConfig bool
 	existingConfigPath       string
+
+	feeWhitelistAccounts string
 }
 
 func (ls LaunchState) Clone() LaunchState {
