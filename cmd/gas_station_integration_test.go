@@ -14,7 +14,6 @@ import (
 	"github.com/initia-labs/weave/common"
 	"github.com/initia-labs/weave/models"
 	"github.com/initia-labs/weave/testutil"
-	"github.com/stretchr/testify/assert"
 )
 
 const weaveDirectoryBackup = ".weave_back"
