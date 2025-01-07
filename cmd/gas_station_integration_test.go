@@ -4,7 +4,6 @@
 package cmd_test
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -24,12 +23,17 @@ func TestGasStationSetup(t *testing.T) {
 	weaveDirBackup := filepath.Join(userHome, weaveDirectoryBackup)
 	if _, err := os.Stat(weaveDir); !os.IsNotExist(err) {
 		// remove the backup directory if it exists
-		fmt.Println("Removing backup directory")
 		os.RemoveAll(weaveDirBackup)
 		// rename the weave directory to backup
 		if err := os.Rename(weaveDir, weaveDirBackup); err != nil {
 			t.Fatalf("Failed to backup weave directory: %v", err)
 		}
+
+		// restore the weave directory
+		defer func() {
+			os.RemoveAll(weaveDir)
+			os.Rename(weaveDirBackup, weaveDir)
+		}()
 	}
 
 	finalModel := testutil.SetupGasStation(t)
@@ -48,11 +52,4 @@ func TestGasStationSetup(t *testing.T) {
 	// Assert values
 	weaveConfig := filepath.Join(weaveDir, "config.json")
 	testutil.CompareJsonValue(t, weaveConfig, "common.gas_station_mnemonic", testutil.GasStationMnemonic)
-
-	// Restore the Weave home directory
-	if _, err := os.Stat(weaveDirBackup); !os.IsNotExist(err) {
-		fmt.Println("Restoring Weave home directory")
-		os.RemoveAll(weaveDir)
-		os.Rename(weaveDirBackup, weaveDir)
-	}
 }
