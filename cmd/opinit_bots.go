@@ -114,7 +114,7 @@ func OPInitBotsKeysSetupCommand() *cobra.Command {
 				OPInitHome:  opInitHome,
 				UserHome:    userHome,
 			})
-			analytics.TrackCompletedEvent(cmd, analytics.RollupComponent)
+			analytics.TrackCompletedEvent(cmd, analytics.OPinitComponent)
 
 			return err
 		},

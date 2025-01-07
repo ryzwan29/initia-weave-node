@@ -21,6 +21,8 @@ const weaveDirectoryBackup = ".weave_back"
 
 func TestMain(m *testing.M) {
 	analytics.Client = &analytics.NoOpClient{}
+	exitCode := m.Run()
+	os.Exit(exitCode)
 }
 
 func TestGasStationSetup(t *testing.T) {
