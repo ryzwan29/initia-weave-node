@@ -5,11 +5,10 @@ import (
 	"fmt"
 	"unicode"
 
-	weavecontext "github.com/initia-labs/weave/context"
-
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/initia-labs/weave/common"
+	weavecontext "github.com/initia-labs/weave/context"
 	"github.com/initia-labs/weave/styles"
 )
 
