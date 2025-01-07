@@ -297,6 +297,9 @@ func IsValidAddress(s string) error {
 }
 
 func IsValidAddresses(s string) error {
+	if s == "" {
+		return nil
+	}
 	cache := make(map[string]bool)
 	for _, address := range strings.Split(s, ",") {
 		if err := IsValidAddress(address); err != nil {

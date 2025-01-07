@@ -3024,8 +3024,48 @@ func (m *LaunchingNewMinitiaLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if err != nil {
 			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "Invalid OS: only Linux and Darwin are supported", []string{}, fmt.Sprintf("%v", err)))
 		}
+
 		if err = srv.Start(); err != nil {
 			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "Failed to start rollup service", []string{}, fmt.Sprintf("%v", err)))
+		}
+
+		if state.feeWhitelistAccounts != "" {
+			cache := make(map[string]bool)
+			for _, acc := range strings.Split(state.feeWhitelistAccounts, ",") {
+				cache[acc] = true
+			}
+
+			userHome, err := os.UserHomeDir()
+			if err != nil {
+				return m, m.HandlePanic(fmt.Errorf("failed to get user home directory: %v", err))
+			}
+			messageJsonPath := filepath.Join(userHome, common.WeaveDataDirectory, "messages.json")
+
+			params, err := cosmosutils.QueryOPChildParams("http://localhost:1317")
+			if err != nil {
+				return m, m.HandlePanic(fmt.Errorf("failed to query params: %v", err))
+
+			}
+			for _, acc := range params.FeeWhitelist {
+				cache[acc] = true
+			}
+
+			updatedFeeWhitelistAccounts := make([]string, 0)
+			for acc := range cache {
+				updatedFeeWhitelistAccounts = append(updatedFeeWhitelistAccounts, acc)
+			}
+			params.FeeWhitelist = updatedFeeWhitelistAccounts
+
+			err = cosmosutils.CreateOPChildUpdateParamsMsg(messageJsonPath, params)
+			if err != nil {
+				return m, m.HandlePanic(fmt.Errorf("failed to create update params message: %v", err))
+
+			}
+			time.Sleep(time.Second)
+			runCmd := exec.Command(state.binaryPath, "tx", "opchild", "execute-messages", messageJsonPath, "--from", "Validator", "--keyring-backend", "test", "--chain-id", state.chainId, "-y")
+			if err := runCmd.Run(); err != nil {
+				return m, m.HandlePanic(fmt.Errorf("failed to update params message: %v", err))
+			}
 		}
 
 		return NewTerminalState(weavecontext.SetCurrentState(m.Ctx, state)), tea.Quit
