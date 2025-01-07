@@ -3,8 +3,9 @@ package ui
 import (
 	"context"
 	"fmt"
-	weavecontext "github.com/initia-labs/weave/context"
 	"unicode"
+
+	weavecontext "github.com/initia-labs/weave/context"
 
 	tea "github.com/charmbracelet/bubbletea"
 
