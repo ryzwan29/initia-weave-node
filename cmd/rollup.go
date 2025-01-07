@@ -167,9 +167,9 @@ func minitiaLaunchCommand() *cobra.Command {
 	}
 
 	launchCmd.Flags().String(FlagMinitiaHome, filepath.Join(homeDir, common.MinitiaDirectory), "The rollup application home directory")
-	launchCmd.Flags().String(FlagWithConfig, "", "launch using an existing rollup config file. The argument should be the path to the config file.")
-	launchCmd.Flags().String(FlagVm, "", fmt.Sprintf("vm to be used. Required when using --with-config. Valid options are: %s", strings.Join(validVMOptions, ", ")))
-	launchCmd.Flags().BoolP(FlagForce, "f", false, "force the launch by deleting the existing .minitia directory if it exists.")
+	launchCmd.Flags().String(FlagWithConfig, "", "Launch using an existing rollup config file. The argument should be the path to the config file")
+	launchCmd.Flags().String(FlagVm, "", fmt.Sprintf("VM to be used. Required when using --with-config. Valid options are: %s", strings.Join(validVMOptions, ", ")))
+	launchCmd.Flags().BoolP(FlagForce, "f", false, "Force the launch by deleting the existing .minitia directory if it exists")
 
 	return launchCmd
 }

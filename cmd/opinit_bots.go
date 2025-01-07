@@ -313,10 +313,10 @@ Example: weave opinit init executor`,
 
 	initCmd.Flags().String(FlagMinitiaHome, filepath.Join(homeDir, common.MinitiaDirectory), "Rollup application directory to fetch artifacts from if existed")
 	initCmd.Flags().String(FlagOPInitHome, filepath.Join(homeDir, common.OPinitDirectory), "OPInit bots home directory")
-	initCmd.Flags().String(FlagWithConfig, "", "launch using an existing bot config file. The argument should be the path to the config file")
-	initCmd.Flags().String(FlagKeyFile, "", "path to key-file.json")
-	initCmd.Flags().BoolP(FlagForce, "f", false, "force the launch by deleting the existing .opinit directory if it exists.")
-	initCmd.Flags().BoolP(FlagGenerateKeyFile, "", false, fmt.Sprintf("Generate and save the key file at: %s", filepath.Join(homeDir, common.WeaveDataDirectory, common.OpinitGeneratedKeyFilename)))
+	initCmd.Flags().String(FlagWithConfig, "", "Bypass the interactive setup and initialize the bot by providing a path to a config file. Either --key-file or --generate-key-file has to be specified")
+	initCmd.Flags().String(FlagKeyFile, "", "Path to key-file.json. Cannot be specified together with --generate-key-file")
+	initCmd.Flags().BoolP(FlagForce, "f", false, "Force the setup by deleting the existing .opinit directory if it exists")
+	initCmd.Flags().BoolP(FlagGenerateKeyFile, "", false, "Use this flag to generate the bot keys. Cannot be specified together with --key-file")
 
 	return initCmd
 }
