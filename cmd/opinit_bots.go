@@ -154,8 +154,33 @@ func generateKeyFile(userHome string, keyPath string) (opinit_bots.KeyFile, erro
 	return keyFile, nil
 }
 
+func validateConfigFlags(configPath, keyFilePath string, isGenerateKeyFile bool) error {
+	if configPath != "" {
+		if keyFilePath != "" && isGenerateKeyFile {
+			return fmt.Errorf("invalid configuration: both keyFilePath and isGenerateKeyFile cannot be set at the same time")
+		}
+		if keyFilePath == "" && !isGenerateKeyFile {
+			return fmt.Errorf("invalid configuration: if configPath is set, either keyFilePath or isGenerateKeyFile must be provided")
+		}
+		if !io.FileOrFolderExists(configPath) {
+			return fmt.Errorf("the provided configPath does not exist: %s", configPath)
+		}
+	} else {
+		// If configPath is empty, neither keyFilePath nor isGenerateKeyFile should be set
+		if keyFilePath != "" || isGenerateKeyFile {
+			return fmt.Errorf("invalid configuration: if configPath is not set, neither keyFilePath nor isGenerateKeyFile should be provided")
+		}
+	}
+
+	return nil
+}
+
 func handleWithConfig(userHome, opInitHome, configPath, keyFilePath string, args []string, force, isGenerateKeyFile bool) error {
-	var err error
+	botName := args[0]
+	if botName != "executor" && botName != "challenger" {
+		return fmt.Errorf("bot name '%s' is not recognized. Allowed values are 'executor' or 'challenger'", botName)
+	}
+
 	fileData, err := os.ReadFile(configPath)
 	if err != nil {
 		return err
@@ -190,15 +215,7 @@ func handleWithConfig(userHome, opInitHome, configPath, keyFilePath string, args
 		return fmt.Errorf("please specify bot name")
 	}
 
-	botName := args[0]
-	switch botName {
-	case "executor":
-		return initializeBotWithConfig(fileData, keyFile, opInitHome, userHome, "executor")
-	case "challenger":
-		return initializeBotWithConfig(fileData, keyFile, opInitHome, userHome, "challenger")
-	default:
-		return fmt.Errorf("invalid bot name provided: %s", botName)
-	}
+	return initializeBotWithConfig(fileData, keyFile, opInitHome, userHome, botName)
 }
 
 // readAndUnmarshalKeyFile read and unmarshal the key file into the KeyFile struct
@@ -277,7 +294,11 @@ Example: weave opinit init executor`,
 				return fmt.Errorf("error getting user home directory: %v", err)
 			}
 
-			if io.FileOrFolderExists(configPath) {
+			err = validateConfigFlags(configPath, keyFilePath, isGenerateKeyFile)
+			if err != nil {
+				return err
+			}
+			if configPath != "" {
 				return handleWithConfig(userHome, opInitHome, configPath, keyFilePath, args, force, isGenerateKeyFile)
 			}
 
