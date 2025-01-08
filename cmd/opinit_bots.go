@@ -131,8 +131,8 @@ func OPInitBotsKeysSetupCommand() *cobra.Command {
 	return setupCmd
 }
 
-func generateKeyFile(userHome string, keyPath string) (opinit_bots.KeyFile, error) {
-	keyFile, err := opinit_bots.GenerateMnemonicKeyfile()
+func generateKeyFile(userHome string, keyPath string, botName string) (opinit_bots.KeyFile, error) {
+	keyFile, err := opinit_bots.GenerateMnemonicKeyfile(botName)
 	if err != nil {
 		return keyFile, err
 	}
@@ -186,8 +186,8 @@ func handleWithConfig(userHome, opInitHome, configPath, keyFilePath string, args
 
 	var keyFile opinit_bots.KeyFile
 	if isGenerateKeyFile {
-		keyPath := filepath.Join(userHome, common.WeaveDataDirectory, common.OpinitGeneratedKeyFilename)
-		keyFile, err = generateKeyFile(userHome, keyPath)
+		keyPath := filepath.Join(userHome, common.WeaveDataDirectory, fmt.Sprintf("%s.%s.keyfile", common.OpinitGeneratedKeyFilename, botName))
+		keyFile, err = generateKeyFile(userHome, keyPath, botName)
 		if err != nil {
 			return err
 		}
@@ -204,7 +204,7 @@ func handleWithConfig(userHome, opInitHome, configPath, keyFilePath string, args
 		}
 	}
 	// Handle existing opInitHome directory
-	if err := handleExistingOpInitHome(opInitHome, force); err != nil {
+	if err := handleExistingOpInitHome(opInitHome, botName, force); err != nil {
 		return err
 	}
 
@@ -229,11 +229,16 @@ func readAndUnmarshalKeyFile(keyFilePath string) (opinit_bots.KeyFile, error) {
 }
 
 // handleExistingOpInitHome handle the case where the opInitHome directory exists
-func handleExistingOpInitHome(opInitHome string, force bool) error {
+func handleExistingOpInitHome(opInitHome string, botName string, force bool) error {
 	if io.FileOrFolderExists(opInitHome) {
 		if force {
-			if err := io.DeleteDirectory(opInitHome); err != nil {
-				return fmt.Errorf("failed to delete %s: %v", opInitHome, err)
+			// delete db
+			dbPath := filepath.Join(opInitHome, fmt.Sprintf("%s.db", botName))
+			if io.FileOrFolderExists(dbPath) {
+				err := io.DeleteDirectory(dbPath)
+				if err != nil {
+					return fmt.Errorf("failed to delete %s", dbPath)
+				}
 			}
 		} else {
 			return fmt.Errorf("existing %s folder detected. Use --force or -f to override", opInitHome)
