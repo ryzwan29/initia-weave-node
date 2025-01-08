@@ -746,6 +746,14 @@ func (m *ImportL1RelayerKeyInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case L2SameKey:
 			state.l2RelayerAddress = relayerKey.Address
 			state.l2RelayerMnemonic = relayerKey.Mnemonic
+			l2ChainId, err := GetL2ChainId(m.Ctx)
+			if err != nil {
+				return m, m.HandlePanic(err)
+			}
+			relayerKey, err = cosmosutils.RecoverAndReplaceHermesKey(state.hermesBinaryPath, l2ChainId, state.l2RelayerMnemonic)
+			if err != nil {
+				return m, m.HandlePanic(err)
+			}
 			model := NewFetchingBalancesLoading(weavecontext.SetCurrentState(m.Ctx, state))
 			return model, model.Init()
 		case L2GenerateKey:
