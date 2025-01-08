@@ -42,6 +42,8 @@ func NewOPInitBotsState() OPInitBotsState {
 		MinitiaConfig:        nil,
 		botConfig:            make(map[string]string),
 		AddMinitiaConfig:     false,
+		UsePrefilledMinitia:  false,
+		L1StartHeight:        0,
 	}
 }
 

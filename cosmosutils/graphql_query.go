@@ -70,7 +70,7 @@ func QueryLatestDepositHeight(client *client.GraphQLClient, bridgeId, sequence s
 		}
 	`
 
-	pageSize := 50
+	pageSize := 100
 	for offset := 0; ; offset += pageSize {
 		var seqResponse TransactionEventsResponse
 		err := client.Query(
