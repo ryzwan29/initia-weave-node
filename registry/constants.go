@@ -19,6 +19,9 @@ const (
 	InitiaTestnetRegistryAPI string = "https://registry.testnet.initia.xyz/chains.json"
 	InitiaMainnetRegistryAPI string = "https://registry.initia.xyz/chains.json"
 	InitiaL1PrettyName       string = "Initia"
+
+	InitiaTestnetGraphQLAPI string = "https://graphql.testnet.initia.xyz/v1/graphql"
+	InitiaMainnetGraphQLAPI string = "https://graphql.initia.xyz/v1/graphql"
 )
 
 var (
@@ -37,6 +40,10 @@ var (
 	ChainTypeToInitiaRegistryAPI = map[ChainType]string{
 		InitiaL1Testnet: InitiaTestnetRegistryAPI,
 		InitiaL1Mainnet: InitiaMainnetRegistryAPI,
+	}
+	ChainTypeToInitiaGraphQLAPI = map[ChainType]string{
+		InitiaL1Testnet: InitiaTestnetGraphQLAPI,
+		InitiaL1Mainnet: InitiaMainnetGraphQLAPI,
 	}
 )
 
