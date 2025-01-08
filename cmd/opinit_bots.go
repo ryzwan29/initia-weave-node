@@ -152,21 +152,29 @@ func generateKeyFile(userHome string, keyPath string, botName string) (opinit_bo
 	return keyFile, nil
 }
 
-func validateConfigFlags(configPath, keyFilePath string, isGenerateKeyFile bool) error {
+func validateConfigFlags(args []string, configPath, keyFilePath string, isGenerateKeyFile bool) error {
 	if configPath != "" {
+		if len(args) == 0 {
+			return fmt.Errorf("bot name <executor|challenger> is required as an argument")
+		}
+
+		botName := args[0]
+		if botName != "executor" && botName != "challenger" {
+			return fmt.Errorf("bot name '%s' is not recognized. Allowed values are 'executor' or 'challenger'", botName)
+		}
 		if keyFilePath != "" && isGenerateKeyFile {
-			return fmt.Errorf("invalid configuration: both keyFilePath and isGenerateKeyFile cannot be set at the same time")
+			return fmt.Errorf("invalid configuration: both --generate-key-file and --key-file cannot be set at the same time")
 		}
 		if keyFilePath == "" && !isGenerateKeyFile {
-			return fmt.Errorf("invalid configuration: if configPath is set, either keyFilePath or isGenerateKeyFile must be provided")
+			return fmt.Errorf("invalid configuration: if configPath is set, either --generate-key-file or --key-file must be provided")
 		}
 		if !io.FileOrFolderExists(configPath) {
 			return fmt.Errorf("the provided configPath does not exist: %s", configPath)
 		}
 	} else {
-		// If configPath is empty, neither keyFilePath nor isGenerateKeyFile should be set
+		// If configPath is empty, neither --generate-key-file nor isGenerateKeyFile should be set
 		if keyFilePath != "" || isGenerateKeyFile {
-			return fmt.Errorf("invalid configuration: if configPath is not set, neither keyFilePath nor isGenerateKeyFile should be provided")
+			return fmt.Errorf("invalid configuration: if configPath is not set, neither --generate-key-file nor --key-file should be provided")
 		}
 	}
 
@@ -297,7 +305,7 @@ Example: weave opinit init executor`,
 				return fmt.Errorf("error getting user home directory: %v", err)
 			}
 
-			err = validateConfigFlags(configPath, keyFilePath, isGenerateKeyFile)
+			err = validateConfigFlags(args, configPath, keyFilePath, isGenerateKeyFile)
 			if err != nil {
 				return err
 			}
