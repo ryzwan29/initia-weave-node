@@ -104,7 +104,7 @@ func minitiaLaunchCommand() *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			analytics.TrackRunEvent(cmd, analytics.RollupComponent)
+			analytics.TrackRunEvent(cmd, args, analytics.RollupComponent)
 			minitiaHome, err := cmd.Flags().GetString(FlagMinitiaHome)
 			if err != nil {
 				return err
