@@ -42,6 +42,7 @@ func gasStationSetupCommand() *cobra.Command {
 				return err
 			} else {
 				fmt.Println(finalModel.View())
+				analytics.TrackCompletedEvent(cmd, analytics.GasStationComponent)
 				if _, ok := finalModel.(*models.WeaveAppSuccessfullyInitialized); !ok {
 					return nil
 				}

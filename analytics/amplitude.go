@@ -106,8 +106,10 @@ func TrackCompletedEvent(cmd *cobra.Command, component Component) {
 
 // Add adds a key-value pair to the event's attributes
 func (e *AmplitudeEvent) Add(key string, value interface{}) *AmplitudeEvent {
-	if str, ok := value.(string); ok {
-		value = strings.ToLower(str) // Convert string value to lowercase
+	if key != string(ModelNameKey) {
+		if str, ok := value.(string); ok {
+			value = strings.ToLower(str) // Convert string value to lowercase
+		}
 	}
 	e.Attributes[key] = value
 	return e

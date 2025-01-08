@@ -146,7 +146,7 @@ func (m *ProcessingMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		switch *selected {
 		case YesAddMinitiaKeyOption:
-			analytics.TrackEvent(analytics.MinitiaConfigAdded, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, "yes"))
+			analytics.TrackEvent(analytics.ImportKeysFromArtifactsSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, "yes"))
 			// Iterate through botInfos and add relevant keys
 			for idx := range state.BotInfos {
 				if state.BotInfos[idx].BotName != OracleBridgeExecutor {
@@ -161,7 +161,7 @@ func (m *ProcessingMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return nextModel, nil
 
 		case NoAddMinitiaKeyOption:
-			analytics.TrackEvent(analytics.MinitiaConfigAdded, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, "no"))
+			analytics.TrackEvent(analytics.ImportKeysFromArtifactsSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, "no"))
 			nextModel, err := m.nextModelFunc(weavecontext.SetCurrentState(m.Ctx, state))
 			if err != nil {
 				return m, m.HandlePanic(err)
