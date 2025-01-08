@@ -98,6 +98,6 @@ type OPChildParams struct {
 	HookMaxGas string `protobuf:"varint,7,opt,name=hook_max_gas,json=hookMaxGas,proto3" json:"hook_max_gas,omitempty" yaml:"hook_max_gas"`
 }
 
-type OPChildParamsResoponse struct {
+type OPChildParamsResponse struct {
 	Params OPChildParams `protobuf:"bytes,1,opt,name=params,proto3" json:"params,omitempty"`
 }

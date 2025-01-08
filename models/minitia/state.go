@@ -112,6 +112,7 @@ func (ls LaunchState) Clone() LaunchState {
 		celestiaBinaryPath:                ls.celestiaBinaryPath,
 		launchFromExistingConfig:          ls.launchFromExistingConfig,
 		existingConfigPath:                ls.existingConfigPath,
+		feeWhitelistAccounts:              ls.feeWhitelistAccounts,
 	}
 
 	copy(clone.genesisAccounts, ls.genesisAccounts)

@@ -39,5 +39,5 @@ var (
 	GenesisBalanceInputTooltip  = ui.NewTooltip("Genesis balance", "The amount of tokens allocated to specific accounts when a blockchain network launches, in this case the genesis account. It allows these accounts to have immediate resources for transactions, testing, or operational roles without needing to acquire tokens afterward.", "", []string{}, []string{}, []string{})
 
 	// FeeWhitelistAccoutsInputTooltip
-	FeeWhitelistAccoutsInputTooltip = ui.NewTooltip("Fee whitelist accounts", "Fee-whitelisted accounts are exempt from paying transaction fees, allowing specific accounts to perform transactions without incurring costs. Note that Rollup Operator, Bridge Executor, and Challenger are automatically included in this list.", "", []string{}, []string{}, []string{})
+	FeeWhitelistAccountsInputTooltip = ui.NewTooltip("Fee whitelist accounts", "Fee-whitelisted accounts are exempt from paying transaction fees, allowing specific accounts to perform transactions without incurring costs. Note that Rollup Operator, Bridge Executor, and Challenger are automatically included in this list.", "", []string{}, []string{}, []string{})
 )

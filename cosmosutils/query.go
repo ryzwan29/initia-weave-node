@@ -46,7 +46,7 @@ func QueryBankBalances(rest, address string) (*Coins, error) {
 func QueryOPChildParams(address string) (params OPChildParams, err error) {
 	httpClient := client.NewHTTPClient()
 
-	var res OPChildParamsResoponse
+	var res OPChildParamsResponse
 	if _, err := httpClient.Get(address, "/opinit/opchild/v1/params", nil, &res); err != nil {
 		return params, err
 	}

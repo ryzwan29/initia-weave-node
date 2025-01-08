@@ -1941,7 +1941,7 @@ type FeeWhitelistAccountsInput struct {
 }
 
 func NewFeeWhitelistAccountsInput(ctx context.Context) *FeeWhitelistAccountsInput {
-	tooltip := tooltip.FeeWhitelistAccoutsInputTooltip
+	tooltip := tooltip.FeeWhitelistAccountsInputTooltip
 	model := &FeeWhitelistAccountsInput{
 		TextInput: ui.NewTextInput(true),
 		BaseModel: weavecontext.BaseModel{Ctx: ctx},
@@ -1969,8 +1969,9 @@ func (m *FeeWhitelistAccountsInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	input, cmd, done := m.TextInput.Update(msg)
 	if done {
 		state := weavecontext.PushPageAndGetState[LaunchState](m)
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"fee whitelist"}, input.Text))
-		state.feeWhitelistAccounts = input.Text
+		accs := strings.Trim(input.Text, "\n")
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"fee whitelist"}, accs))
+		state.feeWhitelistAccounts = accs
 		model := NewDownloadMinitiaBinaryLoading(weavecontext.SetCurrentState(m.Ctx, state))
 		return model, model.Init()
 	}
@@ -3062,7 +3063,10 @@ func (m *LaunchingNewMinitiaLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			}
 			time.Sleep(time.Second)
-			runCmd := exec.Command(state.binaryPath, "tx", "opchild", "execute-messages", messageJsonPath, "--from", "Validator", "--keyring-backend", "test", "--chain-id", state.chainId, "-y")
+			runCmd := exec.Command(state.binaryPath, "tx", "opchild", "execute-messages", messageJsonPath,
+				"--from", "Validator", "--keyring-backend", "test",
+				"--chain-id", state.chainId, "-y",
+			)
 			if err := runCmd.Run(); err != nil {
 				return m, m.HandlePanic(fmt.Errorf("failed to update params message: %v", err))
 			}
