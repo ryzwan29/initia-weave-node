@@ -2,7 +2,6 @@ package opinit_bots
 
 import (
 	"fmt"
-	"reflect"
 
 	"github.com/initia-labs/weave/crypto"
 )
@@ -68,38 +67,39 @@ type KeyFile struct {
 }
 
 func GenerateMnemonicKeyfile(botName string) (KeyFile, error) {
-	mnemonics := make([]string, 0)
-	keyFile := KeyFile{}
-	val := reflect.ValueOf(&keyFile).Elem()
-
-	// Determine which fields to populate based on botName
-	var fieldsToGenerate []string
 	switch botName {
 	case "executor":
-		fieldsToGenerate = []string{"BridgeExecutor", "OutputSubmitter", "BatchSubmitter", "OracleBridgeExecutor"}
+		bridgeExecutor, err := crypto.GenerateMnemonic()
+		if err != nil {
+			return KeyFile{}, fmt.Errorf("failed to generate bridge executor mnemonic: %w", err)
+		}
+		outputSubmitter, err := crypto.GenerateMnemonic()
+		if err != nil {
+			return KeyFile{}, fmt.Errorf("failed to generate output submitter mnemonic: %w", err)
+		}
+		batchSubmitter, err := crypto.GenerateMnemonic()
+		if err != nil {
+			return KeyFile{}, fmt.Errorf("failed to generate batch submitter mnemonic: %w", err)
+		}
+		oracleBridgeExecutor, err := crypto.GenerateMnemonic()
+		if err != nil {
+			return KeyFile{}, fmt.Errorf("failed to generate oracle bridge executor mnemonic: %w", err)
+		}
+		return KeyFile{
+			BridgeExecutor:       bridgeExecutor,
+			OutputSubmitter:      outputSubmitter,
+			BatchSubmitter:       batchSubmitter,
+			OracleBridgeExecutor: oracleBridgeExecutor,
+		}, nil
 	case "challenger":
-		fieldsToGenerate = []string{"Challenger"}
+		challenger, err := crypto.GenerateMnemonic()
+		if err != nil {
+			return KeyFile{}, fmt.Errorf("failed to generate challenger mnemonic: %w", err)
+		}
+		return KeyFile{
+			Challenger: challenger,
+		}, nil
 	default:
 		return KeyFile{}, fmt.Errorf("unsupported bot name: %s", botName)
 	}
-
-	for idx := 0; idx < len(fieldsToGenerate); idx++ {
-		mnemonic, err := crypto.GenerateMnemonic()
-		if err != nil {
-			return KeyFile{}, err
-		}
-		mnemonics = append(mnemonics, mnemonic)
-	}
-
-	// Set the mnemonics to the corresponding fields in the keyFile
-	for idx, fieldName := range fieldsToGenerate {
-		field := val.FieldByName(fieldName)
-		if field.IsValid() && field.CanSet() {
-			if idx < len(mnemonics) {
-				field.SetString(mnemonics[idx])
-			}
-		}
-	}
-
-	return keyFile, nil
 }
