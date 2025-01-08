@@ -18,7 +18,7 @@ func InitCommand() *cobra.Command {
 		Use:   "init",
 		Short: "Initialize Weave CLI, funding gas station and setting up config.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			analytics.TrackRunEvent(cmd, analytics.InitComponent)
+			analytics.TrackRunEvent(cmd, args, analytics.InitComponent)
 			if config.IsFirstTimeSetup() {
 				ctx := weavecontext.NewAppContext(models.NewExistingCheckerState())
 

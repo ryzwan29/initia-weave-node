@@ -1,6 +1,7 @@
 package analytics
 
 import (
+	"fmt"
 	"runtime"
 	"strings"
 	"time"
@@ -88,11 +89,16 @@ func TrackEvent(eventType Event, overrideProperties *AmplitudeEvent) {
 	})
 }
 
-func TrackRunEvent(cmd *cobra.Command, component Component) {
+func TrackRunEvent(cmd *cobra.Command, args []string, component Component) {
 	AppendGlobalEventProperties(EventAttributes{
 		ComponentEventKey: component,
 		CommandEventKey:   cmd.CommandPath(),
 	})
+	for idx, arg := range args {
+		AppendGlobalEventProperties(EventAttributes{
+			fmt.Sprintf("arg-%d", idx): arg,
+		})
+	}
 	TrackEvent(RunEvent, NewEmptyEvent())
 }
 
