@@ -143,6 +143,33 @@ func (j *Launchd) Log(n int) error {
 	return j.streamLogsFromFiles(n)
 }
 
+func (j *Launchd) PruneLogs() error {
+	userHome, err := os.UserHomeDir()
+	if err != nil {
+		return fmt.Errorf("failed to get user home directory: %v", err)
+	}
+
+	slug, err := j.commandName.GetServiceSlug()
+	if err != nil {
+		return fmt.Errorf("failed to get service slug: %v", err)
+	}
+	if err != nil {
+		return fmt.Errorf("failed to get service name: %v", err)
+	}
+
+	logFilePathOut := filepath.Join(userHome, common.WeaveLogDirectory, fmt.Sprintf("%s.stdout.log", slug))
+	logFilePathErr := filepath.Join(userHome, common.WeaveLogDirectory, fmt.Sprintf("%s.stderr.log", slug))
+
+	if err := os.Remove(logFilePathOut); err != nil {
+		return fmt.Errorf("failed to remove log file %s: %v", logFilePathOut, err)
+	}
+	if err := os.Remove(logFilePathErr); err != nil {
+		return fmt.Errorf("failed to remove log file %s: %v", logFilePathErr, err)
+	}
+
+	return nil
+}
+
 // streamLogsFromFiles streams logs from file-based logs
 func (j *Launchd) streamLogsFromFiles(n int) error {
 	userHome, err := os.UserHomeDir()

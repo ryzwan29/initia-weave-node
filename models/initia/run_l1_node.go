@@ -1165,6 +1165,9 @@ func initializeApp(ctx context.Context) tea.Cmd {
 			}
 		}
 
+		// prune existing logs, ignore error
+		_ = srv.PruneLogs()
+
 		return ui.EndLoading{Ctx: weavecontext.SetCurrentState(ctx, state)}
 	}
 }
