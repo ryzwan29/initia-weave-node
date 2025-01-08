@@ -21,5 +21,5 @@ const (
 	OPinitAppName   = "opinitd"
 
 	HermesTempMnemonicFilename = "weave.mnemonic"
-	OpinitGeneratedKeyFilename = "weave.opinit.generated.keyfile"
+	OpinitGeneratedKeyFilename = "weave.opinit.generated"
 )

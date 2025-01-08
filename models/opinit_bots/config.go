@@ -1,6 +1,7 @@
 package opinit_bots
 
 import (
+	"fmt"
 	"reflect"
 
 	"github.com/initia-labs/weave/crypto"
@@ -66,12 +67,23 @@ type KeyFile struct {
 	OracleBridgeExecutor string `json:"oracle_bridge_executor,omitempty"`
 }
 
-func GenerateMnemonicKeyfile() (KeyFile, error) {
+func GenerateMnemonicKeyfile(botName string) (KeyFile, error) {
 	mnemonics := make([]string, 0)
 	keyFile := KeyFile{}
 	val := reflect.ValueOf(&keyFile).Elem()
 
-	for idx := 0; idx < val.NumField(); idx++ {
+	// Determine which fields to populate based on botName
+	var fieldsToGenerate []string
+	switch botName {
+	case "executor":
+		fieldsToGenerate = []string{"BridgeExecutor", "OutputSubmitter", "BatchSubmitter", "OracleBridgeExecutor"}
+	case "challenger":
+		fieldsToGenerate = []string{"Challenger"}
+	default:
+		return KeyFile{}, fmt.Errorf("unsupported bot name: %s", botName)
+	}
+
+	for idx := 0; idx < len(fieldsToGenerate); idx++ {
 		mnemonic, err := crypto.GenerateMnemonic()
 		if err != nil {
 			return KeyFile{}, err
@@ -79,11 +91,12 @@ func GenerateMnemonicKeyfile() (KeyFile, error) {
 		mnemonics = append(mnemonics, mnemonic)
 	}
 
-	for i := 0; i < val.NumField(); i++ {
-		field := val.Field(i)
-		if field.CanSet() {
-			if i < len(mnemonics) {
-				field.SetString(mnemonics[i])
+	// Set the mnemonics to the corresponding fields in the keyFile
+	for idx, fieldName := range fieldsToGenerate {
+		field := val.FieldByName(fieldName)
+		if field.IsValid() && field.CanSet() {
+			if idx < len(mnemonics) {
+				field.SetString(mnemonics[idx])
 			}
 		}
 	}
