@@ -25,6 +25,8 @@ type OPInitBotsState struct {
 	dbPath               string
 	isDeleteDB           bool
 	AddMinitiaConfig     bool
+	UsePrefilledMinitia  bool
+	L1StartHeight        int
 }
 
 // NewOPInitBotsState initializes OPInitBotsState with default values
@@ -64,6 +66,7 @@ func (state OPInitBotsState) Clone() OPInitBotsState {
 		dbPath:               state.dbPath,
 		isDeleteDB:           state.isDeleteDB,
 		AddMinitiaConfig:     state.AddMinitiaConfig,
+		L1StartHeight:        state.L1StartHeight,
 	}
 
 	if state.MinitiaConfig != nil {
