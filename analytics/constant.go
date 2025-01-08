@@ -52,20 +52,23 @@ const (
 	AddGenesisAccountsSelected            Event = "add-genesis-accounts-selected"
 
 	// Opinit Event
-	OPInitBotInitSelected    Event = "opinit-bot-init-selected"
-	DBDeleted                Event = "db-deleted"
-	UseCurrentConfigSelected Event = "use-current-config-selected"
-	MinitiaConfigPrefilled   Event = "minitia-config-prefilled"
-	L1PrefillSelected        Event = "l1-prefill-selected"
-	DALayerSelected          Event = "da-layer-selected"
-	MinitiaConfigAdded       Event = "minitia-config-added"
-	RecoverKeySelected       Event = "recover-key-selected"
+	OPInitBotInitSelected           Event = "opinit-bot-init-selected"
+	ResetDBSelected                 Event = "reset-db-selected"
+	UseCurrentConfigSelected        Event = "use-current-config-selected"
+	PrefillFromArtifactsSelected    Event = "prefill-from-artifacts-selected"
+	L1PrefillSelected               Event = "l1-prefill-selected"
+	DALayerSelected                 Event = "da-layer-selected"
+	ImportKeysFromArtifactsSelected Event = "import-keys-from-artifacts-selected"
+	RecoverKeySelected              Event = "recover-key-selected"
 
 	// Relayer
 	RelayerRollupSelected              Event = "relayer-rollup-selected"
 	RelayerL2Selected                  Event = "relayer-l2-selected"
 	SettingUpIBCChannelsMethodSelected Event = "setting-up-ibc-channels-method-selected"
 	IBCChannelsSelected                Event = "ibc-channel-selected"
+
+	// GasStation
+	GasStationMethodSelected Event = "gas-station-method-selected"
 )
 
 type Component string

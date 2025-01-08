@@ -155,8 +155,10 @@ Example: weave opinit init executor`,
 				botName := args[0]
 				switch botName {
 				case "executor":
+					analytics.TrackEvent(analytics.OPInitBotInitSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, botName))
 					rootProgram = opinit_bots.OPInitBotInitSelectExecutor
 				case "challenger":
+					analytics.TrackEvent(analytics.OPInitBotInitSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, botName))
 					rootProgram = opinit_bots.OPInitBotInitSelectChallenger
 				default:
 					return fmt.Errorf("invalid bot name provided: %s", botName)

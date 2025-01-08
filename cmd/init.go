@@ -27,8 +27,8 @@ func InitCommand() *cobra.Command {
 					return err
 				} else {
 					fmt.Println(finalModel.View())
-					analytics.TrackCompletedEvent(cmd, analytics.InitComponent)
 					if _, ok := finalModel.(*models.WeaveAppSuccessfullyInitialized); !ok {
+						analytics.TrackCompletedEvent(cmd, analytics.InitComponent)
 						return nil
 					}
 				}
@@ -37,6 +37,7 @@ func InitCommand() *cobra.Command {
 			if finalModel, err := tea.NewProgram(weaveinit.NewWeaveInit(), tea.WithAltScreen()).Run(); err != nil {
 				return err
 			} else {
+				analytics.TrackCompletedEvent(cmd, analytics.InitComponent)
 				fmt.Println(finalModel.View())
 				return nil
 			}

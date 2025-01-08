@@ -377,7 +377,7 @@ func (m *DeleteDBSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			state.isDeleteDB = true
 		}
 
-		analytics.TrackEvent(analytics.DBDeleted, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, state.isDeleteDB))
+		analytics.TrackEvent(analytics.ResetDBSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, state.isDeleteDB))
 
 		opInitHome, err := weavecontext.GetOPInitHome(m.Ctx)
 		if err != nil {
@@ -566,7 +566,7 @@ func (m *PrefillMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		switch *selected {
 		case PrefillMinitiaConfigYes:
-			analytics.TrackEvent(analytics.MinitiaConfigPrefilled, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, true))
+			analytics.TrackEvent(analytics.PrefillFromArtifactsSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, true))
 			minitiaConfig := state.MinitiaConfig
 			state.botConfig["l1_node.chain_id"] = minitiaConfig.L1Config.ChainID
 			state.botConfig["l1_node.rpc_address"] = minitiaConfig.L1Config.RpcUrl
@@ -631,7 +631,7 @@ func (m *PrefillMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			}
 		case PrefillMinitiaConfigNo:
-			analytics.TrackEvent(analytics.MinitiaConfigPrefilled, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, false))
+			analytics.TrackEvent(analytics.PrefillFromArtifactsSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, false))
 			model, err := NewL1PrefillSelector(weavecontext.SetCurrentState(m.Ctx, state))
 			if err != nil {
 				return m, m.HandlePanic(err)
@@ -676,7 +676,7 @@ func NewL1PrefillSelector(ctx context.Context) (*L1PrefillSelector, error) {
 		Selector: ui.Selector[L1PrefillOption]{
 			Options: []L1PrefillOption{
 				L1PrefillOptionTestnet,
-				L1PrefillOptionCustom,
+				// L1PrefillOptionCustom,
 			},
 		},
 		BaseModel: weavecontext.BaseModel{Ctx: ctx},
