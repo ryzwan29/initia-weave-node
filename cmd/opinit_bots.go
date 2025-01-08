@@ -168,15 +168,15 @@ func validateConfigFlags(args []string, configPath, keyFilePath string, isGenera
 			return fmt.Errorf("invalid configuration: both --generate-key-file and --key-file cannot be set at the same time")
 		}
 		if keyFilePath == "" && !isGenerateKeyFile {
-			return fmt.Errorf("invalid configuration: if configPath is set, either --generate-key-file or --key-file must be provided")
+			return fmt.Errorf("invalid configuration: if --with-config is set, either --generate-key-file or --key-file must be provided")
 		}
 		if !io.FileOrFolderExists(configPath) {
-			return fmt.Errorf("the provided configPath does not exist: %s", configPath)
+			return fmt.Errorf("the provided --with-config does not exist: %s", configPath)
 		}
 	} else {
 		// If configPath is empty, neither --generate-key-file nor isGenerateKeyFile should be set
 		if keyFilePath != "" || isGenerateKeyFile {
-			return fmt.Errorf("invalid configuration: if configPath is not set, neither --generate-key-file nor --key-file should be provided")
+			return fmt.Errorf("invalid configuration: if --with-config is not set, neither --generate-key-file nor --key-file should be provided")
 		}
 	}
 
