@@ -157,11 +157,6 @@ func validateConfigFlags(args []string, configPath, keyFilePath string, isGenera
 		if len(args) == 0 {
 			return fmt.Errorf("bot name <executor|challenger> is required as an argument")
 		}
-
-		botName := args[0]
-		if botName != "executor" && botName != "challenger" {
-			return fmt.Errorf("bot name '%s' is not recognized. Allowed values are 'executor' or 'challenger'", botName)
-		}
 		if keyFilePath != "" && isGenerateKeyFile {
 			return fmt.Errorf("invalid configuration: both --generate-key-file and --key-file cannot be set at the same time")
 		}
