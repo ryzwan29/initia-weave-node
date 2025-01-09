@@ -89,17 +89,18 @@ func TrackEvent(eventType Event, overrideProperties *AmplitudeEvent) {
 	})
 }
 
-func TrackRunEvent(cmd *cobra.Command, args []string, component Component) {
+func TrackRunEvent(cmd *cobra.Command, args []string, component Component, events *AmplitudeEvent) {
 	AppendGlobalEventProperties(EventAttributes{
 		ComponentEventKey: component,
 		CommandEventKey:   cmd.CommandPath(),
 	})
-	for idx, arg := range args {
-		AppendGlobalEventProperties(EventAttributes{
-			fmt.Sprintf("arg-%d", idx): arg,
-		})
+
+	if len(args) > 0 {
+		for idx, arg := range args {
+			events.Add(fmt.Sprintf("arg-%d", idx), arg)
+		}
 	}
-	TrackEvent(RunEvent, NewEmptyEvent())
+	TrackEvent(RunEvent, events)
 }
 
 func TrackCompletedEvent(cmd *cobra.Command, component Component) {
