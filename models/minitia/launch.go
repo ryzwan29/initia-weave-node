@@ -2991,6 +2991,9 @@ func launchingMinitia(ctx context.Context, streamingLogs *[]string) tea.Cmd {
 			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to create service: %v", err)}
 		}
 
+		// prune existing logs, ignore error
+		_ = srv.PruneLogs()
+
 		return ui.EndLoading{
 			Ctx: weavecontext.SetCurrentState(ctx, state),
 		}

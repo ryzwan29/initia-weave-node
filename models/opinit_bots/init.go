@@ -667,7 +667,8 @@ var (
 type L1PrefillSelector struct {
 	ui.Selector[L1PrefillOption]
 	weavecontext.BaseModel
-	question string
+	question   string
+	highlights []string
 }
 
 func NewL1PrefillSelector(ctx context.Context) (*L1PrefillSelector, error) {
@@ -683,8 +684,9 @@ func NewL1PrefillSelector(ctx context.Context) (*L1PrefillSelector, error) {
 				// L1PrefillOptionCustom,
 			},
 		},
-		BaseModel: weavecontext.BaseModel{Ctx: ctx},
-		question:  "Which L1 would you like your Minitia to connect to?",
+		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
+		question:   "Which L1 would you like your rollup to connect to?",
+		highlights: []string{"L1", "rollup"},
 	}, nil
 }
 
@@ -703,7 +705,7 @@ func (m *L1PrefillSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	selected, cmd := m.Select(msg)
 	if selected != nil {
 		state := weavecontext.PushPageAndGetState[OPInitBotsState](m)
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"L1"}, string(*selected)))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), m.highlights, string(*selected)))
 
 		var chainId, rpc, minGasPrice string
 		switch *selected {
@@ -751,7 +753,7 @@ func (m *L1PrefillSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *L1PrefillSelector) View() string {
 	state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
-	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"L1"}, styles.Question) + m.Selector.View())
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.Selector.View())
 }
 
 type DALayerNetwork string
@@ -1178,7 +1180,6 @@ func WaitStartingInitBot(ctx context.Context) tea.Cmd {
 				// TODO: revisit error
 				_ = cosmosutils.OPInitGrantOracle(binaryPath, address, opInitHome)
 			}
-
 		} else if state.InitChallengerBot {
 			srv, err := service.NewService(service.OPinitChallenger)
 			if err != nil {
@@ -1247,6 +1248,11 @@ func (m *StartingInitBot) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.HandlePanic(m.Loading.NonRetryableErr)
 	}
 	if m.Loading.Completing {
+		srv, err := service.NewService(service.OPinitExecutor)
+		if err != nil {
+			return m, m.HandlePanic(err)
+		}
+		_ = srv.PruneLogs()
 		return NewOPinitBotSuccessful(m.Ctx), nil
 	}
 	return m, cmd
@@ -1479,6 +1485,9 @@ func InitializeExecutorWithConfig(config ExecutorConfig, keyFile *KeyFile, opIni
 		return fmt.Errorf("failed to write config file: %v", err)
 	}
 
+	// prune existing logs, ignore error
+	_ = srv.PruneLogs()
+
 	return nil
 }
 
@@ -1527,6 +1536,9 @@ func InitializeChallengerWithConfig(config ChallengerConfig, keyFile *KeyFile, o
 	if err = os.WriteFile(configFilePath, configBz, 0600); err != nil {
 		return fmt.Errorf("failed to write config file: %v", err)
 	}
+
+	// prune existing logs, ignore error
+	_ = srv.PruneLogs()
 
 	return nil
 }

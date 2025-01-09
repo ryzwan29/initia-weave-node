@@ -2515,6 +2515,9 @@ func WaitSettingUpRelayer(ctx context.Context) tea.Cmd {
 			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to create service: %v", err)}
 		}
 
+		// prune existing logs, ignore error
+		_ = srv.PruneLogs()
+
 		// Return updated state
 		return ui.EndLoading{Ctx: weavecontext.SetCurrentState(ctx, state)}
 	}
