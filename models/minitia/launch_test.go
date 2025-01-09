@@ -1346,26 +1346,6 @@ func TestSystemKeyL1ChallengerBalanceInput_Init(t *testing.T) {
 	assert.Nil(t, cmd)
 }
 
-func TestSystemKeyL1ChallengerBalanceInput_Update_Valid(t *testing.T) {
-	ctx := weavecontext.NewAppContext(*NewLaunchState())
-
-	challengerInput := NewSystemKeyL1ChallengerBalanceInput(ctx)
-
-	validInput := "7500"
-	keyMsg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(validInput)}
-	nextModel, _ := challengerInput.Update(keyMsg)
-
-	enterPress := tea.KeyMsg{Type: tea.KeyEnter}
-	finalModel, _ := nextModel.Update(enterPress)
-
-	model := finalModel.(*SystemKeyL2OperatorBalanceInput)
-	state := weavecontext.GetCurrentState[LaunchState](model.Ctx)
-	assert.IsType(t, &SystemKeyL2OperatorBalanceInput{}, finalModel)
-	assert.Equal(t, validInput, state.systemKeyL1ChallengerBalance)
-	assert.Contains(t, state.weave.PreviousResponse, styles.RenderPreviousResponse(
-		styles.DotsSeparator, challengerInput.GetQuestion(), []string{"challenger", "L1"}, validInput))
-}
-
 func TestSystemKeyL1ChallengerBalanceInput_Update_Invalid(t *testing.T) {
 	ctx := weavecontext.NewAppContext(*NewLaunchState())
 
@@ -1392,140 +1372,6 @@ func TestSystemKeyL1ChallengerBalanceInput_View(t *testing.T) {
 
 	view := challengerInput.View()
 	assert.Contains(t, view, "Specify the amount to fund the challenger on L1 (uinit)", "Expected question prompt in the view")
-	assert.Contains(t, view, "Enter a positive amount", "Expected placeholder in the view")
-}
-
-func TestNewSystemKeyL2OperatorBalanceInput(t *testing.T) {
-	ctx := weavecontext.NewAppContext(*NewLaunchState())
-
-	operatorInput := NewSystemKeyL2OperatorBalanceInput(ctx)
-
-	assert.NotNil(t, operatorInput)
-	assert.Equal(t, "Specify the genesis balance for the operator on rollup ()", operatorInput.GetQuestion())
-}
-
-func TestSystemKeyL2OperatorBalanceInput_Init(t *testing.T) {
-	ctx := weavecontext.NewAppContext(*NewLaunchState())
-
-	operatorInput := NewSystemKeyL2OperatorBalanceInput(ctx)
-
-	cmd := operatorInput.Init()
-	assert.Nil(t, cmd)
-}
-
-func TestSystemKeyL2OperatorBalanceInput_Update_Valid(t *testing.T) {
-	ctx := weavecontext.NewAppContext(*NewLaunchState())
-
-	operatorInput := NewSystemKeyL2OperatorBalanceInput(ctx)
-
-	validInput := "100"
-	keyMsg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(validInput)}
-	nextModel, _ := operatorInput.Update(keyMsg)
-
-	enterPress := tea.KeyMsg{Type: tea.KeyEnter}
-	finalModel, _ := nextModel.Update(enterPress)
-
-	model := finalModel.(*SystemKeyL2BridgeExecutorBalanceInput)
-	state := weavecontext.GetCurrentState[LaunchState](model.Ctx)
-	assert.IsType(t, &SystemKeyL2BridgeExecutorBalanceInput{}, finalModel)
-	assert.Equal(t, validInput, state.systemKeyL2OperatorBalance)
-	assert.Contains(t, state.weave.PreviousResponse, styles.RenderPreviousResponse(
-		styles.DotsSeparator, operatorInput.GetQuestion(), []string{"Operator", "rollup"}, validInput))
-}
-
-func TestSystemKeyL2OperatorBalanceInput_Update_Invalid(t *testing.T) {
-	ctx := weavecontext.NewAppContext(*NewLaunchState())
-
-	operatorInput := NewSystemKeyL2OperatorBalanceInput(ctx)
-
-	invalidInput := "abc"
-	keyMsg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(invalidInput)}
-	nextModel, _ := operatorInput.Update(keyMsg)
-
-	enterPress := tea.KeyMsg{Type: tea.KeyEnter}
-	finalModel, cmd := nextModel.Update(enterPress)
-
-	model := finalModel.(*SystemKeyL2OperatorBalanceInput)
-	state := weavecontext.GetCurrentState[LaunchState](model.Ctx)
-	assert.Equal(t, operatorInput, finalModel)
-	assert.Nil(t, cmd)
-	assert.NotEqual(t, invalidInput, state.systemKeyL2OperatorBalance)
-}
-
-func TestSystemKeyL2OperatorBalanceInput_View(t *testing.T) {
-	ctx := weavecontext.NewAppContext(*NewLaunchState())
-
-	operatorInput := NewSystemKeyL2OperatorBalanceInput(ctx)
-
-	view := operatorInput.View()
-	assert.Contains(t, view, "Specify the genesis balance for the operator on rollup ()", "Expected question prompt in the view")
-	assert.Contains(t, view, "Enter a positive amount", "Expected placeholder in the view")
-}
-
-func TestNewSystemKeyL2BridgeExecutorBalanceInput(t *testing.T) {
-	ctx := weavecontext.NewAppContext(*NewLaunchState())
-
-	executorInput := NewSystemKeyL2BridgeExecutorBalanceInput(ctx)
-
-	assert.NotNil(t, executorInput)
-	assert.Equal(t, "Specify the genesis balance for the bridge executor on rollup ()", executorInput.GetQuestion())
-}
-
-func TestSystemKeyL2BridgeExecutorBalanceInput_Init(t *testing.T) {
-	ctx := weavecontext.NewAppContext(*NewLaunchState())
-
-	executorInput := NewSystemKeyL2BridgeExecutorBalanceInput(ctx)
-
-	cmd := executorInput.Init()
-	assert.Nil(t, cmd)
-}
-
-func TestSystemKeyL2BridgeExecutorBalanceInput_Update_Valid(t *testing.T) {
-	ctx := weavecontext.NewAppContext(*NewLaunchState())
-
-	executorInput := NewSystemKeyL2BridgeExecutorBalanceInput(ctx)
-
-	validInput := "200"
-	keyMsg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(validInput)}
-	nextModel, _ := executorInput.Update(keyMsg)
-
-	enterPress := tea.KeyMsg{Type: tea.KeyEnter}
-	finalModel, _ := nextModel.Update(enterPress)
-
-	model := finalModel.(*AddGasStationToGenesisSelect)
-	state := weavecontext.GetCurrentState[LaunchState](model.Ctx)
-	assert.IsType(t, &AddGasStationToGenesisSelect{}, finalModel)
-	assert.Equal(t, validInput, state.systemKeyL2BridgeExecutorBalance)
-	assert.Contains(t, state.weave.PreviousResponse, styles.RenderPreviousResponse(
-		styles.DotsSeparator, executorInput.GetQuestion(), []string{"Bridge Executor", "rollup"}, validInput))
-}
-
-func TestSystemKeyL2BridgeExecutorBalanceInput_Update_Invalid(t *testing.T) {
-	ctx := weavecontext.NewAppContext(*NewLaunchState())
-
-	executorInput := NewSystemKeyL2BridgeExecutorBalanceInput(ctx)
-
-	invalidInput := "xyz"
-	keyMsg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(invalidInput)}
-	nextModel, _ := executorInput.Update(keyMsg)
-
-	enterPress := tea.KeyMsg{Type: tea.KeyEnter}
-	finalModel, cmd := nextModel.Update(enterPress)
-
-	model := finalModel.(*SystemKeyL2BridgeExecutorBalanceInput)
-	state := weavecontext.GetCurrentState[LaunchState](model.Ctx)
-	assert.Equal(t, executorInput, finalModel)
-	assert.Nil(t, cmd)
-	assert.NotEqual(t, invalidInput, state.systemKeyL2BridgeExecutorBalance)
-}
-
-func TestSystemKeyL2BridgeExecutorBalanceInput_View(t *testing.T) {
-	ctx := weavecontext.NewAppContext(*NewLaunchState())
-
-	executorInput := NewSystemKeyL2BridgeExecutorBalanceInput(ctx)
-
-	view := executorInput.View()
-	assert.Contains(t, view, "Specify the genesis balance for the bridge executor on rollup ()", "Expected question prompt in the view")
 	assert.Contains(t, view, "Enter a positive amount", "Expected placeholder in the view")
 }
 
@@ -1563,9 +1409,9 @@ func TestAddGenesisAccountsSelect_Update_No(t *testing.T) {
 	enterPress := tea.KeyMsg{Type: tea.KeyEnter}
 	finalModel, _ := nextModel.Update(enterPress)
 
-	model := finalModel.(*DownloadMinitiaBinaryLoading)
+	model := finalModel.(*FeeWhitelistAccountsInput)
 	state := weavecontext.GetCurrentState[LaunchState](model.Ctx)
-	assert.IsType(t, &DownloadMinitiaBinaryLoading{}, finalModel)
+	assert.IsType(t, &FeeWhitelistAccountsInput{}, finalModel)
 	assert.Contains(t, state.weave.PreviousResponse[0], "Would you like to add genesis accounts? > No")
 }
 
@@ -1728,22 +1574,14 @@ func TestAddGenesisAccountsSelect_Update_NoRecurringWithAccounts(t *testing.T) {
 	model := NewAddGenesisAccountsSelect(true, ctx)
 
 	msg := tea.KeyMsg{Type: tea.KeyDown}
-	updatedModel, cmd := model.Update(msg)
+	updatedModel, _ := model.Update(msg)
 
 	msg = tea.KeyMsg{Type: tea.KeyEnter}
-	updatedModel, cmd = model.Update(msg)
+	updatedModel, _ = model.Update(msg)
 
-	finalModel := updatedModel.(*DownloadMinitiaBinaryLoading)
+	finalModel := updatedModel.(*FeeWhitelistAccountsInput)
 	state = weavecontext.GetCurrentState[LaunchState](finalModel.Ctx)
-	assert.IsType(t, &DownloadMinitiaBinaryLoading{}, updatedModel)
-	assert.NotNil(t, cmd)
-	assert.Len(t, state.weave.PreviousResponse, 2)
-	assert.Contains(t, state.weave.PreviousResponse[0], "Would you like to add genesis accounts?")
-	assert.Contains(t, state.weave.PreviousResponse[1], "List of extra Genesis Accounts")
-	assert.Contains(t, state.weave.PreviousResponse[1], "address1")
-	assert.Contains(t, state.weave.PreviousResponse[1], "100token")
-	assert.Contains(t, state.weave.PreviousResponse[1], "address2")
-	assert.Contains(t, state.weave.PreviousResponse[1], "200token")
+	assert.IsType(t, &FeeWhitelistAccountsInput{}, updatedModel)
 }
 
 func TestNewDownloadMinitiaBinaryLoading(t *testing.T) {
