@@ -102,7 +102,7 @@ func OPInitBotsKeysSetupCommand() *cobra.Command {
 		Use:   "setup-keys",
 		Short: "Setup keys for OPInit bots",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			analytics.TrackRunEvent(cmd, args, analytics.OPinitComponent)
+			analytics.TrackRunEvent(cmd, args, analytics.OPinitComponent, analytics.NewEmptyEvent())
 			minitiaHome, _ := cmd.Flags().GetString(FlagMinitiaHome)
 			opInitHome, _ := cmd.Flags().GetString(FlagOPInitHome)
 
@@ -289,13 +289,21 @@ Alternatively, you can specify a bot name as an argument to skip the selection. 
 Example: weave opinit init executor`,
 		Args: ValidateOPinitOptionalBotNameArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			analytics.TrackRunEvent(cmd, args, analytics.OPinitComponent)
 			minitiaHome, _ := cmd.Flags().GetString(FlagMinitiaHome)
 			opInitHome, _ := cmd.Flags().GetString(FlagOPInitHome)
 			force, _ := cmd.Flags().GetBool(FlagForce)
 			configPath, _ := cmd.Flags().GetString(FlagWithConfig)
 			keyFilePath, _ := cmd.Flags().GetString(FlagKeyFile)
 			isGenerateKeyFile, _ := cmd.Flags().GetBool(FlagGenerateKeyFile)
+			events := analytics.NewEmptyEvent()
+
+			withConfig := configPath != ""
+			if withConfig {
+				events.Add(analytics.WithConfigKey, withConfig).
+					Add(analytics.KeyFileKey, keyFilePath != "").
+					Add(analytics.GenerateKeyfileKey, isGenerateKeyFile)
+			}
+			analytics.TrackRunEvent(cmd, args, analytics.OPinitComponent, events)
 
 			userHome, err := os.UserHomeDir()
 			if err != nil {
@@ -306,7 +314,7 @@ Example: weave opinit init executor`,
 			if err != nil {
 				return err
 			}
-			if configPath != "" {
+			if withConfig {
 				return handleWithConfig(userHome, opInitHome, configPath, keyFilePath, args, force, isGenerateKeyFile)
 			}
 
@@ -346,9 +354,9 @@ Example: weave opinit init executor`,
 	initCmd.Flags().String(FlagMinitiaHome, filepath.Join(homeDir, common.MinitiaDirectory), "Rollup application directory to fetch artifacts from if existed")
 	initCmd.Flags().String(FlagOPInitHome, filepath.Join(homeDir, common.OPinitDirectory), "OPInit bots home directory")
 	initCmd.Flags().String(FlagWithConfig, "", "Bypass the interactive setup and initialize the bot by providing a path to a config file. Either --key-file or --generate-key-file has to be specified")
-	initCmd.Flags().String(FlagKeyFile, "", "Path to key-file.json. Cannot be specified together with --generate-key-file")
+	initCmd.Flags().String(FlagKeyFile, "", "Use this flag to generate the bot keys. Cannot be specified together with --key-file")
 	initCmd.Flags().BoolP(FlagForce, "f", false, "Force the setup by deleting the existing .opinit directory if it exists")
-	initCmd.Flags().BoolP(FlagGenerateKeyFile, "", false, "Use this flag to generate the bot keys. Cannot be specified together with --key-file")
+	initCmd.Flags().BoolP(FlagGenerateKeyFile, "", false, "Path to key-file.json. Cannot be specified together with --generate-key-file")
 
 	return initCmd
 }
@@ -480,7 +488,7 @@ func OPInitBotsResetCommand() *cobra.Command {
 Valid options are [executor, challenger] eg. weave opinit reset challenger`,
 		Args: ValidateOPinitBotNameArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			analytics.TrackRunEvent(cmd, args, analytics.OPinitComponent)
+			analytics.TrackRunEvent(cmd, args, analytics.OPinitComponent, analytics.NewEmptyEvent())
 			userHome, err := os.UserHomeDir()
 			if err != nil {
 				return fmt.Errorf("error getting user home directory: %v", err)
