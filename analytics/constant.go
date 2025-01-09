@@ -26,7 +26,7 @@ const (
 	GenerateKeyfileKey string = "generate-key-file"
 	KeyFileKey         string = "key-file"
 	WithConfigKey      string = "with-config"
-	VmTypeKey          string = "vm-type"
+	VmKey              string = "vm"
 
 	// Event
 	RunEvent       Event = "run"
