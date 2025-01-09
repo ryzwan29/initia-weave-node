@@ -41,7 +41,7 @@ func relayerInitCommand() *cobra.Command {
 		Use:   "init",
 		Short: "Initialize and configure your Hermes relayer for IBC",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			analytics.TrackRunEvent(cmd, args, analytics.RelayerComponent)
+			analytics.TrackRunEvent(cmd, args, analytics.RelayerComponent, analytics.NewEmptyEvent())
 			ctx := weavecontext.NewAppContext(relayer.NewRelayerState())
 			minitiaHome, _ := cmd.Flags().GetString(FlagMinitiaHome)
 			ctx = weavecontext.SetMinitiaHome(ctx, minitiaHome)
