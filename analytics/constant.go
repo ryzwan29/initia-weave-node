@@ -73,9 +73,6 @@ const (
 
 	// GasStation
 	GasStationMethodSelected Event = "gas-station-method-selected"
-
-	// WithConfig
-
 )
 
 type Component string
