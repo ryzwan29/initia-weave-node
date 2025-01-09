@@ -39,7 +39,7 @@ func initiaInitCommand() *cobra.Command {
 		Use:   "init",
 		Short: "Bootstrap your Initia full node",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			analytics.TrackRunEvent(cmd, args, analytics.InitComponent)
+			analytics.TrackRunEvent(cmd, args, analytics.InitComponent, analytics.NewEmptyEvent())
 			initiaHome, err := cmd.Flags().GetString(FlagInitiaHome)
 			if err != nil {
 				return err

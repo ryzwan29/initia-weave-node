@@ -1,5 +1,11 @@
 package opinit_bots
 
+import (
+	"fmt"
+
+	"github.com/initia-labs/weave/crypto"
+)
+
 type NodeConfig struct {
 	ChainID      string `json:"chain_id"`
 	Bech32Prefix string `json:"bech32_prefix"`
@@ -50,4 +56,50 @@ type ExecutorConfig struct {
 	L2StartHeight                 int          `json:"l2_start_height"`
 	BatchStartHeight              int          `json:"batch_start_height"`
 	DisableDeleteFutureWithdrawal bool         `json:"disable_delete_future_withdrawal"`
+}
+
+type KeyFile struct {
+	BridgeExecutor       string `json:"bridge_executor,omitempty"`
+	OutputSubmitter      string `json:"output_submitter,omitempty"`
+	Challenger           string `json:"challenger,omitempty"`
+	BatchSubmitter       string `json:"batch_submitter,omitempty"`
+	OracleBridgeExecutor string `json:"oracle_bridge_executor,omitempty"`
+}
+
+func GenerateMnemonicKeyfile(botName string) (KeyFile, error) {
+	switch botName {
+	case "executor":
+		bridgeExecutor, err := crypto.GenerateMnemonic()
+		if err != nil {
+			return KeyFile{}, fmt.Errorf("failed to generate bridge executor mnemonic: %w", err)
+		}
+		outputSubmitter, err := crypto.GenerateMnemonic()
+		if err != nil {
+			return KeyFile{}, fmt.Errorf("failed to generate output submitter mnemonic: %w", err)
+		}
+		batchSubmitter, err := crypto.GenerateMnemonic()
+		if err != nil {
+			return KeyFile{}, fmt.Errorf("failed to generate batch submitter mnemonic: %w", err)
+		}
+		oracleBridgeExecutor, err := crypto.GenerateMnemonic()
+		if err != nil {
+			return KeyFile{}, fmt.Errorf("failed to generate oracle bridge executor mnemonic: %w", err)
+		}
+		return KeyFile{
+			BridgeExecutor:       bridgeExecutor,
+			OutputSubmitter:      outputSubmitter,
+			BatchSubmitter:       batchSubmitter,
+			OracleBridgeExecutor: oracleBridgeExecutor,
+		}, nil
+	case "challenger":
+		challenger, err := crypto.GenerateMnemonic()
+		if err != nil {
+			return KeyFile{}, fmt.Errorf("failed to generate challenger mnemonic: %w", err)
+		}
+		return KeyFile{
+			Challenger: challenger,
+		}, nil
+	default:
+		return KeyFile{}, fmt.Errorf("unsupported bot name: %s", botName)
+	}
 }
