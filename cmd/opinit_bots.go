@@ -178,7 +178,7 @@ func validateConfigFlags(args []string, configPath, keyFilePath string, isGenera
 	return nil
 }
 
-func handleWithConfig(userHome, opInitHome, configPath, keyFilePath string, args []string, force, isGenerateKeyFile bool) error {
+func handleWithConfig(cmd *cobra.Command, userHome, opInitHome, configPath, keyFilePath string, args []string, force, isGenerateKeyFile bool) error {
 	botName := args[0]
 	if botName != "executor" && botName != "challenger" {
 		return fmt.Errorf("bot name '%s' is not recognized. Allowed values are 'executor' or 'challenger'", botName)
@@ -218,7 +218,7 @@ func handleWithConfig(userHome, opInitHome, configPath, keyFilePath string, args
 		return fmt.Errorf("please specify bot name")
 	}
 
-	return initializeBotWithConfig(fileData, keyFile, opInitHome, userHome, botName)
+	return initializeBotWithConfig(cmd, fileData, keyFile, opInitHome, userHome, botName)
 }
 
 // readAndUnmarshalKeyFile read and unmarshal the key file into the KeyFile struct
@@ -253,7 +253,7 @@ func handleExistingOpInitHome(opInitHome string, botName string, force bool) err
 }
 
 // initializeBotWithConfig initialize a bot based on the provided config
-func initializeBotWithConfig(fileData []byte, keyFile opinit_bots.KeyFile, opInitHome, userHome, botName string) error {
+func initializeBotWithConfig(cmd *cobra.Command, fileData []byte, keyFile opinit_bots.KeyFile, opInitHome, userHome, botName string) error {
 	var err error
 
 	switch botName {
@@ -277,6 +277,8 @@ func initializeBotWithConfig(fileData []byte, keyFile opinit_bots.KeyFile, opIni
 	}
 
 	fmt.Printf("OPInit bot setup successfully. Config file is saved at %s. Feel free to modify it as needed.\n", filepath.Join(opInitHome, fmt.Sprintf("%s.json", botName)))
+	analytics.TrackCompletedEvent(cmd, analytics.OPinitComponent)
+
 	return nil
 }
 
@@ -315,7 +317,7 @@ Example: weave opinit init executor`,
 				return err
 			}
 			if withConfig {
-				return handleWithConfig(userHome, opInitHome, configPath, keyFilePath, args, force, isGenerateKeyFile)
+				return handleWithConfig(cmd, userHome, opInitHome, configPath, keyFilePath, args, force, isGenerateKeyFile)
 			}
 
 			var rootProgram func(ctx context.Context) (tea.Model, error)
