@@ -1,11 +1,19 @@
 package ui
 
 import (
+	"os"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/initia-labs/weave/analytics"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestMain(m *testing.M) {
+	analytics.Client = &analytics.NoOpClient{}
+	exitCode := m.Run()
+	os.Exit(exitCode)
+}
 
 func TestCheckBoxNavigationAndSelection(t *testing.T) {
 	options := []string{"Option 1", "Option 2", "Option 3"}

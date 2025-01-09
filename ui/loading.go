@@ -12,6 +12,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
+	"github.com/initia-labs/weave/analytics"
 	"github.com/initia-labs/weave/styles"
 )
 
@@ -91,6 +92,7 @@ func (m Loading) Update(msg tea.Msg) (Loading, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "q", "esc", "ctrl+c":
+			analytics.TrackEvent(analytics.Interrupted, analytics.NewEmptyEvent())
 			m.quitting = true
 			return m, tea.Quit
 		default:
