@@ -1306,6 +1306,9 @@ func InitializeExecutorWithConfig(config ExecutorConfig, keyFile *KeyFile, opIni
 		return fmt.Errorf("failed to write config file: %v", err)
 	}
 
+	// prune existing logs, ignore error
+	_ = srv.PruneLogs()
+
 	return nil
 }
 
@@ -1354,6 +1357,9 @@ func InitializeChallengerWithConfig(config ChallengerConfig, keyFile *KeyFile, o
 	if err = os.WriteFile(configFilePath, configBz, 0600); err != nil {
 		return fmt.Errorf("failed to write config file: %v", err)
 	}
+
+	// prune existing logs, ignore error
+	_ = srv.PruneLogs()
 
 	return nil
 }
