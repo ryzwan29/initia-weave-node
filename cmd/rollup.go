@@ -114,7 +114,7 @@ func minitiaLaunchCommand() *cobra.Command {
 			events := analytics.NewEmptyEvent()
 			if configPath != "" {
 				events.Add(analytics.WithConfigKey, true).
-					Add(analytics.VmTypeKey, vm)
+					Add(analytics.VmKey, vm)
 			}
 			analytics.TrackRunEvent(cmd, args, analytics.RollupComponent, events)
 			if configPath != "" {
