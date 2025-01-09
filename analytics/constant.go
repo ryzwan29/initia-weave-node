@@ -23,6 +23,10 @@ const (
 	L1NodeVersionKey   string = "l1-node-version"
 	EmptyInputKey      string = "empty-input"
 	ModelNameKey       string = "model-name"
+	GenerateKeyfileKey string = "generate-key-file"
+	KeyFileKey         string = "key-file"
+	WithConfigKey      string = "with-config"
+	VmTypeKey          string = "vm-type"
 
 	// Event
 	RunEvent       Event = "run"
@@ -69,6 +73,9 @@ const (
 
 	// GasStation
 	GasStationMethodSelected Event = "gas-station-method-selected"
+
+	// WithConfig
+
 )
 
 type Component string

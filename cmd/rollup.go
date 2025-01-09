@@ -104,22 +104,25 @@ func minitiaLaunchCommand() *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			analytics.TrackRunEvent(cmd, args, analytics.RollupComponent)
 			minitiaHome, err := cmd.Flags().GetString(FlagMinitiaHome)
 			if err != nil {
 				return err
 			}
-
-			state := minitia.NewLaunchState()
-
 			configPath, _ := cmd.Flags().GetString(FlagWithConfig)
+			vm, _ := cmd.Flags().GetString(FlagVm)
+			state := minitia.NewLaunchState()
+			events := analytics.NewEmptyEvent()
+			if configPath != "" {
+				events.Add(analytics.WithConfigKey, true).
+					Add(analytics.VmTypeKey, vm)
+			}
+			analytics.TrackRunEvent(cmd, args, analytics.RollupComponent, events)
 			if configPath != "" {
 				minitiaConfig, ok := cmd.Context().Value(minitiaConfigKey{}).(*types.MinitiaConfig)
 				if !ok {
 					return fmt.Errorf("failed to retrieve configuration from context")
 				}
 
-				vm, _ := cmd.Flags().GetString(FlagVm)
 				version, downloadURL, err := cosmosutils.GetLatestMinitiaVersion(vm)
 				if err != nil {
 					return err

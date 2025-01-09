@@ -1272,7 +1272,8 @@ func InitializeExecutorWithConfig(config ExecutorConfig, keyFile *KeyFile, opIni
 
 	// If DA is Celestia, copy keys for DA node
 	if config.DANode.Bech32Prefix != "init" {
-		err = io.CopyDirectory(weaveDummyKeyPath, config.DANode.ChainID)
+		daKeyPath := filepath.Join(opInitHome, config.DANode.ChainID)
+		err = io.CopyDirectory(weaveDummyKeyPath, daKeyPath)
 		if err != nil {
 			return fmt.Errorf("failed to copy dummy key for celestia: %w", err)
 		}
