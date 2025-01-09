@@ -128,7 +128,7 @@ func (m *RollupSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, string(*selected)))
 		switch *selected {
 		case Whitelisted:
-			analytics.TrackEvent(analytics.RelayerRollupSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, "whitelise"))
+			analytics.TrackEvent(analytics.RelayerRollupSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, "whitelist"))
 
 			model, err := NewSelectingL1NetworkRegistry(weavecontext.SetCurrentState(m.Ctx, state))
 			if err != nil {
@@ -187,7 +187,7 @@ func (m *RollupSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			return NewFieldInputModel(weavecontext.SetCurrentState(m.Ctx, state), defaultL2ConfigLocal, NewSelectSettingUpIBCChannelsMethod), nil
 		case Manual:
-			analytics.TrackEvent(analytics.RelayerRollupSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, "manaul"))
+			analytics.TrackEvent(analytics.RelayerRollupSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, "manual"))
 
 			model, err := NewSelectingL1Network(weavecontext.SetCurrentState(m.Ctx, state))
 			if err != nil {
