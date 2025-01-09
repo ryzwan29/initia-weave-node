@@ -3,12 +3,13 @@ package ui
 import (
 	"context"
 	"fmt"
-	weavecontext "github.com/initia-labs/weave/context"
 	"unicode"
 
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/initia-labs/weave/analytics"
 	"github.com/initia-labs/weave/common"
+	weavecontext "github.com/initia-labs/weave/context"
 	"github.com/initia-labs/weave/styles"
 )
 
@@ -110,6 +111,7 @@ func (ti TextInput) Update(msg tea.Msg) (TextInput, tea.Cmd, bool) {
 
 		// Handle Ctrl+C (quit)
 		case msg.Type == tea.KeyCtrlC:
+			analytics.TrackEvent(analytics.Interrupted, analytics.NewEmptyEvent())
 			ti.IsEntered = false
 			return ti, tea.Quit, false
 

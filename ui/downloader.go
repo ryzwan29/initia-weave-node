@@ -7,6 +7,7 @@ import (
 	"github.com/charmbracelet/bubbles/progress"
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/initia-labs/weave/analytics"
 	"github.com/initia-labs/weave/client"
 	"github.com/initia-labs/weave/styles"
 )
@@ -64,6 +65,7 @@ func (m *Downloader) Update(msg tea.Msg) (*Downloader, tea.Cmd) {
 
 	case tea.KeyMsg:
 		if msg.String() == "q" || msg.String() == "ctrl+c" {
+			analytics.TrackEvent(analytics.Interrupted, analytics.NewEmptyEvent())
 			return m, tea.Quit
 		}
 	}

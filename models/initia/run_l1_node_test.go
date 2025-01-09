@@ -1,17 +1,25 @@
 package initia
 
 import (
+	"os"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/initia-labs/weave/analytics"
 	"github.com/initia-labs/weave/common"
 	weavecontext "github.com/initia-labs/weave/context"
 	"github.com/initia-labs/weave/cosmosutils"
 	"github.com/initia-labs/weave/registry"
 	"github.com/initia-labs/weave/ui"
 )
+
+func TestMain(m *testing.M) {
+	analytics.Client = &analytics.NoOpClient{}
+	exitCode := m.Run()
+	os.Exit(exitCode)
+}
 
 func TestGetNextModelByExistingApp(t *testing.T) {
 	ctx := weavecontext.NewAppContext(NewRunL1NodeState())

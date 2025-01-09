@@ -1,16 +1,24 @@
 package relayer
 
 import (
+	"os"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/test-go/testify/assert"
 	"github.com/test-go/testify/require"
 
+	"github.com/initia-labs/weave/analytics"
 	weavecontext "github.com/initia-labs/weave/context"
 	"github.com/initia-labs/weave/types"
 	"github.com/initia-labs/weave/ui"
 )
+
+func TestMain(m *testing.M) {
+	analytics.Client = &analytics.NoOpClient{}
+	exitCode := m.Run()
+	os.Exit(exitCode)
+}
 
 func TestRollupSelectUpdateWithNavigation(t *testing.T) {
 	// Define test cases for each RollupSelectOption

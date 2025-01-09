@@ -102,7 +102,7 @@ func OPInitBotsKeysSetupCommand() *cobra.Command {
 		Use:   "setup-keys",
 		Short: "Setup keys for OPInit bots",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			analytics.TrackRunEvent(cmd, analytics.OPinitComponent)
+			analytics.TrackRunEvent(cmd, args, analytics.OPinitComponent)
 			minitiaHome, _ := cmd.Flags().GetString(FlagMinitiaHome)
 			opInitHome, _ := cmd.Flags().GetString(FlagOPInitHome)
 
@@ -116,6 +116,8 @@ func OPInitBotsKeysSetupCommand() *cobra.Command {
 				OPInitHome:  opInitHome,
 				UserHome:    userHome,
 			})
+			analytics.TrackCompletedEvent(cmd, analytics.OPinitComponent)
+
 			return err
 		},
 	}
@@ -287,7 +289,7 @@ Alternatively, you can specify a bot name as an argument to skip the selection. 
 Example: weave opinit init executor`,
 		Args: ValidateOPinitOptionalBotNameArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			analytics.TrackRunEvent(cmd, analytics.OPinitComponent)
+			analytics.TrackRunEvent(cmd, args, analytics.OPinitComponent)
 			minitiaHome, _ := cmd.Flags().GetString(FlagMinitiaHome)
 			opInitHome, _ := cmd.Flags().GetString(FlagOPInitHome)
 			force, _ := cmd.Flags().GetBool(FlagForce)
@@ -331,6 +333,7 @@ Example: weave opinit init executor`,
 				UserHome:    userHome,
 			})
 
+			analytics.TrackCompletedEvent(cmd, analytics.OPinitComponent)
 			return err
 		},
 	}
@@ -477,7 +480,7 @@ func OPInitBotsResetCommand() *cobra.Command {
 Valid options are [executor, challenger] eg. weave opinit reset challenger`,
 		Args: ValidateOPinitBotNameArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			analytics.TrackRunEvent(cmd, analytics.OPinitComponent)
+			analytics.TrackRunEvent(cmd, args, analytics.OPinitComponent)
 			userHome, err := os.UserHomeDir()
 			if err != nil {
 				return fmt.Errorf("error getting user home directory: %v", err)
