@@ -1866,7 +1866,7 @@ func (m *SelectSettingUpIBCChannelsMethod) Update(msg tea.Msg) (tea.Model, tea.C
 			analytics.TrackEvent(analytics.SettingUpIBCChannelsMethodSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, "lcd"))
 			return NewFillL2LCD(weavecontext.SetCurrentState(m.Ctx, state)), nil
 		case Manually:
-			analytics.TrackEvent(analytics.SettingUpIBCChannelsMethodSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, "mannaul"))
+			analytics.TrackEvent(analytics.SettingUpIBCChannelsMethodSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, "manaul"))
 			return NewFillPortOnL1(weavecontext.SetCurrentState(m.Ctx, state), 0), nil
 		}
 	}
