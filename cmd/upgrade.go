@@ -48,7 +48,7 @@ Examples:
 If the specified version does not exist, an error will be shown with a link to the available releases.`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			analytics.TrackRunEvent(cmd, analytics.UpgradeComponent)
+			analytics.TrackRunEvent(cmd, args, analytics.UpgradeComponent)
 			requestedVersion := ""
 			if len(args) > 0 {
 				requestedVersion = args[0]

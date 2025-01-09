@@ -8,13 +8,21 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
+	"github.com/initia-labs/weave/analytics"
 	"github.com/initia-labs/weave/common"
 	"github.com/initia-labs/weave/models"
 	"github.com/initia-labs/weave/testutil"
-	"github.com/stretchr/testify/assert"
 )
 
 const weaveDirectoryBackup = ".weave_back"
+
+func TestMain(m *testing.M) {
+	analytics.Client = &analytics.NoOpClient{}
+	exitCode := m.Run()
+	os.Exit(exitCode)
+}
 
 func TestGasStationSetup(t *testing.T) {
 	// if Weave home already exists, copy the content somewhere else and replace it again after the test
