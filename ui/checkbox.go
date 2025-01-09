@@ -7,6 +7,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/initia-labs/weave/analytics"
 	weavecontext "github.com/initia-labs/weave/context"
 	"github.com/initia-labs/weave/styles"
 )
@@ -72,6 +73,7 @@ func (s *CheckBox[T]) Select(msg tea.Msg) (*CheckBox[T], tea.Cmd, bool) {
 			s.Selected[s.Cursor] = !s.Selected[s.Cursor]
 			return s, nil, false
 		case "q", "ctrl+c":
+			analytics.TrackEvent(analytics.Interrupted, analytics.NewEmptyEvent())
 			return s, tea.Quit, false
 		case "enter":
 			// If you still need to do something specific when Enter is pressed,

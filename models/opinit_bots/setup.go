@@ -11,6 +11,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/initia-labs/weave/analytics"
 	"github.com/initia-labs/weave/common"
 	weavecontext "github.com/initia-labs/weave/context"
 	"github.com/initia-labs/weave/cosmosutils"
@@ -145,6 +146,7 @@ func (m *ProcessingMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		switch *selected {
 		case YesAddMinitiaKeyOption:
+			analytics.TrackEvent(analytics.ImportKeysFromArtifactsSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, "yes"))
 			// Iterate through botInfos and add relevant keys
 			for idx := range state.BotInfos {
 				if state.BotInfos[idx].BotName != OracleBridgeExecutor {
@@ -159,6 +161,7 @@ func (m *ProcessingMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return nextModel, nil
 
 		case NoAddMinitiaKeyOption:
+			analytics.TrackEvent(analytics.ImportKeysFromArtifactsSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, "no"))
 			nextModel, err := m.nextModelFunc(weavecontext.SetCurrentState(m.Ctx, state))
 			if err != nil {
 				return m, m.HandlePanic(err)
@@ -330,6 +333,7 @@ func (m *RecoverKeySelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		state := weavecontext.PushPageAndGetState[OPInitBotsState](m)
 
 		if *selected == "Generate new system key" {
+			analytics.TrackEvent(analytics.RecoverKeySelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, "generate"))
 			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{string(state.BotInfos[m.idx].BotName)}, *selected))
 
 			state.BotInfos[m.idx].IsGenerateKey = true
@@ -343,6 +347,7 @@ func (m *RecoverKeySelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			return NextUpdateOpinitBotKey(m.Ctx)
 		} else {
+			analytics.TrackEvent(analytics.RecoverKeySelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, "import"))
 			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{string(state.BotInfos[m.idx].BotName)}, "Import existing key"))
 			return NewRecoverFromMnemonic(weavecontext.SetCurrentState(m.Ctx, state), m.idx), nil
 		}
@@ -530,6 +535,7 @@ func (m *DALayerSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	selected, cmd := m.Select(msg)
 	if selected != nil {
+		analytics.TrackEvent(analytics.DALayerSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, string(*selected)))
 		state := weavecontext.PushPageAndGetState[OPInitBotsState](m)
 
 		// Update the DA Layer for the specific bot

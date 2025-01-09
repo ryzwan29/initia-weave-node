@@ -8,6 +8,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/initia-labs/weave/analytics"
 	"github.com/initia-labs/weave/common"
 	"github.com/initia-labs/weave/config"
 	weavecontext "github.com/initia-labs/weave/context"
@@ -104,9 +105,11 @@ func (m *GasStationMethodSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		)
 		switch *selected {
 		case Generate:
+			analytics.TrackEvent(analytics.GasStationMethodSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, "generate"))
 			model := NewGenerateGasStationLoading(weavecontext.SetCurrentState(m.Ctx, state))
 			return model, model.Init()
 		case Import:
+			analytics.TrackEvent(analytics.GasStationMethodSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, "import"))
 			return NewGasStationMnemonicInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
 		}
 	}

@@ -3,8 +3,10 @@ package context
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"runtime/debug"
 
+	"github.com/initia-labs/weave/analytics"
 	"github.com/muesli/reflow/wordwrap"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -49,8 +51,26 @@ func (b *BaseModel) WrapView(content string) string {
 	return wordwrap.String(content, windowWidth)
 }
 
+// extractModelNameFromStackTrace parses the stack trace and tries to extract the model name
+func extractModelNameFromStackTrace(stackTrace string) string {
+	re := regexp.MustCompile(`\(\*(\w+)\)\.(Update)`)
+
+	matches := re.FindStringSubmatch(stackTrace)
+	if len(matches) > 0 {
+		return matches[1]
+	}
+
+	return "UnknownModel"
+}
+
 func (b *BaseModel) HandlePanic(err error) tea.Cmd {
-	b.PanicText = fmt.Sprintf("Caught panic:\n\n%v\n\n%s", err, debug.Stack())
+	stackTrace := string(debug.Stack())
+	events := analytics.NewEmptyEvent().
+		Add(analytics.ErrorEventKey, fmt.Sprint(err)).
+		Add(analytics.ModelNameKey, extractModelNameFromStackTrace(stackTrace))
+	analytics.TrackEvent(analytics.Panicked, events)
+
+	b.PanicText = fmt.Sprintf("Caught panic:\n\n%v\n\n%s", err, stackTrace)
 	return tea.Quit
 }
 
