@@ -1,6 +1,7 @@
 package client
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -80,6 +81,65 @@ func (c *HTTPClient) getWithRetry(endpoint string) ([]byte, error) {
 				return nil, err
 			}
 		}
+		time.Sleep(baseDelay * time.Duration(attempt))
+	}
+
+	return nil, fmt.Errorf("all %d attempts failed: %w", maxRetries, lastErr)
+}
+
+// Post performs an HTTP POST request.
+// It can either unmarshal a JSON response into the provided result or return the raw response data directly.
+func (c *HTTPClient) Post(baseURL, additionalPath string, headers map[string]string, body []byte, result interface{}) ([]byte, error) {
+	fullURL := constructURL(baseURL, additionalPath, map[string]string{})
+
+	response, err := c.postWithRetry(fullURL, headers, body)
+	if err != nil {
+		return nil, err
+	}
+
+	if result != nil {
+		if err := json.Unmarshal(response, result); err != nil {
+			return nil, fmt.Errorf("failed to parse JSON response: %w", err)
+		}
+	}
+
+	return response, nil
+}
+
+// postWithRetry performs the HTTP POST request with retry logic, including exponential backoff.
+func (c *HTTPClient) postWithRetry(endpoint string, headers map[string]string, body []byte) ([]byte, error) {
+	var lastErr error
+
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		req, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(body))
+		if err != nil {
+			return nil, fmt.Errorf("failed to create request: %w", err)
+		}
+
+		for key, value := range headers {
+			req.Header.Set(key, value)
+		}
+
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			lastErr = fmt.Errorf("attempt %d: request error: %w", attempt, err)
+		} else {
+			if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+				lastErr = fmt.Errorf("attempt %d: unexpected status code %d", attempt, resp.StatusCode)
+			} else {
+				body, err := io.ReadAll(resp.Body)
+				if err != nil {
+					lastErr = fmt.Errorf("attempt %d: failed to read response body: %w", attempt, err)
+				} else {
+					return body, nil
+				}
+			}
+			err = resp.Body.Close()
+			if err != nil {
+				return nil, fmt.Errorf("failed to close response body: %w", err)
+			}
+		}
+
 		time.Sleep(baseDelay * time.Duration(attempt))
 	}
 

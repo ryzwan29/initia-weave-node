@@ -25,9 +25,9 @@ func TestUseCurrentConfigSelector_Update_UseCurrentFile(t *testing.T) {
 	// Simulate selecting "use current file"
 	nextModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter}) // Confirm selection with Enter
 
-	// Expect transition to StartingInitBot
-	if m, ok := nextModel.(*StartingInitBot); !ok {
-		t.Errorf("Expected model to be of type *StartingInitBot, but got %T", nextModel)
+	// Expect transition to FetchL1StartHeightLoading
+	if m, ok := nextModel.(*FetchL1StartHeightLoading); !ok {
+		t.Errorf("Expected model to be of type *FetchL1StartHeightLoading, but got %T", nextModel)
 	} else {
 		state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
 		assert.False(t, state.ReplaceBotConfig) // Verify ReplaceBotConfig is set to false
@@ -195,9 +195,9 @@ func TestSetDALayer_Update_SelectInitia(t *testing.T) {
 	// Simulate selecting "Initia"
 	nextModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter}) // Confirm selection with Enter
 
-	// Expect transition to StartingInitBot
-	if m, ok := nextModel.(*StartingInitBot); !ok {
-		t.Errorf("Expected model to be of type *StartingInitBot, but got %T", nextModel)
+	// Expect transition to FetchL1StartHeightLoading
+	if m, ok := nextModel.(*FetchL1StartHeightLoading); !ok {
+		t.Errorf("Expected model to be of type *FetchL1StartHeightLoading, but got %T", nextModel)
 	} else {
 		state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
 		assert.Equal(t, state.botConfig["l1_node.chain_id"], state.botConfig["da_node.chain_id"])
@@ -221,9 +221,9 @@ func TestSetDALayer_Update_SelectCelestia(t *testing.T) {
 	model.Update(tea.KeyMsg{Type: tea.KeyDown})                  // Navigate to "Celestia" option
 	nextModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter}) // Confirm selection with Enter
 
-	// Expect transition to StartingInitBot
-	if m, ok := nextModel.(*StartingInitBot); !ok {
-		t.Errorf("Expected model to be of type *StartingInitBot, but got %T", nextModel)
+	// Expect transition to FetchL1StartHeightLoading
+	if m, ok := nextModel.(*FetchL1StartHeightLoading); !ok {
+		t.Errorf("Expected model to be of type *FetchL1StartHeightLoading, but got %T", nextModel)
 	} else {
 		state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
 		assert.Equal(t, chainRegistry.ChainId, state.botConfig["da_node.chain_id"])
