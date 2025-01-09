@@ -14,6 +14,7 @@ const (
 	WeaveGasStationKeyName = "weave.GasStation"
 
 	MinitiaDirectory           = ".minitia"
+	MinitiaConfigPath          = ".minitia/config"
 	MinitiaArtifactsConfigJson = "/artifacts/config.json"
 	MinitiaArtifactsJson       = "/artifacts/artifacts.json"
 

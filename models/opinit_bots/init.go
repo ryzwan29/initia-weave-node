@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"runtime"
 	"strings"
 	"time"
@@ -13,6 +14,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/initia-labs/weave/analytics"
+  "github.com/initia-labs/weave/client"
 	"github.com/initia-labs/weave/common"
 	weavecontext "github.com/initia-labs/weave/context"
 	"github.com/initia-labs/weave/cosmosutils"
@@ -479,7 +481,7 @@ func (m *UseCurrentConfigSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "use current file":
 			state.ReplaceBotConfig = false
 			m.Ctx = weavecontext.SetCurrentState(m.Ctx, state)
-			model, err := NewStartingInitBot(m.Ctx)
+			model, err := NewFetchL1StartHeightLoading(m.Ctx)
 			if err != nil {
 				return m, m.HandlePanic(err)
 			}
@@ -567,7 +569,8 @@ func (m *PrefillMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		switch *selected {
 		case PrefillMinitiaConfigYes:
-			analytics.TrackEvent(analytics.PrefillFromArtifactsSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, true))
+      analytics.TrackEvent(analytics.PrefillFromArtifactsSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, true))
+			state.UsePrefilledMinitia = true
 			minitiaConfig := state.MinitiaConfig
 			state.botConfig["l1_node.chain_id"] = minitiaConfig.L1Config.ChainID
 			state.botConfig["l1_node.rpc_address"] = minitiaConfig.L1Config.RpcUrl
@@ -626,9 +629,9 @@ func (m *PrefillMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.Ctx = weavecontext.SetCurrentState(m.Ctx, state)
 			if state.InitExecutorBot {
-				return NewFieldInputModel(m.Ctx, defaultExecutorFields, NewStartingInitBot), cmd
+				return NewFieldInputModel(m.Ctx, defaultExecutorFields, NewFetchL1StartHeightLoading), cmd
 			} else if state.InitChallengerBot {
-				return NewFieldInputModel(m.Ctx, defaultChallengerFields, NewStartingInitBot), cmd
+				return NewFieldInputModel(m.Ctx, defaultChallengerFields, NewFetchL1StartHeightLoading), cmd
 
 			}
 		case PrefillMinitiaConfigNo:
@@ -740,7 +743,7 @@ func (m *L1PrefillSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if state.InitExecutorBot {
 			return NewFieldInputModel(m.Ctx, defaultExecutorFields, NewSetDALayer), cmd
 		} else if state.InitChallengerBot {
-			return NewFieldInputModel(m.Ctx, defaultChallengerFields, NewStartingInitBot), cmd
+			return NewFieldInputModel(m.Ctx, defaultChallengerFields, NewFetchL1StartHeightLoading), cmd
 		}
 
 	}
@@ -843,7 +846,7 @@ func (m *SetDALayer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			state.botConfig["da_node.gas_price"] = DefaultCelestiaGasPrices
 			state.daIsCelestia = true
 		}
-		model, err := NewStartingInitBot(weavecontext.SetCurrentState(m.Ctx, state))
+		model, err := NewFetchL1StartHeightLoading(weavecontext.SetCurrentState(m.Ctx, state))
 		if err != nil {
 			return m, m.HandlePanic(err)
 		}
@@ -858,6 +861,181 @@ func (m *SetDALayer) View() string {
 	state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
 	m.Selector.ViewTooltip(m.Ctx)
 	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"DA Layer"}, styles.Question) + m.Selector.View())
+}
+
+type FetchL1StartHeightLoading struct {
+	weavecontext.BaseModel
+	ui.Loading
+}
+
+func NewFetchL1StartHeightLoading(ctx context.Context) (tea.Model, error) {
+	return &FetchL1StartHeightLoading{
+		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
+		Loading:   ui.NewLoading("Fetching Start Height for L1 ...", waitFetchL1StartHeight(ctx)),
+	}, nil
+}
+
+func waitFetchL1StartHeight(ctx context.Context) tea.Cmd {
+	return func() tea.Msg {
+		state := weavecontext.GetCurrentState[OPInitBotsState](ctx)
+		l2Rpc := state.botConfig["l2_node.rpc_address"]
+
+		minitiadQuerier, err := cosmosutils.NewMinitiadQuerier()
+		if err != nil {
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to initialize opchild querier: %w", err)}
+		}
+
+		var network registry.ChainType
+		l1ChainRegistry, err := registry.GetChainRegistry(registry.InitiaL1Testnet)
+		if err != nil {
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("initia testnet registry: %w", err)}
+		}
+		if l1ChainRegistry.GetChainId() == state.botConfig["l1_node.chain_id"] {
+			network = registry.InitiaL1Testnet
+		} else {
+			network = registry.InitiaL1Mainnet
+		}
+
+		gqlApi, err := registry.GetInitiaGraphQLFromType(network)
+		if err != nil {
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("cannot fetch initia GraphQL api: %w", err)}
+		}
+		gqlClient := client.NewGraphQLClient(gqlApi, client.NewHTTPClient())
+
+		l1NextSequence, err := minitiadQuerier.QueryOPChildNextL1Sequence(l2Rpc)
+		if err != nil {
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to query l1 next sequence: %w", err)}
+		}
+
+		bridgeInfo, err := minitiadQuerier.QueryOPChildBridgeInfo(l2Rpc)
+		if err != nil {
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to query l1 bridge info: %w", err)}
+		}
+
+		if l1NextSequence == "1" {
+			if state.UsePrefilledMinitia {
+				artifactsJson, err := weavecontext.GetMinitiaArtifactsJson(ctx)
+				if err != nil {
+					return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to get artifacts json path: %w", err)}
+				}
+
+				data, err := os.ReadFile(artifactsJson)
+				if err != nil {
+					return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to read artifacts json: %w", err)}
+				}
+
+				var artifacts types.Artifacts
+				if err := json.Unmarshal(data, &artifacts); err != nil {
+					return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to unmarshal artifacts json: %w", err)}
+				}
+
+				state.L1StartHeight, err = strconv.Atoi(artifacts.ExecutorL1MonitorHeight)
+				if err != nil {
+					return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to parse l1 start height: %w", err)}
+				}
+			} else {
+				state.L1StartHeight, _ = cosmosutils.QueryCreateBridgeHeight(gqlClient, bridgeInfo.BridgeID)
+			}
+		} else {
+			sequence, err := strconv.Atoi(l1NextSequence)
+			if err != nil {
+				return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to parse next sequence number: %w", err)}
+			}
+			state.L1StartHeight, _ = cosmosutils.QueryLatestDepositHeight(gqlClient, bridgeInfo.BridgeID, strconv.Itoa(sequence-1))
+		}
+
+		return ui.EndLoading{Ctx: weavecontext.SetCurrentState(ctx, state)}
+	}
+}
+
+func (m *FetchL1StartHeightLoading) Init() tea.Cmd {
+	return m.Loading.Init()
+}
+
+func (m *FetchL1StartHeightLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := weavecontext.HandleCommonCommands[OPInitBotsState](m, msg); handled {
+		return model, cmd
+	}
+	loader, cmd := m.Loading.Update(msg)
+	m.Loading = loader
+	if m.Loading.NonRetryableErr != nil {
+		return m, m.HandlePanic(m.Loading.NonRetryableErr)
+	}
+	if m.Loading.Completing {
+		m.Ctx = m.Loading.EndContext
+		state := weavecontext.PushPageAndGetState[OPInitBotsState](m)
+		if state.L1StartHeight == 0 {
+			return NewL1StartHeightInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
+		}
+		model, err := NewStartingInitBot(weavecontext.SetCurrentState(m.Ctx, state))
+		if err != nil {
+			return m, m.HandlePanic(err)
+		}
+		return model, model.Init()
+	}
+	return m, cmd
+}
+
+func (m *FetchL1StartHeightLoading) View() string {
+	state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
+	return m.WrapView(state.weave.Render() + m.Loading.View())
+}
+
+type L1StartHeightInput struct {
+	ui.TextInput
+	weavecontext.BaseModel
+	question   string
+	highlights []string
+}
+
+func NewL1StartHeightInput(ctx context.Context) *L1StartHeightInput {
+	tooltip := tooltip.L1StartHeightTooltip
+	model := &L1StartHeightInput{
+		TextInput:  ui.NewTextInput(true),
+		BaseModel:  weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
+		question:   "Specify the L1 start height from which the bot should start processing",
+		highlights: []string{"L1 start height"},
+	}
+	model.WithPlaceholder("Enter the start height")
+	model.WithValidatorFn(common.IsValidInteger)
+	model.WithTooltip(&tooltip)
+	return model
+}
+
+func (m *L1StartHeightInput) GetQuestion() string {
+	return m.question
+}
+
+func (m *L1StartHeightInput) Init() tea.Cmd {
+	return nil
+}
+
+func (m *L1StartHeightInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := weavecontext.HandleCommonCommands[OPInitBotsState](m, msg); handled {
+		return model, cmd
+	}
+
+	input, cmd, done := m.TextInput.Update(msg)
+	if done {
+		state := weavecontext.PushPageAndGetState[OPInitBotsState](m)
+
+		// We can ignore the error here since it has already been validated in the input validator
+		state.L1StartHeight, _ = strconv.Atoi(input.Text)
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), m.highlights, input.Text))
+		model, err := NewStartingInitBot(weavecontext.SetCurrentState(m.Ctx, state))
+		if err != nil {
+			return m, m.HandlePanic(err)
+		}
+		return model, model.Init()
+	}
+	m.TextInput = input
+	return m, cmd
+}
+
+func (m *L1StartHeightInput) View() string {
+	state := weavecontext.GetCurrentState[OPInitBotsState](m.Ctx)
+	m.TextInput.ViewTooltip(m.Ctx)
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View())
 }
 
 type StartingInitBot struct {
@@ -975,11 +1153,11 @@ func WaitStartingInitBot(ctx context.Context) tea.Cmd {
 				MaxChunks:                     5000,
 				MaxChunkSize:                  300000,
 				MaxSubmissionTime:             3600,
-				L1StartHeight:                 1,
+				L1StartHeight:                 state.L1StartHeight,
 				L2StartHeight:                 1,
 				BatchStartHeight:              1,
 				DisableDeleteFutureWithdrawal: false,
-				DisableAutoSetL1Height:        false,
+				DisableAutoSetL1Height:        true,
 				DisableBatchSubmitter:         false,
 				DisableOutputSubmitter:        false,
 			}
@@ -1038,8 +1216,9 @@ func WaitStartingInitBot(ctx context.Context) tea.Cmd {
 					RPCAddress:   configMap["l2_node.rpc_address"],
 					Bech32Prefix: "init",
 				},
-				L1StartHeight: 1,
-				L2StartHeight: 1,
+				L1StartHeight:          state.L1StartHeight,
+				L2StartHeight:          1,
+				DisableAutoSetL1Height: true,
 			}
 			configBz, err := json.MarshalIndent(config, "", " ")
 			if err != nil {
