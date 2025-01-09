@@ -153,9 +153,6 @@ func (j *Launchd) PruneLogs() error {
 	if err != nil {
 		return fmt.Errorf("failed to get service slug: %v", err)
 	}
-	if err != nil {
-		return fmt.Errorf("failed to get service name: %v", err)
-	}
 
 	logFilePathOut := filepath.Join(userHome, common.WeaveLogDirectory, fmt.Sprintf("%s.stdout.log", slug))
 	logFilePathErr := filepath.Join(userHome, common.WeaveLogDirectory, fmt.Sprintf("%s.stderr.log", slug))
