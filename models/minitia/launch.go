@@ -2805,15 +2805,14 @@ func isJSONLog(line string) bool {
 func launchingMinitia(ctx context.Context, streamingLogs *[]string) tea.Cmd {
 	return func() tea.Msg {
 		state := weavecontext.GetCurrentState[LaunchState](ctx)
-
+		userHome, err := os.UserHomeDir()
+		if err != nil {
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to get user home directory: %v", err)}
+		}
 		var configFilePath string
 		if state.launchFromExistingConfig {
 			configFilePath = state.existingConfigPath
 		} else {
-			userHome, err := os.UserHomeDir()
-			if err != nil {
-				return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to get user home directory: %v", err)}
-			}
 
 			minitiaConfig := &types.MinitiaConfig{
 				L1Config: &types.L1Config{
@@ -2919,6 +2918,12 @@ func launchingMinitia(ctx context.Context, streamingLogs *[]string) tea.Cmd {
 				*streamingLogs = append(*streamingLogs, fmt.Sprintf("Launch command finished with error: %v", err))
 				return ui.NonRetryableErrorLoading{Err: fmt.Errorf("command execution failed: %v", err)}
 			}
+		}
+
+		appConfigPath := filepath.Join(userHome, common.MinitiaConfigPath, "app.toml")
+		err = config.UpdateTomlValue(appConfigPath, "inter-block-cache", "false")
+		if err != nil {
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to set inter-block-cache: %v", err)}
 		}
 
 		srv, err := service.NewService(service.Minitia)
