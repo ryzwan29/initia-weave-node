@@ -437,3 +437,11 @@ func (cr *ChainRegistry) GetCounterpartyClientId(portID, channelID string) (Conn
 
 	return connection, nil
 }
+
+func GetInitiaGraphQLFromType(chainType ChainType) (string, error) {
+	apiURL, ok := ChainTypeToInitiaGraphQLAPI[chainType]
+	if ok {
+		return apiURL, nil
+	}
+	return "", fmt.Errorf("graphql for chain type %s not found", chainType)
+}
