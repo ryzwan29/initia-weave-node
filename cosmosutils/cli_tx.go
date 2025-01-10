@@ -3,6 +3,7 @@ package cosmosutils
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"os/exec"
 	"time"
 
@@ -37,6 +38,53 @@ type MinimalTxResponse struct {
 
 type InitiadTxExecutor struct {
 	binaryPath string
+}
+
+type MsgUpdateParams struct {
+	Authority string        `json:"authority"`
+	Params    OPChildParams `json:"params"`
+}
+
+type Message struct {
+	Type      string        `json:"@type"`
+	Authority string        `json:"authority"`
+	Params    OPChildParams `json:"params"`
+}
+
+type JsonPayload struct {
+	Messages []Message `json:"messages"`
+}
+
+func CreateOPChildUpdateParamsMsg(filePath string, params OPChildParams) error {
+	message := Message{
+		Type:      "/opinit.opchild.v1.MsgUpdateParams",
+		Authority: "init1gz9n8jnu9fgqw7vem9ud67gqjk5q4m2w0aejne",
+		Params:    params,
+	}
+
+	jsonPayload := JsonPayload{
+		Messages: []Message{message},
+	}
+
+	// Serialize to JSON
+	jsonData, err := json.MarshalIndent(jsonPayload, "", "    ")
+	if err != nil {
+		return err
+	}
+
+	// Create or open the file where the data will be saved
+	file, err := os.Create(filePath)
+	if err != nil {
+		return fmt.Errorf("error creating file: %v", err)
+	}
+	defer file.Close()
+
+	// Write the JSON data to the file
+	_, err = file.Write(jsonData)
+	if err != nil {
+		return fmt.Errorf("error writing to file: %v", err)
+	}
+	return nil
 }
 
 func NewInitiadTxExecutor(rest string) (*InitiadTxExecutor, error) {

@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strconv"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
@@ -569,7 +569,7 @@ func (m *PrefillMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		switch *selected {
 		case PrefillMinitiaConfigYes:
-      analytics.TrackEvent(analytics.PrefillFromArtifactsSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, true))
+			analytics.TrackEvent(analytics.PrefillFromArtifactsSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, true))
 			state.UsePrefilledMinitia = true
 			minitiaConfig := state.MinitiaConfig
 			state.botConfig["l1_node.chain_id"] = minitiaConfig.L1Config.ChainID

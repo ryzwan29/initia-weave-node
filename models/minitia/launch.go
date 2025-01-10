@@ -1361,21 +1361,27 @@ func NewAccountsFundingPresetSelect(ctx context.Context) (*AccountsFundingPreset
 		celestiaNeededBalance = fmt.Sprintf("%s %s (%s)\n    ", styles.Text(fmt.Sprintf("• Celestia (%s):", celestiaChainId), styles.Cyan), styles.BoldText(fmt.Sprintf("%s%s", DefaultL1BatchSubmitterBalance, DefaultCelestiaGasDenom), styles.White), celestiaGasStationAddress)
 	} else {
 		batchSubmitterDenom = DefaultL1GasDenom
+		batchSubmitterText = " on L1"
 		initiaNeededBalance = DefaultL1InitiaNeededBalanceIfInitiaDA
 	}
 	separator := styles.Text("------------------------------------------------------------------------------------", styles.Gray)
 	DefaultPreset = AccountsFundingPresetOption(fmt.Sprintf(
-		"○ Use the default preset\n    %s\n    %s\n    %s %s on L1, %s will be minted on the rollup\n    %s %s\n    %s %s%s\n    %s %s\n    %s %s will be minted on the rollup \n    %s\n    %s\n    %s %s (%s)\n    %s%s\n",
+		"○ Use the default preset\n    %s\n    %s\n    %s %s on L1\n    %s %s on L1\n    %s %s%s\n    %s %s on L1\n    %s\n    %s\n    %s %s (%s)\n    %s%s\n",
 		separator,
 		styles.BoldText("• Executor", styles.Cyan),
-		styles.BoldText("  • Bridge Executor:", styles.Cyan), styles.BoldText(fmt.Sprintf("%s%s", DefaultL1BridgeExecutorBalance, DefaultL1GasDenom), styles.White), styles.BoldText(fmt.Sprintf("%s%s", DefaultL2BridgeExecutorBalance, state.gasDenom), styles.White),
-		styles.BoldText("  • Output Submitter:", styles.Cyan), styles.BoldText(fmt.Sprintf("%s%s", DefaultL1OutputSubmitterBalance, DefaultL1GasDenom), styles.White),
-		styles.BoldText("  • Batch Submitter:", styles.Cyan), styles.BoldText(fmt.Sprintf("%s%s", DefaultL1BatchSubmitterBalance, batchSubmitterDenom), styles.White), batchSubmitterText,
-		styles.BoldText("• Challenger:", styles.Cyan), styles.BoldText(fmt.Sprintf("%s%s", DefaultL1ChallengerBalance, DefaultL1GasDenom), styles.White),
-		styles.BoldText("• Rollup Operator:", styles.Cyan), styles.BoldText(fmt.Sprintf("%s%s", DefaultL2OperatorBalance, state.gasDenom), styles.White),
+		styles.BoldText("  • Bridge Executor:", styles.Cyan),
+		styles.BoldText(fmt.Sprintf("%s%s", DefaultL1BridgeExecutorBalance, DefaultL1GasDenom), styles.White),
+		styles.BoldText("  • Output Submitter:", styles.Cyan),
+		styles.BoldText(fmt.Sprintf("%s%s", DefaultL1OutputSubmitterBalance, DefaultL1GasDenom), styles.White),
+		styles.BoldText("  • Batch Submitter:", styles.Cyan),
+		styles.BoldText(fmt.Sprintf("%s%s", DefaultL1BatchSubmitterBalance, batchSubmitterDenom), styles.White),
+		batchSubmitterText,
+		styles.BoldText("• Challenger:", styles.Cyan),
+		styles.BoldText(fmt.Sprintf("%s%s", DefaultL1ChallengerBalance, DefaultL1GasDenom), styles.White),
 		separator,
 		styles.Text("Total amount required from the Gas Station account:", styles.Ivory),
-		styles.Text(fmt.Sprintf("• L1 (%s):", state.l1ChainId), styles.Cyan), styles.BoldText(fmt.Sprintf("%s%s", initiaNeededBalance, DefaultL1GasDenom), styles.White),
+		styles.Text(fmt.Sprintf("• L1 (%s):", state.l1ChainId), styles.Cyan),
+		styles.BoldText(fmt.Sprintf("%s%s", initiaNeededBalance, DefaultL1GasDenom), styles.White),
 		initiaGasStationAddress,
 		celestiaNeededBalance,
 		separator,
@@ -1416,7 +1422,7 @@ func (m *AccountsFundingPresetSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case DefaultPreset:
 			state.FillDefaultBalances()
 			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, "Use the default preset"))
-			return NewAddGasStationToGenesisSelect(weavecontext.SetCurrentState(m.Ctx, state)), nil
+			return NewFeeWhitelistAccountsInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
 		case ManuallyFill:
 			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, "Fill in an amount for each account manually"))
 			return NewSystemKeyL1BridgeExecutorBalanceInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
@@ -1429,10 +1435,18 @@ func (m *AccountsFundingPresetSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *AccountsFundingPresetSelect) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
 	m.Selector.ViewTooltip(m.Ctx)
+	var l1Batch, celestiaBatch string
+	if state.batchSubmissionIsCelestia {
+		l1Batch = ""
+		celestiaBatch = "\n  Celestia:\n  • Batch Submitter"
+	} else {
+		l1Batch = "• Batch Submitter\n  "
+		celestiaBatch = ""
+	}
 	return m.WrapView(state.weave.Render() + "\n" +
 		styles.RenderPrompt(
-			"You will need to fund the following accounts on ...\n  L1:\n  • Bridge Executor\n  • Output Submitter\n  • Batch Submitter\n  • Challenger\n  Rollup:\n  • Operator\n  • Bridge Executor",
-			[]string{"L1", "Rollup"},
+			fmt.Sprintf("You will need to fund the following accounts on ...\n  L1:\n  • Bridge Executor\n  • Output Submitter\n  %s• Challenger%s", l1Batch, celestiaBatch),
+			[]string{"L1", "Rollup", "Celestia"},
 			styles.Information,
 		) + "\n" +
 		styles.RenderPrompt(
@@ -1646,120 +1660,13 @@ func (m *SystemKeyL1ChallengerBalanceInput) Update(msg tea.Msg) (tea.Model, tea.
 		state.systemKeyL1ChallengerBalance = input.Text
 		state.weave.PopPreviousResponseAtIndex(state.preL1BalancesResponsesCount)
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), m.highlights, input.Text))
-		return NewSystemKeyL2OperatorBalanceInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
+		return NewFeeWhitelistAccountsInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
 	}
 	m.TextInput = input
 	return m, cmd
 }
 
 func (m *SystemKeyL1ChallengerBalanceInput) View() string {
-	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
-	return m.WrapView(state.weave.Render() +
-		styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View())
-}
-
-type SystemKeyL2OperatorBalanceInput struct {
-	ui.TextInput
-	weavecontext.BaseModel
-	question   string
-	highlights []string
-}
-
-func NewSystemKeyL2OperatorBalanceInput(ctx context.Context) *SystemKeyL2OperatorBalanceInput {
-	state := weavecontext.GetCurrentState[LaunchState](ctx)
-	state.preL2BalancesResponsesCount = len(state.weave.PreviousResponse)
-	model := &SystemKeyL2OperatorBalanceInput{
-		TextInput:  ui.NewTextInput(true),
-		BaseModel:  weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
-		question:   fmt.Sprintf("Specify the genesis balance for the operator on rollup (%s)", state.gasDenom),
-		highlights: []string{"operator", "rollup"},
-	}
-	model.WithPlaceholder("Enter a positive amount")
-	model.WithValidatorFn(common.IsValidInteger)
-	model.Ctx = weavecontext.SetCurrentState(model.Ctx, state)
-	return model
-}
-
-func (m *SystemKeyL2OperatorBalanceInput) GetQuestion() string {
-	return m.question
-}
-
-func (m *SystemKeyL2OperatorBalanceInput) Init() tea.Cmd {
-	return nil
-}
-
-func (m *SystemKeyL2OperatorBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	if model, cmd, handled := weavecontext.HandleCommonCommands[LaunchState](m, msg); handled {
-		return model, cmd
-	}
-
-	input, cmd, done := m.TextInput.Update(msg)
-	if done {
-		state := weavecontext.PushPageAndGetState[LaunchState](m)
-
-		state.systemKeyL2OperatorBalance = fmt.Sprintf("%s%s", input.Text, state.gasDenom)
-		state.weave.PushPreviousResponse(fmt.Sprintf("\n%s\n", styles.RenderPrompt("Please fund the following accounts on rollup:\n  • Operator\n  • Bridge Executor\n", []string{"rollup"}, styles.Information)))
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), m.highlights, input.Text))
-		return NewSystemKeyL2BridgeExecutorBalanceInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
-	}
-	m.TextInput = input
-	return m, cmd
-}
-
-func (m *SystemKeyL2OperatorBalanceInput) View() string {
-	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
-	return m.WrapView(state.weave.Render() + "\n" +
-		styles.RenderPrompt("Please fund the following accounts on rollup:\n  • Operator\n  • Bridge Executor", []string{"rollup"}, styles.Information) + "\n" +
-		styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View())
-}
-
-type SystemKeyL2BridgeExecutorBalanceInput struct {
-	ui.TextInput
-	weavecontext.BaseModel
-	question   string
-	highlights []string
-}
-
-func NewSystemKeyL2BridgeExecutorBalanceInput(ctx context.Context) *SystemKeyL2BridgeExecutorBalanceInput {
-	state := weavecontext.GetCurrentState[LaunchState](ctx)
-	model := &SystemKeyL2BridgeExecutorBalanceInput{
-		TextInput:  ui.NewTextInput(false),
-		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
-		question:   fmt.Sprintf("Specify the genesis balance for the bridge executor on rollup (%s)", state.gasDenom),
-		highlights: []string{"bridge executor", "rollup"},
-	}
-	model.WithPlaceholder("Enter a positive amount")
-	model.WithValidatorFn(common.IsValidInteger)
-	return model
-}
-
-func (m *SystemKeyL2BridgeExecutorBalanceInput) GetQuestion() string {
-	return m.question
-}
-
-func (m *SystemKeyL2BridgeExecutorBalanceInput) Init() tea.Cmd {
-	return nil
-}
-
-func (m *SystemKeyL2BridgeExecutorBalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	if model, cmd, handled := weavecontext.HandleCommonCommands[LaunchState](m, msg); handled {
-		return model, cmd
-	}
-
-	input, cmd, done := m.TextInput.Update(msg)
-	if done {
-		state := weavecontext.PushPageAndGetState[LaunchState](m)
-
-		state.systemKeyL2BridgeExecutorBalance = fmt.Sprintf("%s%s", input.Text, state.gasDenom)
-		state.weave.PopPreviousResponseAtIndex(state.preL2BalancesResponsesCount)
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), m.highlights, input.Text))
-		return NewAddGasStationToGenesisSelect(weavecontext.SetCurrentState(m.Ctx, state)), nil
-	}
-	m.TextInput = input
-	return m, cmd
-}
-
-func (m *SystemKeyL2BridgeExecutorBalanceInput) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
 	return m.WrapView(state.weave.Render() +
 		styles.RenderPrompt(m.GetQuestion(), m.highlights, styles.Question) + m.TextInput.View())
@@ -2013,6 +1920,57 @@ func (m *AddGenesisAccountsSelect) View() string {
 		[]string{highlight},
 		styles.Question,
 	) + m.Selector.View())
+}
+
+type FeeWhitelistAccountsInput struct {
+	ui.TextInput
+	weavecontext.BaseModel
+	question string
+}
+
+func NewFeeWhitelistAccountsInput(ctx context.Context) *FeeWhitelistAccountsInput {
+	tooltip := tooltip.FeeWhitelistAccountsInputTooltip
+	model := &FeeWhitelistAccountsInput{
+		TextInput: ui.NewTextInput(true),
+		BaseModel: weavecontext.BaseModel{Ctx: ctx},
+		question:  "Specify fee whitelist addresses",
+	}
+	model.WithTooltip(&tooltip)
+	model.WithPlaceholder("Enter whitelist address, You can add multiple addresses by separating them with a comma (,)")
+	model.WithValidatorFn(common.IsValidAddresses)
+	return model
+}
+
+func (m *FeeWhitelistAccountsInput) GetQuestion() string {
+	return m.question
+}
+
+func (m *FeeWhitelistAccountsInput) Init() tea.Cmd {
+	return nil
+}
+
+func (m *FeeWhitelistAccountsInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := weavecontext.HandleCommonCommands[LaunchState](m, msg); handled {
+		return model, cmd
+	}
+
+	input, cmd, done := m.TextInput.Update(msg)
+	if done {
+		state := weavecontext.PushPageAndGetState[LaunchState](m)
+		accs := strings.Trim(input.Text, "\n")
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"fee whitelist"}, accs))
+		state.feeWhitelistAccounts = accs
+		model := NewAddGasStationToGenesisSelect(weavecontext.SetCurrentState(m.Ctx, state))
+		return model, model.Init()
+	}
+	m.TextInput = input
+	return m, cmd
+}
+
+func (m *FeeWhitelistAccountsInput) View() string {
+	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
+	m.TextInput.ViewTooltip(m.Ctx)
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(m.GetQuestion(), []string{"fee whitelist"}, styles.Question) + m.TextInput.View())
 }
 
 type GenesisAccountsAddressInput struct {
@@ -3063,8 +3021,51 @@ func (m *LaunchingNewMinitiaLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if err != nil {
 			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "Invalid OS: only Linux and Darwin are supported", []string{}, fmt.Sprintf("%v", err)))
 		}
+
 		if err = srv.Start(); err != nil {
 			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "Failed to start rollup service", []string{}, fmt.Sprintf("%v", err)))
+		}
+
+		if state.feeWhitelistAccounts != "" {
+			cache := make(map[string]bool)
+			for _, acc := range strings.Split(state.feeWhitelistAccounts, ",") {
+				cache[acc] = true
+			}
+
+			userHome, err := os.UserHomeDir()
+			if err != nil {
+				return m, m.HandlePanic(fmt.Errorf("failed to get user home directory: %v", err))
+			}
+			messageJsonPath := filepath.Join(userHome, common.WeaveDataDirectory, "messages.json")
+
+			params, err := cosmosutils.QueryOPChildParams("http://localhost:1317")
+			if err != nil {
+				return m, m.HandlePanic(fmt.Errorf("failed to query params: %v", err))
+
+			}
+			for _, acc := range params.FeeWhitelist {
+				cache[acc] = true
+			}
+
+			updatedFeeWhitelistAccounts := make([]string, 0)
+			for acc := range cache {
+				updatedFeeWhitelistAccounts = append(updatedFeeWhitelistAccounts, acc)
+			}
+			params.FeeWhitelist = updatedFeeWhitelistAccounts
+
+			err = cosmosutils.CreateOPChildUpdateParamsMsg(messageJsonPath, params)
+			if err != nil {
+				return m, m.HandlePanic(fmt.Errorf("failed to create update params message: %v", err))
+
+			}
+			time.Sleep(time.Second)
+			runCmd := exec.Command(state.binaryPath, "tx", "opchild", "execute-messages", messageJsonPath,
+				"--from", "Validator", "--keyring-backend", "test",
+				"--chain-id", state.chainId, "-y",
+			)
+			if err := runCmd.Run(); err != nil {
+				return m, m.HandlePanic(fmt.Errorf("failed to update params message: %v", err))
+			}
 		}
 
 		return NewTerminalState(weavecontext.SetCurrentState(m.Ctx, state)), tea.Quit
