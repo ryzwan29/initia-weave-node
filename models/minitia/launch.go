@@ -1422,7 +1422,7 @@ func (m *AccountsFundingPresetSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case DefaultPreset:
 			state.FillDefaultBalances()
 			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, "Use the default preset"))
-			return NewAddGasStationToGenesisSelect(weavecontext.SetCurrentState(m.Ctx, state)), nil
+			return NewFeeWhitelistAccountsInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
 		case ManuallyFill:
 			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, "Fill in an amount for each account manually"))
 			return NewSystemKeyL1BridgeExecutorBalanceInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
@@ -1437,7 +1437,7 @@ func (m *AccountsFundingPresetSelect) View() string {
 	m.Selector.ViewTooltip(m.Ctx)
 	return m.WrapView(state.weave.Render() + "\n" +
 		styles.RenderPrompt(
-			"You will need to fund the following accounts on ...\n  L1:\n  • Bridge Executor\n  • Output Submitter\n  • Batch Submitter\n  • Challenger\n  Rollup:\n  • Operator\n  • Bridge Executor",
+			"You will need to fund the following accounts on ...\n  L1:\n  • Bridge Executor\n  • Output Submitter\n  • Batch Submitter\n  • Challenger\n  Rollup:\n  • Bridge Executor",
 			[]string{"L1", "Rollup"},
 			styles.Information,
 		) + "\n" +
@@ -1652,7 +1652,7 @@ func (m *SystemKeyL1ChallengerBalanceInput) Update(msg tea.Msg) (tea.Model, tea.
 		state.systemKeyL1ChallengerBalance = input.Text
 		state.weave.PopPreviousResponseAtIndex(state.preL1BalancesResponsesCount)
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), m.highlights, input.Text))
-		return NewAddGasStationToGenesisSelect(weavecontext.SetCurrentState(m.Ctx, state)), nil
+		return NewFeeWhitelistAccountsInput(weavecontext.SetCurrentState(m.Ctx, state)), nil
 	}
 	m.TextInput = input
 	return m, cmd
@@ -1891,7 +1891,7 @@ func (m *AddGenesisAccountsSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else {
 				state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, question, []string{highlight}, string(No)))
 			}
-			model := NewFeeWhitelistAccountsInput(weavecontext.SetCurrentState(m.Ctx, state))
+			model := NewDownloadMinitiaBinaryLoading(weavecontext.SetCurrentState(m.Ctx, state))
 			return model, model.Init()
 		}
 	}
@@ -1952,7 +1952,7 @@ func (m *FeeWhitelistAccountsInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		accs := strings.Trim(input.Text, "\n")
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"fee whitelist"}, accs))
 		state.feeWhitelistAccounts = accs
-		model := NewDownloadMinitiaBinaryLoading(weavecontext.SetCurrentState(m.Ctx, state))
+		model := NewAddGasStationToGenesisSelect(weavecontext.SetCurrentState(m.Ctx, state))
 		return model, model.Init()
 	}
 	m.TextInput = input
