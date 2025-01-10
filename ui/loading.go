@@ -91,7 +91,7 @@ func (m Loading) Update(msg tea.Msg) (Loading, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "q", "esc", "ctrl+c":
+		case "ctrl+c":
 			analytics.TrackEvent(analytics.Interrupted, analytics.NewEmptyEvent())
 			m.quitting = true
 			return m, tea.Quit
