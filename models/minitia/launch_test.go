@@ -1409,9 +1409,9 @@ func TestAddGenesisAccountsSelect_Update_No(t *testing.T) {
 	enterPress := tea.KeyMsg{Type: tea.KeyEnter}
 	finalModel, _ := nextModel.Update(enterPress)
 
-	model := finalModel.(*FeeWhitelistAccountsInput)
+	model := finalModel.(*DownloadMinitiaBinaryLoading)
 	state := weavecontext.GetCurrentState[LaunchState](model.Ctx)
-	assert.IsType(t, &FeeWhitelistAccountsInput{}, finalModel)
+	assert.IsType(t, &DownloadMinitiaBinaryLoading{}, finalModel)
 	assert.Contains(t, state.weave.PreviousResponse[0], "Would you like to add genesis accounts? > No")
 }
 
@@ -1574,14 +1574,22 @@ func TestAddGenesisAccountsSelect_Update_NoRecurringWithAccounts(t *testing.T) {
 	model := NewAddGenesisAccountsSelect(true, ctx)
 
 	msg := tea.KeyMsg{Type: tea.KeyDown}
-	updatedModel, _ := model.Update(msg)
+	updatedModel, cmd := model.Update(msg)
 
 	msg = tea.KeyMsg{Type: tea.KeyEnter}
-	updatedModel, _ = model.Update(msg)
+	updatedModel, cmd = model.Update(msg)
 
-	finalModel := updatedModel.(*FeeWhitelistAccountsInput)
+	finalModel := updatedModel.(*DownloadMinitiaBinaryLoading)
 	state = weavecontext.GetCurrentState[LaunchState](finalModel.Ctx)
-	assert.IsType(t, &FeeWhitelistAccountsInput{}, updatedModel)
+	assert.IsType(t, &DownloadMinitiaBinaryLoading{}, updatedModel)
+	assert.NotNil(t, cmd)
+	assert.Len(t, state.weave.PreviousResponse, 2)
+	assert.Contains(t, state.weave.PreviousResponse[0], "Would you like to add genesis accounts?")
+	assert.Contains(t, state.weave.PreviousResponse[1], "List of extra Genesis Accounts")
+	assert.Contains(t, state.weave.PreviousResponse[1], "address1")
+	assert.Contains(t, state.weave.PreviousResponse[1], "100token")
+	assert.Contains(t, state.weave.PreviousResponse[1], "address2")
+	assert.Contains(t, state.weave.PreviousResponse[1], "200token")
 }
 
 func TestNewDownloadMinitiaBinaryLoading(t *testing.T) {
