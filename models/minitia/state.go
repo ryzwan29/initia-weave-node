@@ -131,7 +131,6 @@ func (ls *LaunchState) FillDefaultBalances() {
 	ls.systemKeyL1OutputSubmitterBalance = DefaultL1OutputSubmitterBalance
 	ls.systemKeyL1BatchSubmitterBalance = DefaultL1BatchSubmitterBalance
 	ls.systemKeyL1ChallengerBalance = DefaultL1ChallengerBalance
-	ls.systemKeyL2OperatorBalance = fmt.Sprintf("%s%s", DefaultL2OperatorBalance, ls.gasDenom)
 	ls.systemKeyL2BridgeExecutorBalance = fmt.Sprintf("%s%s", DefaultL2BridgeExecutorBalance, ls.gasDenom)
 }
 
