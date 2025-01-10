@@ -10,39 +10,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/initia-labs/weave/analytics"
 	"github.com/initia-labs/weave/common"
 	"github.com/initia-labs/weave/models"
 	"github.com/initia-labs/weave/testutil"
 )
 
-const weaveDirectoryBackup = ".weave_back"
-
-func TestMain(m *testing.M) {
-	analytics.Client = &analytics.NoOpClient{}
-	exitCode := m.Run()
-	os.Exit(exitCode)
-}
-
 func TestGasStationSetup(t *testing.T) {
-	// if Weave home already exists, copy the content somewhere else and replace it again after the test
 	userHome, _ := os.UserHomeDir()
 	weaveDir := filepath.Join(userHome, common.WeaveDirectory)
-	weaveDirBackup := filepath.Join(userHome, weaveDirectoryBackup)
-	if _, err := os.Stat(weaveDir); !os.IsNotExist(err) {
-		// remove the backup directory if it exists
-		os.RemoveAll(weaveDirBackup)
-		// rename the weave directory to backup
-		if err := os.Rename(weaveDir, weaveDirBackup); err != nil {
-			t.Fatalf("Failed to backup weave directory: %v", err)
-		}
-
-		// restore the weave directory
-		defer func() {
-			os.RemoveAll(weaveDir)
-			os.Rename(weaveDirBackup, weaveDir)
-		}()
-	}
 
 	finalModel := testutil.SetupGasStation(t)
 
