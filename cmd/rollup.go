@@ -110,6 +110,7 @@ func minitiaLaunchCommand() *cobra.Command {
 			}
 			configPath, _ := cmd.Flags().GetString(FlagWithConfig)
 			vm, _ := cmd.Flags().GetString(FlagVm)
+			force, _ := cmd.Flags().GetBool(FlagForce)
 			state := minitia.NewLaunchState()
 			events := analytics.NewEmptyEvent()
 			if configPath != "" {
@@ -118,6 +119,10 @@ func minitiaLaunchCommand() *cobra.Command {
 			}
 			analytics.TrackRunEvent(cmd, args, analytics.RollupComponent, events)
 			if configPath != "" {
+				if io.FileOrFolderExists(minitiaHome) && !force {
+					return fmt.Errorf("existing %s folder detected. Use --force or -f to override", minitiaHome)
+				}
+
 				minitiaConfig, ok := cmd.Context().Value(minitiaConfigKey{}).(*types.MinitiaConfig)
 				if !ok {
 					return fmt.Errorf("failed to retrieve configuration from context")
@@ -130,8 +135,6 @@ func minitiaLaunchCommand() *cobra.Command {
 
 				state.PrepareLaunchingWithConfig(vm, version, downloadURL, configPath, minitiaConfig)
 			}
-
-			force, _ := cmd.Flags().GetBool(FlagForce)
 
 			if force {
 				if err = io.DeleteDirectory(minitiaHome); err != nil {
