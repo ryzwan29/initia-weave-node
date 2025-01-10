@@ -1435,10 +1435,18 @@ func (m *AccountsFundingPresetSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *AccountsFundingPresetSelect) View() string {
 	state := weavecontext.GetCurrentState[LaunchState](m.Ctx)
 	m.Selector.ViewTooltip(m.Ctx)
+	var l1Batch, celestiaBatch string
+	if state.batchSubmissionIsCelestia {
+		l1Batch = ""
+		celestiaBatch = "\n  Celestia:\n  • Batch Submitter"
+	} else {
+		l1Batch = "• Batch Submitter\n  "
+		celestiaBatch = ""
+	}
 	return m.WrapView(state.weave.Render() + "\n" +
 		styles.RenderPrompt(
-			"You will need to fund the following accounts on ...\n  L1:\n  • Bridge Executor\n  • Output Submitter\n  • Batch Submitter\n  • Challenger",
-			[]string{"L1", "Rollup"},
+			fmt.Sprintf("You will need to fund the following accounts on ...\n  L1:\n  • Bridge Executor\n  • Output Submitter\n  %s• Challenger%s", l1Batch, celestiaBatch),
+			[]string{"L1", "Rollup", "Celestia"},
 			styles.Information,
 		) + "\n" +
 		styles.RenderPrompt(
