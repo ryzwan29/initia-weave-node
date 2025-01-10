@@ -1361,16 +1361,16 @@ func NewAccountsFundingPresetSelect(ctx context.Context) (*AccountsFundingPreset
 		celestiaNeededBalance = fmt.Sprintf("%s %s (%s)\n    ", styles.Text(fmt.Sprintf("• Celestia (%s):", celestiaChainId), styles.Cyan), styles.BoldText(fmt.Sprintf("%s%s", DefaultL1BatchSubmitterBalance, DefaultCelestiaGasDenom), styles.White), celestiaGasStationAddress)
 	} else {
 		batchSubmitterDenom = DefaultL1GasDenom
+		batchSubmitterText = " on L1"
 		initiaNeededBalance = DefaultL1InitiaNeededBalanceIfInitiaDA
 	}
 	separator := styles.Text("------------------------------------------------------------------------------------", styles.Gray)
 	DefaultPreset = AccountsFundingPresetOption(fmt.Sprintf(
-		"○ Use the default preset\n    %s\n    %s\n    %s %s on L1, %s will be minted on the rollup\n    %s %s\n    %s %s%s\n    %s %s\n    will be minted on the rollup \n    %s\n    %s\n    %s %s (%s)\n    %s%s\n",
+		"○ Use the default preset\n    %s\n    %s\n    %s %s on L1\n    %s %s on L1\n    %s %s%s\n    %s %s on L1\n    %s\n    %s\n    %s %s (%s)\n    %s%s\n",
 		separator,
 		styles.BoldText("• Executor", styles.Cyan),
 		styles.BoldText("  • Bridge Executor:", styles.Cyan),
 		styles.BoldText(fmt.Sprintf("%s%s", DefaultL1BridgeExecutorBalance, DefaultL1GasDenom), styles.White),
-		styles.BoldText(fmt.Sprintf("%s%s", DefaultL2BridgeExecutorBalance, state.gasDenom), styles.White),
 		styles.BoldText("  • Output Submitter:", styles.Cyan),
 		styles.BoldText(fmt.Sprintf("%s%s", DefaultL1OutputSubmitterBalance, DefaultL1GasDenom), styles.White),
 		styles.BoldText("  • Batch Submitter:", styles.Cyan),
@@ -1437,7 +1437,7 @@ func (m *AccountsFundingPresetSelect) View() string {
 	m.Selector.ViewTooltip(m.Ctx)
 	return m.WrapView(state.weave.Render() + "\n" +
 		styles.RenderPrompt(
-			"You will need to fund the following accounts on ...\n  L1:\n  • Bridge Executor\n  • Output Submitter\n  • Batch Submitter\n  • Challenger\n  Rollup:\n  • Bridge Executor",
+			"You will need to fund the following accounts on ...\n  L1:\n  • Bridge Executor\n  • Output Submitter\n  • Batch Submitter\n  • Challenger",
 			[]string{"L1", "Rollup"},
 			styles.Information,
 		) + "\n" +
