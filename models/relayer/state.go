@@ -24,6 +24,8 @@ type State struct {
 	l2FundingTxHash   string
 
 	hermesBinaryPath string
+
+	minitiaConfig *types.MinitiaConfig
 }
 
 func NewRelayerState() State {
@@ -59,6 +61,10 @@ func (state State) Clone() State {
 		l2FundingTxHash:   state.l2FundingTxHash,
 
 		hermesBinaryPath: state.hermesBinaryPath,
+	}
+
+	if state.minitiaConfig != nil {
+		clone.minitiaConfig = state.minitiaConfig.Clone()
 	}
 
 	return clone

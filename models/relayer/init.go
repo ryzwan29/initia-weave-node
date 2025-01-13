@@ -153,6 +153,7 @@ func (m *RollupSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, m.HandlePanic(err)
 			}
 
+			state.minitiaConfig = &minitiaConfig
 			if minitiaConfig.L1Config.ChainID == InitiaTestnetChainId {
 				testnetRegistry, err := registry.GetChainRegistry(registry.InitiaL1Testnet)
 				if err != nil {
@@ -2540,6 +2541,10 @@ func (m *SettingUpRelayer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.Loading.Completing {
 		m.Ctx = m.Loading.EndContext
 		state := weavecontext.PushPageAndGetState[State](m)
+		if state.minitiaConfig != nil {
+			return NewAddChallengerKeyToRelayer(weavecontext.SetCurrentState(m.Ctx, state)), nil
+		}
+
 		model, err := NewL1KeySelect(weavecontext.SetCurrentState(m.Ctx, state))
 		if err != nil {
 			return m, m.HandlePanic(err)
@@ -2578,4 +2583,95 @@ func containsQuarantine(attrs string) bool {
 
 func stringContains(haystack, needle string) bool {
 	return len(haystack) >= len(needle) && haystack[len(haystack)-len(needle):] == needle
+}
+
+type AddChallengerKeyToRelayer struct {
+	ui.Selector[AddChallengerKeyToRelayerOption]
+	weavecontext.BaseModel
+	question string
+}
+
+type AddChallengerKeyToRelayerOption string
+
+const (
+	YesAddChallengerKeyToRelayerOption AddChallengerKeyToRelayerOption = "Yes (recommended, open the tooltip to see the details)"
+	NoAddChallengerKeyToRelayerOption  AddChallengerKeyToRelayerOption = "No, I want to setup relayer with a separate key"
+)
+
+func NewAddChallengerKeyToRelayer(ctx context.Context) *AddChallengerKeyToRelayer {
+	return &AddChallengerKeyToRelayer{
+		Selector: ui.Selector[AddChallengerKeyToRelayerOption]{
+			Options: []AddChallengerKeyToRelayerOption{
+				YesAddChallengerKeyToRelayerOption,
+				NoAddChallengerKeyToRelayerOption,
+			},
+		},
+		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
+		question:  "Do you want to setup relayer with the challenger key",
+	}
+}
+
+func (m *AddChallengerKeyToRelayer) GetQuestion() string {
+	return m.question
+}
+
+func (m *AddChallengerKeyToRelayer) Init() tea.Cmd {
+	return nil
+}
+
+func (m *AddChallengerKeyToRelayer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if model, cmd, handled := weavecontext.HandleCommonCommands[State](m, msg); handled {
+		return model, cmd
+	}
+
+	selected, cmd := m.Select(msg)
+	if selected != nil {
+		state := weavecontext.PushPageAndGetState[State](m)
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"challenger key"}, string(*selected)))
+		switch *selected {
+		case YesAddChallengerKeyToRelayerOption:
+			l1ChainId, err := GetL1ChainId(m.Ctx)
+			if err != nil {
+				return m, m.HandlePanic(err)
+			}
+			relayerKey, err := cosmosutils.RecoverAndReplaceHermesKey(state.hermesBinaryPath, l1ChainId, state.minitiaConfig.SystemKeys.Challenger.Mnemonic)
+			if err != nil {
+				return m, m.HandlePanic(err)
+			}
+			state.l1RelayerAddress = relayerKey.Address
+			state.l1RelayerMnemonic = relayerKey.Mnemonic
+
+			l2ChainId, err := GetL2ChainId(m.Ctx)
+			if err != nil {
+				return m, m.HandlePanic(err)
+			}
+			relayerKey, err = cosmosutils.RecoverAndReplaceHermesKey(state.hermesBinaryPath, l2ChainId, state.minitiaConfig.SystemKeys.Challenger.Mnemonic)
+			if err != nil {
+				return m, m.HandlePanic(err)
+			}
+
+			state.l2RelayerAddress = relayerKey.Address
+			state.l2RelayerMnemonic = relayerKey.Mnemonic
+
+			return NewTerminalState(weavecontext.SetCurrentState(m.Ctx, state)), tea.Quit
+		case NoAddChallengerKeyToRelayerOption:
+			model, err := NewL1KeySelect(weavecontext.SetCurrentState(m.Ctx, state))
+			if err != nil {
+				return m, m.HandlePanic(err)
+			}
+			return model, nil
+		}
+
+	}
+	return m, cmd
+}
+
+func (m *AddChallengerKeyToRelayer) View() string {
+	state := weavecontext.GetCurrentState[State](m.Ctx)
+	m.Selector.ViewTooltip(m.Ctx)
+	return m.WrapView(state.weave.Render() + styles.RenderPrompt(
+		m.GetQuestion(),
+		[]string{"challenger key"},
+		styles.Question,
+	) + m.Selector.View())
 }
