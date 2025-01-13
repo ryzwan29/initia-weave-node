@@ -153,6 +153,8 @@ func (m *RollupSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, m.HandlePanic(err)
 			}
 
+			state.feeWhitelistAccounts = append(state.feeWhitelistAccounts, minitiaConfig.SystemKeys.Challenger.L2Address)
+
 			state.minitiaConfig = &minitiaConfig
 			if minitiaConfig.L1Config.ChainID == InitiaTestnetChainId {
 				testnetRegistry, err := registry.GetChainRegistry(registry.InitiaL1Testnet)
@@ -882,6 +884,12 @@ func waitFetchingBalancesLoading(ctx context.Context) tea.Cmd {
 			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("cannot fetch balance for l2: %v", err)}
 		}
 		state.l2NeedsFunding = l2Balances.IsZero()
+		for _, addr := range state.feeWhitelistAccounts {
+			if addr == state.l2RelayerAddress {
+				state.l2NeedsFunding = false
+				break
+			}
+		}
 
 		return ui.EndLoading{
 			Ctx: weavecontext.SetCurrentState(ctx, state),
@@ -1570,6 +1578,10 @@ func (m *SelectingL2Network) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, m.HandlePanic(err)
 		}
 
+		if params, err := cosmosutils.QueryOPChildParams(lcdAddress); err == nil {
+			state.feeWhitelistAccounts = append(state.feeWhitelistAccounts, params.FeeWhitelist...)
+		}
+
 		pairs := make([]types.IBCChannelPair, 0)
 		for _, channel := range res.Channels {
 			pairs = append(pairs, types.IBCChannelPair{
@@ -1735,7 +1747,7 @@ func (m *SelectingL1NetworkRegistry) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			state.Config["l1.gas_price.denom"] = DefaultGasPriceDenom
 
-			model, err := NewSelectingL2Network(weavecontext.SetCurrentState(m.Ctx, state), registry.InitiaL1Testnet)
+			model, err := NewSelectingL2Network(weavecontext.SetCurrentState(m.Ctx, state), registry.InitiaL1Mainnet)
 			if err != nil {
 				return m, m.HandlePanic(err)
 			}
@@ -2388,6 +2400,10 @@ func (m *FillL2LCD) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if err != nil {
 			m.err = fmt.Errorf("unable to call the LCD endpoint '%s'. Please verify that the address is correct and reachablem", input.Text)
 			return m, cmd
+		}
+
+		if params, err := cosmosutils.QueryOPChildParams(input.Text); err == nil {
+			state.feeWhitelistAccounts = append(state.feeWhitelistAccounts, params.FeeWhitelist...)
 		}
 
 		pairs := make([]types.IBCChannelPair, 0)
