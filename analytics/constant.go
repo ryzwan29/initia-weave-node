@@ -70,6 +70,7 @@ const (
 	RelayerL2Selected                  Event = "relayer-l2-selected"
 	SettingUpIBCChannelsMethodSelected Event = "setting-up-ibc-channels-method-selected"
 	IBCChannelsSelected                Event = "ibc-channel-selected"
+	UseChallengerKeySelected           Event = "use-challenger-key-selected"
 
 	// GasStation
 	GasStationMethodSelected Event = "gas-station-method-selected"

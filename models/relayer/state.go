@@ -24,13 +24,18 @@ type State struct {
 	l2FundingTxHash   string
 
 	hermesBinaryPath string
+
+	minitiaConfig *types.MinitiaConfig
+
+	feeWhitelistAccounts []string
 }
 
 func NewRelayerState() State {
 	return State{
-		weave:       types.NewWeaveState(),
-		Config:      make(map[string]string),
-		IBCChannels: make([]types.IBCChannelPair, 0),
+		weave:                types.NewWeaveState(),
+		Config:               make(map[string]string),
+		IBCChannels:          make([]types.IBCChannelPair, 0),
+		feeWhitelistAccounts: make([]string, 0),
 	}
 }
 
@@ -59,6 +64,12 @@ func (state State) Clone() State {
 		l2FundingTxHash:   state.l2FundingTxHash,
 
 		hermesBinaryPath: state.hermesBinaryPath,
+
+		feeWhitelistAccounts: state.feeWhitelistAccounts,
+	}
+
+	if state.minitiaConfig != nil {
+		clone.minitiaConfig = state.minitiaConfig.Clone()
 	}
 
 	return clone
