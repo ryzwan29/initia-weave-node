@@ -108,6 +108,15 @@ func (j *Systemd) Log(n int) error {
 	return cmd.Run()
 }
 
+func (j *Systemd) PruneLogs() error {
+	serviceName, err := j.GetServiceName()
+	if err != nil {
+		return err
+	}
+	cmd := exec.Command("journalctl", "--vacuum-time=1s", "--unit", serviceName)
+	return cmd.Run()
+}
+
 func (j *Systemd) Start() error {
 	serviceName, err := j.GetServiceName()
 	if err != nil {

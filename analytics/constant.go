@@ -23,7 +23,7 @@ const (
 	GenerateKeyfileKey string = "generate-key-file"
 	KeyFileKey         string = "key-file"
 	WithConfigKey      string = "with-config"
-	VmTypeKey          string = "vm-type"
+	VmKey              string = "vm"
 
 	// Event
 	RunEvent       Event = "run"
@@ -67,6 +67,7 @@ const (
 	RelayerL2Selected                  Event = "relayer-l2-selected"
 	SettingUpIBCChannelsMethodSelected Event = "setting-up-ibc-channels-method-selected"
 	IBCChannelsSelected                Event = "ibc-channel-selected"
+	UseChallengerKeySelected           Event = "use-challenger-key-selected"
 
 	// GasStation
 	GasStationMethodSelected Event = "gas-station-method-selected"
