@@ -133,7 +133,7 @@ func OPInitBotsKeysSetupCommand() *cobra.Command {
 	return setupCmd
 }
 
-func generateKeyFile(userHome string, keyPath string, botName string) (opinit_bots.KeyFile, error) {
+func generateKeyFile(keyPath string, botName string) (opinit_bots.KeyFile, error) {
 	keyFile, err := opinit_bots.GenerateMnemonicKeyfile(botName)
 	if err != nil {
 		return keyFile, err
@@ -192,7 +192,7 @@ func handleWithConfig(cmd *cobra.Command, userHome, opInitHome, configPath, keyF
 	var keyFile opinit_bots.KeyFile
 	if isGenerateKeyFile {
 		keyPath := filepath.Join(userHome, common.WeaveDataDirectory, fmt.Sprintf("%s.%s.keyfile", common.OpinitGeneratedKeyFilename, botName))
-		keyFile, err = generateKeyFile(userHome, keyPath, botName)
+		keyFile, err = generateKeyFile(keyPath, botName)
 		if err != nil {
 			return err
 		}
