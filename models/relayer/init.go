@@ -2648,6 +2648,7 @@ func (m *AddChallengerKeyToRelayer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"challenger key"}, string(*selected)))
 		switch *selected {
 		case YesAddChallengerKeyToRelayerOption:
+			analytics.TrackEvent(analytics.RelayerRollupSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, true))
 			l1ChainId, err := GetL1ChainId(m.Ctx)
 			if err != nil {
 				return m, m.HandlePanic(err)
@@ -2673,6 +2674,7 @@ func (m *AddChallengerKeyToRelayer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			return NewTerminalState(weavecontext.SetCurrentState(m.Ctx, state)), tea.Quit
 		case NoAddChallengerKeyToRelayerOption:
+			analytics.TrackEvent(analytics.RelayerRollupSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, false))
 			model, err := NewL1KeySelect(weavecontext.SetCurrentState(m.Ctx, state))
 			if err != nil {
 				return m, m.HandlePanic(err)
