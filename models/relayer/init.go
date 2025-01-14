@@ -2615,12 +2615,14 @@ const (
 )
 
 func NewAddChallengerKeyToRelayer(ctx context.Context) *AddChallengerKeyToRelayer {
+	tooltips := ui.NewTooltipSlice(tooltip.RelayerChallengerKeyTooltip, 2)
 	return &AddChallengerKeyToRelayer{
 		Selector: ui.Selector[AddChallengerKeyToRelayerOption]{
 			Options: []AddChallengerKeyToRelayerOption{
 				YesAddChallengerKeyToRelayerOption,
 				NoAddChallengerKeyToRelayerOption,
 			},
+			Tooltips: &tooltips,
 		},
 		BaseModel: weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
 		question:  "Do you want to setup relayer with the challenger key",
