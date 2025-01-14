@@ -73,7 +73,10 @@ func ExtractTarGz(src string, dest string) error {
 				return err
 			}
 			_, err = io.Copy(file, tarReader)
-			file.Close()
+			if err != nil {
+				return err
+			}
+			err = file.Close()
 			if err != nil {
 				return err
 			}

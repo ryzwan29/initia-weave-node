@@ -40,7 +40,7 @@ type Data struct {
 	GasPrice2     GasPrice
 }
 
-// Define a structure for the top-level TOML
+// Config defines a structure for the top-level TOML
 type Config struct {
 	Chains []Data `toml:"chains"`
 }

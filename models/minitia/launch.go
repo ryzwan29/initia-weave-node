@@ -432,7 +432,7 @@ type ChainIdInput struct {
 }
 
 func NewChainIdInput(ctx context.Context) *ChainIdInput {
-	tooltip := tooltip.RollupChainIdTooltip
+	toolTip := tooltip.RollupChainIdTooltip
 	model := &ChainIdInput{
 		TextInput:  ui.NewTextInput(true),
 		BaseModel:  weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
@@ -441,7 +441,7 @@ func NewChainIdInput(ctx context.Context) *ChainIdInput {
 	}
 	model.WithPlaceholder("Enter your chain ID ex. local-rollup-1")
 	model.WithValidatorFn(common.ValidateNonEmptyAndLengthString("Chain ID", MaxChainIDLength))
-	model.WithTooltip(&tooltip)
+	model.WithTooltip(&toolTip)
 	return model
 }
 
@@ -484,7 +484,7 @@ type GasDenomInput struct {
 }
 
 func NewGasDenomInput(ctx context.Context) *GasDenomInput {
-	tooltip := tooltip.RollupGasDenomTooltip
+	toolTip := tooltip.RollupGasDenomTooltip
 	model := &GasDenomInput{
 		TextInput:  ui.NewTextInput(false),
 		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
@@ -494,7 +494,7 @@ func NewGasDenomInput(ctx context.Context) *GasDenomInput {
 	model.WithPlaceholder(`Press tab to use "umin"`)
 	model.WithDefaultValue("umin")
 	model.WithValidatorFn(common.ValidateDenom)
-	model.WithTooltip(&tooltip)
+	model.WithTooltip(&toolTip)
 	return model
 }
 
@@ -537,7 +537,7 @@ type MonikerInput struct {
 }
 
 func NewMonikerInput(ctx context.Context) *MonikerInput {
-	tooltip := tooltip.MonikerTooltip
+	toolTip := tooltip.MonikerTooltip
 	model := &MonikerInput{
 		TextInput:  ui.NewTextInput(false),
 		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
@@ -547,7 +547,7 @@ func NewMonikerInput(ctx context.Context) *MonikerInput {
 	model.WithPlaceholder(`Press tab to use "operator"`)
 	model.WithDefaultValue("operator")
 	model.WithValidatorFn(common.ValidateNonEmptyAndLengthString("Moniker", MaxMonikerLength))
-	model.WithTooltip(&tooltip)
+	model.WithTooltip(&toolTip)
 	return model
 }
 
@@ -590,7 +590,7 @@ type OpBridgeSubmissionIntervalInput struct {
 }
 
 func NewOpBridgeSubmissionIntervalInput(ctx context.Context) *OpBridgeSubmissionIntervalInput {
-	tooltip := tooltip.OpBridgeSubmissionIntervalTooltip
+	toolTip := tooltip.OpBridgeSubmissionIntervalTooltip
 	model := &OpBridgeSubmissionIntervalInput{
 		TextInput:  ui.NewTextInput(false),
 		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
@@ -600,7 +600,7 @@ func NewOpBridgeSubmissionIntervalInput(ctx context.Context) *OpBridgeSubmission
 	model.WithPlaceholder("Press tab to use “1m”")
 	model.WithDefaultValue("1m")
 	model.WithValidatorFn(common.IsValidTimestamp)
-	model.WithTooltip(&tooltip)
+	model.WithTooltip(&toolTip)
 	return model
 }
 
@@ -643,7 +643,7 @@ type OpBridgeOutputFinalizationPeriodInput struct {
 }
 
 func NewOpBridgeOutputFinalizationPeriodInput(ctx context.Context) *OpBridgeOutputFinalizationPeriodInput {
-	tooltip := tooltip.OpBridgeOutputFinalizationPeriodTooltip
+	toolTip := tooltip.OpBridgeOutputFinalizationPeriodTooltip
 	model := &OpBridgeOutputFinalizationPeriodInput{
 		TextInput:  ui.NewTextInput(false),
 		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
@@ -653,7 +653,7 @@ func NewOpBridgeOutputFinalizationPeriodInput(ctx context.Context) *OpBridgeOutp
 	model.WithPlaceholder("Press tab to use “168h” (7 days)")
 	model.WithDefaultValue("168h")
 	model.WithValidatorFn(common.IsValidTimestamp)
-	model.WithTooltip(&tooltip)
+	model.WithTooltip(&toolTip)
 	return model
 }
 
@@ -919,7 +919,7 @@ type SystemKeyOperatorMnemonicInput struct {
 }
 
 func NewSystemKeyOperatorMnemonicInput(ctx context.Context) *SystemKeyOperatorMnemonicInput {
-	tooltip := tooltip.SystemKeyOperatorMnemonicTooltip
+	toolTip := tooltip.SystemKeyOperatorMnemonicTooltip
 	model := &SystemKeyOperatorMnemonicInput{
 		TextInput:  ui.NewTextInput(false),
 		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
@@ -928,7 +928,7 @@ func NewSystemKeyOperatorMnemonicInput(ctx context.Context) *SystemKeyOperatorMn
 	}
 	model.WithPlaceholder("Enter the mnemonic")
 	model.WithValidatorFn(common.ValidateMnemonic)
-	model.WithTooltip(&tooltip)
+	model.WithTooltip(&toolTip)
 	return model
 }
 
@@ -972,7 +972,7 @@ type SystemKeyBridgeExecutorMnemonicInput struct {
 }
 
 func NewSystemKeyBridgeExecutorMnemonicInput(ctx context.Context) *SystemKeyBridgeExecutorMnemonicInput {
-	tooltip := tooltip.SystemKeyBridgeExecutorMnemonicTooltip
+	toolTip := tooltip.SystemKeyBridgeExecutorMnemonicTooltip
 	model := &SystemKeyBridgeExecutorMnemonicInput{
 		TextInput:  ui.NewTextInput(false),
 		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
@@ -981,7 +981,7 @@ func NewSystemKeyBridgeExecutorMnemonicInput(ctx context.Context) *SystemKeyBrid
 	}
 	model.WithPlaceholder("Enter the mnemonic")
 	model.WithValidatorFn(common.ValidateMnemonic)
-	model.WithTooltip(&tooltip)
+	model.WithTooltip(&toolTip)
 	return model
 }
 
@@ -1024,7 +1024,7 @@ type SystemKeyOutputSubmitterMnemonicInput struct {
 }
 
 func NewSystemKeyOutputSubmitterMnemonicInput(ctx context.Context) *SystemKeyOutputSubmitterMnemonicInput {
-	tooltip := tooltip.SystemKeyOutputSubmitterMnemonicTooltip
+	toolTip := tooltip.SystemKeyOutputSubmitterMnemonicTooltip
 	model := &SystemKeyOutputSubmitterMnemonicInput{
 		TextInput:  ui.NewTextInput(false),
 		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
@@ -1033,7 +1033,7 @@ func NewSystemKeyOutputSubmitterMnemonicInput(ctx context.Context) *SystemKeyOut
 	}
 	model.WithPlaceholder("Enter the mnemonic")
 	model.WithValidatorFn(common.ValidateMnemonic)
-	model.WithTooltip(&tooltip)
+	model.WithTooltip(&toolTip)
 	return model
 }
 
@@ -1076,7 +1076,7 @@ type SystemKeyBatchSubmitterMnemonicInput struct {
 }
 
 func NewSystemKeyBatchSubmitterMnemonicInput(ctx context.Context) *SystemKeyBatchSubmitterMnemonicInput {
-	tooltip := tooltip.SystemKeyBatchSubmitterMnemonicTooltip
+	toolTip := tooltip.SystemKeyBatchSubmitterMnemonicTooltip
 	model := &SystemKeyBatchSubmitterMnemonicInput{
 		TextInput:  ui.NewTextInput(false),
 		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
@@ -1085,7 +1085,7 @@ func NewSystemKeyBatchSubmitterMnemonicInput(ctx context.Context) *SystemKeyBatc
 	}
 	model.WithPlaceholder("Enter the mnemonic")
 	model.WithValidatorFn(common.ValidateMnemonic)
-	model.WithTooltip(&tooltip)
+	model.WithTooltip(&toolTip)
 	return model
 }
 
@@ -1128,7 +1128,7 @@ type SystemKeyChallengerMnemonicInput struct {
 }
 
 func NewSystemKeyChallengerMnemonicInput(ctx context.Context) *SystemKeyChallengerMnemonicInput {
-	tooltip := tooltip.SystemKeyChallengerMnemonicTooltip
+	toolTip := tooltip.SystemKeyChallengerMnemonicTooltip
 	model := &SystemKeyChallengerMnemonicInput{
 		TextInput:  ui.NewTextInput(false),
 		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
@@ -1137,7 +1137,7 @@ func NewSystemKeyChallengerMnemonicInput(ctx context.Context) *SystemKeyChalleng
 	}
 	model.WithPlaceholder("Enter the mnemonic")
 	model.WithValidatorFn(common.ValidateMnemonic)
-	model.WithTooltip(&tooltip)
+	model.WithTooltip(&toolTip)
 	return model
 }
 
@@ -1245,7 +1245,7 @@ type GasStationMnemonicInput struct {
 }
 
 func NewGasStationMnemonicInput(ctx context.Context) *GasStationMnemonicInput {
-	tooltip := tooltip.GasStationMnemonicTooltip
+	toolTip := tooltip.GasStationMnemonicTooltip
 	model := &GasStationMnemonicInput{
 		TextInput:  ui.NewTextInput(true),
 		BaseModel:  weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
@@ -1254,7 +1254,7 @@ func NewGasStationMnemonicInput(ctx context.Context) *GasStationMnemonicInput {
 	}
 	model.WithPlaceholder("Enter the mnemonic")
 	model.WithValidatorFn(common.ValidateMnemonic)
-	model.WithTooltip(&tooltip)
+	model.WithTooltip(&toolTip)
 	return model
 }
 
@@ -1856,7 +1856,7 @@ type GenesisGasStationBalanceInput struct {
 }
 
 func NewGenesisGasStationBalanceInput(ctx context.Context) (*GenesisGasStationBalanceInput, error) {
-	tooltip := tooltip.GasStationBalanceOnRollupGenesisTooltip
+	toolTip := tooltip.GasStationBalanceOnRollupGenesisTooltip
 	state := weavecontext.GetCurrentState[LaunchState](ctx)
 	gasStationAddress, err := crypto.MnemonicToBech32Address("init", config.GetGasStationMnemonic())
 	if err != nil {
@@ -1872,7 +1872,7 @@ func NewGenesisGasStationBalanceInput(ctx context.Context) (*GenesisGasStationBa
 	}
 	model.WithPlaceholder("Enter a positive amount")
 	model.WithValidatorFn(common.IsValidInteger)
-	model.WithTooltip(&tooltip)
+	model.WithTooltip(&toolTip)
 	return model, nil
 }
 
@@ -2069,7 +2069,7 @@ type GenesisAccountsBalanceInput struct {
 }
 
 func NewGenesisAccountsBalanceInput(address string, ctx context.Context) *GenesisAccountsBalanceInput {
-	tooltip := tooltip.GenesisBalanceInputTooltip
+	toolTip := tooltip.GenesisBalanceInputTooltip
 	state := weavecontext.GetCurrentState[LaunchState](ctx)
 	model := &GenesisAccountsBalanceInput{
 		TextInput: ui.NewTextInput(false),
@@ -2079,7 +2079,7 @@ func NewGenesisAccountsBalanceInput(address string, ctx context.Context) *Genesi
 	}
 	model.WithPlaceholder("Enter a positive amount")
 	model.WithValidatorFn(common.IsValidInteger)
-	model.WithTooltip(&tooltip)
+	model.WithTooltip(&toolTip)
 	return model
 }
 

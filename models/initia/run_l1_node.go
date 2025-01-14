@@ -59,8 +59,8 @@ var (
 
 const Local L1NodeNetworkOption = "Local"
 
-func (option L1NodeNetworkOption) GetNetworkType() string {
-	switch option {
+func (l L1NodeNetworkOption) GetNetworkType() string {
+	switch l {
 	case Mainnet:
 		return "mainnet"
 	case Testnet:
@@ -204,9 +204,9 @@ func (m *RunL1NodeVersionSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	selected, cmd := m.Select(msg)
 	if selected != nil {
-		analytics.TrackEvent(analytics.L1NodeVersionSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, string(*selected)))
+		analytics.TrackEvent(analytics.L1NodeVersionSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, *selected))
 		state := weavecontext.PushPageAndGetState[RunL1NodeState](m)
-		state.initiadVersion = string(*selected)
+		state.initiadVersion = *selected
 		state.initiadEndpoint = m.versions[*selected]
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), m.highlights, state.initiadVersion))
 
@@ -230,7 +230,7 @@ type RunL1NodeChainIdInput struct {
 }
 
 func NewRunL1NodeChainIdInput(ctx context.Context) *RunL1NodeChainIdInput {
-	tooltip := tooltip.L1ChainIdTooltip
+	toolTip := tooltip.L1ChainIdTooltip
 	model := &RunL1NodeChainIdInput{
 		TextInput:  ui.NewTextInput(false),
 		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
@@ -238,7 +238,7 @@ func NewRunL1NodeChainIdInput(ctx context.Context) *RunL1NodeChainIdInput {
 		highlights: []string{"chain ID"},
 	}
 	model.WithPlaceholder("Enter your chain ID ex. local-initia-1")
-	model.WithTooltip(&tooltip)
+	model.WithTooltip(&toolTip)
 	return model
 }
 
@@ -377,7 +377,7 @@ type RunL1NodeMonikerInput struct {
 }
 
 func NewRunL1NodeMonikerInput(ctx context.Context) *RunL1NodeMonikerInput {
-	tooltip := tooltip.MonikerTooltip
+	toolTip := tooltip.MonikerTooltip
 	model := &RunL1NodeMonikerInput{
 		TextInput:  ui.NewTextInput(false),
 		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
@@ -386,7 +386,7 @@ func NewRunL1NodeMonikerInput(ctx context.Context) *RunL1NodeMonikerInput {
 	}
 	model.WithPlaceholder("Enter moniker ex. my-initia-node")
 	model.WithValidatorFn(common.ValidateEmptyString)
-	model.WithTooltip(&tooltip)
+	model.WithTooltip(&toolTip)
 	return model
 }
 
@@ -438,7 +438,7 @@ type MinGasPriceInput struct {
 }
 
 func NewMinGasPriceInput(ctx context.Context) *MinGasPriceInput {
-	tooltip := tooltip.L1MinGasPriceTooltip
+	toolTip := tooltip.L1MinGasPriceTooltip
 	model := &MinGasPriceInput{
 		TextInput:  ui.NewTextInput(false),
 		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
@@ -447,7 +447,7 @@ func NewMinGasPriceInput(ctx context.Context) *MinGasPriceInput {
 	}
 	model.WithPlaceholder("Enter a number with its denom ex. 0.15uinit")
 	model.WithValidatorFn(common.ValidateDecCoin)
-	model.WithTooltip(&tooltip)
+	model.WithTooltip(&toolTip)
 	return model
 }
 
@@ -569,7 +569,7 @@ type SeedsInput struct {
 }
 
 func NewSeedsInput(ctx context.Context) *SeedsInput {
-	tooltip := tooltip.L1SeedsTooltip
+	toolTip := tooltip.L1SeedsTooltip
 	model := &SeedsInput{
 		TextInput:  ui.NewTextInput(false),
 		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
@@ -577,7 +577,7 @@ func NewSeedsInput(ctx context.Context) *SeedsInput {
 		highlights: []string{"seeds"},
 	}
 	model.WithValidatorFn(common.IsValidPeerOrSeed)
-	model.WithTooltip(&tooltip)
+	model.WithTooltip(&toolTip)
 
 	state := weavecontext.GetCurrentState[RunL1NodeState](ctx)
 	if state.network != string(Local) {
@@ -633,7 +633,7 @@ type PersistentPeersInput struct {
 }
 
 func NewPersistentPeersInput(ctx context.Context) *PersistentPeersInput {
-	tooltip := tooltip.L1PersistentPeersTooltip
+	toolTip := tooltip.L1PersistentPeersTooltip
 	model := &PersistentPeersInput{
 		TextInput:  ui.NewTextInput(false),
 		BaseModel:  weavecontext.BaseModel{Ctx: ctx},
@@ -641,7 +641,7 @@ func NewPersistentPeersInput(ctx context.Context) *PersistentPeersInput {
 		highlights: []string{"persistent peers"},
 	}
 	model.WithValidatorFn(common.IsValidPeerOrSeed)
-	model.WithTooltip(&tooltip)
+	model.WithTooltip(&toolTip)
 
 	state := weavecontext.GetCurrentState[RunL1NodeState](ctx)
 	if state.network != string(Local) {
@@ -929,7 +929,7 @@ type GenesisEndpointInput struct {
 }
 
 func NewGenesisEndpointInput(ctx context.Context) *GenesisEndpointInput {
-	tooltip := tooltip.L1GenesisEndpointTooltip
+	toolTip := tooltip.L1GenesisEndpointTooltip
 	model := &GenesisEndpointInput{
 		TextInput:  ui.NewTextInput(true),
 		BaseModel:  weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
@@ -938,7 +938,7 @@ func NewGenesisEndpointInput(ctx context.Context) *GenesisEndpointInput {
 		highlights: []string{"genesis.json"},
 	}
 	model.WithPlaceholder("Enter a valid URL")
-	model.WithTooltip(&tooltip)
+	model.WithTooltip(&toolTip)
 	return model
 }
 

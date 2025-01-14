@@ -32,7 +32,7 @@ func TestGasStationSetup(t *testing.T) {
 	if _, err := os.Stat(weaveDir); !os.IsNotExist(err) {
 		// remove the backup directory if it exists
 		os.RemoveAll(weaveDirBackup)
-		// rename the weave directory to backup
+		// rename the weave directory to back up
 		if err := os.Rename(weaveDir, weaveDirBackup); err != nil {
 			t.Fatalf("Failed to backup weave directory: %v", err)
 		}
