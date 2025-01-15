@@ -130,7 +130,7 @@ func (m *WeaveInit) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			model := opinit_bots.NewEnsureOPInitBotsBinaryLoadingModel(
 				ctx,
 				func(nextCtx context.Context) (tea.Model, error) {
-					return opinit_bots.NewOPInitBotInitSelector(nextCtx)
+					return opinit_bots.ProcessMinitiaConfig(nextCtx, opinit_bots.NewOPInitBotInitSelector)
 				},
 			)
 
