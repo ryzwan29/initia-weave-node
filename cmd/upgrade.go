@@ -25,7 +25,10 @@ func VersionCommand() *cobra.Command {
 		Use:   "version",
 		Short: "Print the Weave binary version",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Fprintln(cmd.OutOrStdout(), Version)
+			_, err := fmt.Fprintln(cmd.OutOrStdout(), Version)
+			if err != nil {
+				return err
+			}
 			return nil
 		},
 	}

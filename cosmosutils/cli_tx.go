@@ -170,7 +170,6 @@ func (te *InitiadTxExecutor) waitForTransactionInclusion(rpcURL, txHash string) 
 				return fmt.Errorf("failed to unmarshal transaction JSON response: %v", err)
 			}
 			if txResponse.Code == 0 { // Successful transaction
-				// Transaction successfully included in block
 				return nil
 			} else {
 				return fmt.Errorf("tx failed with error: %v", txResponse.RawLog)

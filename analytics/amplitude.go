@@ -47,7 +47,7 @@ func Initialize(weaveVersion string) {
 
 type EventAttributes map[string]interface{}
 
-// Event represents an event with some attributes
+// AmplitudeEvent represents an event with some attributes
 type AmplitudeEvent struct {
 	Attributes EventAttributes
 }
@@ -113,7 +113,7 @@ func TrackCompletedEvent(cmd *cobra.Command, component Component) {
 
 // Add adds a key-value pair to the event's attributes
 func (e *AmplitudeEvent) Add(key string, value interface{}) *AmplitudeEvent {
-	if key != string(ModelNameKey) {
+	if key != ModelNameKey {
 		if str, ok := value.(string); ok {
 			value = strings.ToLower(str) // Convert string value to lowercase
 		}

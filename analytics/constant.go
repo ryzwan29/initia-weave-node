@@ -18,10 +18,7 @@ const (
 	CommandEventKey    string = "command"
 	OptionEventKey     string = "option"
 	L1ChainIdEventKey  string = "l1-chain-id"
-	L1ExistingEventKey string = "existing-l1-app"
 	ErrorEventKey      string = "panic-error"
-	L1NodeVersionKey   string = "l1-node-version"
-	EmptyInputKey      string = "empty-input"
 	ModelNameKey       string = "model-name"
 	GenerateKeyfileKey string = "generate-key-file"
 	KeyFileKey         string = "key-file"
@@ -48,7 +45,7 @@ const (
 
 	// Rollup Event
 	VmTypeSelected                        Event = "vm-type-selected"
-	OpBridgeBatchSubmissionTargetSelected Event = "op-bridge-batch-sumission-selected"
+	OpBridgeBatchSubmissionTargetSelected Event = "op-bridge-batch-submission-selected"
 	EnableOracleSelected                  Event = "enable-oracle-selected"
 	SystemKeysSelected                    Event = "system-keys-selected"
 	AccountsFundingPresetSelected         Event = "accounts-funding-preset-selected"

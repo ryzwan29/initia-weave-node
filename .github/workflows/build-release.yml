@@ -9,6 +9,8 @@ jobs:
   basic-checks:
     name: Basic Checks
     runs-on: ubuntu-latest
+    env:
+      GOLANGCI_LINT_VERSION: v1.61.0
 
     steps:
       - uses: actions/checkout@v4
@@ -17,8 +19,9 @@ jobs:
         with:
           go-version: ^1.22
 
-      - name: Check lint
-        run: go fmt ./...
+      - run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@${GOLANGCI_LINT_VERSION}
+      - name: Run golangci-lint
+        run: make lint
 
       - name: Run unit tests
         run: go test -v ./...
@@ -36,7 +39,9 @@ jobs:
           go-version: ^1.22
 
       - name: Run Integration Tests
-        run: cd tests && go test -v ./...
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: go test -v ./... -tags=integration
 
   build:
     name: Build Go binaries
