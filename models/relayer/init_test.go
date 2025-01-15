@@ -1,7 +1,6 @@
 package relayer
 
 import (
-	"fmt"
 	"os"
 	"testing"
 
@@ -477,16 +476,12 @@ func TestL2KeySelectUpdate_L1ExistingKey(t *testing.T) {
 			if err != nil {
 				t.Fatalf("failed to create L2KeySelect: %v", err)
 			}
-			for _, option := range model.Selector.Options {
-				fmt.Println(option)
-			}
 			// Simulate navigation keys
 			for _, key := range tc.navigateKeys {
 				_, _ = model.Update(key)
 			}
 
 			newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
-			// panic(newModel)
 			assert.IsType(t, tc.expectedModel, newModel)
 
 		})
@@ -522,16 +517,12 @@ func TestL2KeySelectUpdate_L1GenerateKey(t *testing.T) {
 			if err != nil {
 				t.Fatalf("failed to create L2KeySelect: %v", err)
 			}
-			for _, option := range model.Selector.Options {
-				fmt.Println(option)
-			}
 			// Simulate navigation keys
 			for _, key := range tc.navigateKeys {
 				_, _ = model.Update(key)
 			}
 
 			newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
-			// panic(newModel)
 			assert.IsType(t, tc.expectedModel, newModel)
 
 		})
@@ -567,16 +558,12 @@ func TestL2KeySelectUpdate_L1ImportKey(t *testing.T) {
 			if err != nil {
 				t.Fatalf("failed to create L2KeySelect: %v", err)
 			}
-			for _, option := range model.Selector.Options {
-				fmt.Println(option)
-			}
 			// Simulate navigation keys
 			for _, key := range tc.navigateKeys {
 				_, _ = model.Update(key)
 			}
 
 			newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
-			// panic(newModel)
 			assert.IsType(t, tc.expectedModel, newModel)
 
 		})

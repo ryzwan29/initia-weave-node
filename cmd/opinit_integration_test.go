@@ -3,41 +3,57 @@
 
 package cmd_test
 
-//const (
-//	TestOPInitHome = ".opinit.weave.test"
-//)
+import (
+	"os"
+	"testing"
 
-// func setupOPInitBots(t *testing.T) tea.Model {
-// 	ctx := context.NewAppContext(opinit_bots.NewOPInitBotsState())
-// 	ctx = context.SetOPInitHome(ctx, TestOPInitHome)
+	tea "github.com/charmbracelet/bubbletea"
+	weavecontext "github.com/initia-labs/weave/context"
+	"github.com/initia-labs/weave/cosmosutils"
+	"github.com/initia-labs/weave/models/opinit_bots"
 
-// 	versions, currentVersion := cosmosutils.GetOPInitVersions()
-// 	firstModel := opinit_bots.NewOPInitBotVersionSelector(ctx, versions, currentVersion)
+	"github.com/test-go/testify/assert"
+)
 
-// 	// Ensure that there is no previous OPInit home
-// 	_, err := os.Stat(TestOPInitHome)
-// 	assert.NotNil(t, err)
+const (
+	TestOPInitHome = ".opinit.weave.test"
+)
 
-// 	steps := []Step{
-// 		pressEnter,
-// 		pressEnter,
-// 		pressSpace,
-// 		pressDown,
-// 		pressSpace,
-// 		pressDown,
-// 		pressSpace,
-// 		pressDown,
-// 		pressSpace,
-// 		pressEnter,
-// 		pressEnter,
-// 		pressEnter,
-// 		pressEnter,
-// 		pressEnter,
-// 		pressEnter,
-// 	}
+func setupOPInitBots(t *testing.T) tea.Model {
+	ctx := weavecontext.NewAppContext(opinit_bots.NewOPInitBotsState())
+	ctx = weavecontext.SetMinitiaHome(ctx, TestOPInitHome)
+	ctx = weavecontext.SetOPInitHome(ctx, TestOPInitHome)
 
-// 	return runProgramWithSteps(t, firstModel, steps)
-// }
+	versions, currentVersion := cosmosutils.GetOPInitVersions()
+	_, err = RunOPInit(opinit_bots.NewSetupBotCheckbox, HomeConfig{
+		MinitiaHome: minitiaHome,
+		OPInitHome:  opInitHome,
+		UserHome:    userHome,
+	})
+	// Ensure that there is no previous OPInit home
+	_, err := os.Stat(TestOPInitHome)
+	assert.NotNil(t, err)
+
+	steps := []Step{
+		pressEnter,
+		pressEnter,
+		pressSpace,
+		pressDown,
+		pressSpace,
+		pressDown,
+		pressSpace,
+		pressDown,
+		pressSpace,
+		pressEnter,
+		pressEnter,
+		pressEnter,
+		pressEnter,
+		pressEnter,
+		pressEnter,
+	}
+
+	return runProgramWithSteps(t, firstModel, steps)
+}
 
 // func TestOPInitBotsSetup(t *testing.T) {
 // 	finalModel := setupOPInitBots(t)
@@ -134,30 +150,29 @@ package cmd_test
 // 	assert.Equal(t, "weave_output_submitter: init1kd3fc4407sgaakguj4scvhzdv6r907ncdetd94\n", string(outputBytes), "Mismatch for key weave_output_submitter, expected init1kd3fc4407sgaakguj4scvhzdv6r907ncdetd94 but got %s", string(outputBytes))
 // }
 
-//
-//func TestOPInitBotsInit(t *testing.T) {
-//	ctx := utils.NewAppContext(opinit_bots.NewOPInitBotsState())
-//	ctx = utils.SetOPInitHome(ctx, TestOPInitHome)
-//
-//	firstModel := opinit_bots.NewOPInitBotInitSelector(ctx)
-//
-//	// Ensure that there is no previous OPInit home
-//	_, err := os.Stat(TestOPInitHome)
-//	assert.NotNil(t, err)
-//
-//	steps := []Step{
-//		pressEnter,
-//		pressEnter,
-//		pressTab,
-//		pressEnter,
-//	}
-//
-//	finalModel := runProgramWithSteps(t, firstModel, steps)
-//
-//	// Check the final state here
-//	assert.IsType(t, &opinit_bots.TerminalState{}, finalModel)
-//
-//	if _, ok := finalModel.(*opinit_bots.TerminalState); ok {
-//		assert.True(t, ok)
-//	}
-//}
+// func TestOPInitBotsInit(t *testing.T) {
+// 	ctx := utils.NewAppContext(opinit_bots.NewOPInitBotsState())
+// 	ctx = utils.SetOPInitHome(ctx, TestOPInitHome)
+
+// 	firstModel := opinit_bots.NewOPInitBotInitSelector(ctx)
+
+// 	// Ensure that there is no previous OPInit home
+// 	_, err := os.Stat(TestOPInitHome)
+// 	assert.NotNil(t, err)
+
+// 	steps := []Step{
+// 		pressEnter,
+// 		pressEnter,
+// 		pressTab,
+// 		pressEnter,
+// 	}
+
+// 	finalModel := runProgramWithSteps(t, firstModel, steps)
+
+// 	// Check the final state here
+// 	assert.IsType(t, &opinit_bots.TerminalState{}, finalModel)
+
+// 	if _, ok := finalModel.(*opinit_bots.TerminalState); ok {
+// 		assert.True(t, ok)
+// 	}
+// }
