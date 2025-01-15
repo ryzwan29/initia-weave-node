@@ -27,7 +27,7 @@ func UpdateClientFromConfig() error {
 	}
 
 	var config Config
-	err = toml.Unmarshal([]byte(tomlData), &config)
+	err = toml.Unmarshal(tomlData, &config)
 	if err != nil {
 		return err
 	}
@@ -52,6 +52,10 @@ func UpdateClientFromConfig() error {
 		if config.Chains[0].ID == mainnetRegistry.GetChainId() {
 			chainRegistry = mainnetRegistry
 		}
+	}
+
+	if chainRegistry == nil {
+		return fmt.Errorf("chain registry not found")
 	}
 
 	clientIds := make(map[string]bool)

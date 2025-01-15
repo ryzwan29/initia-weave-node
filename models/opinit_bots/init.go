@@ -14,7 +14,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/initia-labs/weave/analytics"
-  "github.com/initia-labs/weave/client"
+	"github.com/initia-labs/weave/client"
 	"github.com/initia-labs/weave/common"
 	weavecontext "github.com/initia-labs/weave/context"
 	"github.com/initia-labs/weave/cosmosutils"
@@ -989,7 +989,7 @@ type L1StartHeightInput struct {
 }
 
 func NewL1StartHeightInput(ctx context.Context) *L1StartHeightInput {
-	tooltip := tooltip.L1StartHeightTooltip
+	toolTip := tooltip.L1StartHeightTooltip
 	model := &L1StartHeightInput{
 		TextInput:  ui.NewTextInput(true),
 		BaseModel:  weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
@@ -998,7 +998,7 @@ func NewL1StartHeightInput(ctx context.Context) *L1StartHeightInput {
 	}
 	model.WithPlaceholder("Enter the start height")
 	model.WithValidatorFn(common.IsValidInteger)
-	model.WithTooltip(&tooltip)
+	model.WithTooltip(&toolTip)
 	return model
 }
 
@@ -1558,7 +1558,7 @@ func ensureOPInitBotsBinary(userHome string) (string, error) {
 		return binaryPath, nil
 	}
 	fmt.Printf("Downloading opinit bot\n")
-	// If binary doesn't exist, proceed to download and extract
+	// If the binary doesn't exist, proceed to download and extract
 	// Check if the extracted directory exists, if not, create it
 	if _, err := os.Stat(extractedPath); os.IsNotExist(err) {
 		err := os.MkdirAll(extractedPath, os.ModePerm)

@@ -2364,14 +2364,14 @@ type FillL2LCD struct {
 func NewFillL2LCD(ctx context.Context) *FillL2LCD {
 	chainId, _ := GetL2ChainId(ctx)
 	extra := fmt.Sprintf("(%s)", chainId)
-	tooltip := tooltip.RelayerRollupLCDTooltip
+	toolTip := tooltip.RelayerRollupLCDTooltip
 	m := &FillL2LCD{
 		TextInput: ui.NewTextInput(false),
 		BaseModel: weavecontext.BaseModel{Ctx: ctx},
 		question:  fmt.Sprintf("Specify rollup LCD endpoint %s", extra),
 		extra:     extra,
 	}
-	m.WithTooltip(&tooltip)
+	m.WithTooltip(&toolTip)
 	m.WithPlaceholder("ex. http://localhost:1317")
 	return m
 }

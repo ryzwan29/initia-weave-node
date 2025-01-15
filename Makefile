@@ -70,7 +70,9 @@ release:
 	fi
 	git tag -a $(release_version) -m "$(release_version)"
 	git push origin $(release_version)
-	gh release create $(release_version) --title "$(release_version)" --notes "Release notes for version $(release_version)"
+	@echo "Paste the release notes below (end with Ctrl+D):"
+	@notes=$$(cat); \
+	gh release create $(release_version) --title "$(release_version)" --notes "$$notes"
 
 # Development purpose
 local: build
