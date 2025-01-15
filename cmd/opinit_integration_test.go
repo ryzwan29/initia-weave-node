@@ -5,14 +5,14 @@ package cmd_test
 
 import (
 	"context"
-	"github.com/initia-labs/weave/common"
 	"os"
 	"path/filepath"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/test-go/testify/assert"
+	"github.com/stretchr/testify/assert"
 
+	"github.com/initia-labs/weave/common"
 	weavecontext "github.com/initia-labs/weave/context"
 	"github.com/initia-labs/weave/models/opinit_bots"
 	"github.com/initia-labs/weave/testutil"
