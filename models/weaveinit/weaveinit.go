@@ -1,6 +1,7 @@
 package weaveinit
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -126,11 +127,14 @@ func (m *WeaveInit) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				analytics.ComponentEventKey: analytics.OPinitComponent,
 			})
 			analytics.TrackEvent(analytics.InitActionSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, "run-opinit-bot"))
-			model, err := opinit_bots.NewOPInitBotInitSelector(ctx)
-			if err != nil {
-				return m, m.HandlePanic(err)
-			}
-			return model, nil
+			model := opinit_bots.NewEnsureOPInitBotsBinaryLoadingModel(
+				ctx,
+				func(nextCtx context.Context) (tea.Model, error) {
+					return opinit_bots.NewOPInitBotInitSelector(nextCtx)
+				},
+			)
+
+			return model, model.Init()
 		case RunRelayerOption:
 			analytics.AppendGlobalEventProperties(map[string]interface{}{
 				analytics.ComponentEventKey: analytics.RelayerComponent,
