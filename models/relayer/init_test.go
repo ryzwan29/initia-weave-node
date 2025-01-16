@@ -383,3 +383,248 @@ func TestIBCChannelsCheckboxUpdateWithConditions(t *testing.T) {
 		})
 	}
 }
+func TestL1KeySelectUpdate(t *testing.T) {
+	// Define test cases for each L1KeySelectOption
+	testCases := []struct {
+		name          string
+		navigateKeys  []tea.KeyMsg
+		expectedModel interface{}
+	}{
+		{
+			name:          "Select GenerateKey",
+			navigateKeys:  []tea.KeyMsg{},
+			expectedModel: &L2KeySelect{}, // Expected model after selection
+		},
+		{
+			name: "Select ImportKey",
+			navigateKeys: []tea.KeyMsg{
+				{Type: tea.KeyDown}, // Navigate down
+			},
+			expectedModel: &L2KeySelect{}, // Expected model after selection
+		},
+	}
+
+	// Iterate through test cases
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create a fresh context and model for each test case
+			state := NewRelayerState()
+			state.Config["l1.chain_id"] = "l1_chain_id"
+			state.Config["l2.chain_id"] = "l2_chain_id"
+
+			ctx := weavecontext.NewAppContext(state)
+
+			// ctx = weavecontext.SetCurrentState(ctx, state)
+
+			// Create the L1KeySelect instance
+			model, err := NewL1KeySelect(ctx)
+			if err != nil {
+				t.Fatalf("failed to create L1KeySelect: %v", err)
+			}
+
+			// Simulate navigation keys
+			for _, key := range tc.navigateKeys {
+				_, _ = model.Update(key)
+			}
+
+			// Verify the resulting model
+			newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+			assert.IsType(t, tc.expectedModel, newModel)
+
+		})
+	}
+}
+
+func TestL2KeySelectUpdate_L1ExistingKey(t *testing.T) {
+	// Define test cases for each L2KeySelectOption
+	testCases := []struct {
+		name          string
+		navigateKeys  []tea.KeyMsg
+		expectedModel interface{}
+	}{
+		{
+			name: "Select L2GenerateKey",
+			navigateKeys: []tea.KeyMsg{
+				{Type: tea.KeyDown},  // Navigate down
+				{Type: tea.KeyEnter}, // Select after navigating
+			},
+			expectedModel: &GenerateL2RelayerKeyLoading{}, // Expected model after selection
+		},
+		{
+			name: "Select L2ImportKey",
+			navigateKeys: []tea.KeyMsg{
+				{Type: tea.KeyDown},  // Navigate down
+				{Type: tea.KeyDown},  // Navigate down
+				{Type: tea.KeyEnter}, // Select after navigating
+			},
+			expectedModel: &ImportL2RelayerKeyInput{}, // Expected model after selection
+		},
+	}
+
+	// Iterate through test cases
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create a fresh context and model for each test case
+			state := NewRelayerState()
+			state.Config["l1.chain_id"] = "l1_chain_id"
+			state.Config["l2.chain_id"] = "l2_chain_id"
+			state.l1KeyMethod = string(L1ExistingKey)
+			ctx := weavecontext.NewAppContext(state)
+
+			// Create the L2KeySelect instance
+			model, err := NewL2KeySelect(ctx)
+			if err != nil {
+				t.Fatalf("failed to create L2KeySelect: %v", err)
+			}
+			// Simulate navigation keys
+			for _, key := range tc.navigateKeys {
+				_, _ = model.Update(key)
+			}
+
+			newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+			assert.IsType(t, tc.expectedModel, newModel)
+
+		})
+	}
+}
+
+func TestL2KeySelectUpdate_L1GenerateKey(t *testing.T) {
+	// Define test cases for each L2KeySelectOption
+	testCases := []struct {
+		name          string
+		navigateKeys  []tea.KeyMsg
+		expectedModel interface{}
+	}{
+		{
+			name:          "Select L2GenerateKey",
+			navigateKeys:  []tea.KeyMsg{},
+			expectedModel: &GenerateL1RelayerKeyLoading{}, // Expected model after selection
+		},
+	}
+
+	// Iterate through test cases
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create a fresh context and model for each test case
+			state := NewRelayerState()
+			state.Config["l1.chain_id"] = "l1_chain_id"
+			state.Config["l2.chain_id"] = "l2_chain_id"
+			state.l1KeyMethod = string(L1GenerateKey)
+			ctx := weavecontext.NewAppContext(state)
+
+			// Create the L2KeySelect instance
+			model, err := NewL2KeySelect(ctx)
+			if err != nil {
+				t.Fatalf("failed to create L2KeySelect: %v", err)
+			}
+			// Simulate navigation keys
+			for _, key := range tc.navigateKeys {
+				_, _ = model.Update(key)
+			}
+
+			newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+			assert.IsType(t, tc.expectedModel, newModel)
+
+		})
+	}
+}
+
+func TestL2KeySelectUpdate_L1ImportKey(t *testing.T) {
+	// Define test cases for each L2KeySelectOption
+	testCases := []struct {
+		name          string
+		navigateKeys  []tea.KeyMsg
+		expectedModel interface{}
+	}{
+		{
+			name:          "Select L1ImportKey",
+			navigateKeys:  []tea.KeyMsg{},
+			expectedModel: &ImportL1RelayerKeyInput{}, // Expected model after selection
+		},
+	}
+
+	// Iterate through test cases
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create a fresh context and model for each test case
+			state := NewRelayerState()
+			state.Config["l1.chain_id"] = "l1_chain_id"
+			state.Config["l2.chain_id"] = "l2_chain_id"
+			state.l1KeyMethod = string(L1ImportKey)
+			ctx := weavecontext.NewAppContext(state)
+
+			// Create the L2KeySelect instance
+			model, err := NewL2KeySelect(ctx)
+			if err != nil {
+				t.Fatalf("failed to create L2KeySelect: %v", err)
+			}
+			// Simulate navigation keys
+			for _, key := range tc.navigateKeys {
+				_, _ = model.Update(key)
+			}
+
+			newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+			assert.IsType(t, tc.expectedModel, newModel)
+
+		})
+	}
+}
+
+func TestFundingAmountSelectUpdate(t *testing.T) {
+	// Define test cases for each FundingAmountSelectOption
+	testCases := []struct {
+		name          string
+		navigateKeys  []tea.KeyMsg
+		expectedModel interface{}
+	}{
+		{
+			name: "Select FundingFillManually",
+			navigateKeys: []tea.KeyMsg{
+				{Type: tea.KeyDown},  // Navigate down
+				{Type: tea.KeyEnter}, // Select after navigating
+			},
+			expectedModel: &FundManuallyL1BalanceInput{}, // Expected model after selection
+		},
+		{
+			name: "Select FundingUserTransfer",
+			navigateKeys: []tea.KeyMsg{
+				{Type: tea.KeyDown},  // Navigate down
+				{Type: tea.KeyDown},  // Navigate down
+				{Type: tea.KeyEnter}, // Select after navigating
+			},
+			expectedModel: &TerminalState{}, // Expected model after selection
+		},
+	}
+
+	// Iterate through test cases
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create a fresh context and model for each test case
+			state := NewRelayerState()
+			state.Config["l1.chain_id"] = "l1_chain_id"
+			state.Config["l2.chain_id"] = "l2_chain_id"
+			state.Config["l1.gas_price.denom"] = "uint"
+			state.Config["l2.gas_price.denom"] = "uint"
+
+			ctx := weavecontext.NewAppContext(state)
+
+			// Create the FundingAmountSelect instance
+			model, err := NewFundingAmountSelect(ctx)
+			if err != nil {
+				t.Fatalf("failed to create FundingAmountSelect: %v", err)
+			}
+
+			// Simulate navigation keys
+			for _, key := range tc.navigateKeys {
+				_, _ = model.Update(key)
+			}
+
+			// Simulate selecting the option (Enter key press)
+			_, _ = model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+
+			// Verify the resulting model
+			newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+			assert.IsType(t, tc.expectedModel, newModel)
+		})
+	}
+}
