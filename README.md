@@ -1,30 +1,74 @@
 # Weave
 
-Weave is the only CLI tool you'll need for developing, testing, and running Interwoven Rollup successfully in production.
+Weave is a CLI tool designed to make working with Initia and its Interwoven Rollups easier. Instead of dealing with multiple tools and extensive documentation,
+developers can use a single command-line interface for the entire development and deployment workflow.
 
-## Key Features
+Its primary purpose is to solve several key challenges:
 
-- **Bootstrap and Run Initia Node**: Set up an Initia node effortlessly. From configuring the desired network and syncing with an official node to running [Cosmovisor](https://github.com/cosmos/cosmos-sdk/tree/main/tools/cosmovisor) for automatic upgrades, all with a single command.
-- **Launch Interwoven Rollup**: Create your own Interwoven Rollup in minutes. Choose your preferred VM, customize the challenge period, select the DA option, and more, all with a single command.
-- **Set Up and Run OPinit Bots**: [OPinit bots](https://github.com/initia-labs/opinit-bots) are essential for Initia's Optimistic bridge. Weave simplifies the setup process for you.
-- **Set Up and Run Relayer**: Easily run a relayer between Initia L1 and any Rollup without navigating through extensive documentation. Currently, only [Hermes](https://github.com/informalsystems/hermes) is supported.
+1. **Infrastructure Management:** Weave can handles all critical infrastructure components within the Interwoven Rollup ecosystem:
+   - Initia node setup and management (including state sync and chain upgrade management)
+   - Rollup deployment and configuration
+   - OPinit bots setup for the Optimistic bridge
+   - IBC Relayer setup between Initia L1 and your Rollup
+2. **Built for both local development and production deployments:** Weave provides
+   - Interactive guided setup for step-by-step configuration and
+   - Configuration file support for automated deployments
+3. **Developer Experience:** Not only it consolidates multiple complex operations into a single CLI tool, but it also changes how you interact with the tool to setup your configuration.
 
-## Building from Scratch
+## Prerequisites
 
-This project requires Go `1.23` or higher.
+- Operating System: **Linux, MacOS**
+- Go **v1.23** or higher when building from scratch
 
-To get started with Weave, ensure Go is installed on your system. Then, clone the repository and build and install the project by running:
+## Installation
+
+### Building from Scratch
 
 ```bash
+git clone https://github.com/initia-labs/weave.git
+cd weave
+git checkout tags/v0.0.2
 make install
 ```
 
-## Dependencies
+### Download Pre-built binaries
 
-Weave utilizes several external libraries:
+Go to the [Releases](https://github.com/initia-labs/weave/releases) page and download the binary for your operating system.
 
-- [`github.com/spf13/cobra`](https://github.com/spf13/cobra): For creating powerful modern CLI applications.
-- [`github.com/charmbracelet/bubbletea`](https://github.com/charmbracelet/bubbletea): For building terminal user interfaces.
+### Verify Installation
+
+```bash
+weave version
+```
+This should return the version of the Weave binary you have installed. Example output:
+
+```bash
+v0.0.2
+```
+
+
+## Quick Start
+
+To get started with Weave, run
+```bash
+weave init
+```
+It will ask you to setup the [Gas Station](/docs/gas_station.md) account and ask which infrastructure you want to setup.
+After that, Weave will guide you through the setup process step-by-step.
+
+## Usage
+
+1. [Bootstrapping Initia Node](/docs/initia_node.md)
+2. [Launch a new rollup](/docs/rollup_launch.md)
+3. [Setting up IBC relayer](/docs/relayer.md)
+4. [Setting up OPinit bots](/docs/opinit_bots.md)
+
+## Usage data collection
+
+By default, Weave collects non-identifiable usage data to help improve the product. If you prefer not to share this data, you can opt out by running the following command:
+```bash
+weave analytics disable
+```
 
 ## Contributing
 
