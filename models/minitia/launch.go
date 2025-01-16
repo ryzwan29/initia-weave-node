@@ -1936,7 +1936,7 @@ func NewFeeWhitelistAccountsInput(ctx context.Context) *FeeWhitelistAccountsInpu
 		question:  "Specify fee whitelist addresses",
 	}
 	model.WithTooltip(&tooltip)
-	model.WithPlaceholder("Enter whitelist address, You can add multiple addresses by separating them with a comma (,)")
+	model.WithPlaceholder("Enter whitelist address (or leave this empty to skip), You can add multiple addresses by separating them with a comma (,)")
 	model.WithValidatorFn(common.IsValidAddresses)
 	return model
 }
@@ -1958,7 +1958,13 @@ func (m *FeeWhitelistAccountsInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if done {
 		state := weavecontext.PushPageAndGetState[LaunchState](m)
 		accs := strings.Trim(input.Text, "\n")
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"fee whitelist"}, accs))
+		var prevAnswer string
+		if accs == "" {
+			prevAnswer = "None"
+		} else {
+			prevAnswer = accs
+		}
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"fee whitelist"}, prevAnswer))
 		state.feeWhitelistAccounts = accs
 		model := NewAddGasStationToGenesisSelect(weavecontext.SetCurrentState(m.Ctx, state))
 		return model, model.Init()
@@ -2935,9 +2941,11 @@ func launchingMinitia(ctx context.Context, streamingLogs *[]string) tea.Cmd {
 		}
 
 		appConfigPath := filepath.Join(userHome, common.MinitiaConfigPath, "app.toml")
-		err = config.UpdateTomlValue(appConfigPath, "inter-block-cache", "false")
-		if err != nil {
+		if err = config.UpdateTomlValue(appConfigPath, "inter-block-cache", "false"); err != nil {
 			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to set inter-block-cache: %v", err)}
+		}
+		if err = config.UpdateTomlValue(appConfigPath, "minimum-gas-prices", fmt.Sprintf("0%s", state.gasDenom)); err != nil {
+			return ui.NonRetryableErrorLoading{Err: fmt.Errorf("failed to set minimum-gas-prices: %v", err)}
 		}
 
 		srv, err := service.NewService(service.Minitia)
