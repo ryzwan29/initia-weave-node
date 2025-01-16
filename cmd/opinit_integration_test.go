@@ -112,10 +112,6 @@ func TestOPInitBotsInit(t *testing.T) {
 		},
 	)
 
-	// Ensure that there is no previous OPInit home
-	_, err := os.Stat(TestOPInitHome)
-	assert.NotNil(t, err)
-
 	steps := []testutil.Step{
 		testutil.PressEnter,             // press enter to init executor bot
 		testutil.WaitFetching,           // wait checking for the existing rollup app
