@@ -396,6 +396,7 @@ func (m *L2KeySelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if err = weaveio.CopyDirectory(l1ExistingKeyPath, l2KeyPath); err != nil {
 					return m, m.HandlePanic(fmt.Errorf("could not copy L1 existing key: %s", err))
 				}
+
 				model := NewFetchingBalancesLoading(weavecontext.SetCurrentState(m.Ctx, state))
 				return model, model.Init()
 			case L2GenerateKey:
