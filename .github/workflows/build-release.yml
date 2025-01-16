@@ -1,4 +1,4 @@
-name: Build Go binaries and upload to weave-binaries release
+name: Build Go binaries and upload release
 
 on:
   release:
@@ -43,8 +43,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: go test -v ./... -tags=integration
 
-  build:
-    name: Build Go binaries
+  build-and-upload:
+    name: Build Go binaries and upload release
     needs: integration-tests
     runs-on: ubuntu-latest
 
@@ -65,41 +65,17 @@ jobs:
           mkdir -p build/${{ matrix.goos }}_${{ matrix.goarch }}
           GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -ldflags "-X github.com/initia-labs/weave/cmd.Version=${{ github.ref_name }}" -o build/${{ matrix.goos }}_${{ matrix.goarch }}/weave
 
-      - name: List files in build directory (optional for debugging)
-        run: ls -R build/
-
       - name: Create tar.gz
         run: |
           tar -czvf weave_${{ github.ref_name }}_${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz -C build/${{ matrix.goos }}_${{ matrix.goarch }} weave
 
-      - name: Upload binaries as artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: weave_${{ github.ref_name }}_${{ matrix.goos }}_${{ matrix.goarch }}
-          path: weave_${{ github.ref_name }}_${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz
-          if-no-files-found: error
-
-  upload-to-weave-binaries:
-    name: Upload to weave-binaries release
-    needs: build
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/download-artifact@v3
-        with:
-          path: artifacts
-
-      - name: Create a release in weave-binaries
+      - name: Upload binary to release
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          repository: initia-labs/weave-binaries
           name: ${{ github.ref_name }}
           draft: false
           prerelease: true
           token: ${{ secrets.GH_RELEASE_TOKEN }}
           files: |
-            artifacts/weave_${{ github.ref_name }}_linux_amd64/weave_${{ github.ref_name }}_linux_amd64.tar.gz
-            artifacts/weave_${{ github.ref_name }}_linux_arm64/weave_${{ github.ref_name }}_linux_arm64.tar.gz
-            artifacts/weave_${{ github.ref_name }}_darwin_amd64/weave_${{ github.ref_name }}_darwin_amd64.tar.gz
-            artifacts/weave_${{ github.ref_name }}_darwin_arm64/weave_${{ github.ref_name }}_darwin_arm64.tar.gz
+            weave_${{ github.ref_name }}_${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz
