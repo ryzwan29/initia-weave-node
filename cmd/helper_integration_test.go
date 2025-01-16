@@ -65,8 +65,8 @@ func teardown() {
 	relayerDirBackup := filepath.Join(userHome, hermesDirectoryBackup)
 	if _, err := os.Stat(relayerDirBackup); !os.IsNotExist(err) {
 		fmt.Println("Restoring hermes directory")
-		os.RemoveAll(relayerDirBackup)
-		os.Rename(relayerDir, relayerDirBackup)
+		os.RemoveAll(relayerDir)
+		os.Rename(relayerDirBackup, relayerDir)
 	}
 }
 
