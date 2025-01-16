@@ -103,8 +103,9 @@ func (m *WeaveInit) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			ctx = weavecontext.SetInitiaHome(ctx, filepath.Join(homeDir, common.InitiaDirectory))
 			analytics.AppendGlobalEventProperties(map[string]interface{}{
 				analytics.ComponentEventKey: analytics.L1NodeComponent,
+				analytics.FeatureEventKey:   analytics.SetupL1NodeFeature.Name,
 			})
-			analytics.TrackEvent(analytics.InitActionSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, "run-l1-node"))
+			analytics.TrackEvent(analytics.InitActionSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, analytics.SetupL1NodeFeature.Name))
 			model, err := initia.NewRunL1NodeNetworkSelect(ctx)
 			if err != nil {
 				return m, m.HandlePanic(err)
@@ -115,8 +116,9 @@ func (m *WeaveInit) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			ctx = weavecontext.SetMinitiaHome(ctx, filepath.Join(homeDir, common.MinitiaDirectory))
 			analytics.AppendGlobalEventProperties(map[string]interface{}{
 				analytics.ComponentEventKey: analytics.RollupComponent,
+				analytics.FeatureEventKey:   analytics.RollupLaunchFeature.Name,
 			})
-			analytics.TrackEvent(analytics.InitActionSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, "launch-new-rollup"))
+			analytics.TrackEvent(analytics.InitActionSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, analytics.RollupLaunchFeature.Name))
 			minitiaChecker := minitia.NewExistingMinitiaChecker(ctx)
 			return minitiaChecker, minitiaChecker.Init()
 		case RunOPBotsOption:
@@ -125,8 +127,9 @@ func (m *WeaveInit) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			ctx = weavecontext.SetOPInitHome(ctx, filepath.Join(homeDir, common.OPinitDirectory))
 			analytics.AppendGlobalEventProperties(map[string]interface{}{
 				analytics.ComponentEventKey: analytics.OPinitComponent,
+				analytics.FeatureEventKey:   analytics.SetupOPinitBotFeature.Name,
 			})
-			analytics.TrackEvent(analytics.InitActionSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, "run-opinit-bot"))
+			analytics.TrackEvent(analytics.InitActionSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, analytics.SetupOPinitBotFeature.Name))
 			model := opinit_bots.NewEnsureOPInitBotsBinaryLoadingModel(
 				ctx,
 				func(nextCtx context.Context) (tea.Model, error) {
@@ -138,8 +141,9 @@ func (m *WeaveInit) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case RunRelayerOption:
 			analytics.AppendGlobalEventProperties(map[string]interface{}{
 				analytics.ComponentEventKey: analytics.RelayerComponent,
+				analytics.FeatureEventKey:   analytics.SetupRelayerFeature.Name,
 			})
-			analytics.TrackEvent(analytics.InitActionSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, "run-relayer"))
+			analytics.TrackEvent(analytics.InitActionSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, analytics.SetupRelayerFeature.Name))
 			model, err := relayer.NewRollupSelect(weavecontext.NewAppContext(relayer.NewRelayerState()))
 			if err != nil {
 				return m, m.HandlePanic(err)

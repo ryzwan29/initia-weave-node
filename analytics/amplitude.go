@@ -89,9 +89,10 @@ func TrackEvent(eventType Event, overrideProperties *AmplitudeEvent) {
 	})
 }
 
-func TrackRunEvent(cmd *cobra.Command, args []string, component Component, events *AmplitudeEvent) {
+func TrackRunEvent(cmd *cobra.Command, args []string, feature Feature, events *AmplitudeEvent) {
 	AppendGlobalEventProperties(EventAttributes{
-		ComponentEventKey: component,
+		ComponentEventKey: feature.Component,
+		FeatureEventKey:   feature.Name,
 		CommandEventKey:   cmd.CommandPath(),
 	})
 
@@ -101,14 +102,16 @@ func TrackRunEvent(cmd *cobra.Command, args []string, component Component, event
 		}
 	}
 	TrackEvent(RunEvent, events)
+
+	// Flush the events to guarantee that run event is the first event
+	Client.Flush()
 }
 
-func TrackCompletedEvent(cmd *cobra.Command, component Component) {
-	AppendGlobalEventProperties(EventAttributes{
-		ComponentEventKey: component,
-		CommandEventKey:   cmd.CommandPath(),
-	})
-	TrackEvent(CompletedEvent, NewEmptyEvent())
+func TrackCompletedEvent(feature Feature) {
+	// Flush the events to guarantee that completed event is the last event
+	Client.Flush()
+
+	TrackEvent(CompletedEvent, NewEmptyEvent().Add(ComponentEventKey, feature.Component).Add(FeatureEventKey, feature.Name))
 }
 
 // Add adds a key-value pair to the event's attributes

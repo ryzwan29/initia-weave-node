@@ -37,8 +37,6 @@ func AnalyticsEnableCommand() *cobra.Command {
 			// Initialize the analytics client so the event is tracked
 			analytics.Initialize(Version)
 
-			// Run after setting the config so the event is tracked
-			analytics.TrackRunEvent(cmd, args, analytics.AnalyticsComponent, analytics.NewEmptyEvent())
 			fmt.Println("Analytics enabled")
 			return nil
 		},
@@ -52,7 +50,7 @@ func AnalyticsDisableCommand() *cobra.Command {
 		Use:   "disable",
 		Short: "Do not allow Weave to collect analytics data",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			analytics.TrackRunEvent(cmd, args, analytics.AnalyticsComponent, analytics.NewEmptyEvent())
+			analytics.TrackRunEvent(cmd, args, analytics.OptOutAnalyticsFeature, analytics.NewEmptyEvent())
 
 			err := config.SetAnalyticsOptOut(true)
 			if err != nil {
@@ -60,6 +58,7 @@ func AnalyticsDisableCommand() *cobra.Command {
 			}
 
 			fmt.Println("Analytics disabled")
+			analytics.TrackCompletedEvent(analytics.OptOutAnalyticsFeature)
 			return nil
 		},
 	}
