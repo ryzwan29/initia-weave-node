@@ -40,7 +40,11 @@ Go to the [Releases](https://github.com/initia-labs/weave/releases) page and dow
 ```bash
 weave version
 ```
-This should return the version of the Weave binary you have installed.
+This should return the version of the Weave binary you have installed. Example output:
+
+```bash
+v0.0.2
+```
 
 
 ## Quick Start

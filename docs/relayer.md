@@ -16,13 +16,19 @@ Weave simplifies this process significantly, reducing the typical 10+ step IBC R
 ```bash
 weave relayer init
 ```
+This command will guide you through 2 major parts of the relayer setup:
+- Setting up networks and channels to relay messages between
+- Setting up the account responsible for relaying messages
 
-When initializing, Weave will present you with three options:
-1. Set up a relayer between Initia L1 and a whitelisted Rollup (those available in [Initia Registry](https://github.com/initia-labs/initia-registry))
-2. Configure manually
-3. Configure using artifacts from `weave rollup launch` (recommended for users who have just launched their rollup)
 
-> Please ensure that your Gas Station account has sufficient funds to cover the relayer's account funding requirements for both Initia L1 and your rollup.
+For the former, Weave will present you with three options:
+1. Configure channels between Initia L1 and a whitelisted Rollup (those available in [Initia Registry](https://github.com/initia-labs/initia-registry)
+2. Configure using artifacts from `weave rollup launch` (recommended for users who have just launched their rollup)
+3. Configure manually
+
+As for the latter, Weave will ask whether you want to use OPinit Challenger bot account for the relayer. This is recommended as it is exempted from gas fees on the rollup and able to stop other relayers from relaying when it detects a malicious message coming from it.
+
+> Relayer requires funds to relay messages between Initia L1 and your rollup (if it's not in the fee whitelist). If Weave detects that your account does not have enough funds, Weave will ask you to fund via Gas Station.
 
 > For advanced configuration options, you can refer to the [Hermes Configuration Guide](https://hermes.informal.systems/documentation/configuration/configure-hermes.html) and customize the relayer's configuration file located at `~/.hermes/config.toml`.
 

@@ -2,7 +2,8 @@
 
 Weave simplifies complicated rollup launch steps into a single command.
 
-> Weave will send some funds from Gas Station to the OPinit Bot accounts during this process. Please make sure that your Gas Station account has enough funds to cover the total amount of funds to be sent (this amount will be shown to youbefore sending the funds).
+> Weave will send some funds from Gas Station to the OPinit Bot accounts during this process. Please make sure that your Gas Station account has enough funds to cover the total amount of funds to be sent (this amount will be shown to you before sending the funds).
+> Haven't set up the Gas Station yet? Please [Check out this guide](/docs/gas_station.md) first.
 
 ```bash
 weave rollup launch
