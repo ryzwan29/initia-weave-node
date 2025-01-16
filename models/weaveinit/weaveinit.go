@@ -149,6 +149,7 @@ func (m *WeaveInit) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return model, model.Init()
 		case RunRelayerOption:
 			ctx := weavecontext.NewAppContext(relayer.NewRelayerState())
+			ctx = weavecontext.SetMinitiaHome(ctx, filepath.Join(homeDir, common.MinitiaDirectory))
 			ctx = weavecontext.SetWindowWidth(ctx, windowWidth)
 
 			analytics.AppendGlobalEventProperties(map[string]interface{}{
