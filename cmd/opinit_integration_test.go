@@ -22,11 +22,15 @@ const (
 	TestOPInitHome = ".opinit.weave.test"
 )
 
-func TestOPInitBotsSetup(t *testing.T) {
+func prepareContext() context.Context {
 	ctx := weavecontext.NewAppContext(opinit_bots.NewOPInitBotsState())
 	ctx = weavecontext.SetMinitiaHome(ctx, TestMinitiaHome)
 	ctx = weavecontext.SetOPInitHome(ctx, TestOPInitHome)
+	return ctx
+}
 
+func setupKeys(t *testing.T) func() {
+	ctx := prepareContext()
 	firstModel := opinit_bots.NewEnsureOPInitBotsBinaryLoadingModel(
 		ctx,
 		func(nextCtx context.Context) (tea.Model, error) {
@@ -62,7 +66,6 @@ func TestOPInitBotsSetup(t *testing.T) {
 	}
 
 	finalModel := testutil.RunProgramWithSteps(t, firstModel, steps)
-	defer testutil.ClearTestDir(TestOPInitHome)
 
 	// Check the final state here
 	assert.IsType(t, &opinit_bots.TerminalState{}, finalModel)
@@ -87,98 +90,54 @@ func TestOPInitBotsSetup(t *testing.T) {
 
 	_, err = os.Stat(filepath.Join(TestOPInitHome, "weave-dummy/keyring-test/weave_output_submitter.info"))
 	assert.Nil(t, err)
+
+	return func() { testutil.ClearTestDir(TestOPInitHome) }
+}
+
+func TestOPInitBotsSetup(t *testing.T) {
+	cleanup := setupKeys(t)
+	defer cleanup()
 }
 
 func TestOPInitBotsInit(t *testing.T) {
-	//ctx = weavecontext.NewAppContext(opinit_bots.NewOPInitBotsState())
-	//ctx = weavecontext.SetOPInitHome(ctx, TestOPInitHome)
-	//
-	//versions, currentVersion, _ := cosmosutils.GetOPInitVersions()
-	//firstModel := opinit_bots.NewOPInitBotVersionSelector(ctx, versions, currentVersion)
-	//
-	//// Ensure that there is an existing OPInit home
-	//_, err = os.Stat(TestOPInitHome)
-	//assert.Nil(t, err)
-	//
-	//steps := []Step{
-	//	pressEnter,
-	//	pressEnter,
-	//	pressSpace,
-	//	pressDown,
-	//	pressSpace,
-	//	pressDown,
-	//	pressSpace,
-	//	pressDown,
-	//	pressSpace,
-	//	pressEnter,
-	//	pressDown,
-	//	pressEnter,
-	//	typeText("false seek emerge venue park present color knock notice spike use notable"),
-	//	pressEnter,
-	//	pressDown,
-	//	pressEnter,
-	//	typeText("people assist noble flower turtle canoe sand wall useful accuse trash zone"),
-	//	pressEnter,
-	//	pressDown,
-	//	pressEnter,
-	//	typeText("delay brick cradle knock indoor squeeze enlist arrange smooth limit symbol south"),
-	//	pressEnter,
-	//	pressEnter,
-	//	pressDown,
-	//	pressEnter,
-	//	typeText("educate protect return spirit finger region portion dish seven boost measure chase"),
-	//	pressEnter,
-	//}
-	//
-	//finalModel = runProgramWithSteps(t, firstModel, steps)
-	//defer clearTestDir(TestOPInitHome)
-	//
-	//// Let's test the keys
-	//userHome, _ := os.UserHomeDir()
-	//opinitBinary := filepath.Join(userHome, common.WeaveDataDirectory, "opinitd")
-	//
-	//cmd := exec.Command(opinitBinary, "keys", "show", "weave-dummy", "weave_batch_submitter", "--home", TestOPInitHome)
-	//outputBytes, err := cmd.CombinedOutput()
-	//assert.Nil(t, err)
-	//assert.Equal(t, "weave_batch_submitter: init1wzccyequn0yqc5mne6yev6u628yvyfwpr7y38d\n", string(outputBytes), "Mismatch for key weave_batch_submitter, expected init1wzccyequn0yqc5mne6yev6u628yvyfwpr7y38d but got %s", string(outputBytes))
-	//
-	//cmd = exec.Command(opinitBinary, "keys", "show", "weave-dummy", "weave_bridge_executor", "--home", TestOPInitHome)
-	//outputBytes, err = cmd.CombinedOutput()
-	//assert.Nil(t, err)
-	//assert.Equal(t, "weave_bridge_executor: init1eul78cxrljfn47l0f7qpgue7l3p9pa9j86w6hq\n", string(outputBytes), "Mismatch for key weave_bridge_executor, expected init1eul78cxrljfn47l0f7qpgue7l3p9pa9j86w6hq but got %s", string(outputBytes))
-	//
-	//cmd = exec.Command(opinitBinary, "keys", "show", "weave-dummy", "weave_challenger", "--home", TestOPInitHome)
-	//outputBytes, err = cmd.CombinedOutput()
-	//assert.Nil(t, err)
-	//assert.Equal(t, "weave_challenger: init1masuevcdvkra3nr7p2dkwa8lq2hga75ym279tr\n", string(outputBytes), "Mismatch for key weave_challenger, expected init1masuevcdvkra3nr7p2dkwa8lq2hga75ym279tr but got %s", string(outputBytes))
-	//
-	//cmd = exec.Command(opinitBinary, "keys", "show", "weave-dummy", "weave_output_submitter", "--home", TestOPInitHome)
-	//outputBytes, err = cmd.CombinedOutput()
-	//assert.Nil(t, err)
-	//assert.Equal(t, "weave_output_submitter: init1kd3fc4407sgaakguj4scvhzdv6r907ncdetd94\n", string(outputBytes), "Mismatch for key weave_output_submitter, expected init1kd3fc4407sgaakguj4scvhzdv6r907ncdetd94 but got %s", string(outputBytes))
-	//
-	//ctx := utils.NewAppContext(opinit_bots.NewOPInitBotsState())
-	//ctx = utils.SetOPInitHome(ctx, TestOPInitHome)
-	//
-	//firstModel := opinit_bots.NewOPInitBotInitSelector(ctx)
-	//
-	//// Ensure that there is no previous OPInit home
-	//_, err := os.Stat(TestOPInitHome)
-	//assert.NotNil(t, err)
-	//
-	//steps := []Step{
-	//	pressEnter,
-	//	pressEnter,
-	//	pressTab,
-	//	pressEnter,
-	//}
-	//
-	//finalModel := runProgramWithSteps(t, firstModel, steps)
-	//
-	//// Check the final state here
-	//assert.IsType(t, &opinit_bots.TerminalState{}, finalModel)
-	//
-	//if _, ok := finalModel.(*opinit_bots.TerminalState); ok {
-	//	assert.True(t, ok)
-	//}
+	cleanup := setupKeys(t)
+	defer cleanup()
+
+	ctx := prepareContext()
+
+	firstModel := opinit_bots.NewEnsureOPInitBotsBinaryLoadingModel(
+		ctx,
+		func(nextCtx context.Context) (tea.Model, error) {
+			return opinit_bots.ProcessMinitiaConfig(nextCtx, opinit_bots.OPInitBotInitSelectExecutor)
+		},
+	)
+
+	// Ensure that there is no previous OPInit home
+	_, err := os.Stat(TestOPInitHome)
+	assert.NotNil(t, err)
+
+	steps := []testutil.Step{
+		testutil.PressEnter,             // press enter to init executor bot
+		testutil.WaitFetching,           // wait checking for the existing rollup app
+		testutil.PressEnter,             // press enter to select testnet as l1
+		testutil.WaitFetching,           // wait checking for the existing rollup app
+		testutil.PressTab,               // press tab to use the default listen address
+		testutil.PressEnter,             // press enter to confirm using the default listen address
+		testutil.PressEnter,             // press enter to confirm using the default l1 rpc endpoint
+		testutil.TypeText("minimove-2"), // type in the rollup chain id
+		testutil.PressEnter,             // press enter to confirm the rollup chain id
+		testutil.TypeText("https://rpc.minimove-2.initia.xyz"), // press tab to use the default rollup rpc endpoint
+		testutil.PressEnter,    // press enter to confirm using the default rollup rpc endpoint
+		testutil.PressTab,      // press tab to use the default gas denom
+		testutil.PressEnter,    // press enter to confirm using the default gas denom
+		testutil.PressEnter,    // press enter to confirm using the initia as da layer
+		testutil.WaitFetching,  // wait checking for the existing rollup app
+		testutil.TypeText("1"), // type L1 start height
+		testutil.PressEnter,    // press enter to comfirm l1 start height
+	}
+
+	finalModel := testutil.RunProgramWithSteps(t, firstModel, steps)
+
+	// Check the final state here
+	assert.IsType(t, &opinit_bots.OPinitBotSuccessful{}, finalModel)
 }
