@@ -97,15 +97,19 @@ func (m *WeaveInit) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	selected, cmd := m.Select(msg)
 	if selected != nil {
+		windowWidth := weavecontext.GetWindowWidth(m.Ctx)
 		switch *selected {
 		case RunL1NodeOption:
 			ctx := weavecontext.NewAppContext(initia.NewRunL1NodeState())
 			ctx = weavecontext.SetInitiaHome(ctx, filepath.Join(homeDir, common.InitiaDirectory))
+			ctx = weavecontext.SetWindowWidth(ctx, windowWidth)
+
 			analytics.AppendGlobalEventProperties(map[string]interface{}{
 				analytics.ComponentEventKey: analytics.L1NodeComponent,
 				analytics.FeatureEventKey:   analytics.SetupL1NodeFeature.Name,
 			})
 			analytics.TrackEvent(analytics.InitActionSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, analytics.SetupL1NodeFeature.Name))
+
 			model, err := initia.NewRunL1NodeNetworkSelect(ctx)
 			if err != nil {
 				return m, m.HandlePanic(err)
@@ -114,37 +118,46 @@ func (m *WeaveInit) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case LaunchNewRollupOption:
 			ctx := weavecontext.NewAppContext(*minitia.NewLaunchState())
 			ctx = weavecontext.SetMinitiaHome(ctx, filepath.Join(homeDir, common.MinitiaDirectory))
+			ctx = weavecontext.SetWindowWidth(ctx, windowWidth)
+
 			analytics.AppendGlobalEventProperties(map[string]interface{}{
 				analytics.ComponentEventKey: analytics.RollupComponent,
 				analytics.FeatureEventKey:   analytics.RollupLaunchFeature.Name,
 			})
 			analytics.TrackEvent(analytics.InitActionSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, analytics.RollupLaunchFeature.Name))
+
 			minitiaChecker := minitia.NewExistingMinitiaChecker(ctx)
 			return minitiaChecker, minitiaChecker.Init()
 		case RunOPBotsOption:
 			ctx := weavecontext.NewAppContext(opinit_bots.NewOPInitBotsState())
 			ctx = weavecontext.SetMinitiaHome(ctx, filepath.Join(homeDir, common.MinitiaDirectory))
 			ctx = weavecontext.SetOPInitHome(ctx, filepath.Join(homeDir, common.OPinitDirectory))
+			ctx = weavecontext.SetWindowWidth(ctx, windowWidth)
+
 			analytics.AppendGlobalEventProperties(map[string]interface{}{
 				analytics.ComponentEventKey: analytics.OPinitComponent,
 				analytics.FeatureEventKey:   analytics.SetupOPinitBotFeature.Name,
 			})
 			analytics.TrackEvent(analytics.InitActionSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, analytics.SetupOPinitBotFeature.Name))
+
 			model := opinit_bots.NewEnsureOPInitBotsBinaryLoadingModel(
 				ctx,
 				func(nextCtx context.Context) (tea.Model, error) {
 					return opinit_bots.ProcessMinitiaConfig(nextCtx, opinit_bots.NewOPInitBotInitSelector)
 				},
 			)
-
 			return model, model.Init()
 		case RunRelayerOption:
+			ctx := weavecontext.NewAppContext(relayer.NewRelayerState())
+			ctx = weavecontext.SetWindowWidth(ctx, windowWidth)
+
 			analytics.AppendGlobalEventProperties(map[string]interface{}{
 				analytics.ComponentEventKey: analytics.RelayerComponent,
 				analytics.FeatureEventKey:   analytics.SetupRelayerFeature.Name,
 			})
 			analytics.TrackEvent(analytics.InitActionSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, analytics.SetupRelayerFeature.Name))
-			model, err := relayer.NewRollupSelect(weavecontext.NewAppContext(relayer.NewRelayerState()))
+
+			model, err := relayer.NewRollupSelect(ctx)
 			if err != nil {
 				return m, m.HandlePanic(err)
 			}
