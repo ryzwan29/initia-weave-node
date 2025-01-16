@@ -158,7 +158,7 @@ func (m *ProcessingMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if err != nil {
 				return m, m.HandlePanic(err)
 			}
-			return nextModel, nil
+			return nextModel, nextModel.Init()
 
 		case NoAddMinitiaKeyOption:
 			analytics.TrackEvent(analytics.ImportKeysFromArtifactsSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, "no"))
@@ -166,7 +166,7 @@ func (m *ProcessingMinitiaConfig) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if err != nil {
 				return m, m.HandlePanic(err)
 			}
-			return nextModel, nil
+			return nextModel, nextModel.Init()
 		}
 	}
 
@@ -749,7 +749,7 @@ func (m *EnsureOPInitBotsBinaryLoadingModel) Update(msg tea.Msg) (tea.Model, tea
 		if err != nil {
 			return m, m.HandlePanic(err)
 		}
-		return nextModel, nil
+		return nextModel, nextModel.Init()
 	}
 	return m, cmd
 }
