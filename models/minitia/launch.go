@@ -3083,6 +3083,7 @@ type TerminalState struct {
 }
 
 func NewTerminalState(ctx context.Context) *TerminalState {
+	analytics.TrackCompletedEvent(analytics.RollupLaunchFeature)
 	return &TerminalState{
 		BaseModel: weavecontext.BaseModel{Ctx: ctx},
 	}

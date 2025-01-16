@@ -1979,6 +1979,7 @@ type TerminalState struct {
 }
 
 func NewTerminalState(ctx context.Context) *TerminalState {
+	analytics.TrackCompletedEvent(analytics.SetupL1NodeFeature)
 	return &TerminalState{
 		weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
 	}

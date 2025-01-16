@@ -106,8 +106,9 @@ func (m *WeaveInit) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			analytics.AppendGlobalEventProperties(map[string]interface{}{
 				analytics.ComponentEventKey: analytics.L1NodeComponent,
+				analytics.FeatureEventKey:   analytics.SetupL1NodeFeature.Name,
 			})
-			analytics.TrackEvent(analytics.InitActionSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, "run-l1-node"))
+			analytics.TrackEvent(analytics.InitActionSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, analytics.SetupL1NodeFeature.Name))
 
 			model, err := initia.NewRunL1NodeNetworkSelect(ctx)
 			if err != nil {
@@ -121,8 +122,9 @@ func (m *WeaveInit) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			analytics.AppendGlobalEventProperties(map[string]interface{}{
 				analytics.ComponentEventKey: analytics.RollupComponent,
+				analytics.FeatureEventKey:   analytics.RollupLaunchFeature.Name,
 			})
-			analytics.TrackEvent(analytics.InitActionSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, "launch-new-rollup"))
+			analytics.TrackEvent(analytics.InitActionSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, analytics.RollupLaunchFeature.Name))
 
 			minitiaChecker := minitia.NewExistingMinitiaChecker(ctx)
 			return minitiaChecker, minitiaChecker.Init()
@@ -134,8 +136,9 @@ func (m *WeaveInit) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			analytics.AppendGlobalEventProperties(map[string]interface{}{
 				analytics.ComponentEventKey: analytics.OPinitComponent,
+				analytics.FeatureEventKey:   analytics.SetupOPinitBotFeature.Name,
 			})
-			analytics.TrackEvent(analytics.InitActionSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, "run-opinit-bot"))
+			analytics.TrackEvent(analytics.InitActionSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, analytics.SetupOPinitBotFeature.Name))
 
 			model := opinit_bots.NewEnsureOPInitBotsBinaryLoadingModel(
 				ctx,
@@ -150,8 +153,9 @@ func (m *WeaveInit) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			analytics.AppendGlobalEventProperties(map[string]interface{}{
 				analytics.ComponentEventKey: analytics.RelayerComponent,
+				analytics.FeatureEventKey:   analytics.SetupRelayerFeature.Name,
 			})
-			analytics.TrackEvent(analytics.InitActionSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, "run-relayer"))
+			analytics.TrackEvent(analytics.InitActionSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, analytics.SetupRelayerFeature.Name))
 
 			model, err := relayer.NewRollupSelect(ctx)
 			if err != nil {

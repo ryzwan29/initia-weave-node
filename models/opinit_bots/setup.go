@@ -682,6 +682,7 @@ type TerminalState struct {
 }
 
 func NewTerminalState(ctx context.Context) *TerminalState {
+	analytics.TrackCompletedEvent(analytics.SetupOPinitKeysFeature)
 	return &TerminalState{
 		weavecontext.BaseModel{Ctx: ctx, CannotBack: true},
 	}
