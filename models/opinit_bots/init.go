@@ -1594,3 +1594,63 @@ func ensureOPInitBotsBinary(userHome string) (string, error) {
 	fmt.Printf("Successfully download opinit bot\n")
 	return binaryPath, nil
 }
+
+func PrepareExecutorBotKey(ctx context.Context) (tea.Model, error) {
+	return PrepareKey(ctx, true)
+}
+
+func PrepareChallengerBotKey(ctx context.Context) (tea.Model, error) {
+	return PrepareKey(ctx, false)
+}
+
+func PrepareKey(ctx context.Context, isExecutor bool) (tea.Model, error) {
+	state := weavecontext.GetCurrentState[OPInitBotsState](ctx)
+	keyNames := make(map[string]bool)
+	var err error
+	if isExecutor {
+		state.InitExecutorBot = true
+		keyNames[BridgeExecutorKeyName] = true
+		keyNames[OutputSubmitterKeyName] = true
+		keyNames[BatchSubmitterKeyName] = true
+		keyNames[OracleBridgeExecutorKeyName] = true
+		state.BotInfos, err = CheckIfKeysExist(state.BotInfos)
+		if err != nil {
+			return nil, err
+		}
+
+		for idx, botInfo := range state.BotInfos {
+			if botInfo.KeyName == OracleBridgeExecutorKeyName && botInfo.IsNotExist {
+				state.BotInfos[idx].IsSetup = true
+			} else if keyNames[botInfo.KeyName] && botInfo.IsNotExist && !state.AddMinitiaConfig {
+				state.BotInfos[idx].IsSetup = true
+			} else {
+				state.BotInfos[idx].IsSetup = false
+			}
+		}
+	} else {
+		state.InitChallengerBot = true
+		keyNames := make(map[string]bool)
+		keyNames[ChallengerKeyName] = true
+		state.BotInfos, err = CheckIfKeysExist(state.BotInfos)
+		if err != nil {
+			return nil, err
+		}
+
+		for idx, botInfo := range state.BotInfos {
+			if keyNames[botInfo.KeyName] && botInfo.IsNotExist && !state.AddMinitiaConfig {
+				state.BotInfos[idx].IsSetup = true
+			} else {
+				state.BotInfos[idx].IsSetup = false
+			}
+		}
+	}
+
+	for idx := 0; idx < len(state.BotInfos); idx++ {
+		if state.BotInfos[idx].IsSetup {
+			return NewRecoverKeySelector(weavecontext.SetCurrentState(ctx, state), idx), nil
+		}
+	}
+	model := NewSetupOPInitBotsMissingKey(weavecontext.SetCurrentState(ctx, state))
+	return model, nil
+
+}

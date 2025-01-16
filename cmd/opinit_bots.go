@@ -311,9 +311,9 @@ Example: weave opinit init executor`,
 				botName := args[0]
 				switch botName {
 				case "executor":
-					rootProgram = opinit_bots.OPInitBotInitSelectExecutor
+					rootProgram = opinit_bots.PrepareExecutorBotKey
 				case "challenger":
-					rootProgram = opinit_bots.OPInitBotInitSelectChallenger
+					rootProgram = opinit_bots.PrepareChallengerBotKey
 				default:
 					return fmt.Errorf("invalid bot name provided: %s", botName)
 				}
