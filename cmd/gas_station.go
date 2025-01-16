@@ -36,18 +36,18 @@ func gasStationSetupCommand() *cobra.Command {
 		Use:   "setup",
 		Short: "Setup Gas Station account on Initia and Celestia for funding the OPinit-bots or relayer to send transactions.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			analytics.TrackRunEvent(cmd, args, analytics.GasStationComponent, analytics.NewEmptyEvent())
+			analytics.TrackRunEvent(cmd, args, analytics.SetupGasStationFeature, analytics.NewEmptyEvent())
 			ctx := weavecontext.NewAppContext(models.NewExistingCheckerState())
 			if finalModel, err := tea.NewProgram(models.NewGasStationMethodSelect(ctx), tea.WithAltScreen()).Run(); err != nil {
 				return err
 			} else {
 				fmt.Println(finalModel.View())
-				analytics.TrackCompletedEvent(cmd, analytics.GasStationComponent)
 				if _, ok := finalModel.(*models.WeaveAppSuccessfullyInitialized); !ok {
 					return nil
 				}
 			}
 
+			analytics.TrackCompletedEvent(analytics.SetupGasStationFeature)
 			fmt.Println("Loading Gas Station balances...")
 			return showGasStationBalance()
 		},

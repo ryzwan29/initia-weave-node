@@ -117,7 +117,7 @@ func minitiaLaunchCommand() *cobra.Command {
 				events.Add(analytics.WithConfigKey, true).
 					Add(analytics.VmKey, vm)
 			}
-			analytics.TrackRunEvent(cmd, args, analytics.RollupComponent, events)
+			analytics.TrackRunEvent(cmd, args, analytics.RollupLaunchFeature, events)
 			if configPath != "" {
 				if io.FileOrFolderExists(minitiaHome) && !force {
 					return fmt.Errorf("existing %s folder detected. Use --force or -f to override", minitiaHome)
@@ -162,7 +162,6 @@ func minitiaLaunchCommand() *cobra.Command {
 				return err
 			} else {
 				fmt.Println(finalModel.View())
-				analytics.TrackCompletedEvent(cmd, analytics.RollupComponent)
 				return nil
 			}
 		},

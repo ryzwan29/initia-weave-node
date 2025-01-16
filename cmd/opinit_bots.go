@@ -102,7 +102,7 @@ func OPInitBotsKeysSetupCommand() *cobra.Command {
 		Use:   "setup-keys",
 		Short: "Setup keys for OPInit bots",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			analytics.TrackRunEvent(cmd, args, analytics.OPinitComponent, analytics.NewEmptyEvent())
+			analytics.TrackRunEvent(cmd, args, analytics.SetupOPinitKeysFeature, analytics.NewEmptyEvent())
 			minitiaHome, _ := cmd.Flags().GetString(FlagMinitiaHome)
 			opInitHome, _ := cmd.Flags().GetString(FlagOPInitHome)
 
@@ -116,7 +116,6 @@ func OPInitBotsKeysSetupCommand() *cobra.Command {
 				OPInitHome:  opInitHome,
 				UserHome:    userHome,
 			})
-			analytics.TrackCompletedEvent(cmd, analytics.OPinitComponent)
 
 			return err
 		},
@@ -276,8 +275,8 @@ func initializeBotWithConfig(cmd *cobra.Command, fileData []byte, keyFile opinit
 		return err
 	}
 
+	analytics.TrackCompletedEvent(analytics.SetupOPinitBotFeature)
 	fmt.Printf("OPInit bot setup successfully. Config file is saved at %s. Feel free to modify it as needed.\n", filepath.Join(opInitHome, fmt.Sprintf("%s.json", botName)))
-	analytics.TrackCompletedEvent(cmd, analytics.OPinitComponent)
 
 	return nil
 }
@@ -305,7 +304,29 @@ Example: weave opinit init executor`,
 					Add(analytics.KeyFileKey, keyFilePath != "").
 					Add(analytics.GenerateKeyfileKey, isGenerateKeyFile)
 			}
-			analytics.TrackRunEvent(cmd, args, analytics.OPinitComponent, events)
+
+			var rootProgram func(ctx context.Context) (tea.Model, error)
+			// Check if a bot name was provided as an argument
+			if len(args) == 1 {
+				botName := args[0]
+				switch botName {
+				case "executor":
+					rootProgram = opinit_bots.OPInitBotInitSelectExecutor
+				case "challenger":
+					rootProgram = opinit_bots.OPInitBotInitSelectChallenger
+				default:
+					return fmt.Errorf("invalid bot name provided: %s", botName)
+				}
+
+				analytics.AppendGlobalEventProperties(map[string]interface{}{
+					analytics.BotTypeKey: botName,
+				})
+			} else {
+				// Start the bot selector program if no bot name is provided
+				rootProgram = opinit_bots.NewOPInitBotInitSelector
+			}
+
+			analytics.TrackRunEvent(cmd, args, analytics.SetupOPinitBotFeature, events)
 
 			userHome, err := os.UserHomeDir()
 			if err != nil {
@@ -320,30 +341,12 @@ Example: weave opinit init executor`,
 				return handleWithConfig(cmd, userHome, opInitHome, configPath, keyFilePath, args, force, isGenerateKeyFile)
 			}
 
-			var rootProgram func(ctx context.Context) (tea.Model, error)
-			// Check if a bot name was provided as an argument
-			if len(args) == 1 {
-				botName := args[0]
-				switch botName {
-				case "executor":
-					rootProgram = opinit_bots.OPInitBotInitSelectExecutor
-				case "challenger":
-					rootProgram = opinit_bots.OPInitBotInitSelectChallenger
-				default:
-					return fmt.Errorf("invalid bot name provided: %s", botName)
-				}
-			} else {
-				// Start the bot selector program if no bot name is provided
-				rootProgram = opinit_bots.NewOPInitBotInitSelector
-			}
-
 			_, err = RunOPInit(rootProgram, HomeConfig{
 				MinitiaHome: minitiaHome,
 				OPInitHome:  opInitHome,
 				UserHome:    userHome,
 			})
 
-			analytics.TrackCompletedEvent(cmd, analytics.OPinitComponent)
 			return err
 		},
 	}
@@ -490,7 +493,6 @@ func OPInitBotsResetCommand() *cobra.Command {
 Valid options are [executor, challenger] eg. weave opinit reset challenger`,
 		Args: ValidateOPinitBotNameArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			analytics.TrackRunEvent(cmd, args, analytics.OPinitComponent, analytics.NewEmptyEvent())
 			userHome, err := os.UserHomeDir()
 			if err != nil {
 				return fmt.Errorf("error getting user home directory: %v", err)
@@ -503,10 +505,15 @@ Valid options are [executor, challenger] eg. weave opinit reset challenger`,
 			}
 
 			botName := args[0]
+			analytics.AppendGlobalEventProperties(map[string]interface{}{
+				analytics.BotTypeKey: botName,
+			})
+			analytics.TrackRunEvent(cmd, args, analytics.ResetOPinitBotFeature, analytics.NewEmptyEvent())
 			execCmd := exec.Command(binaryPath, "reset-db", botName)
 			if err = execCmd.Run(); err != nil {
 				return fmt.Errorf("failed to reset-db: %v", err)
 			}
+			analytics.TrackCompletedEvent(analytics.ResetOPinitBotFeature)
 			fmt.Printf("Reset the OPinit %s bot database successfully.\n", botName)
 			return nil
 		},

@@ -1632,6 +1632,7 @@ type TerminalState struct {
 }
 
 func NewTerminalState(ctx context.Context) tea.Model {
+	analytics.TrackCompletedEvent(analytics.SetupRelayerFeature)
 	return &TerminalState{
 		BaseModel: weavecontext.BaseModel{Ctx: ctx},
 	}

@@ -274,6 +274,9 @@ func (m *OPInitBotInitSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if selected != nil {
 		state := weavecontext.PushPageAndGetState[OPInitBotsState](m)
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{"bot"}, string(*selected)))
+		analytics.AppendGlobalEventProperties(map[string]interface{}{
+			analytics.BotTypeKey: string(*selected),
+		})
 		analytics.TrackEvent(analytics.OPInitBotInitSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, string(*selected)))
 
 		switch *selected {
