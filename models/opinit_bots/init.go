@@ -1629,7 +1629,6 @@ func PrepareKey(ctx context.Context, isExecutor bool) (tea.Model, error) {
 		}
 	} else {
 		state.InitChallengerBot = true
-		keyNames := make(map[string]bool)
 		keyNames[ChallengerKeyName] = true
 		state.BotInfos, err = CheckIfKeysExist(state.BotInfos)
 		if err != nil {
