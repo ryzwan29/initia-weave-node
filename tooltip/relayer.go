@@ -32,5 +32,5 @@ var (
 	RelayerRollupKeySelectTooltip = ui.NewTooltip("Rollup Relayer Key", "The key/account that the relayer will use to interact with the rollup network.", "", []string{}, []string{}, []string{})
 
 	// Funding amount select
-	RelayerFundingAmountSelectTooltip = ui.NewTooltip("Funding the relayer accounts", "Relayer account on both L1 and rollup need gas to interact with the chain. This funding is required to ensure the relayer can function properly.", "", []string{}, []string{}, []string{})
+	RelayerFundingAmountSelectTooltip = ui.NewTooltip("Funding the relayer accounts", "Relayer accounts on both the Initia L1 and the rollup requires gas token funding to ensure the relayer can function properly.", "", []string{}, []string{}, []string{})
 )
