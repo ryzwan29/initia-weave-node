@@ -3,5 +3,5 @@ package tooltip
 import "github.com/initia-labs/weave/ui"
 
 var (
-	MonikerTooltip = ui.NewTooltip("Moniker", "A unique name assigned to a node in a network, used primarily for identification and distinction among nodes.", "", []string{}, []string{}, []string{})
+	MonikerTooltip = ui.NewTooltip("Moniker", "A unique identifier among nodes in a network.", "", []string{}, []string{}, []string{})
 )

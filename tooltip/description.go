@@ -7,19 +7,19 @@ func ChainIDDescription(networkType string) string {
 }
 
 func RPCEndpointDescription(networkType string) string {
-	return fmt.Sprintf("The network address and port that an %s RPC node listens. This allows the bots to communicate with %s network.", networkType, networkType)
+	return fmt.Sprintf("The network address and port that the %s RPC node will listen to. This endpoint is used by the rollup bots to communicate with the %s network and for users to submit transactions.", networkType, networkType)
 }
 
 func GRPCEndpointDescription(networkType string) string {
-	return fmt.Sprintf("The network address and port that an %s GRPC node listens. This allows the bots to query additional data from the %s network.", networkType, networkType)
+	return fmt.Sprintf("The network address and port that an %s GRPC node will listen to. This allows the rollup bots to query additional data from the %s network.", networkType, networkType)
 }
 
 func WebSocketEndpointDescription(networkType string) string {
-	return fmt.Sprintf("The network address and port that an %s WebSocket node listens. This allows the bots to listen to events from the %s network.", networkType, networkType)
+	return fmt.Sprintf("The network address and port that an %s WebSocket node will listen to. This allows the rollup bots to listen to events from the %s network.", networkType, networkType)
 }
 
 func GasDenomDescription(networkType string) string {
-	return fmt.Sprintf("The gas denom to be used for submitting transactions to the %s node.", networkType)
+	return fmt.Sprintf("The gas token denom to be used for submitting transactions to the %s node.", networkType)
 }
 
 func GasPriceDescription(networkType string) string {
@@ -27,5 +27,5 @@ func GasPriceDescription(networkType string) string {
 }
 
 func MinGasPriceDescription(networkType string) string {
-	return fmt.Sprintf("The minimum gas price for transactions submitted on the %s network. This value helps ensure that %s transactions are processed with adequate priority.", networkType, networkType)
+	return fmt.Sprintf("The minimum gas price for transactions submitted on the %s network. Any transactions submitted to the %s network with a lower gas price will be rejected.", networkType, networkType)
 }
