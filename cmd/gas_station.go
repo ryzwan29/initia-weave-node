@@ -1,7 +1,12 @@
 package cmd
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
+	"strings"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
@@ -14,6 +19,140 @@ import (
 	"github.com/initia-labs/weave/models"
 	"github.com/initia-labs/weave/registry"
 )
+
+// Constants for denomination handling
+const (
+	utiaDenom    = "utia"
+	tiaDenom     = "TIA"
+	tiaExponent  = 6
+	uinitDenom   = "uinit"
+	initDenom    = "INIT"
+	initExponent = 6
+
+	testnetRegistryURL = "https://registry.testnet.initia.xyz/initia/assetlist.json"
+	mainnetRegistryURL = "https://registry.initia.xyz/initia/assetlist.json"
+)
+
+type DenomUnit struct {
+	Denom    string `json:"denom"`
+	Exponent int    `json:"exponent"`
+}
+
+const (
+	DefaultTimeout = 3 * time.Second
+)
+
+type Asset struct {
+	DenomUnits []DenomUnit `json:"denom_units"`
+	Base       string      `json:"base"`
+	Display    string      `json:"display"`
+}
+
+type AssetList struct {
+	Assets []Asset `json:"assets"`
+}
+
+// formatAmount formats an amount string with the given exponent
+func formatAmount(amount string, exponent int) string {
+	if len(amount) > exponent {
+		decimalPos := len(amount) - exponent
+		amount = amount[:decimalPos] + "." + amount[decimalPos:]
+	} else {
+		zeros := strings.Repeat("0", exponent-len(amount))
+		amount = "0." + zeros + amount
+	}
+
+	// Trim trailing zeros and decimal point if necessary
+	amount = strings.TrimRight(strings.TrimRight(amount, "0"), ".")
+	if amount == "" {
+		amount = "0"
+	}
+	return amount
+}
+
+func fetchInitiaRegistryAssetList(chainType registry.ChainType) (*AssetList, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), DefaultTimeout)
+	defer cancel()
+
+	registryURL := testnetRegistryURL
+	if chainType == registry.InitiaL1Mainnet {
+		registryURL = mainnetRegistryURL
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "GET", registryURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch asset list: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	var assetList AssetList
+	if err := json.NewDecoder(resp.Body).Decode(&assetList); err != nil {
+		return nil, fmt.Errorf("failed to decode asset list: %w", err)
+	}
+	return &assetList, nil
+}
+
+func convertToDisplayDenom(coins *cosmosutils.Coins, assetList *AssetList) *cosmosutils.Coins {
+	if coins == nil {
+		return nil
+	}
+
+	result := make(cosmosutils.Coins, 0, len(*coins))
+	for _, coin := range *coins {
+		displayCoin := coin
+
+		// Handle special cases first
+		switch coin.Denom {
+		case utiaDenom:
+			displayCoin.Amount = formatAmount(coin.Amount, tiaExponent)
+			displayCoin.Denom = tiaDenom
+			result = append(result, displayCoin)
+			continue
+		case uinitDenom:
+			displayCoin.Amount = formatAmount(coin.Amount, initExponent)
+			displayCoin.Denom = initDenom
+			result = append(result, displayCoin)
+			continue
+		}
+
+		// Handle other denoms via asset list
+		if assetList != nil {
+			if displayDenom, exponent := findHighestExponentDenom(assetList, coin.Denom); exponent > 0 {
+				displayCoin.Amount = formatAmount(coin.Amount, exponent)
+				displayCoin.Denom = displayDenom
+			}
+		}
+		result = append(result, displayCoin)
+	}
+	return &result
+}
+
+// findHighestExponentDenom finds the denomination with the highest exponent for a given base denom
+func findHighestExponentDenom(assetList *AssetList, baseDenom string) (string, int) {
+	for _, asset := range assetList.Assets {
+		if asset.Base == baseDenom {
+			maxExponent := 0
+			displayDenom := baseDenom
+			for _, unit := range asset.DenomUnits {
+				if unit.Exponent > maxExponent {
+					maxExponent = unit.Exponent
+					displayDenom = unit.Denom
+				}
+			}
+			return displayDenom, maxExponent
+		}
+	}
+	return baseDenom, 0
+}
 
 func GasStationCommand() *cobra.Command {
 	cmd := &cobra.Command{
@@ -115,6 +254,19 @@ func showGasStationBalance() error {
 		return err
 	}
 
+	// Fetch asset list and convert denoms before printing
+	testnetAssetList, err := fetchInitiaRegistryAssetList(registry.InitiaL1Testnet)
+	if err != nil {
+		// Log the error but continue with nil assetList
+		fmt.Printf("Warning: Failed to fetch asset list: %v. Displaying original denominations.\n", err)
+		testnetAssetList = nil
+	}
+
+	// Convert balances to display denoms
+	initiaL1TestnetBalances = convertToDisplayDenom(initiaL1TestnetBalances, testnetAssetList)
+	celestiaTestnetBalance = convertToDisplayDenom(celestiaTestnetBalance, nil) // nil assetList for Celestia
+	celestiaMainnetBalance = convertToDisplayDenom(celestiaMainnetBalance, nil) // nil assetList for Celestia
+
 	maxWidth := getMaxWidth(initiaL1TestnetBalances, celestiaTestnetBalance, celestiaMainnetBalance)
 	if maxWidth < len(cosmosutils.NoBalancesText) {
 		maxWidth = len(cosmosutils.NoBalancesText)
@@ -132,7 +284,7 @@ func gasStationShowCommand() *cobra.Command {
 		Short: "Show Initia and Celestia Gas Station addresses and balances",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if config.IsFirstTimeSetup() {
-				fmt.Println("Please setup Gas Station first, by running `gas-station setup`")
+				fmt.Println("Please setup Gas Station first, by running `weave gas-station setup`")
 				return nil
 			}
 
