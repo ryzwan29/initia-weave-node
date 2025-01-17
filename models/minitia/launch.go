@@ -3019,10 +3019,17 @@ func (m *LaunchingNewMinitiaLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		link := fmt.Sprintf("%s/custom-network/add/link?config=%s", InitiaScanURL, encodedPayload)
 		scanText := fmt.Sprintf(
-			"\n✨ %s 🪄 (We already started the rollup app for you)\n%s\n\n",
+			"\n✨ %s 🪄 (We already started the rollup app for you)\n%s\n\n%s",
 			styles.BoldText("Explore your new rollup here", styles.White),
 			common.WrapText(link),
+			fmt.Sprintf(
+				"%s %s\n  %s\n\n",
+				styles.Text("i", styles.Yellow),
+				styles.BoldUnderlineText("Important", styles.Yellow),
+				styles.Text("Open this in Chrome is recommended because some browsers may not support localhost access from a different host, or edit your browser's settings to allow it if necessary.", styles.Yellow),
+			),
 		)
+
 		state.weave.PushPreviousResponse(scanText)
 
 		srv, err := service.NewService(service.Minitia)
