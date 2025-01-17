@@ -1,10 +1,12 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
@@ -36,6 +38,10 @@ type DenomUnit struct {
 	Exponent int    `json:"exponent"`
 }
 
+const (
+	DefaultTimeout = 3 * time.Second
+)
+
 type Asset struct {
 	DenomUnits []DenomUnit `json:"denom_units"`
 	Base       string      `json:"base"`
@@ -65,34 +71,34 @@ func formatAmount(amount string, exponent int) string {
 }
 
 func fetchInitiaRegistryAssetList(chainType registry.ChainType) (*AssetList, error) {
-    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-    defer cancel()
+	ctx, cancel := context.WithTimeout(context.Background(), DefaultTimeout)
+	defer cancel()
 
-    registryURL := testnetRegistryURL
-    if chainType == registry.InitiaL1Mainnet {
-        registryURL = mainnetRegistryURL
-    }
+	registryURL := testnetRegistryURL
+	if chainType == registry.InitiaL1Mainnet {
+		registryURL = mainnetRegistryURL
+	}
 
-    req, err := http.NewRequestWithContext(ctx, "GET", registryURL, nil)
-    if err != nil {
-        return nil, fmt.Errorf("failed to create request: %w", err)
-    }
+	req, err := http.NewRequestWithContext(ctx, "GET", registryURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
 
-    resp, err := http.DefaultClient.Do(req)
-    if err != nil {
-        return nil, fmt.Errorf("failed to fetch asset list: %w", err)
-    }
-    defer resp.Body.Close()
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch asset list: %w", err)
+	}
+	defer resp.Body.Close()
 
-    if resp.StatusCode != http.StatusOK {
-        return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
-    }
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
 
-    var assetList AssetList
-    if err := json.NewDecoder(resp.Body).Decode(&assetList); err != nil {
-        return nil, fmt.Errorf("failed to decode asset list: %w", err)
-    }
-    return &assetList, nil
+	var assetList AssetList
+	if err := json.NewDecoder(resp.Body).Decode(&assetList); err != nil {
+		return nil, fmt.Errorf("failed to decode asset list: %w", err)
+	}
+	return &assetList, nil
 }
 
 func convertToDisplayDenom(coins *cosmosutils.Coins, assetList *AssetList) *cosmosutils.Coins {
