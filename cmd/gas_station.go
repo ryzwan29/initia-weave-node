@@ -257,7 +257,9 @@ func showGasStationBalance() error {
 	// Fetch asset list and convert denoms before printing
 	testnetAssetList, err := fetchInitiaRegistryAssetList(registry.InitiaL1Testnet)
 	if err != nil {
-		return fmt.Errorf("failed to fetch asset list: %v", err)
+		// Log the error but continue with nil assetList
+		fmt.Printf("Warning: Failed to fetch asset list: %v. Displaying original denominations.\n", err)
+		testnetAssetList = nil
 	}
 
 	// Convert balances to display denoms
