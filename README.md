@@ -27,7 +27,7 @@ Its primary purpose is to solve several key challenges:
 ```bash
 git clone https://github.com/initia-labs/weave.git
 cd weave
-git checkout tags/v0.0.2
+git checkout tags/v0.0.4
 make install
 ```
 
@@ -43,7 +43,7 @@ weave version
 This should return the version of the Weave binary you have installed. Example output:
 
 ```bash
-v0.0.2
+v0.0.4
 ```
 
 
