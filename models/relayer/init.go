@@ -913,7 +913,7 @@ func (m *FetchingBalancesLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		state := weavecontext.PushPageAndGetState[State](m)
 
 		if !state.l1NeedsFunding && !state.l2NeedsFunding {
-			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "Your relayer has been setup successfully. 🎉", []string{}, ""))
+			state.weave.PushPreviousResponse(getRelayerSetSuccessMessage())
 			return NewTerminalState(weavecontext.SetCurrentState(m.Ctx, state)), tea.Quit
 		}
 
@@ -1030,7 +1030,7 @@ func (m *FundingAmountSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return model, nil
 		case FundingUserTransfer:
 			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, "Transfer funds manually from other account"))
-			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "Your relayer has been set up successfully! 🎉", []string{}, ""))
+			state.weave.PushPreviousResponse(getRelayerSetSuccessMessage())
 			state.weave.PushPreviousResponse(fmt.Sprintf(
 				"%s %s\n  %s\n%s\n\n",
 				styles.Text("i", styles.Yellow),
@@ -1284,7 +1284,7 @@ func (m *FundDefaultPresetBroadcastLoading) Update(msg tea.Msg) (tea.Model, tea.
 		if state.l2FundingTxHash != "" {
 			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, "The relayer account has been funded on L2, with Tx Hash", []string{}, state.l2FundingTxHash))
 		}
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "Your relayer has been setup successfully. 🎉", []string{}, ""))
+		state.weave.PushPreviousResponse(getRelayerSetSuccessMessage())
 
 		return NewTerminalState(weavecontext.SetCurrentState(m.Ctx, state)), tea.Quit
 	}
@@ -1392,7 +1392,7 @@ func (m *FundManuallyL2BalanceInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), []string{"Relayer account", "L2"}, input.Text))
 
 		if state.l1FundingAmount == "0" && state.l2FundingAmount == "0" {
-			state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.NoSeparator, "Your relayer has been setup successfully. 🎉", []string{}, ""))
+			state.weave.PushPreviousResponse(getRelayerSetSuccessMessage())
 			return NewTerminalState(weavecontext.SetCurrentState(m.Ctx, state)), tea.Quit
 		}
 
@@ -2674,6 +2674,7 @@ func (m *AddChallengerKeyToRelayer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			state.l2RelayerAddress = relayerKey.Address
 			state.l2RelayerMnemonic = relayerKey.Mnemonic
 
+			state.weave.PushPreviousResponse(getRelayerSetSuccessMessage())
 			return NewTerminalState(weavecontext.SetCurrentState(m.Ctx, state)), tea.Quit
 		case NoAddChallengerKeyToRelayerOption:
 			analytics.TrackEvent(analytics.UseChallengerKeySelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, false))
@@ -2686,6 +2687,14 @@ func (m *AddChallengerKeyToRelayer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	}
 	return m, cmd
+}
+
+func getRelayerSetSuccessMessage() string {
+	userHome, _ := os.UserHomeDir()
+	hermesHome := filepath.Join(userHome, HermesHome)
+	s := styles.RenderPrompt(fmt.Sprintf("Relayer setup successfully. Config file is saved at %s/config.toml. Feel free to modify it as needed.", hermesHome), []string{}, styles.Completed)
+	s += "\n" + styles.RenderPrompt("You can start the relayer by running `weave relayer start`", []string{}, styles.Completed) + "\n"
+	return s
 }
 
 func (m *AddChallengerKeyToRelayer) View() string {
