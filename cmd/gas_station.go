@@ -65,22 +65,34 @@ func formatAmount(amount string, exponent int) string {
 }
 
 func fetchInitiaRegistryAssetList(chainType registry.ChainType) (*AssetList, error) {
-	registryURL := testnetRegistryURL
-	if chainType == registry.InitiaL1Mainnet {
-		registryURL = mainnetRegistryURL
-	}
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+    defer cancel()
 
-	resp, err := http.Get(registryURL)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch asset list: %w", err)
-	}
-	defer resp.Body.Close()
+    registryURL := testnetRegistryURL
+    if chainType == registry.InitiaL1Mainnet {
+        registryURL = mainnetRegistryURL
+    }
 
-	var assetList AssetList
-	if err := json.NewDecoder(resp.Body).Decode(&assetList); err != nil {
-		return nil, fmt.Errorf("failed to decode asset list: %w", err)
-	}
-	return &assetList, nil
+    req, err := http.NewRequestWithContext(ctx, "GET", registryURL, nil)
+    if err != nil {
+        return nil, fmt.Errorf("failed to create request: %w", err)
+    }
+
+    resp, err := http.DefaultClient.Do(req)
+    if err != nil {
+        return nil, fmt.Errorf("failed to fetch asset list: %w", err)
+    }
+    defer resp.Body.Close()
+
+    if resp.StatusCode != http.StatusOK {
+        return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+    }
+
+    var assetList AssetList
+    if err := json.NewDecoder(resp.Body).Decode(&assetList); err != nil {
+        return nil, fmt.Errorf("failed to decode asset list: %w", err)
+    }
+    return &assetList, nil
 }
 
 func convertToDisplayDenom(coins *cosmosutils.Coins, assetList *AssetList) *cosmosutils.Coins {
