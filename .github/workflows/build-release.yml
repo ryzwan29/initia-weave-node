@@ -72,8 +72,8 @@ jobs:
         id: write-version
         run: |
           TAG=${{ github.event.release.tag_name }}
-          echo "VERSION=${TAG#v}" >> $GITHUB_ENV
-          echo "::set-output name=version::${TAG#v}"
+          echo "VERSION=${TAG#v}" >>  "$GITHUB_ENV"
+          echo "version=${TAG#v}" >>  "$GITHUB_OUTPUT"
 
       - name: Create tar.gz
         run: |
