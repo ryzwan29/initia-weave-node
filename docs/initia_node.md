@@ -19,6 +19,8 @@ weave initia init
 This command guides you through the node setup process, taking you from an empty directory to a fully synced node ready for operation.
 Once complete, you can run the node using `weave initia start`.
 
+### Peer issues
+if you observed that your node cannot communicate and sync with peers, try adding Polkachu's [live peers](https://polkachu.com/testnets/initia/peers) and [address book](https://polkachu.com/testnets/initia/addrbooks).
 
 ## Running your node
 

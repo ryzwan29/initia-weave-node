@@ -30,9 +30,11 @@ var (
 )
 
 func MinitiaCommand() *cobra.Command {
+	shortDescription := "Rollup subcommands"
 	cmd := &cobra.Command{
 		Use:                        "rollup",
-		Short:                      "Rollup subcommands",
+		Short:                      shortDescription,
+		Long:                       fmt.Sprintf("%s.\n\n%s", shortDescription, RollupHelperText),
 		DisableFlagParsing:         true,
 		SuggestionsMinimumDistance: 2,
 	}
@@ -74,9 +76,11 @@ func loadAndParseMinitiaConfig(path string) (*types.MinitiaConfig, error) {
 }
 
 func minitiaLaunchCommand() *cobra.Command {
+	shortDescription := "Launch a new rollup from scratch"
 	launchCmd := &cobra.Command{
 		Use:   "launch",
-		Short: "Launch a new rollup from scratch",
+		Short: shortDescription,
+		Long:  fmt.Sprintf("%s.\n\n%s", shortDescription, RollupHelperText),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			configPath, _ := cmd.Flags().GetString(FlagWithConfig)
 			vm, _ := cmd.Flags().GetString(FlagVm)
@@ -181,9 +185,11 @@ func minitiaLaunchCommand() *cobra.Command {
 }
 
 func minitiaStartCommand() *cobra.Command {
+	shortDescription := "Start the rollup full node service"
 	launchCmd := &cobra.Command{
 		Use:   "start",
-		Short: "Start the rollup full node application.",
+		Short: shortDescription,
+		Long:  fmt.Sprintf("%s.\n\n%s", shortDescription, RollupHelperText),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			detach, err := cmd.Flags().GetBool(FlagDetach)
 			if err != nil {
@@ -200,7 +206,7 @@ func minitiaStartCommand() *cobra.Command {
 				if err != nil {
 					return err
 				}
-				fmt.Println("Started rollup full node application. You can see the logs with `weave rollup log`")
+				fmt.Println("Started rollup full node service. You can see the logs with `weave rollup log`")
 				return nil
 			}
 
@@ -208,15 +214,17 @@ func minitiaStartCommand() *cobra.Command {
 		},
 	}
 
-	launchCmd.Flags().BoolP(FlagDetach, "d", false, "Run the rollup full node application in detached mode")
+	launchCmd.Flags().BoolP(FlagDetach, "d", false, "Run the rollup full node service in detached mode")
 
 	return launchCmd
 }
 
 func minitiaStopCommand() *cobra.Command {
+	shortDescription := "Stop the rollup full node service"
 	startCmd := &cobra.Command{
 		Use:   "stop",
-		Short: "Stop the rollup full node application.",
+		Short: shortDescription,
+		Long:  fmt.Sprintf("%s.\n\n%s", shortDescription, RollupHelperText),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := service.NewService(service.Minitia)
 			if err != nil {
@@ -226,7 +234,7 @@ func minitiaStopCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			fmt.Println("Stopped the rollup full node application.")
+			fmt.Println("Stopped the rollup full node service.")
 			return nil
 		},
 	}
@@ -235,9 +243,11 @@ func minitiaStopCommand() *cobra.Command {
 }
 
 func minitiaRestartCommand() *cobra.Command {
+	shortDescription := "Restart the rollup full node service"
 	restartCmd := &cobra.Command{
 		Use:   "restart",
-		Short: "Restart the rollup full node application.",
+		Short: shortDescription,
+		Long:  fmt.Sprintf("%s.\n\n%s", shortDescription, RollupHelperText),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := service.NewService(service.Minitia)
 			if err != nil {
@@ -248,7 +258,7 @@ func minitiaRestartCommand() *cobra.Command {
 				return err
 			}
 
-			fmt.Println("Restart rollup full node application. You can see the logs with `weave rollup log`")
+			fmt.Println("Restart rollup full node service. You can see the logs with `weave rollup log`")
 			return nil
 		},
 	}
@@ -257,9 +267,11 @@ func minitiaRestartCommand() *cobra.Command {
 }
 
 func minitiaLogCommand() *cobra.Command {
+	shortDescription := "Stream the logs of the rollup full node service"
 	logCmd := &cobra.Command{
 		Use:   "log",
-		Short: "Stream the logs of the rollup full node application.",
+		Short: shortDescription,
+		Long:  fmt.Sprintf("%s.\n\n%s", shortDescription, RollupHelperText),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			n, err := cmd.Flags().GetInt(FlagN)
 			if err != nil {
