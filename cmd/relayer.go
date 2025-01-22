@@ -18,9 +18,11 @@ import (
 )
 
 func RelayerCommand() *cobra.Command {
+	shortDescription := "Relayer subcommands"
 	cmd := &cobra.Command{
 		Use:                        "relayer",
-		Short:                      "Relayer subcommands",
+		Short:                      shortDescription,
+		Long:                       fmt.Sprintf("%s.\n\n%s", shortDescription, RelayerHelperText),
 		DisableFlagParsing:         true,
 		SuggestionsMinimumDistance: 2,
 	}
@@ -37,9 +39,11 @@ func RelayerCommand() *cobra.Command {
 }
 
 func relayerInitCommand() *cobra.Command {
+	shortDescription := "Initialize and configure your relayer for IBC"
 	initCmd := &cobra.Command{
 		Use:   "init",
-		Short: "Initialize and configure your Hermes relayer for IBC",
+		Short: shortDescription,
+		Long:  fmt.Sprintf("%s.\n\n%s", shortDescription, RelayerHelperText),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			analytics.TrackRunEvent(cmd, args, analytics.SetupRelayerFeature, analytics.NewEmptyEvent())
 			ctx := weavecontext.NewAppContext(relayer.NewRelayerState())
@@ -82,9 +86,11 @@ func relayerInitCommand() *cobra.Command {
 }
 
 func relayerStartCommand() *cobra.Command {
+	shortDescription := "Start the relayer service"
 	startCmd := &cobra.Command{
 		Use:   "start",
-		Short: "Start the Hermes relayer application.",
+		Short: shortDescription,
+		Long:  fmt.Sprintf("%s.\n\n%s", shortDescription, RelayerHelperText),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			detach, err := cmd.Flags().GetBool(FlagDetach)
 			if err != nil {
@@ -117,7 +123,7 @@ func relayerStartCommand() *cobra.Command {
 				if err != nil {
 					return err
 				}
-				fmt.Println("Started Hermes relayer application. You can see the logs with `weave relayer log`")
+				fmt.Println("Started relayer service. You can see the logs with `weave relayer log`")
 				return nil
 			}
 
@@ -125,15 +131,17 @@ func relayerStartCommand() *cobra.Command {
 		},
 	}
 	startCmd.Flags().String(FlagUpdateClient, "true", "Update light clients with new header information before starting the relayer (can be 'true' or 'false')")
-	startCmd.Flags().BoolP(FlagDetach, "d", false, "Run the Hermes relayer application in detached mode")
+	startCmd.Flags().BoolP(FlagDetach, "d", false, "Run the relayer service in detached mode")
 
 	return startCmd
 }
 
 func relayerStopCommand() *cobra.Command {
-	startCmd := &cobra.Command{
+	shortDescription := "Stop the relayer service"
+	stopCmd := &cobra.Command{
 		Use:   "stop",
-		Short: "Stop the Hermes relayer application.",
+		Short: shortDescription,
+		Long:  fmt.Sprintf("%s.\n\n%s", shortDescription, RelayerHelperText),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := service.NewService(service.Relayer)
 			if err != nil {
@@ -143,18 +151,20 @@ func relayerStopCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			fmt.Println("Stopped Hermes relayer application.")
+			fmt.Println("Stopped relayer service.")
 			return nil
 		},
 	}
 
-	return startCmd
+	return stopCmd
 }
 
 func relayerRestartCommand() *cobra.Command {
+	shortDescription := "Restart the relayer service"
 	restartCmd := &cobra.Command{
 		Use:   "restart",
-		Short: "Restart the Hermes relayer application.",
+		Short: shortDescription,
+		Long:  fmt.Sprintf("%s.\n\n%s", shortDescription, RelayerHelperText),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := service.NewService(service.Relayer)
 			if err != nil {
@@ -165,7 +175,7 @@ func relayerRestartCommand() *cobra.Command {
 				return err
 			}
 
-			fmt.Println("Started Hermes relayer application. You can see the logs with `weave relayer log`")
+			fmt.Println("Started the relayer service. You can see the logs with `weave relayer log`")
 			return nil
 		},
 	}
@@ -174,9 +184,11 @@ func relayerRestartCommand() *cobra.Command {
 }
 
 func relayerLogCommand() *cobra.Command {
+	shortDescription := "Stream the logs of the relayer service"
 	logCmd := &cobra.Command{
 		Use:   "log",
-		Short: "Stream the logs of the Hermes relayer application.",
+		Short: shortDescription,
+		Long:  fmt.Sprintf("%s.\n\n%s", shortDescription, RelayerHelperText),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			n, err := cmd.Flags().GetInt(FlagN)
 			if err != nil {

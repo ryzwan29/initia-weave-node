@@ -15,7 +15,7 @@ var Version string
 func Execute() error {
 	rootCmd := &cobra.Command{
 		Use:  "weave",
-		Long: "Weave is the CLI for managing Initia deployments.",
+		Long: WeaveHelperText,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			viper.AutomaticEnv()
 			viper.SetEnvPrefix("weave")

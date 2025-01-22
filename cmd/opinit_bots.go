@@ -50,9 +50,11 @@ func ValidateOPinitBotNameArgs(_ *cobra.Command, args []string) error {
 }
 
 func OPInitBotsCommand() *cobra.Command {
+	shortDescription := "OPInit bots subcommands"
 	cmd := &cobra.Command{
 		Use:                        "opinit",
-		Short:                      "OPInit bots subcommands",
+		Short:                      shortDescription,
+		Long:                       fmt.Sprintf("%s.\n\n%s", shortDescription, OPinitBotsHelperText),
 		DisableFlagParsing:         true,
 		SuggestionsMinimumDistance: 2,
 	}
@@ -98,9 +100,11 @@ func RunOPInit(nextModelFunc func(ctx context.Context) (tea.Model, error), homeC
 }
 
 func OPInitBotsKeysSetupCommand() *cobra.Command {
+	shortDescription := "Setup keys for OPInit bots"
 	setupCmd := &cobra.Command{
 		Use:   "setup-keys",
-		Short: "Setup keys for OPInit bots",
+		Short: shortDescription,
+		Long:  fmt.Sprintf("%s.\n%s", shortDescription, OPinitBotsHelperText),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			analytics.TrackRunEvent(cmd, args, analytics.SetupOPinitKeysFeature, analytics.NewEmptyEvent())
 			minitiaHome, _ := cmd.Flags().GetString(FlagMinitiaHome)
@@ -282,13 +286,12 @@ func initializeBotWithConfig(cmd *cobra.Command, fileData []byte, keyFile opinit
 }
 
 func OPInitBotsInitCommand() *cobra.Command {
+	shortDescription := "Initialize an OPinit bot"
 	initCmd := &cobra.Command{
 		Use:   "init [bot-name]",
-		Short: "Initialize OPinit bots",
-		Long: `Initialize the OPinit bot. The argument is optional, as you will be prompted to select a bot if no bot name is provided.
-Alternatively, you can specify a bot name as an argument to skip the selection. Valid options are [executor, challenger].
-Example: weave opinit init executor`,
-		Args: ValidateOPinitOptionalBotNameArgs,
+		Short: shortDescription,
+		Long:  fmt.Sprintf("Initialize an OPinit bot. The argument is optional, as you will be prompted to select a bot if no bot name is provided.\nAlternatively, you can specify a bot name as an argument to skip the selection. Valid options are [executor, challenger].\nExample: weave opinit init executor\n\n%s", OPinitBotsHelperText),
+		Args:  ValidateOPinitOptionalBotNameArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			minitiaHome, _ := cmd.Flags().GetString(FlagMinitiaHome)
 			opInitHome, _ := cmd.Flags().GetString(FlagOPInitHome)
@@ -369,11 +372,9 @@ Example: weave opinit init executor`,
 func OPInitBotsStartCommand() *cobra.Command {
 	startCmd := &cobra.Command{
 		Use:   "start [bot-name]",
-		Short: "Start the OPinit bot process.",
-		Long: `Use this command to start the OPinit bot, where the only argument required is the desired bot name. 
-Valid options are [executor, challenger] eg. weave opinit start executor
- `,
-		Args: ValidateOPinitBotNameArgs,
+		Short: "Start the OPinit bot service.",
+		Long:  fmt.Sprintf("Use this command to start the OPinit bot, where the only argument required is the desired bot name.\nValid options are [executor, challenger] eg. weave opinit start executor\n\n%s", OPinitBotsHelperText),
+		Args:  ValidateOPinitBotNameArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			detach, err := cmd.Flags().GetBool(FlagDetach)
 			if err != nil {
@@ -408,10 +409,9 @@ Valid options are [executor, challenger] eg. weave opinit start executor
 func OPInitBotsStopCommand() *cobra.Command {
 	startCmd := &cobra.Command{
 		Use:   "stop [bot-name]",
-		Short: "Stop the running OPinit bot process.",
-		Long: `Use this command to stop the running OPinit bot, where the only argument required is the desired bot name.
-Valid options are [executor, challenger] eg. weave opinit stop challenger`,
-		Args: ValidateOPinitBotNameArgs,
+		Short: "Stop the OPinit bot service.",
+		Long:  fmt.Sprintf("Use this command to stop the OPinit bot, where the only argument required is the desired bot name.\nValid options are [executor, challenger] eg. weave opinit stop challenger\n\n%s", OPinitBotsHelperText),
+		Args:  ValidateOPinitBotNameArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			botName := args[0]
 			bot := service.CommandName(botName)
@@ -423,7 +423,7 @@ Valid options are [executor, challenger] eg. weave opinit stop challenger`,
 			if err != nil {
 				return err
 			}
-			fmt.Printf("Stopped the OPinit %s bot process.\n", botName)
+			fmt.Printf("Stopped the OPinit %s bot service.\n", botName)
 			return nil
 		},
 	}
@@ -434,10 +434,9 @@ Valid options are [executor, challenger] eg. weave opinit stop challenger`,
 func OPInitBotsRestartCommand() *cobra.Command {
 	restartCmd := &cobra.Command{
 		Use:   "restart [bot-name]",
-		Short: "Restart the running OPinit bot process.",
-		Long: `Use this command to restart the running OPinit bot, where the only argument required is the desired bot name.
-Valid options are [executor, challenger] eg. weave opinit restart executor`,
-		Args: ValidateOPinitBotNameArgs,
+		Short: "Restart the OPinit bot service",
+		Long:  fmt.Sprintf("Use this command to restart the OPinit bot, where the only argument required is the desired bot name.\nValid options are [executor, challenger] eg. weave opinit restart executor\n\n%s", OPinitBotsHelperText),
+		Args:  ValidateOPinitBotNameArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			botName := args[0]
 			bot := service.CommandName(botName)
@@ -449,7 +448,7 @@ Valid options are [executor, challenger] eg. weave opinit restart executor`,
 			if err != nil {
 				return err
 			}
-			fmt.Printf("Restart the OPinit %[1]s bot process. You can see the logs with `weave opinit log %[1]s`\n", botName)
+			fmt.Printf("Restart the OPinit %[1]s bot service. You can see the logs with `weave opinit log %[1]s`\n", botName)
 			return nil
 		},
 	}
@@ -458,12 +457,12 @@ Valid options are [executor, challenger] eg. weave opinit restart executor`,
 }
 
 func OPInitBotsLogCommand() *cobra.Command {
+	shortDescription := "Stream the logs of the OPinit bot service"
 	logCmd := &cobra.Command{
 		Use:   "log [bot-name]",
-		Short: "Stream the logs of the running OPinit bot process.",
-		Long: `Stream the logs of the running OPinit bot. The only argument required is the desired bot name.
-Valid options are [executor, challenger] eg. weave opinit log executor`,
-		Args: ValidateOPinitBotNameArgs,
+		Short: shortDescription,
+		Long:  fmt.Sprintf("Stream the logs of the OPinit bot. The only argument required is the desired bot name.\nValid options are [executor, challenger] eg. weave opinit log executor\n\n%s", OPinitBotsHelperText),
+		Args:  ValidateOPinitBotNameArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			n, err := cmd.Flags().GetInt(FlagN)
 			if err != nil {
@@ -486,12 +485,12 @@ Valid options are [executor, challenger] eg. weave opinit log executor`,
 }
 
 func OPInitBotsResetCommand() *cobra.Command {
+	shortDescription := "Reset an OPinit bot's database"
 	resetCmd := &cobra.Command{
 		Use:   "reset [bot-name]",
-		Short: "Reset a OPinit bot's database",
-		Long: `Reset a OPinit bot's database. The only argument required is the desired bot name.
-Valid options are [executor, challenger] eg. weave opinit reset challenger`,
-		Args: ValidateOPinitBotNameArgs,
+		Short: shortDescription,
+		Long:  fmt.Sprintf("%s.\n%s", shortDescription, OPinitBotsHelperText),
+		Args:  ValidateOPinitBotNameArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			userHome, err := os.UserHomeDir()
 			if err != nil {

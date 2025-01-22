@@ -155,9 +155,11 @@ func findHighestExponentDenom(assetList *AssetList, baseDenom string) (string, i
 }
 
 func GasStationCommand() *cobra.Command {
+	shortDescription := "Gas Station subcommands"
 	cmd := &cobra.Command{
 		Use:                        "gas-station",
-		Short:                      "Gas Station subcommands",
+		Short:                      shortDescription,
+		Long:                       fmt.Sprintf("%s.\n\n%s", shortDescription, GasStationHelperText),
 		DisableFlagParsing:         true,
 		SuggestionsMinimumDistance: 2,
 	}
@@ -171,9 +173,11 @@ func GasStationCommand() *cobra.Command {
 }
 
 func gasStationSetupCommand() *cobra.Command {
+	shortDescription := "Setup Gas Station account on Initia and Celestia for funding the OPinit-bots or relayer to send transactions"
 	setupCmd := &cobra.Command{
 		Use:   "setup",
-		Short: "Setup Gas Station account on Initia and Celestia for funding the OPinit-bots or relayer to send transactions.",
+		Short: shortDescription,
+		Long:  fmt.Sprintf("%s.\n\n%s", shortDescription, GasStationHelperText),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			analytics.TrackRunEvent(cmd, args, analytics.SetupGasStationFeature, analytics.NewEmptyEvent())
 			ctx := weavecontext.NewAppContext(models.NewExistingCheckerState())
@@ -279,9 +283,11 @@ func showGasStationBalance() error {
 }
 
 func gasStationShowCommand() *cobra.Command {
+	shortDescription := "Show Initia and Celestia Gas Station addresses and balances"
 	showCmd := &cobra.Command{
 		Use:   "show",
-		Short: "Show Initia and Celestia Gas Station addresses and balances",
+		Short: shortDescription,
+		Long:  fmt.Sprintf("%s.\n\n%s", shortDescription, GasStationHelperText),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if config.IsFirstTimeSetup() {
 				fmt.Println("Please setup Gas Station first, by running `weave gas-station setup`")
