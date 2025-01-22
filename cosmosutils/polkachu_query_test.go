@@ -1,8 +1,17 @@
 package cosmosutils
 
 import (
+	"fmt"
 	"testing"
 )
+
+func TestPolkachuPersistentPeers(t *testing.T) {
+	peers, err := FetchPolkachuPersistentPeers("testnets/initia")
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Println(peers)
+}
 
 func TestDecodeCFEmail(t *testing.T) {
 	tests := []struct {

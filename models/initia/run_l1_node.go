@@ -1246,7 +1246,7 @@ func (m *SyncMethodSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	selected, cmd := m.Select(msg)
 	if selected != nil {
 		state := weavecontext.PushPageAndGetState[RunL1NodeState](m)
-		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, state.syncMethod))
+		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.ArrowSeparator, m.GetQuestion(), []string{}, string(*selected)))
 		state.syncMethod = string(*selected)
 		analytics.TrackEvent(analytics.SyncMethodSelected, analytics.NewEmptyEvent().Add(analytics.OptionEventKey, string(*selected)))
 
