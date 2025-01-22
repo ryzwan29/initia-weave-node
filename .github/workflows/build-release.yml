@@ -87,6 +87,7 @@ jobs:
   homebrew-release:
     runs-on: ubuntu-latest
     name: homebrew-release
+    needs: build-and-upload
     steps:
       - name: Release project to Homebrew tap
         uses: Justintime50/homebrew-releaser@v2
@@ -94,7 +95,7 @@ jobs:
           homebrew_owner: initia-labs
           homebrew_tap: homebrew-tap
           formula_folder: Formula
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.GH_RELEASE_TOKEN }}
           commit_owner: github-actions[bot]
           commit_email: github-actions[bot]@users.noreply.github.com
           install: 'bin.install "weave"'
