@@ -15,8 +15,8 @@ import (
 )
 
 const (
-	WeaveReleaseAPI string = "https://api.github.com/repos/initia-labs/weave-binaries/releases"
-	WeaveReleaseURL string = "https://www.github.com/initia-labs/weave-binaries/releases"
+	WeaveReleaseAPI string = "https://api.github.com/repos/initia-labs/weave/releases"
+	WeaveReleaseURL string = "https://www.github.com/initia-labs/weave/releases"
 )
 
 func VersionCommand() *cobra.Command {
