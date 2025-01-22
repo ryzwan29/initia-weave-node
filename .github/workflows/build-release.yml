@@ -65,9 +65,14 @@ jobs:
           mkdir -p build/${{ matrix.goos }}_${{ matrix.goarch }}
           GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -ldflags "-X github.com/initia-labs/weave/cmd.Version=${{ github.ref_name }}" -o build/${{ matrix.goos }}_${{ matrix.goarch }}/weave
 
+      - name: Write version
+        run: |
+          TAG=${{ github.event.release.tag_name }}
+          echo "VERSION=${TAG#v}" >> $GITHUB_ENV
+
       - name: Create tar.gz
         run: |
-          tar -czvf weave_${{ github.ref_name }}_${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz -C build/${{ matrix.goos }}_${{ matrix.goarch }} weave
+          tar -czvf weave-${VERSION}-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz -C build/${{ matrix.goos }}_${{ matrix.goarch }} weave
 
       - name: Upload binary to release
         uses: softprops/action-gh-release@v2
@@ -77,4 +82,28 @@ jobs:
           draft: false
           token: ${{ secrets.GH_RELEASE_TOKEN }}
           files: |
-            weave_${{ github.ref_name }}_${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz
+            weave-${VERSION}-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz
+
+  homebrew-release:
+    runs-on: ubuntu-latest
+    name: homebrew-release
+    needs: build-and-upload
+    steps:
+      - name: Release project to Homebrew tap
+        uses: Justintime50/homebrew-releaser@v2
+        with:
+          homebrew_owner: initia-labs
+          homebrew_tap: homebrew-tap
+          formula_folder: Formula
+          github_token: ${{ secrets.GH_RELEASE_TOKEN }}
+          commit_owner: github-actions[bot]
+          commit_email: github-actions[bot]@users.noreply.github.com
+          install: 'bin.install "weave"'
+          test: 'assert_match version.to_s, shell_output("#{bin}/weave version")'
+          target_darwin_amd64: true
+          target_darwin_arm64: true
+          target_linux_amd64: false
+          target_linux_arm64: false
+          update_readme_table: false
+          skip_commit: false
+          debug: false
