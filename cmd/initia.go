@@ -113,7 +113,7 @@ func initiaStartCommand() *cobra.Command {
 
 func initiaStopCommand() *cobra.Command {
 	shortDescription := "Stop Initia full node service"
-	startCmd := &cobra.Command{
+	stopCmd := &cobra.Command{
 		Use:   "stop",
 		Short: shortDescription,
 		Long:  fmt.Sprintf("%s.\n\n%s", shortDescription, L1NodeHelperText),
@@ -131,7 +131,7 @@ func initiaStopCommand() *cobra.Command {
 		},
 	}
 
-	return startCmd
+	return stopCmd
 }
 
 func initiaRestartCommand() *cobra.Command {
