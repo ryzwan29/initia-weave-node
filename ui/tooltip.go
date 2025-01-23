@@ -5,8 +5,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/muesli/reflow/wordwrap"
-
 	"github.com/initia-labs/weave/styles"
 )
 
@@ -62,9 +60,9 @@ func (t *Tooltip) createFrame(width int) string {
 
 	var text string
 	if t.warning != "" {
-		text = wordwrap.String(t.body, width) + "\n" + styles.TextWithoutOverridingStyledText(wordwrap.String(t.warning, width), styles.Yellow)
+		text = styles.WordwrapString(t.body, width) + "\n" + styles.TextWithoutOverridingStyledText(styles.WordwrapString(t.warning, width), styles.Yellow)
 	} else {
-		text = wordwrap.String(t.body, width)
+		text = styles.WordwrapString(t.body, width)
 	}
 	lines := strings.Split(text, "\n")
 

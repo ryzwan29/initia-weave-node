@@ -2,23 +2,40 @@ package cosmosutils
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
 
 	"github.com/initia-labs/weave/client"
+	"github.com/initia-labs/weave/registry"
 )
 
 const (
 	PolkachuBaseURL string = "https://polkachu.com"
 
-	PolkachuSnapshotURL  string = "https://www.polkachu.com/%s/snapshots"
-	PolkachuStateSyncURL        = PolkachuBaseURL + "/%s/state_sync"
-	PolkachuPeersURL            = PolkachuBaseURL + "/%s/peers"
+	PolkachuSnapshotURL  = PolkachuBaseURL + "/%s/snapshots"
+	PolkachuStateSyncURL = PolkachuBaseURL + "/%s/state_sync"
 
-	SnapshotFileExtension string = ".tar.lz4"
+	PolkachuChainAPI = PolkachuBaseURL + "/api/v2/chains/%s"
+	PolkachuPeersAPI = PolkachuBaseURL + "/api/v2/chains/%s/live_peers"
+
+	DefaultInitiaPolkachuName    string = "initia"
+	DefaultSnapshotFileExtension string = ".tar.lz4"
 )
+
+type PolkachuChainAPIResponse struct {
+	PolkachuServices struct {
+		StateSync struct {
+			Active bool   `json:"active"`
+			Node   string `json:"node"`
+		} `json:"state_sync"`
+	} `json:"polkachu_services"`
+}
+
+type PolkachuPeersAPIResponse struct {
+	PolkachuPeer string   `json:"polkachu_peer"`
+	LivePeers    []string `json:"live_peers"`
+}
 
 func FetchPolkachuSnapshotDownloadURL(chainSlug string) (string, error) {
 	httpClient := client.NewHTTPClient()
@@ -50,31 +67,27 @@ func FetchPolkachuSnapshotDownloadURL(chainSlug string) (string, error) {
 }
 
 func isSnapshotURL(href string) bool {
-	return href != "" && href[len(href)-len(SnapshotFileExtension):] == SnapshotFileExtension
+	return href != "" && href[len(href)-len(DefaultSnapshotFileExtension):] == DefaultSnapshotFileExtension
 }
 
-func FetchPolkachuStateSyncURL(chainSlug string) (string, error) {
+func FetchPolkachuStateSyncURL(chainType registry.ChainType) (string, error) {
+	queryParams := make(map[string]string)
+	if chainType == registry.InitiaL1Testnet {
+		queryParams["type"] = "testnet"
+	}
+
+	var response PolkachuChainAPIResponse
 	httpClient := client.NewHTTPClient()
-	body, err := httpClient.Get(fmt.Sprintf(PolkachuStateSyncURL, chainSlug), "", nil, nil)
+	_, err := httpClient.Get(fmt.Sprintf(PolkachuChainAPI, DefaultInitiaPolkachuName), "", queryParams, &response)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch page: %w", err)
 	}
 
-	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(body)))
-	if err != nil {
-		return "", fmt.Errorf("failed to parse HTML: %w", err)
+	if !response.PolkachuServices.StateSync.Active {
+		return "", fmt.Errorf("state sync from polkachu is not active")
 	}
 
-	var stateSyncURL string
-	doc.Find("a").EachWithBreak(func(i int, s *goquery.Selection) bool {
-		href, exists := s.Attr("href")
-		if exists && isLikelyStateSyncURL(href) {
-			stateSyncURL = href
-			return false
-		}
-		return true
-	})
-
+	stateSyncURL := response.PolkachuServices.StateSync.Node
 	if stateSyncURL == "" {
 		return "", fmt.Errorf("no state sync URL found")
 	}
@@ -82,56 +95,20 @@ func FetchPolkachuStateSyncURL(chainSlug string) (string, error) {
 	return stateSyncURL, nil
 }
 
-func isLikelyStateSyncURL(href string) bool {
-	return strings.Contains(href, "rpc") && strings.Contains(href, "polkachu.com")
-}
+func FetchPolkachuStateSyncPeers(chainType registry.ChainType) (string, error) {
+	queryParams := make(map[string]string)
+	if chainType == registry.InitiaL1Testnet {
+		queryParams["type"] = "testnet"
+	}
 
-func FetchPolkachuStateSyncPeers(chainSlug string) (string, error) {
+	var response PolkachuPeersAPIResponse
 	httpClient := client.NewHTTPClient()
-	body, err := httpClient.Get(fmt.Sprintf(PolkachuPeersURL, chainSlug), "", nil, nil)
+	_, err := httpClient.Get(fmt.Sprintf(PolkachuPeersAPI, DefaultInitiaPolkachuName), "", queryParams, &response)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch page: %w", err)
 	}
 
-	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(body)))
-	if err != nil {
-		return "", fmt.Errorf("failed to parse HTML: %w", err)
-	}
-
-	var stateSyncPeer string
-	titleFound := false
-	doc.Find("body *").Each(func(i int, s *goquery.Selection) {
-		text := s.Text()
-
-		if strings.Contains(text, "Polkachu State-Sync Peer") {
-			titleFound = true
-			return
-		}
-
-		if titleFound {
-			s.Find("a[data-cfemail]").Each(func(j int, link *goquery.Selection) {
-				dataEmail := link.AttrOr("data-cfemail", "")
-				if dataEmail != "" {
-					decodedEmail, err := decodeCFEmail(dataEmail)
-					if err != nil {
-						panic(err)
-					}
-
-					portText := strings.TrimSpace(link.Parent().Text())
-					portText = strings.ReplaceAll(portText, "[email protected]", "")
-					portText = strings.TrimSpace(strings.TrimPrefix(portText, ":"))
-
-					if strings.Contains(portText, ":") {
-						parts := strings.Split(portText, ":")
-						portText = strings.TrimSpace(parts[len(parts)-1])
-					}
-
-					stateSyncPeer = fmt.Sprintf("%s:%s", decodedEmail, portText)
-				}
-			})
-		}
-	})
-
+	stateSyncPeer := response.PolkachuPeer
 	if stateSyncPeer == "" {
 		return "", fmt.Errorf("no state-sync peer found")
 	}
@@ -139,67 +116,23 @@ func FetchPolkachuStateSyncPeers(chainSlug string) (string, error) {
 	return stateSyncPeer, nil
 }
 
-func FetchPolkachuPersistentPeers(chainSlug string) (string, error) {
+func FetchPolkachuPersistentPeers(chainType registry.ChainType) (string, error) {
+	queryParams := make(map[string]string)
+	if chainType == registry.InitiaL1Testnet {
+		queryParams["type"] = "testnet"
+	}
+
+	var response PolkachuPeersAPIResponse
 	httpClient := client.NewHTTPClient()
-	body, err := httpClient.Get(fmt.Sprintf(PolkachuPeersURL, chainSlug), "", nil, nil)
+	_, err := httpClient.Get(fmt.Sprintf(PolkachuPeersAPI, DefaultInitiaPolkachuName), "", queryParams, &response)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch page: %w", err)
 	}
 
-	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(body)))
-	if err != nil {
-		return "", fmt.Errorf("failed to parse HTML: %w", err)
-	}
-
-	var peers []string
-	doc.Find("pre code").Each(func(i int, s *goquery.Selection) {
-		emailMatches := s.Find("a[data-cfemail]")
-		emailMatches.Each(func(j int, link *goquery.Selection) {
-			dataEmail := link.AttrOr("data-cfemail", "")
-			if dataEmail != "" {
-				decodedEmail, err := decodeCFEmail(dataEmail)
-				if err != nil {
-					panic(err)
-				}
-
-				portText := strings.TrimSpace(link.Parent().Text())
-				portText = strings.ReplaceAll(portText, "[email protected]", "")
-				portText = strings.TrimSpace(strings.TrimPrefix(portText, ":"))
-				if strings.Contains(portText, ":") {
-					parts := strings.Split(portText, ":")
-					portText = strings.TrimSpace(parts[len(parts)-1])
-				}
-
-				peers = append(peers, fmt.Sprintf("%s:%s", decodedEmail, portText))
-			}
-		})
-	})
-
+	peers := response.LivePeers
 	if len(peers) == 0 {
 		return "", fmt.Errorf("no peers found")
 	}
 
 	return strings.Join(peers, ","), nil
-}
-
-func decodeCFEmail(encoded string) (string, error) {
-	if len(encoded) < 2 {
-		return "", fmt.Errorf("encoded email is too short")
-	}
-
-	r, err := strconv.ParseInt(encoded[:2], 16, 0)
-	if err != nil {
-		return "", fmt.Errorf("failed to decode prefix: %w", err)
-	}
-
-	var email string
-	for i := 2; i < len(encoded); i += 2 {
-		b, err := strconv.ParseInt(encoded[i:i+2], 16, 0)
-		if err != nil {
-			return "", fmt.Errorf("failed to decode email character: %w", err)
-		}
-		email += string(rune(b ^ r))
-	}
-
-	return email, nil
 }

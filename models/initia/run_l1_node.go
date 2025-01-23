@@ -121,6 +121,7 @@ func (m *RunL1NodeNetworkSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if err != nil {
 				return m, m.HandlePanic(err)
 			}
+			state.chainType = &chainType
 			chainRegistry, err := registry.GetChainRegistry(chainType)
 			if err != nil {
 				return m, m.HandlePanic(err)
@@ -613,7 +614,11 @@ func (m *SeedsInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			prevAnswer = input.Text
 		}
 		state.weave.PushPreviousResponse(styles.RenderPreviousResponse(styles.DotsSeparator, m.GetQuestion(), m.highlights, prevAnswer))
-		return NewPersistentPeersInput(weavecontext.SetCurrentState(m.Ctx, state)), cmd
+		model, err := NewPersistentPeersInput(weavecontext.SetCurrentState(m.Ctx, state))
+		if err != nil {
+			return m, m.HandlePanic(err)
+		}
+		return model, cmd
 	}
 	m.TextInput = input
 	return m, cmd
@@ -628,11 +633,12 @@ func (m *SeedsInput) View() string {
 type PersistentPeersInput struct {
 	ui.TextInput
 	weavecontext.BaseModel
-	question   string
-	highlights []string
+	question     string
+	defaultValue string
+	highlights   []string
 }
 
-func NewPersistentPeersInput(ctx context.Context) *PersistentPeersInput {
+func NewPersistentPeersInput(ctx context.Context) (*PersistentPeersInput, error) {
 	toolTip := tooltip.L1PersistentPeersTooltip
 	model := &PersistentPeersInput{
 		TextInput:  ui.NewTextInput(false),
@@ -645,13 +651,18 @@ func NewPersistentPeersInput(ctx context.Context) *PersistentPeersInput {
 
 	state := weavecontext.GetCurrentState[RunL1NodeState](ctx)
 	if state.network != string(Local) {
-		model.WithDefaultValue(state.chainRegistry.GetPersistentPeers())
-		model.WithPlaceholder("Press tab to use the official persistent peers from the Initia Registry")
+		persistentPeers, err := cosmosutils.FetchPolkachuPersistentPeers(*state.chainType)
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch default persistent peers: %w", err)
+		}
+		model.defaultValue = persistentPeers
+		model.WithDefaultValue(persistentPeers)
+		model.WithPlaceholder("Press tab to use persistent peers from Polkachu")
 	} else {
 		model.WithPlaceholder("Enter in the format `id@ip:port`. You can add multiple seeds by separating them with a comma (,)")
 	}
 
-	return model
+	return model, nil
 }
 
 func (m *PersistentPeersInput) GetQuestion() string {
@@ -1594,7 +1605,7 @@ type StateSyncEndpointInput struct {
 
 func NewStateSyncEndpointInput(ctx context.Context) (*StateSyncEndpointInput, error) {
 	state := weavecontext.GetCurrentState[RunL1NodeState](ctx)
-	defaultStateSync, err := cosmosutils.FetchPolkachuStateSyncURL(PolkachuChainIdSlugMap[state.chainId])
+	defaultStateSync, err := cosmosutils.FetchPolkachuStateSyncURL(*state.chainType)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch state sync rpc server from Polkachu: %v", err)
 	}
@@ -1658,7 +1669,7 @@ type AdditionalStateSyncPeersInput struct {
 
 func NewAdditionalStateSyncPeersInput(ctx context.Context) (*AdditionalStateSyncPeersInput, error) {
 	state := weavecontext.GetCurrentState[RunL1NodeState](ctx)
-	defaultStateSyncPeers, err := cosmosutils.FetchPolkachuStateSyncPeers(PolkachuChainIdSlugMap[state.chainId])
+	defaultStateSyncPeers, err := cosmosutils.FetchPolkachuStateSyncPeers(*state.chainType)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch state sync peer from Polkachu: %v", err)
 	}

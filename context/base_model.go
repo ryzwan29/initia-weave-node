@@ -6,10 +6,10 @@ import (
 	"regexp"
 	"runtime/debug"
 
-	"github.com/initia-labs/weave/analytics"
-	"github.com/muesli/reflow/wordwrap"
-
 	tea "github.com/charmbracelet/bubbletea"
+
+	"github.com/initia-labs/weave/analytics"
+	"github.com/initia-labs/weave/styles"
 )
 
 // BaseModelInterface is an interface for base models
@@ -46,9 +46,9 @@ func (b *BaseModel) CanGoPreviousPage() bool {
 func (b *BaseModel) WrapView(content string) string {
 	windowWidth := GetWindowWidth(b.Ctx)
 	if b.PanicText != "" {
-		return wordwrap.String(fmt.Sprintf("%s\n\n%s", content, b.PanicText), windowWidth)
+		return styles.WordwrapString(fmt.Sprintf("%s\n\n%s", content, b.PanicText), windowWidth)
 	}
-	return wordwrap.String(content, windowWidth)
+	return styles.WordwrapString(content, windowWidth)
 }
 
 // extractModelNameFromStackTrace parses the stack trace and tries to extract the model name
