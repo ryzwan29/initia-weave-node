@@ -650,7 +650,7 @@ func NewOpBridgeOutputFinalizationPeriodInput(ctx context.Context) *OpBridgeOutp
 		question:   "Specify OP bridge config: Output Finalization Period (format s, m or h - ex. 30s, 5m, 12h)",
 		highlights: []string{"Output Finalization Period"},
 	}
-	model.WithPlaceholder("Press tab to use  “168h” (7 days)")
+	model.WithPlaceholder("Press tab to use “168h” (7 days)")
 	model.WithDefaultValue("168h")
 	model.WithValidatorFn(common.IsValidTimestamp)
 	model.WithTooltip(&toolTip)
