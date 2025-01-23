@@ -53,9 +53,6 @@ jobs:
         goos: [linux, darwin]
         goarch: [amd64, arm64]
 
-    outputs:
-      version: ${{ steps.write-version.outputs.version }}
-
     steps:
       - uses: actions/checkout@v4
 
@@ -69,11 +66,9 @@ jobs:
           GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -ldflags "-X github.com/initia-labs/weave/cmd.Version=${{ github.ref_name }}" -o build/${{ matrix.goos }}_${{ matrix.goarch }}/weave
 
       - name: Write version
-        id: write-version
         run: |
           TAG=${{ github.event.release.tag_name }}
-          echo "VERSION=${TAG#v}" >>  "$GITHUB_ENV"
-          echo "version=${TAG#v}" >>  "$GITHUB_OUTPUT"
+          echo "VERSION=${TAG#v}" >> "$GITHUB_ENV"
 
       - name: Create tar.gz
         run: |
@@ -100,7 +95,7 @@ jobs:
           homebrew_owner: initia-labs
           homebrew_tap: homebrew-tap
           formula_folder: Formula
-          version: ${{ needs.build-and-upload.outputs.version }}
+          version: ${{ github.event.release.tag_name }}
           github_token: ${{ secrets.GH_RELEASE_TOKEN }}
           commit_owner: github-actions[bot]
           commit_email: github-actions[bot]@users.noreply.github.com
