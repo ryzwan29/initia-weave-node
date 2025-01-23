@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection/grpc_reflection_v1"
 )
@@ -26,8 +27,16 @@ func NewGRPCClient() *GRPCClient {
 // CheckHealth attempts to connect to the server and uses the reflection service to verify the server is up.
 func (g *GRPCClient) CheckHealth(serverAddr string) error {
 	serverAddr = strings.TrimPrefix(serverAddr, "grpc://")
+	port := serverAddr[strings.LastIndex(serverAddr, ":")+1:]
 
-	conn, err := grpc.Dial(serverAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	var opts []grpc.DialOption
+	if port == "443" {
+		opts = append(opts, grpc.WithTransportCredentials(credentials.NewTLS(nil)))
+	} else {
+		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	}
+
+	conn, err := grpc.Dial(serverAddr, opts...)
 	if err != nil {
 		return fmt.Errorf("failed to connect to gRPC server: %v", err)
 	}
