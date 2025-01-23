@@ -390,6 +390,7 @@ func TestSeedsInputUpdate(t *testing.T) {
 	ctx := weavecontext.NewAppContext(NewRunL1NodeState())
 	state := weavecontext.GetCurrentState[RunL1NodeState](ctx)
 
+	state.chainType = registry.InitiaL1Testnet
 	state.chainRegistry, _ = registry.GetChainRegistry(registry.InitiaL1Testnet)
 	ctx = weavecontext.SetCurrentState(ctx, state)
 
@@ -463,7 +464,8 @@ func TestPersistentPeersInputUpdate_ValidInput_LocalNetwork(t *testing.T) {
 	state.network = string(Local)
 	ctx = weavecontext.SetCurrentState(ctx, state)
 
-	model := NewPersistentPeersInput(ctx)
+	model, err := NewPersistentPeersInput(ctx)
+	assert.Nil(t, err)
 
 	// Simulate entering a valid persistent peer input
 	validPeer := "7a4f10fbdedbb50354163bd43ea6bc4357dd2632@34.87.159.32:26656"
@@ -487,10 +489,12 @@ func TestPersistentPeersInputUpdate_ValidInput_MainnetNetwork(t *testing.T) {
 	ctx := weavecontext.NewAppContext(NewRunL1NodeState())
 	state := weavecontext.GetCurrentState[RunL1NodeState](ctx)
 	state.network = string(Mainnet)
+	state.chainType = registry.InitiaL1Testnet
 	state.chainRegistry, _ = registry.GetChainRegistry(registry.InitiaL1Testnet)
 	ctx = weavecontext.SetCurrentState(ctx, state)
 
-	model := NewPersistentPeersInput(ctx)
+	model, err := NewPersistentPeersInput(ctx)
+	assert.Nil(t, err)
 
 	// Simulate entering a valid persistent peer input
 	validPeer := "7a4f10fbdedbb50354163bd43ea6bc4357dd2632@34.87.159.32:26656"
@@ -514,10 +518,12 @@ func TestPersistentPeersInputUpdate_InvalidInput(t *testing.T) {
 	ctx := weavecontext.NewAppContext(NewRunL1NodeState())
 	state := weavecontext.GetCurrentState[RunL1NodeState](ctx)
 	state.network = string(Testnet)
+	state.chainType = registry.InitiaL1Testnet
 	state.chainRegistry, _ = registry.GetChainRegistry(registry.InitiaL1Testnet)
 	ctx = weavecontext.SetCurrentState(ctx, state)
 
-	model := NewPersistentPeersInput(ctx)
+	model, err := NewPersistentPeersInput(ctx)
+	assert.Nil(t, err)
 
 	// Simulate entering an invalid persistent peer input
 	invalidPeer := "invalid-peer"
@@ -542,7 +548,8 @@ func TestPersistentPeersInputUpdate_EmptyInput_LocalNetwork(t *testing.T) {
 	state.chainRegistry, _ = registry.GetChainRegistry(registry.InitiaL1Testnet)
 	ctx = weavecontext.SetCurrentState(ctx, state)
 
-	model := NewPersistentPeersInput(ctx)
+	model, err := NewPersistentPeersInput(ctx)
+	assert.Nil(t, err)
 
 	// Simulate entering an empty input
 	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("")})

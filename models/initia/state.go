@@ -9,6 +9,7 @@ import (
 type RunL1NodeState struct {
 	weave                             types.WeaveState
 	network                           string
+	chainType                         registry.ChainType
 	chainRegistry                     *registry.ChainRegistry // We can store the registry here since we only need one
 	initiadVersion                    string
 	initiadEndpoint                   string
@@ -46,6 +47,7 @@ func (s RunL1NodeState) Clone() RunL1NodeState {
 	return RunL1NodeState{
 		weave:                             s.weave.Clone(), // Assuming WeaveState has a Clone method
 		network:                           s.network,
+		chainType:                         s.chainType,
 		chainRegistry:                     s.chainRegistry,
 		initiadVersion:                    s.initiadVersion,
 		initiadEndpoint:                   s.initiadEndpoint,

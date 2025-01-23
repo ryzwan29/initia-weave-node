@@ -3,10 +3,12 @@ package client
 import (
 	"context"
 	"fmt"
+	"net"
 	"strings"
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection/grpc_reflection_v1"
 )
@@ -27,7 +29,19 @@ func NewGRPCClient() *GRPCClient {
 func (g *GRPCClient) CheckHealth(serverAddr string) error {
 	serverAddr = strings.TrimPrefix(serverAddr, "grpc://")
 
-	conn, err := grpc.Dial(serverAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	_, port, err := net.SplitHostPort(serverAddr)
+	if err != nil {
+		return fmt.Errorf("invalid grpc server address: %w", err)
+	}
+
+	var opts []grpc.DialOption
+	if port == "443" {
+		opts = append(opts, grpc.WithTransportCredentials(credentials.NewTLS(nil)))
+	} else {
+		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	}
+
+	conn, err := grpc.Dial(serverAddr, opts...)
 	if err != nil {
 		return fmt.Errorf("failed to connect to gRPC server: %v", err)
 	}
