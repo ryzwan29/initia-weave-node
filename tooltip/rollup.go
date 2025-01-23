@@ -13,7 +13,7 @@ var (
 	RollupGasPriceTooltip          = ui.NewTooltip("Rollup gas price", GasPriceDescription("rollup"), "", []string{}, []string{}, []string{})
 
 	// OP Bridge Tooltips
-	OpBridgeSubmissionIntervalTooltip       = ui.NewTooltip("Submission Interval", "The internal at which to submit the rollup output root to Initia L1.", "", []string{}, []string{}, []string{})
+	OpBridgeSubmissionIntervalTooltip       = ui.NewTooltip("Submission Interval", "The interval at which to submit the rollup output root to Initia L1.", "", []string{}, []string{}, []string{})
 	OpBridgeOutputFinalizationPeriodTooltip = ui.NewTooltip("Output Finalization Period", "The time period during which submitted output roots can be challenged before being considered final. After this period, the output becomes immutable.", "", []string{}, []string{}, []string{})
 	OpBridgeBatchSubmissionTargetTooltip    = ui.NewTooltip("Batch Submission Target", "The target chain for submitting rollup blocks and transaction data to ensure Data Availability. Currently, submissions can be made to Initia L1 or Celestia.\n\nFor production use, we recommend Celestia.", "", []string{}, []string{}, []string{})
 	EnableOracleTooltip                     = ui.NewTooltip("Oracle", "Enabling the Oracle feature allows the rollup and contracts deployed on the rollup to access asset price data relayed from the Initia L1.", "", []string{}, []string{}, []string{})
