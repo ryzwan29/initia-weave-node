@@ -37,7 +37,7 @@ func Execute() error {
 		InitiaCommand(),
 		GasStationCommand(),
 		VersionCommand(),
-		UpgradeCommand(),
+		// UpgradeCommand(),
 		MinitiaCommand(),
 		OPInitBotsCommand(),
 		RelayerCommand(),
