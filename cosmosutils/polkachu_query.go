@@ -74,7 +74,12 @@ func FetchPolkachuSnapshotDownloadURL(chainSlug string) (string, error) {
 }
 
 func isSnapshotURL(href string) bool {
-	return href != "" && href[len(href)-len(DefaultSnapshotFileExtension):] == DefaultSnapshotFileExtension
+	fileLen := len(href) - len(DefaultSnapshotFileExtension)
+	if fileLen < 0 {
+		return false
+	}
+
+	return href != "" && href[fileLen:] == DefaultSnapshotFileExtension
 }
 
 func FetchPolkachuStateSyncURL(chainType registry.ChainType) (string, error) {
