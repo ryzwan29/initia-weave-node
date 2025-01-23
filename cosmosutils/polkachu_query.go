@@ -13,8 +13,7 @@ import (
 const (
 	PolkachuBaseURL string = "https://polkachu.com"
 
-	PolkachuSnapshotURL  = PolkachuBaseURL + "/%s/snapshots"
-	PolkachuStateSyncURL = PolkachuBaseURL + "/%s/state_sync"
+	PolkachuSnapshotURL = PolkachuBaseURL + "/%s/snapshots"
 
 	PolkachuChainAPI = PolkachuBaseURL + "/api/v2/chains/%s"
 	PolkachuPeersAPI = PolkachuBaseURL + "/api/v2/chains/%s/live_peers"

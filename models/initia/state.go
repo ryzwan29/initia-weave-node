@@ -9,7 +9,7 @@ import (
 type RunL1NodeState struct {
 	weave                             types.WeaveState
 	network                           string
-	chainType                         *registry.ChainType
+	chainType                         registry.ChainType
 	chainRegistry                     *registry.ChainRegistry // We can store the registry here since we only need one
 	initiadVersion                    string
 	initiadEndpoint                   string

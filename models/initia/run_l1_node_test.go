@@ -390,6 +390,7 @@ func TestSeedsInputUpdate(t *testing.T) {
 	ctx := weavecontext.NewAppContext(NewRunL1NodeState())
 	state := weavecontext.GetCurrentState[RunL1NodeState](ctx)
 
+	state.chainType = registry.InitiaL1Testnet
 	state.chainRegistry, _ = registry.GetChainRegistry(registry.InitiaL1Testnet)
 	ctx = weavecontext.SetCurrentState(ctx, state)
 
@@ -488,6 +489,7 @@ func TestPersistentPeersInputUpdate_ValidInput_MainnetNetwork(t *testing.T) {
 	ctx := weavecontext.NewAppContext(NewRunL1NodeState())
 	state := weavecontext.GetCurrentState[RunL1NodeState](ctx)
 	state.network = string(Mainnet)
+	state.chainType = registry.InitiaL1Testnet
 	state.chainRegistry, _ = registry.GetChainRegistry(registry.InitiaL1Testnet)
 	ctx = weavecontext.SetCurrentState(ctx, state)
 
@@ -516,6 +518,7 @@ func TestPersistentPeersInputUpdate_InvalidInput(t *testing.T) {
 	ctx := weavecontext.NewAppContext(NewRunL1NodeState())
 	state := weavecontext.GetCurrentState[RunL1NodeState](ctx)
 	state.network = string(Testnet)
+	state.chainType = registry.InitiaL1Testnet
 	state.chainRegistry, _ = registry.GetChainRegistry(registry.InitiaL1Testnet)
 	ctx = weavecontext.SetCurrentState(ctx, state)
 

@@ -121,7 +121,7 @@ func (m *RunL1NodeNetworkSelect) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if err != nil {
 				return m, m.HandlePanic(err)
 			}
-			state.chainType = &chainType
+			state.chainType = chainType
 			chainRegistry, err := registry.GetChainRegistry(chainType)
 			if err != nil {
 				return m, m.HandlePanic(err)
@@ -651,7 +651,7 @@ func NewPersistentPeersInput(ctx context.Context) (*PersistentPeersInput, error)
 
 	state := weavecontext.GetCurrentState[RunL1NodeState](ctx)
 	if state.network != string(Local) {
-		persistentPeers, err := cosmosutils.FetchPolkachuPersistentPeers(*state.chainType)
+		persistentPeers, err := cosmosutils.FetchPolkachuPersistentPeers(state.chainType)
 		if err != nil {
 			return nil, fmt.Errorf("failed to fetch default persistent peers: %w", err)
 		}
@@ -1605,7 +1605,7 @@ type StateSyncEndpointInput struct {
 
 func NewStateSyncEndpointInput(ctx context.Context) (*StateSyncEndpointInput, error) {
 	state := weavecontext.GetCurrentState[RunL1NodeState](ctx)
-	defaultStateSync, err := cosmosutils.FetchPolkachuStateSyncURL(*state.chainType)
+	defaultStateSync, err := cosmosutils.FetchPolkachuStateSyncURL(state.chainType)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch state sync rpc server from Polkachu: %v", err)
 	}
@@ -1669,7 +1669,7 @@ type AdditionalStateSyncPeersInput struct {
 
 func NewAdditionalStateSyncPeersInput(ctx context.Context) (*AdditionalStateSyncPeersInput, error) {
 	state := weavecontext.GetCurrentState[RunL1NodeState](ctx)
-	defaultStateSyncPeers, err := cosmosutils.FetchPolkachuStateSyncPeers(*state.chainType)
+	defaultStateSyncPeers, err := cosmosutils.FetchPolkachuStateSyncPeers(state.chainType)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch state sync peer from Polkachu: %v", err)
 	}
