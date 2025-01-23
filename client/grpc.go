@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"fmt"
+	"net"
 	"strings"
 	"time"
 
@@ -27,7 +28,11 @@ func NewGRPCClient() *GRPCClient {
 // CheckHealth attempts to connect to the server and uses the reflection service to verify the server is up.
 func (g *GRPCClient) CheckHealth(serverAddr string) error {
 	serverAddr = strings.TrimPrefix(serverAddr, "grpc://")
-	port := serverAddr[strings.LastIndex(serverAddr, ":")+1:]
+
+	_, port, err := net.SplitHostPort(serverAddr)
+	if err != nil {
+		return fmt.Errorf("invalid grpc server address: %w", err)
+	}
 
 	var opts []grpc.DialOption
 	if port == "443" {

@@ -36,6 +36,14 @@ type PolkachuPeersAPIResponse struct {
 	LivePeers    []string `json:"live_peers"`
 }
 
+func getPolkachuQueryParams(chainType registry.ChainType) map[string]string {
+	queryParams := make(map[string]string)
+	if chainType == registry.InitiaL1Testnet {
+		queryParams["type"] = "testnet"
+	}
+	return queryParams
+}
+
 func FetchPolkachuSnapshotDownloadURL(chainSlug string) (string, error) {
 	httpClient := client.NewHTTPClient()
 	body, err := httpClient.Get(fmt.Sprintf(PolkachuSnapshotURL, chainSlug), "", nil, nil)
@@ -70,10 +78,7 @@ func isSnapshotURL(href string) bool {
 }
 
 func FetchPolkachuStateSyncURL(chainType registry.ChainType) (string, error) {
-	queryParams := make(map[string]string)
-	if chainType == registry.InitiaL1Testnet {
-		queryParams["type"] = "testnet"
-	}
+	queryParams := getPolkachuQueryParams(chainType)
 
 	var response PolkachuChainAPIResponse
 	httpClient := client.NewHTTPClient()
@@ -95,10 +100,7 @@ func FetchPolkachuStateSyncURL(chainType registry.ChainType) (string, error) {
 }
 
 func FetchPolkachuStateSyncPeers(chainType registry.ChainType) (string, error) {
-	queryParams := make(map[string]string)
-	if chainType == registry.InitiaL1Testnet {
-		queryParams["type"] = "testnet"
-	}
+	queryParams := getPolkachuQueryParams(chainType)
 
 	var response PolkachuPeersAPIResponse
 	httpClient := client.NewHTTPClient()
@@ -116,10 +118,7 @@ func FetchPolkachuStateSyncPeers(chainType registry.ChainType) (string, error) {
 }
 
 func FetchPolkachuPersistentPeers(chainType registry.ChainType) (string, error) {
-	queryParams := make(map[string]string)
-	if chainType == registry.InitiaL1Testnet {
-		queryParams["type"] = "testnet"
-	}
+	queryParams := getPolkachuQueryParams(chainType)
 
 	var response PolkachuPeersAPIResponse
 	httpClient := client.NewHTTPClient()
