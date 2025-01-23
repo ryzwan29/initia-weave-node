@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	PolkachuBaseURL string = "https://polkachu.com"
+	PolkachuBaseURL string = "https://www.polkachu.com"
 
 	PolkachuSnapshotURL = PolkachuBaseURL + "/%s/snapshots"
 
