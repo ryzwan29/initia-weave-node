@@ -650,7 +650,7 @@ func NewOpBridgeOutputFinalizationPeriodInput(ctx context.Context) *OpBridgeOutp
 		question:   "Specify OP bridge config: Output Finalization Period (format s, m or h - ex. 30s, 5m, 12h)",
 		highlights: []string{"Output Finalization Period"},
 	}
-	model.WithPlaceholder("Press tab to use “168h” (7 days)")
+	model.WithPlaceholder("Press tab to use  “168h” (7 days)")
 	model.WithDefaultValue("168h")
 	model.WithValidatorFn(common.IsValidTimestamp)
 	model.WithTooltip(&toolTip)
@@ -2996,6 +2996,19 @@ func (m *LaunchingNewMinitiaLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				"",
 			),
 		)
+
+		// Add endpoints information
+		var endpoints []string
+		endpoints = append(endpoints,
+			styles.Text("• REST API: ", styles.Ivory)+styles.BoldText("localhost:1317", styles.White),
+			styles.Text("• RPC: ", styles.Ivory)+styles.BoldText("localhost:26657", styles.White),
+		)
+		if state.vmType == string(EVM) {
+			endpoints = append(endpoints, styles.Text("• JSON-RPC: ", styles.Ivory)+styles.BoldText("localhost:8545", styles.White))
+		}
+		endpointsText := "\n Rollup Endpoints:\n" + strings.Join(endpoints, "\n") + "\n"
+
+		state.weave.PushPreviousResponse(endpointsText)
 
 		var jsonRpc string
 		if state.vmType == string(EVM) {
