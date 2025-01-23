@@ -3000,11 +3000,11 @@ func (m *LaunchingNewMinitiaLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Add endpoints information
 		var endpoints []string
 		endpoints = append(endpoints,
-			styles.Text("• REST API: ", styles.Ivory)+styles.BoldText("localhost:1317", styles.White),
-			styles.Text("• RPC: ", styles.Ivory)+styles.BoldText("localhost:26657", styles.White),
+			styles.Text("• REST API: ", styles.Ivory)+styles.BoldText(DefaultMinitiaLCD, styles.White),
+			styles.Text("• RPC: ", styles.Ivory)+styles.BoldText(DefaultMinitiaRPC, styles.White),
 		)
 		if state.vmType == string(EVM) {
-			endpoints = append(endpoints, styles.Text("• JSON-RPC: ", styles.Ivory)+styles.BoldText("localhost:8545", styles.White))
+			endpoints = append(endpoints, styles.Text("• JSON-RPC: ", styles.Ivory)+styles.BoldText(DefaultMinitiaJsonRPC, styles.White))
 		}
 		endpointsText := "\n Rollup Endpoints:\n" + strings.Join(endpoints, "\n") + "\n"
 
@@ -3061,10 +3061,9 @@ func (m *LaunchingNewMinitiaLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			messageJsonPath := filepath.Join(userHome, common.WeaveDataDirectory, "messages.json")
 
-			params, err := cosmosutils.QueryOPChildParams("http://localhost:1317")
+			params, err := cosmosutils.QueryOPChildParams(DefaultMinitiaLCD)
 			if err != nil {
 				return m, m.HandlePanic(fmt.Errorf("failed to query params: %v", err))
-
 			}
 			for _, acc := range params.FeeWhitelist {
 				cache[acc] = true
@@ -3079,7 +3078,6 @@ func (m *LaunchingNewMinitiaLoading) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			err = cosmosutils.CreateOPChildUpdateParamsMsg(messageJsonPath, params)
 			if err != nil {
 				return m, m.HandlePanic(fmt.Errorf("failed to create update params message: %v", err))
-
 			}
 
 			runCmd := exec.Command(state.binaryPath, "tx", "opchild", "execute-messages", messageJsonPath,
