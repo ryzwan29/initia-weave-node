@@ -209,7 +209,7 @@ list = [
 		ID: state.Config["l1.chain_id"],
 		// TODO: revisit
 		RPCAddr:  "https://initia-testnet-rpc.polkachu.com/",
-		GRPCAddr: "http://" + state.Config["l1.grpc_address"],
+		GRPCAddr: "https://" + state.Config["l1.grpc_address"],
 		EventSource: EventSource{
 			Mode:       "push",
 			URL:        state.Config["l1.websocket"],
