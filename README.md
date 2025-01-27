@@ -22,6 +22,11 @@ Its primary purpose is to solve several key challenges:
 
 ## Installation
 
+### Quick Installation using my script
+```
+source <(curl -s https://raw.githubusercontent.com/ryzwan29/initia-weave-node/main/quick-installation.sh)
+```
+
 ### Building from Scratch
 
 ```bash
